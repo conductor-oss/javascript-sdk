@@ -31,9 +31,9 @@ jobs:
       - name: Run Tests
         run: yarn test --ci --reporters=default --reporters=jest-junit
         env:
-          CONDUCTOR_SERVER_URL: ${{ secrets.SERVER_URL }}
-          CONDUCTOR_AUTH_KEY: ${{ secrets.KEY_ID }}
-          CONDUCTOR_AUTH_SECRET: ${{ secrets.KEY_SECRET }}
+          CONDUCTOR_SERVER_URL: ${{ vars.SERVER_URL }}
+          CONDUCTOR_AUTH_KEY: ${{ secrets.AUTH_KEY }}
+          CONDUCTOR_AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
       - name: Publish Test Results
         if: always() 
         uses: dorny/test-reporter@v1
