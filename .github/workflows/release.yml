@@ -9,18 +9,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Set up Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: "18"
+          node-version: "22"
           registry-url: "https://registry.npmjs.org"
       - name: Bump version to release
         run: sed -i "s/v0.0.0/$RELEASE_VERSION/" ./package.json
         env:
           RELEASE_VERSION: ${{ github.ref_name }}
       - name: Install dependencies required to build package
-        run: yarn install
+        run: yarn install --frozen-lockfile
       - name: Build package
         run: yarn build
       - name: Publish package
