@@ -1,9 +1,10 @@
 import { expect, describe, test, jest } from "@jest/globals";
-import { simpleTask, WorkflowExecutor } from "../../core";
+import { simpleTask, WorkflowExecutor, taskDefinition } from "../../core";
 import { orkesConductorClient } from "../../orkes";
 import { TaskManager, ConductorWorker } from "../index";
 import { mockLogger } from "./mockLogger";
 import {TestUtil} from "../../core/__test__/utils/test-util";
+import type { Task } from "../../common/open-api/models/Task";
 
 
 const BASE_TIME = 500;
@@ -27,10 +28,25 @@ describe("TaskManager", () => {
       },
     };
 
+    await client.metadataResource.registerTaskDef([taskDefinition({
+      name: "taskmanager-test",
+      timeoutSeconds: 3600,
+    })]);
+
     const manager = new TaskManager(client, [worker], {
       options: { pollInterval: BASE_TIME },
     });
     manager.startPolling();
+
+    await executor.registerWorkflow(true, {
+      name: "TaskManagerTest",
+      version: 1,
+      ownerEmail: "developers@orkes.io",
+      tasks: [simpleTask("taskmanager-test", "taskmanager-test", {})],
+      inputParameters: [],
+      outputParameters: {},
+      timeoutSeconds: 0,
+    });
 
     const executionId = await executor.startWorkflow({
       name: "TaskManagerTest",
@@ -50,30 +66,45 @@ describe("TaskManager", () => {
     const client = await clientPromise;
     const executor = new WorkflowExecutor(client);
 
+    const mockErrorHandler = jest.fn();
+
     const worker: ConductorWorker = {
-      taskDefName: "taskmanager-error-test2",
+      taskDefName: "taskmanager-error-handler-test-unique",
       execute: async () => {
-        throw Error("This is a forced error");
+        throw new Error("This is a forced error for testing error handler");
       },
     };
 
-    const errorHandler = jest.fn();
+    await client.metadataResource.registerTaskDef([taskDefinition({
+      name: "taskmanager-error-handler-test-unique",
+      timeoutSeconds: 3600,
+      retryCount: 0, // No retries - workflow should fail immediately when task fails
+    })]);
 
     const manager = new TaskManager(client, [worker], {
-      onError: errorHandler,
       options: { pollInterval: BASE_TIME },
+      onError: mockErrorHandler,
     });
 
     manager.startPolling();
 
-    await executor.startWorkflow({
-      name: "TaskManagerTestE2",
-      input: {},
-      version: 1,
-    });
-    await new Promise((r) => setTimeout(() => r(true), BASE_TIME * 4));
-    expect(errorHandler).toBeCalledTimes(1);
+    const status = await executor.executeWorkflow(
+      {
+        name: "TaskManagerTestErrorHandlerUnique",
+        input: {},
+        version: 1,
+      },
+      "TaskManagerTestErrorHandlerUnique",
+      1,
+      "errorHandlerTestIdentifierUnique"
+    );
+
+    await new Promise((r) => setTimeout(() => r(true), BASE_TIME * 3));
+
     await manager.stopPolling();
+
+    expect(status.status).toEqual("FAILED");
+    expect(mockErrorHandler).toHaveBeenCalled();
   });
 
   test("If no error handler provided. it should just update the task", async () => {
@@ -87,11 +118,26 @@ describe("TaskManager", () => {
       },
     };
 
+    await client.metadataResource.registerTaskDef([taskDefinition({
+      name: "taskmanager-error-test",
+      timeoutSeconds: 3600,
+    })]);
+
     const manager = new TaskManager(client, [worker], {
       options: { pollInterval: BASE_TIME },
     });
 
     manager.startPolling();
+
+    await executor.registerWorkflow(true, {
+      name: "TaskManagerTestE",
+      version: 1,
+      ownerEmail: "developers@orkes.io",
+      tasks: [simpleTask("taskmanager-error-test", "taskmanager-error-test", {})],
+      inputParameters: [],
+      outputParameters: {},
+      timeoutSeconds: 0,
+    });
 
     const status = await executor.executeWorkflow(
       {
