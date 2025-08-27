@@ -96,7 +96,7 @@ describe("TaskManager", () => {
     const workflowStatus = await TestUtil.waitForWorkflowCompletion(executor, status, BASE_TIME * 4);
 
     expect(workflowStatus.status).toEqual("FAILED");
-    expect(mockErrorHandler).toHaveBeenCalled();
+    expect(mockErrorHandler).toBeCalledTimes(1);
     await manager.stopPolling();
   });
 
