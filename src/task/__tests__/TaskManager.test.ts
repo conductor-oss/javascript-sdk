@@ -4,7 +4,6 @@ import { orkesConductorClient } from "../../orkes";
 import { TaskManager, ConductorWorker } from "../index";
 import { mockLogger } from "./mockLogger";
 import {TestUtil} from "../../core/__test__/utils/test-util";
-import type { Task } from "../../common/open-api/models/Task";
 
 
 const BASE_TIME = 500;
