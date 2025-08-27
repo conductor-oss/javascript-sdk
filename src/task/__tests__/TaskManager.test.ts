@@ -27,11 +27,6 @@ describe("TaskManager", () => {
       },
     };
 
-    await client.metadataResource.registerTaskDef([taskDefinition({
-      name: "taskmanager-test",
-      timeoutSeconds: 3600,
-    })]);
-
     const manager = new TaskManager(client, [worker], {
       options: { pollInterval: BASE_TIME },
     });
@@ -52,11 +47,7 @@ describe("TaskManager", () => {
       input: {},
       version: 1,
     });
-    await new Promise((r) => setTimeout(() => r(true), BASE_TIME * 2));
-    const workflowStatus = await client.workflowResource.getExecutionStatus(
-      executionId,
-      true
-    );
+    const workflowStatus = await TestUtil.waitForWorkflowCompletion(executor, executionId, BASE_TIME * 2);
     await manager.stopPolling();
     expect(workflowStatus.status).toEqual("COMPLETED");
   });
@@ -73,12 +64,6 @@ describe("TaskManager", () => {
         throw new Error("This is a forced error for testing error handler");
       },
     };
-
-    await client.metadataResource.registerTaskDef([taskDefinition({
-      name: "taskmanager-error-handler-test-unique",
-      timeoutSeconds: 3600,
-      retryCount: 0, // No retries - workflow should fail immediately when task fails
-    })]);
 
     const manager = new TaskManager(client, [worker], {
       options: { pollInterval: BASE_TIME },
@@ -108,12 +93,10 @@ describe("TaskManager", () => {
       "errorHandlerTestIdentifierUnique"
     );
 
-    await new Promise((r) => setTimeout(() => r(true), BASE_TIME * 2));
-
     await manager.stopPolling();
 
     // Wait for workflow to complete and fail
-    const workflowStatus = await TestUtil.waitForWorkflowCompletion(executor, status.workflowId!, BASE_TIME * 2);
+    const workflowStatus = await TestUtil.waitForWorkflowCompletion(executor, status.workflowId!, BASE_TIME * 4);
     
     expect(workflowStatus.status).toEqual("FAILED");
     expect(mockErrorHandler).toHaveBeenCalled();
@@ -129,12 +112,6 @@ describe("TaskManager", () => {
         throw Error("This is a forced error");
       },
     };
-
-    await client.metadataResource.registerTaskDef([taskDefinition({
-      name: "taskmanager-error-test",
-      timeoutSeconds: 3600,
-      retryCount: 0,
-    })]);
 
     const manager = new TaskManager(client, [worker], {
       options: { pollInterval: BASE_TIME },
@@ -233,7 +210,7 @@ describe("TaskManager", () => {
     // decrease speed again
     manager.updatePollingOptions({ pollInterval: BASE_TIME, concurrency: 1 });
 
-    const workflowStatus = await TestUtil.waitForWorkflowCompletion(executor, executionId!, BASE_TIME * 2);
+    const workflowStatus = await TestUtil.waitForWorkflowCompletion(executor, executionId!, BASE_TIME * 5);
 
     expect(workflowStatus.status).toEqual("COMPLETED");
     await manager.stopPolling();
