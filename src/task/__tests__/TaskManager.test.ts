@@ -1,5 +1,5 @@
 import { expect, describe, test, jest } from "@jest/globals";
-import { simpleTask, WorkflowExecutor, taskDefinition } from "../../core";
+import { simpleTask, WorkflowExecutor } from "../../core";
 import { orkesConductorClient } from "../../orkes";
 import { TaskManager, ConductorWorker } from "../index";
 import { mockLogger } from "./mockLogger";
@@ -97,7 +97,7 @@ describe("TaskManager", () => {
 
     // Wait for workflow to complete and fail
     const workflowStatus = await TestUtil.waitForWorkflowCompletion(executor, status.workflowId!, BASE_TIME * 4);
-    
+
     expect(workflowStatus.status).toEqual("FAILED");
     expect(mockErrorHandler).toHaveBeenCalled();
   });
