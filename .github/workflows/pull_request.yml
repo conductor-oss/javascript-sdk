@@ -36,7 +36,7 @@ jobs:
           CONDUCTOR_AUTH_SECRET: ${{ secrets.KEY_SECRET }}
       - name: Publish Test Results
         if: always() 
-        uses: dorny/test-reporter@v1
+        uses: dorny/test-reporter@v2
         with:
           name: Test report
           path: reports/jest-*.xml
