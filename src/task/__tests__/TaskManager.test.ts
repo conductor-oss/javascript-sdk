@@ -3,7 +3,7 @@ import { simpleTask, WorkflowExecutor, taskDefinition } from "../../core";
 import { orkesConductorClient } from "../../orkes";
 import { TaskManager, ConductorWorker } from "../index";
 import { mockLogger } from "./mockLogger";
-import {TestUtil} from "../../core/__test__/utils/test-util";
+import { TestUtil } from "../../core/__test__/utils/test-util";
 
 
 const BASE_TIME = 500;
@@ -102,7 +102,10 @@ describe("TaskManager", () => {
 
     await manager.stopPolling();
 
-    expect(status.status).toEqual("FAILED");
+    // Wait for workflow to complete and fail
+    const workflowStatus = await TestUtil.waitForWorkflowCompletion(executor, status.workflowId!, BASE_TIME * 2);
+    
+    expect(workflowStatus.status).toEqual("FAILED");
     expect(mockErrorHandler).toHaveBeenCalled();
   });
 
@@ -151,12 +154,10 @@ describe("TaskManager", () => {
     );
 
     await manager.stopPolling();
-    
+
     // Wait for workflow to complete and fail
     const workflowStatus = await TestUtil.waitForWorkflowCompletion(executor, executionId!, BASE_TIME * 2);
     expect(workflowStatus.status).toEqual("FAILED");
-    
-    
   });
 
   test("multi worker example", async () => {
@@ -361,7 +362,7 @@ describe("TaskManager", () => {
     expect(mockLogger.info).toBeCalledWith(
       `TaskWorker ${candidateWorkerUpdate} initialized with concurrency of ${initialCandidateWorkflowOptions.concurrency} and poll interval of ${initialCandidateWorkflowOptions.pollInterval}`
     );
-    
+
 
     expect(mockLogger.info).toBeCalledWith(
       `TaskWorker ${candidateWorkerUpdate} configuration updated with concurrency of ${updatedWorkerOptions.concurrency} and poll interval of ${updatedWorkerOptions.pollInterval}`
