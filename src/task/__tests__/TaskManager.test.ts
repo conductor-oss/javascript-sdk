@@ -11,6 +11,7 @@ describe("TaskManager", () => {
   const clientPromise = orkesConductorClient({ useEnvVars: true, refreshTokenInterval: 0 });
 
   jest.setTimeout(10000);
+
   test("Should run workflow with worker", async () => {
     const client = await clientPromise;
     const executor = new WorkflowExecutor(client);
@@ -47,9 +48,12 @@ describe("TaskManager", () => {
       input: {},
       version: 1,
     });
-    const workflowStatus = await TestUtil.waitForWorkflowCompletion(executor, executionId, BASE_TIME * 2);
-    await manager.stopPolling();
+
+    const workflowStatus = await TestUtil.waitForWorkflowCompletion(executor, executionId, BASE_TIME * 4);
+
     expect(workflowStatus.status).toEqual("COMPLETED");
+
+    await manager.stopPolling();
   });
 
   test("On error it should call the errorHandler provided", async () => {
@@ -82,24 +86,18 @@ describe("TaskManager", () => {
       timeoutSeconds: 0,
     });
 
-    const status = await executor.executeWorkflow(
-      {
-        name: "TaskManagerTestErrorHandlerUnique",
-        input: {},
-        version: 1,
-      },
-      "TaskManagerTestErrorHandlerUnique",
-      1,
-      "errorHandlerTestIdentifierUnique"
-    );
+    const status = await executor.startWorkflow({
+      name: "TaskManagerTestErrorHandlerUnique",
+      input: {},
+      version: 1,
+      correlationId: "errorHandlerTestIdentifierUnique"
+    });
 
-    await manager.stopPolling();
-
-    // Wait for workflow to complete and fail
-    const workflowStatus = await TestUtil.waitForWorkflowCompletion(executor, status.workflowId!, BASE_TIME * 4);
+    const workflowStatus = await TestUtil.waitForWorkflowCompletion(executor, status, BASE_TIME * 4);
 
     expect(workflowStatus.status).toEqual("FAILED");
     expect(mockErrorHandler).toHaveBeenCalled();
+    await manager.stopPolling();
   });
 
   test("If no error handler provided. it should just update the task", async () => {
@@ -129,22 +127,16 @@ describe("TaskManager", () => {
       timeoutSeconds: 0,
     });
 
-    const { workflowId: executionId } = await executor.executeWorkflow(
-      {
-        name: "TaskManagerTestE",
-        input: {},
-        version: 1,
-      },
-      "TaskManagerTestE",
-      1,
-      "noErrorHandlerProvidedIdentifier"
-    );
+    const executionId = await executor.startWorkflow({
+      name: "TaskManagerTestE",
+      input: {},
+      version: 1,
+      correlationId: "noErrorHandlerProvidedIdentifier"
+    });
 
-    await manager.stopPolling();
-
-    // Wait for workflow to complete and fail
-    const workflowStatus = await TestUtil.waitForWorkflowCompletion(executor, executionId!, BASE_TIME * 2);
+    const workflowStatus = await TestUtil.waitForWorkflowCompletion(executor, executionId!, BASE_TIME * 4);
     expect(workflowStatus.status).toEqual("FAILED");
+    await manager.stopPolling();
   });
 
   test("multi worker example", async () => {
@@ -195,22 +187,19 @@ describe("TaskManager", () => {
       timeoutSeconds: 0,
     });
 
-    //Start workf
-    const { workflowId: executionId } = await executor.executeWorkflow(
-      {
-        name: workflowName,
-        version: 1,
-      },
-      workflowName,
-      1,
-      "identifierTaskManMulti"
-    );
+    //Start workflow
+    const executionId = await executor.startWorkflow({
+      name: workflowName,
+      version: 1,
+      correlationId: "identifierTaskManMulti"
+    });
+
     expect(executionId).toBeDefined();
 
     // decrease speed again
     manager.updatePollingOptions({ pollInterval: BASE_TIME, concurrency: 1 });
 
-    const workflowStatus = await TestUtil.waitForWorkflowCompletion(executor, executionId!, BASE_TIME * 5);
+    const workflowStatus = await TestUtil.waitForWorkflowCompletion(executor, executionId, BASE_TIME * 4);
 
     expect(workflowStatus.status).toEqual("COMPLETED");
     await manager.stopPolling();
@@ -323,22 +312,18 @@ describe("TaskManager", () => {
       timeoutSeconds: 0,
     });
 
-    //Start workf
-    const { workflowId: executionId } = await executor.executeWorkflow(
-      {
-        name: workflowName,
-        version: 1,
-      },
-      workflowName,
-      1,
-      "identifierTaskManMulti"
-    );
+    //Start workflow
+    const executionId = await executor.startWorkflow({
+      name: workflowName,
+      version: 1,
+      correlationId: "identifierTaskManMulti"
+    });
     expect(executionId).toBeDefined();
 
     // decrease speed again
     manager.updatePollingOptions({ pollInterval: BASE_TIME, concurrency: 1 });
 
-    const workflowStatus = await executor.getWorkflow(executionId!, true);
+    const workflowStatus = await TestUtil.waitForWorkflowCompletion(executor, executionId, BASE_TIME * 4);
 
     expect(workflowStatus.status).toEqual("COMPLETED");
     await manager.stopPolling();
