@@ -87,6 +87,16 @@ describe("TaskManager", () => {
 
     manager.startPolling();
 
+    await executor.registerWorkflow(true, {
+      name: "TaskManagerTestErrorHandlerUnique",
+      version: 1,
+      ownerEmail: "developers@orkes.io",
+      tasks: [simpleTask("taskmanager-error-handler-test-unique", "taskmanager-error-handler-test-unique", {})],
+      inputParameters: [],
+      outputParameters: {},
+      timeoutSeconds: 0,
+    });
+
     const status = await executor.executeWorkflow(
       {
         name: "TaskManagerTestErrorHandlerUnique",
