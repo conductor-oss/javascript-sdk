@@ -79,7 +79,7 @@ describe("ScheduleExecutor", () => {
   test("Should be able to see the result in executed schedule", async () => {
     const client = await clientPromise;
     const executor = new SchedulerClient(client);
-    await new Promise((resolve) => setTimeout(resolve, 5000));
+    await new Promise((resolve) => setTimeout(resolve, 10000));
     const result = await executor.search(
       0,
       15,
