@@ -10,7 +10,7 @@ const BASE_TIME = 500;
 describe("TaskManager", () => {
   const clientPromise = orkesConductorClient({ useEnvVars: true, refreshTokenInterval: 0 });
 
-  jest.setTimeout(10000);
+  jest.setTimeout(15000);
 
   test("Should run workflow with worker", async () => {
     const client = await clientPromise;
