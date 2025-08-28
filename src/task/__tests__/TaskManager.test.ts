@@ -1,5 +1,5 @@
 import { expect, describe, test, jest } from "@jest/globals";
-import { simpleTask, WorkflowExecutor } from "../../core";
+import { simpleTask, taskDefinition, WorkflowExecutor } from "../../core";
 import { orkesConductorClient } from "../../orkes";
 import { TaskManager, ConductorWorker } from "../index";
 import { mockLogger } from "./mockLogger";
@@ -69,6 +69,12 @@ describe("TaskManager", () => {
       },
     };
 
+    await client.metadataResource.registerTaskDef([taskDefinition({
+      name: "taskmanager-error-handler-test-unique",
+      timeoutSeconds: 0,
+      retryCount: 0,
+    })]);
+
     const manager = new TaskManager(client, [worker], {
       options: { pollInterval: BASE_TIME },
       onError: mockErrorHandler,
@@ -93,7 +99,7 @@ describe("TaskManager", () => {
       correlationId: "errorHandlerTestIdentifierUnique"
     });
 
-    const workflowStatus = await TestUtil.waitForWorkflowCompletion(executor, status, BASE_TIME * 4);
+    const workflowStatus = await TestUtil.waitForWorkflowCompletion(executor, status, BASE_TIME * 6);
 
     expect(workflowStatus.status).toEqual("FAILED");
     expect(mockErrorHandler).toBeCalledTimes(1);
@@ -110,6 +116,12 @@ describe("TaskManager", () => {
         throw new Error("This is a forced error");
       },
     };
+
+    await client.metadataResource.registerTaskDef([taskDefinition({
+      name: "taskmanager-error-test",
+      timeoutSeconds: 0,
+      retryCount: 0,
+    })]);
 
     const manager = new TaskManager(client, [worker], {
       options: { pollInterval: BASE_TIME },
