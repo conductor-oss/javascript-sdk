@@ -8,11 +8,11 @@ export default [
     {
         files: ['**/*.{js,ts}'],
         languageOptions: {
-            ecmaVersion: 2022,
+            ecmaVersion: 2024,
             sourceType: 'module',
             parser: typescriptParser,
             parserOptions: {
-                ecmaVersion: 2022,
+                ecmaVersion: 2024,
                 sourceType: 'module',
             },
             globals: {
