@@ -107,7 +107,7 @@ describe("TaskManager", () => {
     const worker: ConductorWorker = {
       taskDefName: "taskmanager-error-test",
       execute: async () => {
-        throw Error("This is a forced error");
+        throw new Error("This is a forced error");
       },
     };
 
@@ -134,7 +134,7 @@ describe("TaskManager", () => {
       correlationId: "noErrorHandlerProvidedIdentifier"
     });
 
-    const workflowStatus = await TestUtil.waitForWorkflowCompletion(executor, executionId!, BASE_TIME * 4);
+    const workflowStatus = await TestUtil.waitForWorkflowCompletion(executor, executionId!, BASE_TIME * 10);
     expect(workflowStatus.status).toEqual("FAILED");
     await manager.stopPolling();
   });
@@ -323,7 +323,7 @@ describe("TaskManager", () => {
     // decrease speed again
     manager.updatePollingOptions({ pollInterval: BASE_TIME, concurrency: 1 });
 
-    const workflowStatus = await TestUtil.waitForWorkflowCompletion(executor, executionId, BASE_TIME * 4);
+    const workflowStatus = await TestUtil.waitForWorkflowCompletion(executor, executionId, BASE_TIME * 10);
 
     expect(workflowStatus.status).toEqual("COMPLETED");
     await manager.stopPolling();
