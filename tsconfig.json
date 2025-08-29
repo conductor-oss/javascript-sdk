@@ -1,31 +1,10 @@
 {
-  "extends": "@tsconfig/node22/tsconfig.json",
+  "extends": "@tsconfig/node18/tsconfig.json",
   "compilerOptions": {
-    "lib": ["es2024", "dom"],
-    "target": "ES2024",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
+    "lib": [
+      "es2022",
+      "dom"
+    ],
     "noEmit": true,
-    "strict": true,
-    "skipLibCheck": true,
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
-    "isolatedModules": false,
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true
-  },
-  "include": [
-    "src/**/*",
-    "index.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "**/*.test.ts",
-    "**/*.spec.ts"
-  ]
+  }
 }
