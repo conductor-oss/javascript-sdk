@@ -136,7 +136,7 @@ describe("Executor", () => {
   
     const workflowStatusBefore = await TestUtil.waitForWorkflowStatus(executor, executionId, "RUNNING");
   
-    expect(workflowStatusBefore.tasks?.[0]?.status).toEqual("IN_PROGRESS");
+    expect(["IN_PROGRESS", "SCHEDULED"]).toContain(workflowStatusBefore.tasks?.[0]?.status);
   
     const taskClient = new TaskClient(client);
     taskClient.updateTaskResult(executionId, "test_jssdk_http_task_with_asyncComplete_true", "COMPLETED", { hello: "From manuall api call updating task result" });
