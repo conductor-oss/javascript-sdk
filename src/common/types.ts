@@ -119,6 +119,7 @@ export interface HttpTaskDef extends CommonTaskDef {
     http_request: HttpInputParameters;
   };
   type: TaskType.HTTP;
+  asyncComplete?: boolean;
 }
 
 export interface InlineTaskInputParameters {
