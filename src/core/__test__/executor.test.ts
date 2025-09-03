@@ -134,19 +134,15 @@ describe("Executor", () => {
       version: 1,
     });
   
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    const workflowStatusBefore = await executor.getWorkflow(executionId, true);
+    const workflowStatusBefore = await TestUtil.waitForWorkflowStatus(executor, executionId, "RUNNING");
   
-    expect(workflowStatusBefore.status).toEqual("RUNNING");
     expect(workflowStatusBefore.tasks?.[0]?.status).toEqual("IN_PROGRESS");
   
     const taskClient = new TaskClient(client);
     taskClient.updateTaskResult(executionId, "test_jssdk_http_task_with_asyncComplete_true", "COMPLETED", { hello: "From manuall api call updating task result" });
   
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    const workflowStatusAfter = await executor.getWorkflow(executionId, true);
+    const workflowStatusAfter = await TestUtil.waitForWorkflowStatus(executor, executionId, "COMPLETED");
   
-    expect(workflowStatusAfter.status).toEqual("COMPLETED");
     expect(workflowStatusAfter.tasks?.[0]?.status).toEqual("COMPLETED");
   });
 });
