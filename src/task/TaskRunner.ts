@@ -13,7 +13,6 @@ import { optionEquals } from "./helpers";
 const DEFAULT_ERROR_MESSAGE = "An unknown error occurred";
 export const MAX_RETRIES = 3;
 
-//eslint-disable-next-line
 export const noopErrorHandler: TaskErrorHandler = (__error: Error) => {};
 
 const defaultRunnerOptions: Required<TaskRunnerOptions> = {

@@ -1,6 +1,10 @@
 {
   "extends": "@tsconfig/node18/tsconfig.json",
   "compilerOptions": {
-    "lib": ["es2018","dom"]
+    "lib": [
+      "es2022",
+      "dom"
+    ],
+    "noEmit": true,
   }
 }
