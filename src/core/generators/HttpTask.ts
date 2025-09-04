@@ -18,6 +18,7 @@ export const generateHTTPTask = (
       method: "GET",
     },
   },
+  asyncComplete: false,
   ...overrides,
   type: TaskType.HTTP,
 });

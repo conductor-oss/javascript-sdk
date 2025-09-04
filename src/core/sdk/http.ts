@@ -6,12 +6,14 @@ import {
 
 export const httpTask = (
   taskReferenceName: string,
-  inputParameters: HttpInputParameters
+  inputParameters: HttpInputParameters,
+  asyncComplete = false
 ): HttpTaskDef => ({
   name: taskReferenceName,
   taskReferenceName,
   inputParameters: {
     http_request: inputParameters,
   },
+  asyncComplete,
   type: TaskType.HTTP,
 });

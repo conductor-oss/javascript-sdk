@@ -150,6 +150,7 @@ describe("httpTask", () => {
       method: "GET",
     });
     expect(httpTaskObj).toEqual({
+      asyncComplete: false,
       name: "httpTask",
       taskReferenceName: "httpTask",
       inputParameters: {
