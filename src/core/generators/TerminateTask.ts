@@ -17,7 +17,6 @@ export const generateTerminateTask = (
     workflowOutput: {},
   },
   startDelay: 0,
-  optional: false,
   ...overrides,
   type: TaskType.TERMINATE,
 });

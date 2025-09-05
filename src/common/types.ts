@@ -81,7 +81,6 @@ export interface ForkJoinTaskDef extends CommonTaskDef {
   type: TaskType.FORK_JOIN;
   inputParameters?: Record<string, string>;
   forkTasks: Array<Array<TaskDefTypes>>;
-  optional?: boolean;
 }
 
 export interface JoinTaskDef extends CommonTaskDef {
@@ -206,7 +205,6 @@ export interface TerminateTaskDef extends CommonTaskDef {
   };
   type: TaskType.TERMINATE;
   startDelay?: number;
-  optional?: boolean;
 }
 
 export interface WaitTaskDef extends CommonTaskDef {
