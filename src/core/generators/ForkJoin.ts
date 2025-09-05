@@ -19,8 +19,6 @@ export const generateJoinTask = (
   ...nameTaskNameGenerator("join", overrides),
   inputParameters: {},
   joinOn: [],
-  optional: false,
-  asyncComplete: false,
   ...overrides,
   type: TaskType.JOIN,
 });

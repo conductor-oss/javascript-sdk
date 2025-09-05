@@ -114,7 +114,7 @@ describe("forkTask", () => {
     const tname = "forkTaskJoin";
     const [forkTask, joinTask] = forkTaskJoin(tname, [
       eventTask(tname, "prefix", "suffix"),
-    ]);
+    ], true);
     expect(forkTask).toEqual({
       taskReferenceName: "forkTaskJoin",
       name: "forkTaskJoin",
@@ -135,8 +135,7 @@ describe("forkTask", () => {
       taskReferenceName: "forkTaskJoin_join_ref",
       inputParameters: {},
       joinOn: [],
-      optional: false,
-      asyncComplete: false,
+      optional: true,
       type: "JOIN",
     });
   });
@@ -150,13 +149,39 @@ describe("httpTask", () => {
       method: "GET",
     });
     expect(httpTaskObj).toEqual({
-      asyncComplete: false,
       name: "httpTask",
       taskReferenceName: "httpTask",
       inputParameters: {
         http_request: { uri: "http://www.yahoo.com", method: "GET" },
       },
       type: "HTTP",
+    });
+  });
+
+  it("Should create an http task with asyncComplete property", () => {
+    const httpTaskObj = httpTask("testHttp", { uri: "https://example.com", method: "GET" }, true);
+    expect(httpTaskObj).toEqual({
+      name: "testHttp",
+      taskReferenceName: "testHttp",
+      inputParameters: {
+        http_request: { uri: "https://example.com", method: "GET" },
+      },
+      asyncComplete: true,
+      type: "HTTP",
+    });
+  });
+
+  it("Should create an http task with optional property", () => {
+    const httpTaskObj = httpTask("testHttp", { uri: "https://example.com", method: "GET" }, false, true);
+    expect(httpTaskObj).toEqual({
+      name: "testHttp",
+      taskReferenceName: "testHttp",
+      inputParameters: {
+        http_request: { uri: "https://example.com", method: "GET" },
+      },
+      asyncComplete: false,
+      type: "HTTP",
+      optional: true,
     });
   });
 });

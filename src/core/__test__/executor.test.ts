@@ -145,6 +145,29 @@ describe("Executor", () => {
   
     expect(workflowStatusAfter.tasks?.[0]?.status).toEqual("COMPLETED");
   });
+
+  test("Should run workflow with an optional http task", async () => {
+    const executor = new WorkflowExecutor(await clientPromise);
+  
+    await executor.registerWorkflow(true, {
+      name: "test_jssdk_workflow_with_optional_http_task",
+      version: 1,
+      ownerEmail: "developers@orkes.io",
+      tasks: [httpTask("test_jssdk_optional_http_task", { uri: "uncorrect_uri", method: "GET" }, false, true)],
+      inputParameters: [],
+      outputParameters: {},
+      timeoutSeconds: 300,
+    });
+  
+    const executionId = await executor.startWorkflow({
+      name: "test_jssdk_workflow_with_optional_http_task",
+      input: {},
+      version: 1,
+    });
+  
+    const workflowStatus = await TestUtil.waitForWorkflowStatus(executor, executionId, "COMPLETED");
+    expect(["FAILED", "COMPLETED_WITH_ERRORS"]).toContain(workflowStatus.tasks?.[0]?.status);
+  });
 });
 
 describe("Execute with Return Strategy and Consistency", () => {

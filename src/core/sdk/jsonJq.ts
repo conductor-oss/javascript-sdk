@@ -2,7 +2,8 @@ import { TaskType, JsonJQTransformTaskDef } from "../../common/types";
 
 export const jsonJqTask = (
   taskReferenceName: string,
-  script: string
+  script: string,
+  optional?: boolean
 ): JsonJQTransformTaskDef => ({
   name: taskReferenceName,
   taskReferenceName,
@@ -10,4 +11,5 @@ export const jsonJqTask = (
   inputParameters: {
     queryExpression: script,
   },
+  optional,
 });
