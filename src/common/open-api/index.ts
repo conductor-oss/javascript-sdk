@@ -1,7 +1,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export { ConductorClient, ConductorClientAPIConfig } from "./ConductorClient";
+export { ConductorClient } from "./ConductorClient";
 
 export { ApiError } from "./core/ApiError";
 export { BaseHttpRequest } from "./core/BaseHttpRequest";

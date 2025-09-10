@@ -1,6 +1,6 @@
 import type {
-  ConductorClientAPIConfig,
   GenerateTokenRequest,
+  OpenAPIConfig,
 } from "../common";
 
 export type FetchFn<
@@ -8,4 +8,9 @@ export type FetchFn<
   R extends { json: () => Promise<any> } = Response
 > = (input: RequestInfo, init?: T) => Promise<R>;
 
-export type OrkesApiConfig = ConductorClientAPIConfig & GenerateTokenRequest;
+export interface OrkesConductorClientAPIConfig extends OpenAPIConfig {
+  useEnvVars: boolean;
+  serverUrl: string;
+}
+
+export type OrkesApiConfig = OrkesConductorClientAPIConfig & GenerateTokenRequest;

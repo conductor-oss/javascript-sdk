@@ -18,10 +18,6 @@ import { NodeHttpRequest } from "./core/NodeHttpRequest";
 
 type HttpRequestConstructor = new (config: OpenAPIConfig) => BaseHttpRequest;
 
-export interface ConductorClientAPIConfig extends OpenAPIConfig {
-  useEnvVars: boolean;
-}
-
 export class ConductorClient {
   public readonly eventResource: EventResourceService;
   public readonly healthCheckResource: HealthCheckResourceService;

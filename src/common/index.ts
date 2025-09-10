@@ -6,7 +6,6 @@ export {
   ConductorClient,
   ApiRequestOptions,
   ApiResult,
-  ConductorClientAPIConfig,
   OpenAPIConfig,
   OnCancel,
   ApiError,
