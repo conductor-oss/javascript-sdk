@@ -1,22 +1,39 @@
-import type { ConductorHttpRequest, ConductorClientAPIConfig } from "../common";
+import type {
+  ConductorHttpRequest,
+  ConductorClientAPIConfig,
+  OpenAPIConfig,
+  ApiRequestOptions,
+  CancelablePromise,
+} from "../common";
+import { BaseHttpRequest } from "../common";
 import { ConductorClient } from "../common";
 import { FetchFn, OrkesApiConfig } from "./types";
-
-const defaultRequestHandler: ConductorHttpRequest = (
-  request,
-  config,
-  options
-) => request(config, options);
+import { request as baseRequest } from "../common/open-api/core/request";
 
 const REFRESH_TOKEN_IN_MILLISECONDS = 30 * 60 * 1000;
+
+type HttpRequestConstructor = new (config: OpenAPIConfig) => BaseHttpRequest;
+
+// Factory function to create a custom HttpRequest class with a specific requestHandler
+function createCustomHttpRequest(requestHandler: ConductorHttpRequest) {
+  return class extends BaseHttpRequest {
+    constructor(config: OpenAPIConfig) {
+      super(config);
+    }
+
+    public request<T>(options: ApiRequestOptions): CancelablePromise<T> {
+      return requestHandler(baseRequest, this.config, options);
+    }
+  };
+}
 
 export class AuthConductorClient extends ConductorClient {
   public intervalId?: NodeJS.Timeout;
   constructor(
     config?: Partial<ConductorClientAPIConfig>,
-    requestHandler: ConductorHttpRequest = defaultRequestHandler
+    requestHandler?: ConductorHttpRequest
   ) {
-    super(config, requestHandler);
+    super(config, createCustomHttpRequest(requestHandler as ConductorHttpRequest));
   }
   /**
    * Stops the interval that refreshes the token
@@ -36,7 +53,7 @@ export const baseOrkesConductorClient = <
   R extends { json: () => Promise<any> } = Response
 >(
   fetchFn: FetchFn<T, R>,
-  baseRequestHandler: ConductorHttpRequest = defaultRequestHandler
+  baseRequestHandler: ConductorHttpRequest
 ) => {
   const requestTokenForKeySecret = (
     keyId: string,
@@ -63,19 +80,19 @@ export const baseOrkesConductorClient = <
         );
       }
 
-      config.serverUrl = process.env.CONDUCTOR_SERVER_URL;
+      config.BASE = process.env.CONDUCTOR_SERVER_URL;
       config.keyId = process.env.CONDUCTOR_AUTH_KEY;
       config.keySecret = process.env.CONDUCTOR_AUTH_SECRET;
     }
 
     if (config?.keySecret != null && config?.keyId != null) {
       const {
-        serverUrl,
+        BASE,
         keyId,
         keySecret,
         refreshTokenInterval = REFRESH_TOKEN_IN_MILLISECONDS,
       } = config;
-      const tokenUrl = `${serverUrl}/token`;
+      const tokenUrl = `${BASE}/token`;
       const res = await requestTokenForKeySecret(keyId, keySecret, tokenUrl);
       const { token } = await (res as R).json();
 
@@ -99,7 +116,7 @@ export const baseOrkesConductorClient = <
 
       return conductorClientInstance;
     } else {
-      return new ConductorClient(config, requestHandler);
+      return new ConductorClient(config, createCustomHttpRequest(requestHandler));
     }
   };
 };
