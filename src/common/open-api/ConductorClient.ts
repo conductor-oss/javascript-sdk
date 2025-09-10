@@ -36,8 +36,6 @@ export class ConductorClient {
   public readonly humanTaskResource: HumanTaskResourceService;
   public readonly request: BaseHttpRequest;
 
-  public token?: string | Resolver<string>;
-
   constructor(
     config?: Partial<OpenAPIConfig>,
     HttpRequest: HttpRequestConstructor = NodeHttpRequest

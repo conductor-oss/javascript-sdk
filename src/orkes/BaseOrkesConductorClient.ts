@@ -1,6 +1,7 @@
 import type { ConductorClientAPIConfig, OpenAPIConfig } from "../common";
 import { BaseHttpRequest } from "../common";
 import { ConductorClient } from "../common";
+import { Resolver } from "../common/open-api/core/OpenAPI";
 import { OrkesHttpRequest } from "./request/OrkesHttpRequest";
 import { FetchFn, OrkesApiConfig } from "./types";
 
@@ -8,6 +9,8 @@ const REFRESH_TOKEN_IN_MILLISECONDS = 30 * 60 * 1000;
 
 export class AuthConductorClient extends ConductorClient {
   public intervalId?: NodeJS.Timeout;
+  public token?: string | Resolver<string>;
+  
   constructor(
     config: Partial<ConductorClientAPIConfig>,
     CustomHttpRequest?: new (config: OpenAPIConfig) => BaseHttpRequest
