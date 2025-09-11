@@ -6,28 +6,35 @@ describe("EventResourceService", () => {
     const orkesClient = await orkesConductorClient({ useEnvVars: true });
     const eventApi = orkesClient.eventResource;
 
-    const eventName = "jsSdkTest:eventHandler:1";
+    const [eventName, event, eventDescription, eventTagKey, eventTagValue] = [
+      "jsSdkTestEventName",
+      "jsSdkTest:eventHandler:1",
+      "jsSdkTestDescription",
+      "jsSdkTestTagKey",
+      "jsSdkTestTagValue",
+    ];
+
     const eventHandler = {
       name: eventName,
-      event: "jsSdkTest:eventHandler:1",
+      event: event,
       active: true,
       actions: [],
-      description: "jsSdkTestdescription",
-      tags: [{ key: "jsSdkTestTagkey", value: "jsSdkTestTagvalue" }],
+      description: eventDescription,
+      tags: [{ key: eventTagKey, value: eventTagValue }],
     };
 
     await eventApi.addEventHandler(eventHandler);
-    const eventHandlers = await eventApi.getEventHandlersForEvent(eventName);
+    const eventHandlers = await eventApi.getEventHandlersForEvent(event);
 
     expect(eventHandlers.length).toEqual(1);
-    expect(eventHandlers[0].description).toEqual("jsSdkTestdescription");
+    expect(eventHandlers[0].description).toEqual(eventDescription);
     expect(eventHandlers[0].tags).toEqual([
-      { key: "jsSdkTestTagkey", value: "jsSdkTestTagvalue" },
+      { key: eventTagKey, value: eventTagValue },
     ]);
 
     await eventApi.removeEventHandlerStatus(eventName);
     const eventHandlersAfterRemove = await eventApi.getEventHandlersForEvent(
-      eventName
+      event
     );
 
     expect(eventHandlersAfterRemove.length).toEqual(0);
