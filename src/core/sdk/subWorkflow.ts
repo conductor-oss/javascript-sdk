@@ -3,7 +3,8 @@ import { TaskType, SubWorkflowTaskDef } from "../../common/types";
 export const subWorkflowTask = (
   taskReferenceName: string,
   workflowName: string,
-  version?: number 
+  version?: number,
+  optional?: boolean
 ): SubWorkflowTaskDef => ({
   name: taskReferenceName,
   taskReferenceName,
@@ -12,4 +13,5 @@ export const subWorkflowTask = (
     version,
   },
   type: TaskType.SUB_WORKFLOW,
+  optional,
 });

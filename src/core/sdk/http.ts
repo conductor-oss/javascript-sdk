@@ -1,13 +1,10 @@
-import {
-  TaskType,
-  HttpTaskDef,
-  HttpInputParameters,
-} from "../../common/types";
+import { TaskType, HttpTaskDef, HttpInputParameters } from "../../common/types";
 
 export const httpTask = (
   taskReferenceName: string,
   inputParameters: HttpInputParameters,
-  asyncComplete = false
+  asyncComplete?: boolean,
+  optional?: boolean
 ): HttpTaskDef => ({
   name: taskReferenceName,
   taskReferenceName,
@@ -15,5 +12,6 @@ export const httpTask = (
     http_request: inputParameters,
   },
   asyncComplete,
+  optional,
   type: TaskType.HTTP,
 });

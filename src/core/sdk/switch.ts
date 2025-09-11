@@ -4,7 +4,8 @@ export const switchTask = (
   taskReferenceName: string,
   expression: string,
   decisionCases: Record<string, TaskDefTypes[]> = {},
-  defaultCase: TaskDefTypes[] = []
+  defaultCase: TaskDefTypes[] = [],
+  optional?: boolean
 ): SwitchTaskDef => ({
   name: taskReferenceName,
   taskReferenceName,
@@ -16,4 +17,5 @@ export const switchTask = (
   expression: "switchCaseValue",
   defaultCase,
   type: TaskType.SWITCH,
+  optional,
 });

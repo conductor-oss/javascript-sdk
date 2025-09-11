@@ -3,7 +3,8 @@ import { TaskType, DoWhileTaskDef, TaskDefTypes } from "../../common/types";
 export const doWhileTask = (
   taskRefName: string,
   terminationCondition: string,
-  tasks: TaskDefTypes[]
+  tasks: TaskDefTypes[],
+  optional?: boolean
 ): DoWhileTaskDef => ({
   name: taskRefName,
   taskReferenceName: taskRefName,
@@ -11,6 +12,7 @@ export const doWhileTask = (
   inputParameters: {},
   type: TaskType.DO_WHILE,
   loopOver: tasks,
+  optional,
 });
 
 const loopForCondition = (taskRefName: string, valueKey: string) =>
@@ -19,7 +21,8 @@ const loopForCondition = (taskRefName: string, valueKey: string) =>
 export const newLoopTask = (
   taskRefName: string,
   iterations: number,
-  tasks: TaskDefTypes[]
+  tasks: TaskDefTypes[],
+  optional?: boolean
 ): DoWhileTaskDef => ({
   name: taskRefName,
   taskReferenceName: taskRefName,
@@ -29,4 +32,5 @@ export const newLoopTask = (
   },
   type: TaskType.DO_WHILE,
   loopOver: tasks,
+  optional,
 });
