@@ -6,7 +6,8 @@ import {
 
 export const kafkaPublishTask = (
   taskReferenceName: string,
-  kafka_request: KafkaPublishInputParameters
+  kafka_request: KafkaPublishInputParameters,
+  optional?: boolean
 ): KafkaPublishTaskDef => ({
   taskReferenceName,
   name: taskReferenceName,
@@ -14,4 +15,5 @@ export const kafkaPublishTask = (
   inputParameters: {
     kafka_request,
   },
+  optional,
 });

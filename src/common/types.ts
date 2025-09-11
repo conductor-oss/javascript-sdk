@@ -74,6 +74,7 @@ export interface EventTaskDef extends CommonTaskDef {
   type: TaskType.EVENT;
   sink: string;
   asyncComplete?: boolean;
+  optional?: boolean;
 }
 
 export interface ForkJoinTaskDef extends CommonTaskDef {
@@ -120,6 +121,7 @@ export interface HttpTaskDef extends CommonTaskDef {
   };
   type: TaskType.HTTP;
   asyncComplete?: boolean;
+  optional?: boolean;
 }
 
 export interface InlineTaskInputParameters {
@@ -131,6 +133,7 @@ export interface InlineTaskInputParameters {
 export interface InlineTaskDef extends CommonTaskDef {
   type: TaskType.INLINE;
   inputParameters: InlineTaskInputParameters;
+  optional?: boolean;
 }
 
 interface ContainingQueryExpression {
@@ -141,6 +144,7 @@ interface ContainingQueryExpression {
 export interface JsonJQTransformTaskDef extends CommonTaskDef {
   type: TaskType.JSON_JQ_TRANSFORM;
   inputParameters: ContainingQueryExpression;
+  optional?: boolean;
 }
 
 export interface KafkaPublishInputParameters {
@@ -157,16 +161,19 @@ export interface KafkaPublishTaskDef extends CommonTaskDef {
     kafka_request: KafkaPublishInputParameters;
   };
   type: TaskType.KAFKA_PUBLISH;
+  optional?: boolean;
 }
 
 export interface SetVariableTaskDef extends CommonTaskDef {
   type: TaskType.SET_VARIABLE;
   inputParameters: Record<string, unknown>;
+  optional?: boolean;
 }
 
 export interface SimpleTaskDef extends CommonTaskDef {
   type: TaskType.SIMPLE;
   inputParameters?: Record<string, unknown>;
+  optional?: boolean;
 }
 
 export interface SubWorkflowTaskDef extends CommonTaskDef {
@@ -177,6 +184,7 @@ export interface SubWorkflowTaskDef extends CommonTaskDef {
     version?: number;
     taskToDomain?: Record<string, string>;
   };
+  optional?: boolean;
 }
 
 export interface SwitchTaskDef extends CommonTaskDef {
@@ -186,6 +194,7 @@ export interface SwitchTaskDef extends CommonTaskDef {
   defaultCase: TaskDefTypes[];
   evaluatorType: "value-param" | "javascript";
   expression: string;
+  optional?: boolean;
 }
 
 export interface TerminateTaskDef extends CommonTaskDef {
@@ -196,7 +205,6 @@ export interface TerminateTaskDef extends CommonTaskDef {
   };
   type: TaskType.TERMINATE;
   startDelay?: number;
-  optional?: boolean;
 }
 
 export interface WaitTaskDef extends CommonTaskDef {
@@ -205,6 +213,7 @@ export interface WaitTaskDef extends CommonTaskDef {
     duration?: string;
     until?: string;
   };
+  optional?: boolean;
 }
 
 export interface WorkflowDef
