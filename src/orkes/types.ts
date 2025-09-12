@@ -7,6 +7,7 @@ export type FetchFn<
 
 export interface OrkesApiConfig extends GenerateTokenRequest, OpenAPIConfig {
   serverUrl: string;
+  refreshTokenInterval: number;
 }
 
 export type HttpRequestConstructor = new (
