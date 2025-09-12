@@ -3,7 +3,7 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { BaseHttpRequest } from "./core/BaseHttpRequest";
-import type { OpenAPIConfig, Resolver } from "./core/OpenAPI";
+import type { OpenAPIConfig } from "./core/OpenAPI";
 import { EventResourceService } from "./services/EventResourceService";
 import { HealthCheckResourceService } from "./services/HealthCheckResourceService";
 import { MetadataResourceService } from "./services/MetadataResourceService";
