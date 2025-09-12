@@ -1,16 +1,14 @@
-import type {
-  GenerateTokenRequest,
-  OpenAPIConfig,
-} from "../common";
+import type { BaseHttpRequest, GenerateTokenRequest, OpenAPIConfig } from "../common";
 
 export type FetchFn<
   T = RequestInit,
   R extends { json: () => Promise<any> } = Response
 > = (input: RequestInfo, init?: T) => Promise<R>;
 
-export interface OrkesConductorClientAPIConfig extends OpenAPIConfig {
-  useEnvVars: boolean;
+export interface OrkesApiConfig extends GenerateTokenRequest, OpenAPIConfig {
   serverUrl: string;
 }
 
-export type OrkesApiConfig = OrkesConductorClientAPIConfig & GenerateTokenRequest;
+export type HttpRequestConstructor = new (
+  config: OpenAPIConfig
+) => BaseHttpRequest;

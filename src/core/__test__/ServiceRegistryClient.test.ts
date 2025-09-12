@@ -6,7 +6,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 describe("ServiceRegistryClient", () => {
-    const clientPromise = orkesConductorClient({useEnvVars: true});
+    const clientPromise = orkesConductorClient();
     let serviceRegistryClient: ServiceRegistryClient;
     const testServicesToCleanup: string[] = [];
 

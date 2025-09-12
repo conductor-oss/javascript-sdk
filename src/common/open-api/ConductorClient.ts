@@ -1,3 +1,4 @@
+/* generated using openapi-typescript-codegen -- do not edit */
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
@@ -59,5 +60,4 @@ export class ConductorClient {
     this.humanTask = new HumanTaskService(this.request);
     this.humanTaskResource = new HumanTaskResourceService(this.request);
   }
-  stop() {}
 }

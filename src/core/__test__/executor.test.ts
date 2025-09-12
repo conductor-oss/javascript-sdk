@@ -11,7 +11,7 @@ import { httpTask } from "../sdk";
 import { TaskClient } from "../taskClient";
 
 describe("Executor", () => {
-  const clientPromise = orkesConductorClient({ useEnvVars: true });
+  const clientPromise = orkesConductorClient();
 
   jest.setTimeout(15000);
   const name = `testWorkflow-${Date.now()}`;
@@ -179,7 +179,7 @@ describe("Execute with Return Strategy and Consistency", () => {
     WAIT_SIGNAL_TEST: 'wait_signal_test'
   };
 
-  const clientPromise = orkesConductorClient({ useEnvVars: true });
+  const clientPromise = orkesConductorClient();
   jest.setTimeout(300000);
 
   let client: any;

@@ -3,7 +3,7 @@ import { orkesConductorClient } from "../../../orkes";
 
 describe("EventResourceService", () => {
   test("Should create an event handler with description and tags and then delete it", async () => {
-    const orkesClient = await orkesConductorClient({ useEnvVars: true });
+    const orkesClient = await orkesConductorClient();
     const eventApi = orkesClient.eventResource;
 
     const [eventName, event, eventDescription, eventTagKey, eventTagValue] = [

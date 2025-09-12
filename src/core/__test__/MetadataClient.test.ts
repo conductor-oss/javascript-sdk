@@ -4,7 +4,7 @@ import { taskDefinition } from "../sdk";
 import { orkesConductorClient } from "../../orkes";
 
 describe("MetadataClient", () => {
-  const clientPromise = orkesConductorClient({ useEnvVars: true });
+  const clientPromise = orkesConductorClient();
 
   jest.setTimeout(15000);
   test("Should register a task definition", async () => {
