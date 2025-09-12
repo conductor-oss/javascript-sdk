@@ -3,14 +3,18 @@ import { BaseHttpRequest } from "../common";
 import { ConductorClient } from "../common";
 import { Resolver } from "../common/open-api/core/OpenAPI";
 import { OrkesHttpRequest } from "./request/OrkesHttpRequest";
-import { FetchFn, OrkesApiConfig, OrkesConductorClientAPIConfig } from "./types";
+import {
+  FetchFn,
+  OrkesApiConfig,
+  OrkesConductorClientAPIConfig,
+} from "./types";
 
 const REFRESH_TOKEN_IN_MILLISECONDS = 30 * 60 * 1000;
 
 export class AuthConductorClient extends ConductorClient {
   public intervalId?: NodeJS.Timeout;
   public token?: string | Resolver<string>;
-  
+
   constructor(
     config: Partial<OrkesConductorClientAPIConfig>,
     CustomHttpRequest?: new (config: OpenAPIConfig) => BaseHttpRequest
@@ -35,7 +39,7 @@ export const baseOrkesConductorClient = <
   T = RequestInit,
   R extends { json: () => Promise<any> } = Response
 >(
-  fetchFn: FetchFn<T, R>,
+  fetchFn: FetchFn<T, R>
 ) => {
   const requestTokenForKeySecret = (
     keyId: string,
@@ -53,34 +57,24 @@ export const baseOrkesConductorClient = <
 
   return async (
     config?: Partial<OrkesApiConfig>,
-    CustomHttpRequest: new (config: OpenAPIConfig) => BaseHttpRequest = OrkesHttpRequest
+    CustomHttpRequest: new (
+      config: OpenAPIConfig
+    ) => BaseHttpRequest = OrkesHttpRequest
   ): Promise<ConductorClient> => {
-    if (config?.useEnvVars) {
-      if (!process.env.CONDUCTOR_SERVER_URL) {
-        throw new Error(
-          "Environment variable CONDUCTOR_SERVER_URL is not defined."
-        );
-      }
+    const serverUrl = process.env.CONDUCTOR_SERVER_URL || config?.serverUrl;
+    const keyId = process.env.CONDUCTOR_AUTH_KEY || config?.keyId;
+    const keySecret = process.env.CONDUCTOR_AUTH_SECRET || config?.keySecret;
+    const refreshTokenInterval = config?.refreshTokenInterval || REFRESH_TOKEN_IN_MILLISECONDS;
 
-      config.BASE = process.env.CONDUCTOR_SERVER_URL;
-      config.keyId = process.env.CONDUCTOR_AUTH_KEY;
-      config.keySecret = process.env.CONDUCTOR_AUTH_SECRET;
-    }
-
-    if (config?.keySecret != null && config?.keyId != null) {
-      const {
-        BASE,
-        keyId,
-        keySecret,
-        refreshTokenInterval = REFRESH_TOKEN_IN_MILLISECONDS,
-      } = config;
-      const tokenUrl = `${BASE}/token`;
+    if (keySecret != null && keyId != null) {
+      const tokenUrl = `${serverUrl}/token`;
       const res = await requestTokenForKeySecret(keyId, keySecret, tokenUrl);
       const { token } = await (res as R).json();
 
       const conductorClientInstance = new AuthConductorClient(
         {
           ...config,
+          BASE: serverUrl,
           TOKEN: token,
         },
         CustomHttpRequest
