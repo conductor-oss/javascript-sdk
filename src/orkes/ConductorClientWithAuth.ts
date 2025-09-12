@@ -21,18 +21,18 @@ export class ConductorClientWithAuth extends ConductorClient {
     keySecret: string,
     refreshTokenInterval: number
   ) {
-    const response = (await this.tokenResource.generateToken({
+    const response = await this.tokenResource.generateToken({
       keyId,
       keySecret,
-    })) as { token: string };
+    });
     this.setToken(response.token);
 
     if (response.token && refreshTokenInterval > 0) {
       const intervalId = setInterval(async () => {
-        const response = (await this.tokenResource.generateToken({
+        const response = await this.tokenResource.generateToken({
           keyId,
           keySecret,
-        })) as { token: string };
+        });
         this.setToken(response.token);
       }, refreshTokenInterval);
       this.intervalId = intervalId;
