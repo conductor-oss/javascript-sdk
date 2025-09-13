@@ -2,54 +2,37 @@
 
 The `conductor-javascript` repository provides the client SDKs to build task workers in javascript/typescript.
 
-Building the task workers in javascript mainly consists of the following steps:
+## Getting Started
 
-1. Setup conductor-javascript package
-2. [Create and run task workers](workers_sdk.md)
-3. [Create workflows using code](workflow_sdk.md)
-   
-### Setup Conductor Javascript Package
+Check out [Getting Started](docs/getting-started.md) to learn how to get started with the JS SDK.
 
-* Get the package from npm
+## Create Workflows, Tasks, and more.
 
-```shell
-npm i @io-orkes/conductor-javascript
-```
-or
+See [definitions](docs/definitions.md) to learn how to create workflows, tasks, and more with the JS SDK.
 
-```shell
-yarn add @io-orkes/conductor-javascript
-```
+## Running Workflows
 
-## Configurations
+Read the [execute](docs/execute.md) page to learn how to execute Workflows.
 
-### Authentication Settings (Optional)
-Configure the authentication settings if your Conductor server requires authentication.
-* keyId: Key for authentication.
-* keySecret: Secret for the key.
+## Running Workers
 
-### Access Control Setup
-See [Access Control](https://orkes.io/content/docs/getting-started/concepts/access-control) for more details on role-based access control with Conductor and generating API keys for your environment.
+See [create and run task workers](docs/workers.md) to learn how to create and run task workers with the JS SDK.
 
-### Configure API Client
+## Search for Executions
 
-```typescript
-/**
- * Application keys generated from the Application menu > Create Application
- * then edit and create Access Keys
- *
- */
-import { OrkesApiConfig, orkesConductorClient } from "@io-orkes/conductor-javascript";
+See [search for executions](docs/search.md) to learn how to query the executions.
 
-const config: Partial<OrkesApiConfig> = {
-  keyId: "XXX", // optional
-  keySecret: "XXXX", // optional
-  refreshTokenInterval: 0, // optional (in milliseconds) defaults to 30 minutes (30 * 60 * 1000). 0 no refresh
-  serverUrl: "https://play.orkes.io/api",
-};
+## About
 
-orkesConductorClient(config).then(client => ..... );
+Find more about the design decisions behind this implementation in the [about](docs/about.md) page.
 
-```
+## Other SDKs
 
-### Next: [Create and run task workers](workers_sdk.md)
+* [Python](https://github.com/conductor-sdk/conductor-python)
+* [C#](https://github.com/conductor-sdk/conductor-csharp)
+* [Java](https://github.com/orkes-io/orkes-conductor-client)
+* [Go](https://github.com/conductor-sdk/conductor-go)
+* [Clojure](https://github.com/conductor-sdk/conductor-clojure)
+
+
+

@@ -171,4 +171,11 @@ executor.updateTaskByRefName(
 await executor.updateTask(taskId, executionId, "COMPLETED", newChange);
 ```
 
-### Next: [Create and Execute Workflows](workflow_sdk.md)
+### More Docs
+
+* [Getting Started](getting-started.md)
+* [Create Workflows](create.md)
+* [Execute Workflows](execute.md)
+* [Search for entities](search.md)
+* [About](about.md)
+
