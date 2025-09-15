@@ -7,9 +7,9 @@ export class ConductorClientWithAuth extends ConductorClient {
 
   constructor(
     config: Partial<OpenAPIConfig>,
-    CustomHttpRequest?: HttpRequestConstructor
+    HttpRequest?: HttpRequestConstructor
   ) {
-    super(config, CustomHttpRequest);
+    super(config, HttpRequest);
   }
 
   private setToken(token: string) {

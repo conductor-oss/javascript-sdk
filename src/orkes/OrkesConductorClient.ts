@@ -7,13 +7,13 @@ const REFRESH_TOKEN_IN_MILLISECONDS = 30 * 60 * 1000;
 /**
  * Takes a config with keyId and keySecret returns a promise with an instance of ConductorClient
  *
- * @param config ConductorClientConfig with keyId and keySecret
- * @param CustomHttpRequest (optional) custom http request handler class extending BaseHttpRequest
+ * @param config (optional) OrkesApiConfig with keyId and keySecret
+ * @param HttpRequest (optional) Custom request class, could be used to pass in a custom fetch function
  * @returns
  */
 export const orkesConductorClient = async (
   config?: Partial<OrkesApiConfig>,
-  CustomHttpRequest: HttpRequestConstructor = OrkesHttpRequest
+  HttpRequest: HttpRequestConstructor = OrkesHttpRequest
 ) => {
   const serverUrl = process.env.CONDUCTOR_SERVER_URL || config?.serverUrl;
 
@@ -24,7 +24,7 @@ export const orkesConductorClient = async (
 
   const conductorClientWithAuth = new ConductorClientWithAuth(
     { ...config, BASE: serverUrl },
-    CustomHttpRequest
+    HttpRequest
   );
 
   if (keyId && keySecret) {
