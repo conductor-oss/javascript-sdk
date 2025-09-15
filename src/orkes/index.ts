@@ -1,4 +1,4 @@
-export * from "./OrkesConductorClient";
+export * from "./createOrkesConductorClient";
 export * from "./ConductorClientWithAuth";
 export * from "./request/request";
 

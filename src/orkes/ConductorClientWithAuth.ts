@@ -1,18 +1,17 @@
-import type { OpenAPIConfig } from "../common";
+import type { BaseHttpRequest, OpenAPIConfig } from "../common";
 import { ConductorClient } from "../common";
-import { HttpRequestConstructor } from "./types";
 
 export class ConductorClientWithAuth extends ConductorClient {
   private intervalId?: NodeJS.Timeout;
 
   constructor(
     config: Partial<OpenAPIConfig>,
-    HttpRequest?: HttpRequestConstructor
+    HttpRequest?: new (config: OpenAPIConfig) => BaseHttpRequest
   ) {
     super(config, HttpRequest);
   }
 
-  private setToken(token: string) {
+  private setToken(token: string | undefined) {
     this.request.config.TOKEN = token;
   }
 
@@ -40,13 +39,9 @@ export class ConductorClientWithAuth extends ConductorClient {
   }
 
   public deAuthorize(): void {
-    this.clearTokenInterval();
-    this.request.config.TOKEN = undefined;
-  }
-
-  public clearTokenInterval(): void {
-    if (this.intervalId != null) {
+    if (this.intervalId) {
       clearInterval(this.intervalId);
     }
+    this.setToken(undefined);
   }
 }

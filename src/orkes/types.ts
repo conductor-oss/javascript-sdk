@@ -1,4 +1,4 @@
-import type { BaseHttpRequest, GenerateTokenRequest, OpenAPIConfig } from "../common";
+import type { GenerateTokenRequest, OpenAPIConfig } from "../common";
 
 export type FetchFn<
   T = RequestInit,
@@ -9,7 +9,3 @@ export interface OrkesApiConfig extends GenerateTokenRequest, OpenAPIConfig {
   serverUrl: string;
   refreshTokenInterval: number;
 }
-
-export type HttpRequestConstructor = new (
-  config: OpenAPIConfig
-) => BaseHttpRequest;

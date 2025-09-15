@@ -294,7 +294,7 @@ const catchErrorCodes = (
  * @returns CancelablePromise<T>
  * @throws ApiError
  */
-export const orkesRequest = <T>(
+export const request = <T>(
   config: OpenAPIConfig,
   options: ApiRequestOptions,
   fetchFn: FetchFn = fetch
