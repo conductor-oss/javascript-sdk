@@ -16,19 +16,28 @@ import {
 export class OrkesHttpRequest extends BaseHttpRequest {
   private fetchFn: FetchFn;
 
-  constructor(config: OpenAPIConfig) {
+  constructor(config: OpenAPIConfig, customFetch?: FetchFn) {
     super(config);
-    const undiciHttp2Agent = new UndiciAgent({ allowH2: true });
-    const undiciHttp2Fetch = async (
-      input: UndiciRequestInfo,
-      init: UndiciRequestInit = {}
-    ) => {
-      return undiciFetch(input, {
-        ...init,
-        dispatcher: undiciHttp2Agent,
-      });
-    };
-    this.fetchFn = undiciHttp2Fetch as FetchFn;
+
+    if (customFetch) {
+      this.fetchFn = customFetch;
+    } else if (process?.release?.name === "node") {
+      // Node.js environment - use undici to make http2 requests
+      const undiciHttp2Agent = new UndiciAgent({ allowH2: true });
+      const undiciHttp2Fetch = async (
+        input: UndiciRequestInfo,
+        init?: UndiciRequestInit
+      ) => {
+        return undiciFetch(input, {
+          ...init,
+          dispatcher: undiciHttp2Agent,
+        });
+      };
+      this.fetchFn = undiciHttp2Fetch as FetchFn;
+    } else {
+      // Browser environment - use native fetch with http2 support
+      this.fetchFn = fetch;
+    }
   }
 
   public request<T>(options: ApiRequestOptions): CancelablePromise<T> {
