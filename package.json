@@ -88,5 +88,8 @@
     "suiteNameTemplate": "{filepath}",
     "classNameTemplate": "{classname}",
     "titleTemplate": "{title}"
+  },
+  "dependencies": {
+    "undici": "^7.16.0"
   }
 }

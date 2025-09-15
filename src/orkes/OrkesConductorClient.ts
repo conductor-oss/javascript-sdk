@@ -16,6 +16,9 @@ export const orkesConductorClient = async (
   CustomHttpRequest: HttpRequestConstructor = OrkesHttpRequest
 ) => {
   const serverUrl = process.env.CONDUCTOR_SERVER_URL || config?.serverUrl;
+
+  if (!serverUrl) throw new Error("Conductor server URL is not set");
+
   const keyId = process.env.CONDUCTOR_AUTH_KEY || config?.keyId;
   const keySecret = process.env.CONDUCTOR_AUTH_SECRET || config?.keySecret;
 
