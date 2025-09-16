@@ -89,7 +89,7 @@
     "classNameTemplate": "{classname}",
     "titleTemplate": "{title}"
   },
-  "dependencies": {
+  "optionalDependencies": {
     "undici": "^7.16.0"
   }
 }

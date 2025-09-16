@@ -22,7 +22,7 @@ export const orkesConductorClient = async (
 
   const conductorClientWithAuth = new ConductorClientWithAuth(
     { ...config, BASE: serverUrl },
-    createOrkesHttpRequest(resolveFetchFn(customFetch))
+    createOrkesHttpRequest(await resolveFetchFn(customFetch))
   );
 
   if (keyId && keySecret) {
