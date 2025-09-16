@@ -9,6 +9,7 @@ import { REFRESH_TOKEN_IN_MILLISECONDS } from "./constants";
  *
  * @param config (optional) OrkesApiConfig with keyId and keySecret
  * @param customFetch (optional) custom fetch function
+ * @param requestHandler DEPRECATED! (optional) ConductorHttpRequest handler, replaced with customFetch
  * @returns
  */
 export const orkesConductorClient = async (
