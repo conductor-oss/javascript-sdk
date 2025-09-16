@@ -2,7 +2,7 @@ import type { BaseHttpRequest, OpenAPIConfig } from "../common";
 import { ConductorClient } from "../common";
 
 export class ConductorClientWithAuth extends ConductorClient {
-  private intervalId?: NodeJS.Timeout;
+  private intervalId?: NodeJS.Timeout | undefined;
 
   constructor(
     config: Partial<OpenAPIConfig>,
@@ -20,6 +20,8 @@ export class ConductorClientWithAuth extends ConductorClient {
     keySecret: string,
     refreshTokenInterval: number
   ) {
+    this.deAuthorize();
+
     const response = await this.tokenResource.generateToken({
       keyId,
       keySecret,
@@ -38,9 +40,10 @@ export class ConductorClientWithAuth extends ConductorClient {
     }
   }
 
-  public deAuthorize(): void {
+  public deAuthorize() {
     if (this.intervalId) {
       clearInterval(this.intervalId);
+      this.intervalId = undefined;
     }
     this.setToken(undefined);
   }
