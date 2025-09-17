@@ -51,7 +51,7 @@ describe("TaskManager", () => {
 
     const workflowStatus = await TestUtil.waitForWorkflowCompletion(executor, executionId, BASE_TIME * 4);
 
-    expect(workflowStatus.status).toEqual("COMPLETED");
+    expect(workflowStatus.status).toEqual("COMPLETED123");
 
     await manager.stopPolling();
   });
