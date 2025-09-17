@@ -28,10 +28,17 @@ jobs:
           node-version: "22"
       - name: Install dependencies
         run: npm ci
-      - name: Run Tests
-        run: |
-          npm test -- --ci --reporters='["github-actions", {"silent": false}]' --reporters=default
+      - name: Run Tests and Publish Annotations
+        run: npm test -- --ci --reporters=default --reporters=jest-junit
         env:
           CONDUCTOR_SERVER_URL: ${{ vars.SERVER_URL }}
           CONDUCTOR_AUTH_KEY: ${{ secrets.AUTH_KEY }}
           CONDUCTOR_AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+      - name: Publish Test Results
+        uses: dorny/test-reporter@v2
+        if: ${{ !cancelled() }}
+        with:
+          name: Test report
+          path: reports/jest-junit.xml
+          reporter: jest-junit
+          fail-on-error: false
