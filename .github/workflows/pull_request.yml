@@ -15,7 +15,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Run the linter
-        run: npm run lint -- --format github
+        run: npm run lint -- --format stylish
 
   unit-tests:
     runs-on: ubuntu-latest
@@ -29,8 +29,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Run Tests
-        run: npm test -- --ci --reporters=default --reporters=github-actions
+        run: npm test -- --ci --reporters=default --reporters=github-actions --reporters=json
         env:
           CONDUCTOR_SERVER_URL: ${{ vars.SERVER_URL }}
           CONDUCTOR_AUTH_KEY: ${{ secrets.AUTH_KEY }}
           CONDUCTOR_AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+      - name: Publish Test Summary
+        uses: test-summary/action@v2.4
+        with:
+          paths: "test-results.json"
+        if: always()
