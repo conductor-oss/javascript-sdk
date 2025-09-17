@@ -5,7 +5,7 @@ import { TaskType } from "../common";
 import { TaskRunner } from "../task";
 
 describe("TaskManager", () => {
-  const clientPromise = orkesConductorClient({ useEnvVars: true });
+  const clientPromise = orkesConductorClient();
 
   jest.setTimeout(20000);
   test("worker example ", async () => {

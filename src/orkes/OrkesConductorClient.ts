@@ -1,19 +1,37 @@
-import type { ConductorHttpRequest } from "../common";
-import { baseOrkesConductorClient } from "./BaseOrkesConductorClient";
+import { ConductorClientWithAuth } from "./ConductorClientWithAuth";
+import { resolveFetchFn, resolveOrkesConfig } from "./helpers";
+import { createOrkesHttpRequest } from "./request/createOrkesHttpRequest";
+import type { FetchFn, OrkesApiConfig } from "./types";
+import { REFRESH_TOKEN_IN_MILLISECONDS } from "./constants";
 
-const defaultRequestHandler: ConductorHttpRequest = (
-  request,
-  config,
-  options
-) => request(config, options);
 /**
  * Takes a config with keyId and keySecret returns a promise with an instance of ConductorClient
  *
- * @param config ConductorClientConfig with keyId and keySecret
- * @param requestHandler (optional) ConductorHttpRequest handler
+ * @param config (optional) OrkesApiConfig with keyId and keySecret
+ * @param customFetch (optional) custom fetch function
+ * @param requestHandler DEPRECATED! (optional) ConductorHttpRequest handler, replaced with customFetch
  * @returns
  */
-export const orkesConductorClient = baseOrkesConductorClient(
-  fetch,
-  defaultRequestHandler
-);
+export const orkesConductorClient = async (
+  config?: Partial<OrkesApiConfig>,
+  customFetch?: FetchFn
+) => {
+  const { serverUrl, keyId, keySecret } = resolveOrkesConfig(config);
+
+  if (!serverUrl) throw new Error("Conductor server URL is not set");
+
+  const conductorClientWithAuth = new ConductorClientWithAuth(
+    { ...config, BASE: serverUrl },
+    createOrkesHttpRequest(await resolveFetchFn(customFetch))
+  );
+
+  if (keyId && keySecret) {
+    await conductorClientWithAuth.authorize(
+      keyId,
+      keySecret,
+      config?.refreshTokenInterval || REFRESH_TOKEN_IN_MILLISECONDS
+    );
+  }
+
+  return conductorClientWithAuth;
+};

@@ -1,0 +1,1 @@
+export const REFRESH_TOKEN_IN_MILLISECONDS = 30 * 60 * 1000;

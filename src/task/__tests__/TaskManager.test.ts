@@ -8,7 +8,7 @@ import { TestUtil } from "../../core/__test__/utils/test-util";
 
 const BASE_TIME = 500;
 describe("TaskManager", () => {
-  const clientPromise = orkesConductorClient({ useEnvVars: true, refreshTokenInterval: 0 });
+  const clientPromise = orkesConductorClient();
 
   jest.setTimeout(15000);
 

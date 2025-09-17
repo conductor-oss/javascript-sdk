@@ -4,7 +4,7 @@ import { WorkflowExecutor, simpleTask } from "../../core";
 import { orkesConductorClient } from "../../orkes";
 
 describe("TaskManager", () => {
-  const clientPromise = orkesConductorClient({ useEnvVars: true });
+  const clientPromise = orkesConductorClient();
 
   jest.setTimeout(15000);
   test("worker example ", async () => {

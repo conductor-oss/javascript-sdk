@@ -44,7 +44,7 @@ import { OrkesApiConfig, orkesConductorClient } from "@io-orkes/conductor-javasc
 const config: Partial<OrkesApiConfig> = {
   keyId: "XXX", // optional
   keySecret: "XXXX", // optional
-  refreshTokenInterval: 0, // optional (in milliseconds) defaults to 30 minutes (30 * 60 * 1000). 0 no refresh
+  refreshTokenInterval: 0, // optional (in milliseconds) | defaults to 30 minutes | 0 = no refresh
   serverUrl: "https://play.orkes.io/api",
 };
 

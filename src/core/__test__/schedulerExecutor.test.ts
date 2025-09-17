@@ -4,7 +4,7 @@ import { SchedulerClient } from "../schedulerClient";
 import { SaveScheduleRequest, TaskType, WorkflowDef } from "../../common";
 
 describe("ScheduleExecutor", () => {
-  const clientPromise = orkesConductorClient({ useEnvVars: true });
+  const clientPromise = orkesConductorClient();
   jest.setTimeout(15000);
 
   const name = `testSchedule_${Date.now()}`;

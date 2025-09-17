@@ -8,7 +8,7 @@ describe("WorkflowResourceService", () => {
   jest.setTimeout(120000);
 
   test("Should test a workflow", async () => {
-    const client = await orkesConductorClient({ useEnvVars: true });
+    const client = await orkesConductorClient();
     const metadataClient = new MetadataClient(client);
     const tasks: TaskDefTypes[] = [
       simpleTask("simple_ref", "le_simple_task", {}),

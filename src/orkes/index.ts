@@ -1,6 +1,5 @@
 export * from "./OrkesConductorClient";
-export * from "./BaseOrkesConductorClient";
+export * from "./ConductorClientWithAuth";
 export * from "./request/request";
 
-import type { FetchFn, OrkesApiConfig } from "./types";
-export type { FetchFn, OrkesApiConfig };
+export type { FetchFn, OrkesApiConfig } from "./types";
