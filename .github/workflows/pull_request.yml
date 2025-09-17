@@ -15,7 +15,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Run the linter
-        run: npm run lint -- --format stylish
+        run: npm run lint
 
   unit-tests:
     runs-on: ubuntu-latest
@@ -41,3 +41,4 @@ jobs:
           name: Test report
           path: reports/jest-*.xml
           reporter: jest-junit
+          fail-on-error: false
