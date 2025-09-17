@@ -57,7 +57,7 @@ describe("ServiceRegistryClient", () => {
         // Register the service registry
         await expect(
             serviceRegistryClient.addOrUpdateService(testServiceRegistry)
-        ).resolves.not.toThrowError();
+        ).resolves.not.toThrow();
 
         // Retrieve the service registry from the API
         const retrievedServiceRegistry = await serviceRegistryClient.getService(
@@ -98,7 +98,7 @@ describe("ServiceRegistryClient", () => {
         // Register the service registry
         await expect(
             serviceRegistryClient.addOrUpdateService(testServiceRegistry)
-        ).resolves.not.toThrowError();
+        ).resolves.not.toThrow();
 
         // Verify it was added
         await expect(
@@ -108,7 +108,7 @@ describe("ServiceRegistryClient", () => {
         // Remove the service registry
         await expect(
             serviceRegistryClient.removeService(testServiceRegistry.name)
-        ).resolves.not.toThrowError();
+        ).resolves.not.toThrow();
 
         // Verify it was removed - should throw an error when trying to get it
         await expect(
@@ -130,7 +130,7 @@ describe("ServiceRegistryClient", () => {
         // Register the service registry
         await expect(
             serviceRegistryClient.addOrUpdateService(testServiceRegistry)
-        ).resolves.not.toThrowError();
+        ).resolves.not.toThrow();
 
         // Create a test service method
         const testServiceMethod = {
@@ -148,7 +148,7 @@ describe("ServiceRegistryClient", () => {
         // Add the service method
         await expect(
             serviceRegistryClient.addOrUpdateServiceMethod(testServiceRegistry.name, testServiceMethod)
-        ).resolves.not.toThrowError();
+        ).resolves.not.toThrow();
 
         // Get the service registry to verify method was added
         const retrievedServiceRegistry = await serviceRegistryClient.getService(

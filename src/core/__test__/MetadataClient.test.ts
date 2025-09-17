@@ -34,7 +34,7 @@ describe("MetadataClient", () => {
 
     await expect(
       metadataClient.registerTask(newTaskDefinition)
-    ).resolves.not.toThrowError();
+    ).resolves.not.toThrow();
     const taskDefinitionFromApi = await client.metadataResource.getTaskDef(
       newTaskDefinition.name
     );
@@ -84,7 +84,7 @@ describe("MetadataClient", () => {
 
     await expect(
       metadataClient.updateTask(newTaskDefinition)
-    ).resolves.not.toThrowError();
+    ).resolves.not.toThrow();
     const taskDefinitionFromApi = await client.metadataResource.getTaskDef(
       newTaskDefinition.name
     );
@@ -114,10 +114,10 @@ describe("MetadataClient", () => {
 
     await expect(
       metadataClient.unregisterTask("test_task_definition")
-    ).resolves.not.toThrowError();
+    ).resolves.not.toThrow();
 
     await expect(client.metadataResource.getTaskDef(
       name
-    )).rejects.toThrowError();
+    )).rejects.toThrow();
   })
 });

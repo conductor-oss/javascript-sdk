@@ -5,6 +5,7 @@ import { TaskRunner } from "../TaskRunner";
 import { RunnerArgs } from "../types";
 import { mockLogger } from "./mockLogger";
 import { TaskResourceService } from "../../common/open-api";
+import { TaskResultStatusEnum } from "../../common/open-api/models/TaskResultStatusEnum";
 
 test("polls tasks", async () => {
   const taskClientStub: Mocked<
@@ -58,7 +59,7 @@ test("polls tasks", async () => {
   const expected = {
     taskId,
     workflowInstanceId,
-    status: "COMPLETED",
+    status: TaskResultStatusEnum.COMPLETED,
     workerId: workerID,
     outputData: {
       hello: "from worker",
@@ -116,7 +117,7 @@ test("Should set the task as failed if the task has an error", async () => {
     taskId,
     workflowInstanceId,
     workerId: workerID,
-    status: "FAILED",
+    status: TaskResultStatusEnum.FAILED,
     outputData: {},
     reasonForIncompletion: "Error from worker",
   };
