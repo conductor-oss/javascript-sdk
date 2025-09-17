@@ -29,13 +29,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Run Tests
-        run: npm test -- --ci --reporters=github-actions --json --outputFile=test-results.json
+        run: npm test -- --ci --reporters=default --reporters=jest-junit
         env:
           CONDUCTOR_SERVER_URL: ${{ vars.SERVER_URL }}
           CONDUCTOR_AUTH_KEY: ${{ secrets.AUTH_KEY }}
           CONDUCTOR_AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
-      - name: Publish Test Summary
-        uses: test-summary/action@v2.4
+      - name: Publish Test Results
+        uses: dorny/test-reporter@v2
+        if: ${{ !cancelled() }}
         with:
-          paths: "test-results.json"
-        if: always()
+          name: Test report
+          path: reports/jest-*.xml
+          reporter: jest-junit
