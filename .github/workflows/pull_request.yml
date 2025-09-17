@@ -29,16 +29,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Run Tests
-        run: npm test -- --ci --reporters=default --reporters=github-actions --reporters=jest-junit
+        run: npm test -- --ci
         env:
           CONDUCTOR_SERVER_URL: ${{ vars.SERVER_URL }}
           CONDUCTOR_AUTH_KEY: ${{ secrets.AUTH_KEY }}
           CONDUCTOR_AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
-      - name: Publish Test Results
-        uses: dorny/test-reporter@v2
-        if: ${{ !cancelled() }}
-        with:
-          name: Test report
-          path: reports/jest-*.xml
-          reporter: jest-junit
-          fail-on-error: false
