@@ -9,5 +9,4 @@ export default {
     "**/?(*.)+(spec|test).[tj]s?(x)",
   ],
   transformIgnorePatterns: ["/node_modules/", "\\.pnp\\.[^\\/]+$"],
-  reporters: [["github-actions", { silent: false }], "default"],
 };

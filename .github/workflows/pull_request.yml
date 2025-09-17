@@ -29,7 +29,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Run Tests
-        run: npm test -- --ci
+        run: |
+          npm test -- --ci --reporters='["github-actions", {"silent": false}]' --reporters=default
         env:
           CONDUCTOR_SERVER_URL: ${{ vars.SERVER_URL }}
           CONDUCTOR_AUTH_KEY: ${{ secrets.AUTH_KEY }}
