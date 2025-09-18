@@ -1,7 +1,8 @@
 import eslint from '@eslint/js';
 import tseslint from 'typescript-eslint';
+import { defineConfig } from "eslint/config";
 
-export default tseslint.config(
+export default defineConfig(
     eslint.configs.recommended,
     tseslint.configs.recommended, // to remove
     //tseslint.configs.strict, // to add
@@ -14,7 +15,7 @@ export default tseslint.config(
             }], //to remove
             '@typescript-eslint/explicit-function-return-type': 'off', // to remove
             '@typescript-eslint/explicit-module-boundary-types': 'off', // to remove
-            '@typescript-eslint/no-explicit-any': 'off', // to remove
+            //'@typescript-eslint/no-explicit-any': 'off', // to remove
             '@typescript-eslint/no-wrapper-object-types': 'off', // to remove
             '@typescript-eslint/no-unsafe-function-type': 'off', // to remove
         },

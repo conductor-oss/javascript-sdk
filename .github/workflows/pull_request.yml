@@ -12,10 +12,15 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Install dependencies
+      - name: Install Dependencies
         run: npm ci
-      - name: Run the linter
-        run: npm run lint
+      - name: Run Linter
+        run: npm run lint -- --output-file reports/eslint_report.json --format json
+        continue-on-error: true
+      - name: Add Linter Annotations
+        uses: ataylorme/eslint-annotate-action@v3
+        with:
+          report-json: "reports/eslint_report.json"
 
   unit-tests:
     runs-on: ubuntu-latest
@@ -28,7 +33,7 @@ jobs:
           node-version: "22"
       - name: Install dependencies
         run: npm ci
-      - name: Run Tests and Publish Annotations
+      - name: Run Tests and Add Annotations
         run: npm test -- --ci --reporters=default --reporters=github-actions --reporters=jest-junit
         env:
           CONDUCTOR_SERVER_URL: ${{ vars.SERVER_URL }}
