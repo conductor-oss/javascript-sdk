@@ -41,3 +41,28 @@ jobs:
           name: Test report
           path: reports/jest-junit.xml
           reporter: jest-junit
+
+  tests-v4:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install Dependencies
+        run: npm ci
+      - name: Run Tests and Add Annotations
+        run: npm test -- --ci --reporters=default --reporters=github-actions --reporters=jest-junit
+        env:
+          CONDUCTOR_SERVER_URL: ${{ vars.SERVER_URL_V4 }}
+          CONDUCTOR_AUTH_KEY: ${{ secrets.AUTH_KEY_V4 }}
+          CONDUCTOR_AUTH_SECRET: ${{ secrets.AUTH_SECRET_V4 }}
+      - name: Publish Dorny Test Results Summary
+        uses: dorny/test-reporter@v2
+        if: ${{ !cancelled() }}
+        with:
+          name: Test report
+          path: reports/jest-junit.xml
+          reporter: jest-junit
