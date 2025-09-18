@@ -18,13 +18,13 @@ jobs:
           CI: TRUE
       - name: Test Code Linting
         run: npm run lint
-      - name: Save Code Linting Report JSON
-        run: npm run lint -- --output-file reports/eslint_report.json --format json
-        continue-on-error: true
-      - name: Add Linter Annotations
-        uses: ataylorme/eslint-annotate-action@v3
-        with:
-          report-json: "reports/eslint_report.json"
+      # - name: Save Code Linting Report JSON
+      #   run: npm run lint -- --output-file reports/eslint_report.json --format json
+      #   continue-on-error: true
+      # - name: Add Linter Annotations
+      #   uses: ataylorme/eslint-annotate-action@v3
+      #   with:
+      #     report-json: "reports/eslint_report.json"
 
   unit-tests:
     runs-on: ubuntu-latest
