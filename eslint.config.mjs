@@ -15,7 +15,7 @@ export default defineConfig(
             }], //to remove
             '@typescript-eslint/explicit-function-return-type': 'off', // to remove
             '@typescript-eslint/explicit-module-boundary-types': 'off', // to remove
-            '@typescript-eslint/no-explicit-any': 'off', // to remove
+            //'@typescript-eslint/no-explicit-any': 'off', // to remove
             '@typescript-eslint/no-wrapper-object-types': 'off', // to remove
             '@typescript-eslint/no-unsafe-function-type': 'off', // to remove
         },
