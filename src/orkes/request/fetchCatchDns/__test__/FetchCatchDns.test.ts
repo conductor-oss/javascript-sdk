@@ -14,7 +14,7 @@ describe("fetchCatchDns", () => {
     const fakeIp = "http://192.168.0.1";
     const result = await fetchWithDns(fakeIp, options);
     expect(result).toBe(fakeResponse);
-    expect(mockFetch).toBeCalledTimes(1);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
     expect(mockFetch).toHaveBeenLastCalledWith(fakeIp, options);
   });
   test("Should call fetch with modified params if the target is a hostname that can be resolves", async () => {
@@ -31,7 +31,7 @@ describe("fetchCatchDns", () => {
     });
     const result = await fetchWithDns(targetUrl, options);
     expect(result).toBe(fakeResponse);
-    expect(mockFetch).toBeCalledTimes(1);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
 
     // it was chatched
     expect(dnsResolver.cache.has(host)).toBe(true);
@@ -61,7 +61,7 @@ describe("fetchCatchDns", () => {
     });
     const result = await fetchWithDns(targetUrl, options);
     expect(result).toBe(fakeResponse);
-    expect(mockFetch).toBeCalledTimes(1);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
 
     // should not be catched
     expect(dnsResolver.cache.has(host)).toBe(false);

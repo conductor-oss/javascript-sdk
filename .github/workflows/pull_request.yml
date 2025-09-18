@@ -12,12 +12,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Install package
-        run: yarn install --frozen-lockfile
-      - name: Run the linter
-        run: yarn lint
+      - name: Install Dependencies
+        run: npm ci
+      - name: Run Linter
+        run: npm run lint
 
-  unit-tests:
+  tests:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -26,18 +26,18 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Install package
-        run: yarn install --frozen-lockfile
-      - name: Run Tests
-        run: yarn test --ci --reporters=default --reporters=jest-junit
+      - name: Install Dependencies
+        run: npm ci
+      - name: Run Tests and Add Annotations
+        run: npm test -- --ci --reporters=default --reporters=github-actions --reporters=jest-junit
         env:
           CONDUCTOR_SERVER_URL: ${{ vars.SERVER_URL }}
           CONDUCTOR_AUTH_KEY: ${{ secrets.AUTH_KEY }}
           CONDUCTOR_AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
-      - name: Publish Test Results
-        if: always()
+      - name: Publish Dorny Test Results Summary
         uses: dorny/test-reporter@v2
+        if: ${{ !cancelled() }}
         with:
           name: Test report
-          path: reports/jest-*.xml
+          path: reports/jest-junit.xml
           reporter: jest-junit

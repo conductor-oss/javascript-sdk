@@ -39,7 +39,7 @@ describe("Executor", () => {
 
     await expect(
         executor.registerWorkflow(true, workflowDefinition)
-    ).resolves.not.toThrowError();
+    ).resolves.not.toThrow();
     const workflowDefinitionFromApi = await client.metadataResource.get(
         name,
         version

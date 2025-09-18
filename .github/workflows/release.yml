@@ -20,9 +20,9 @@ jobs:
         env:
           RELEASE_VERSION: ${{ github.ref_name }}
       - name: Install dependencies required to build package
-        run: yarn install --frozen-lockfile
+        run: npm ci
       - name: Build package
-        run: yarn build
+        run: npm run build
       - name: Publish package
         run: npm publish --access public
         env:

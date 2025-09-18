@@ -38,7 +38,7 @@ describe("Poller", () => {
     await new Promise((r) => setTimeout(() => r(true), BASE_TIME));
 
     // Concurrency is one so work only for one
-    expect(mockPerformWorkFunction).toBeCalledTimes(1);
+    expect(mockPerformWorkFunction).toHaveBeenCalledTimes(1);
 
     // Work for the first task
     expect(mockPerformWorkFunction).toHaveBeenCalledWith({
@@ -78,7 +78,7 @@ describe("Poller", () => {
     await new Promise((r) => setTimeout(() => r(true), BASE_TIME));
 
     // Concurrency is two so should have been called twice
-    expect(mockPerformWorkFunction).toBeCalledTimes(2);
+    expect(mockPerformWorkFunction).toHaveBeenCalledTimes(2);
 
     // Work for the first task
     expect(mockPerformWorkFunction).toHaveBeenCalledWith({
@@ -128,7 +128,7 @@ describe("Poller", () => {
     await new Promise((r) => setTimeout(() => r(true), BASE_TIME));
 
     // Concurrency is two so should have been called twice
-    expect(mockPerformWorkFunction).toBeCalledTimes(2);
+    expect(mockPerformWorkFunction).toHaveBeenCalledTimes(2);
 
     // Work for the first task
     expect(mockPerformWorkFunction).toHaveBeenCalledWith({
@@ -174,7 +174,7 @@ describe("Poller", () => {
     poller.updateOptions({ concurrency: 3 });
 
     // Concurrency is two so should have been called twice
-    expect(mockPerformWorkFunction).toBeCalledTimes(2);
+    expect(mockPerformWorkFunction).toHaveBeenCalledTimes(2);
 
     // Work for the first task
     expect(mockPerformWorkFunction).toHaveBeenCalledWith({
@@ -221,7 +221,7 @@ describe("Poller", () => {
     poller.updateOptions({ concurrency: 1 });
 
     // Concurrency is two so should have been called twice
-    expect(mockPerformWorkFunction).toBeCalledTimes(2);
+    expect(mockPerformWorkFunction).toHaveBeenCalledTimes(2);
 
     // Work for the first task
     expect(mockPerformWorkFunction).toHaveBeenCalledWith({
@@ -268,7 +268,7 @@ describe("Poller", () => {
     poller.updateOptions({ pollInterval: BASE_TIME * 2 });
 
     // Concurrency is two so should have been called twice
-    expect(mockPerformWorkFunction).toBeCalledTimes(2);
+    expect(mockPerformWorkFunction).toHaveBeenCalledTimes(2);
 
     // Work for the first task
     expect(mockPerformWorkFunction).toHaveBeenCalledWith({

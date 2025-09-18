@@ -62,7 +62,7 @@ describe("ScheduleExecutor", () => {
     };
     await expect(
       executor.saveSchedule(schedulerDefinition)
-    ).resolves.not.toThrowError();
+    ).resolves.not.toThrow();
     const scheduler = await executor.getSchedule(name);
     expect(scheduler.name).toEqual(name);
     expect(scheduler.cronExpression).toEqual(cronExpression);

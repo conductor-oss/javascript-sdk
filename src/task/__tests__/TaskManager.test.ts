@@ -102,7 +102,7 @@ describe("TaskManager", () => {
     const workflowStatus = await TestUtil.waitForWorkflowCompletion(executor, status, BASE_TIME * 6);
 
     expect(workflowStatus.status).toEqual("FAILED");
-    expect(mockErrorHandler).toBeCalledTimes(1);
+    expect(mockErrorHandler).toHaveBeenCalledTimes(1);
     await manager.stopPolling();
   });
 
@@ -226,7 +226,7 @@ describe("TaskManager", () => {
     const manager = new TaskManager(client, [], {
       options: { pollInterval: BASE_TIME, concurrency: 2 },
     });
-    expect(() => manager.startPolling()).toThrowError(
+    expect(() => manager.startPolling()).toThrow(
       "No workers supplied to TaskManager"
     );
   });
@@ -254,7 +254,7 @@ describe("TaskManager", () => {
     const manager = new TaskManager(client, workers, {
       options: { pollInterval: BASE_TIME, concurrency: 2 },
     });
-    expect(() => manager.startPolling()).toThrowError(
+    expect(() => manager.startPolling()).toThrow(
       "Duplicate worker taskDefName: worker-name"
     );
   });
@@ -343,12 +343,12 @@ describe("TaskManager", () => {
     expect(manager.isPolling).toBeFalsy();
     expect(manager.options.concurrency).toBe(1);
     expect(manager.options.pollInterval).toBe(BASE_TIME);
-    expect(mockLogger.info).toBeCalledWith(
+    expect(mockLogger.info).toHaveBeenCalledWith(
       `TaskWorker ${candidateWorkerUpdate} initialized with concurrency of ${initialCandidateWorkflowOptions.concurrency} and poll interval of ${initialCandidateWorkflowOptions.pollInterval}`
     );
 
 
-    expect(mockLogger.info).toBeCalledWith(
+    expect(mockLogger.info).toHaveBeenCalledWith(
       `TaskWorker ${candidateWorkerUpdate} configuration updated with concurrency of ${updatedWorkerOptions.concurrency} and poll interval of ${updatedWorkerOptions.pollInterval}`
     );
   });
