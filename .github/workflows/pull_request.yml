@@ -26,7 +26,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Install dependencies
+      - name: Install Dependencies
         run: npm ci
       - name: Run Tests and Add Annotations
         run: npm test -- --ci --reporters=default --reporters=github-actions --reporters=jest-junit
