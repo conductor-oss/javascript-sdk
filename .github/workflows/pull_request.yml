@@ -14,17 +14,8 @@ jobs:
           node-version: "22"
       - name: Install Dependencies
         run: npm ci
-        # env:
-        #   CI: TRUE
-      - name: Test Code Linting
+      - name: Run Linter
         run: npm run lint
-      # - name: Save Code Linting Report JSON
-      #   run: npm run lint -- --output-file reports/eslint_report.json --format json
-      #   continue-on-error: true
-      # - name: Add Linter Annotations
-      #   uses: ataylorme/eslint-annotate-action@v3
-      #   with:
-      #     report-json: "reports/eslint_report.json"
 
   unit-tests:
     runs-on: ubuntu-latest
@@ -50,4 +41,3 @@ jobs:
           name: Test report
           path: reports/jest-junit.xml
           reporter: jest-junit
-          fail-on-error: false
