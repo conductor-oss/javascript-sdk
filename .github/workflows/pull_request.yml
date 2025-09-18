@@ -14,7 +14,11 @@ jobs:
           node-version: "22"
       - name: Install Dependencies
         run: npm ci
-      - name: Run Linter
+        env:
+          CI: TRUE
+      - name: Test Code Linting
+        run: npm run lint
+      - name: Save Code Linting Report JSON
         run: npm run lint -- --output-file reports/eslint_report.json --format json
         continue-on-error: true
       - name: Add Linter Annotations
