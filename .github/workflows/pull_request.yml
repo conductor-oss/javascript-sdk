@@ -27,12 +27,10 @@ jobs:
             npm_script: "test:unit"
             output_file: "unit-test-results.xml"
           - name: "Integration-V5"
-            server_url: ${{ vars.SERVER_URL }}
             npm_script: "test:integration"
             output_file: "v5-integration-test-results.xml"
             cluster: "v5"
           - name: "Integration-V4"
-            server_url: ${{ vars.SERVER_URL_V4 }}
             npm_script: "test:integration"
             output_file: "v4-integration-test-results.xml"
             cluster: "v4"
@@ -48,7 +46,7 @@ jobs:
       - name: Run ${{ matrix.test.name }} Tests
         run: npm run ${{ matrix.test.npm_script }} -- --ci --reporters=default --reporters=github-actions --reporters=jest-junit
         env:
-          CONDUCTOR_SERVER_URL: ${{ matrix.test.server_url }}
+          CONDUCTOR_SERVER_URL: ${{ matrix.test.cluster == 'v4' && vars.SERVER_URL_V4 || vars.SERVER_URL }}
           CONDUCTOR_AUTH_KEY: ${{ matrix.test.cluster == 'v4' && secrets.AUTH_KEY_V4 || secrets.AUTH_KEY }}
           CONDUCTOR_AUTH_SECRET: ${{ matrix.test.cluster == 'v4' && secrets.AUTH_SECRET_V4 || secrets.AUTH_SECRET }}
           JEST_JUNIT_OUTPUT_NAME: ${{ matrix.test.output_file }}
