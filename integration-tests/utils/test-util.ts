@@ -1,8 +1,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import {WorkflowDef} from "../../../common";
-import {MetadataClient} from "../../metadataClient";
-import {WorkflowExecutor} from "../../executor";
+import {WorkflowDef} from "../../src/common";
+import {MetadataClient} from "../../src/core/metadataClient";
+import {WorkflowExecutor} from "../../src/core/executor";
 
 export class TestUtil {
     private static metadataClient: MetadataClient;
@@ -28,7 +28,7 @@ export class TestUtil {
      */
     public static async registerWorkflow(workflowName: string): Promise<void> {
         try {
-            const workflowDef = this.getWorkflowDef(`../metadata/${workflowName}.json`);
+            const workflowDef = this.getWorkflowDef(`./metadata/${workflowName}.json`);
             await this.metadataClient.registerWorkflowDef(workflowDef, true);
             console.log(`✓ Registered workflow: ${workflowName}`);
         } catch (error) {

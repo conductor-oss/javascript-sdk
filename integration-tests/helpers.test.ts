@@ -1,6 +1,6 @@
 import { expect, describe, it } from "@jest/globals";
-import { optionEquals } from "../helpers";
-import { TaskRunnerOptions } from "../types";
+import { optionEquals } from "../src/task/helpers";
+import { TaskRunnerOptions } from "../src/task/types";
 
 describe("helpers", () => {
   it("Should return true if both options are equals", () => {

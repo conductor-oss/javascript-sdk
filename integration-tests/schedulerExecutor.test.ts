@@ -1,7 +1,7 @@
 import { expect, describe, test, jest } from "@jest/globals";
-import { orkesConductorClient } from "../../orkes";
-import { SchedulerClient } from "../schedulerClient";
-import { SaveScheduleRequest, TaskType, WorkflowDef } from "../../common";
+import { orkesConductorClient } from "../src/orkes";
+import { SchedulerClient } from "../src/core/schedulerClient";
+import { SaveScheduleRequest, TaskType, WorkflowDef } from "../src/common";
 
 describe("ScheduleExecutor", () => {
   const clientPromise = orkesConductorClient();

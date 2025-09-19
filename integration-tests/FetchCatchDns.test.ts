@@ -1,7 +1,7 @@
 import { expect, describe, test, jest } from "@jest/globals";
-import { fetchCatchDns } from "../fetchCatchDns";
-import { DnsCacheResolver } from "../DnsCache";
-import { FetchFn } from "../../../types";
+import { fetchCatchDns } from "../src/orkes/request/fetchCatchDns/fetchCatchDns";
+import { DnsCacheResolver } from "../src/orkes/request/fetchCatchDns/DnsCache";
+import { FetchFn } from "../src/orkes/types";
 
 describe("fetchCatchDns", () => {
   test("Should call original fetch if the target is an ip, no param modification", async () => {

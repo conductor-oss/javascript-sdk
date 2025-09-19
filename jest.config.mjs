@@ -5,8 +5,7 @@ export default {
   clearMocks: true,
   coverageProvider: "v8",
   testMatch: [
-    "**/__tests__/**/*.test.[jt]s?(x)",
-    "**/?(*.)+(spec|test).[tj]s?(x)",
+    "**/integration-tests/**/*.test.[jt]s?(x)",
   ],
   transformIgnorePatterns: ["/node_modules/", "\\.pnp\\.[^\\/]+$"],
 };

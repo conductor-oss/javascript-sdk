@@ -1,5 +1,5 @@
 import { expect, describe, test } from "@jest/globals";
-import { DnsCacheResolver } from "../DnsCache";
+import { DnsCacheResolver } from "../src/orkes/request/fetchCatchDns/DnsCache";
 
 const sampleDomain = "orkes.io";
 const nonExistingDomain = "non-existing-domain.orkesdemo.io";

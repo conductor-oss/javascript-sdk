@@ -1,5 +1,5 @@
 import {jest} from "@jest/globals"
-import {ConductorLogger} from "../../common/ConductorLogger"
+import {ConductorLogger} from "../../src/common/ConductorLogger"
 
 export const mockLogger: ConductorLogger = {
   debug: jest.fn(),

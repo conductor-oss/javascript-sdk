@@ -1,8 +1,8 @@
 import { expect, describe, test, jest } from "@jest/globals";
-import { MetadataClient } from "../../../core";
-import { simpleTask, workflow } from "../../../core/sdk";
-import { orkesConductorClient } from "../../../orkes";
-import { TaskDefTypes } from "../../types";
+import { MetadataClient } from "../src/core";
+import { simpleTask, workflow } from "../src/core/sdk";
+import { orkesConductorClient } from "../src/orkes";
+import { TaskDefTypes } from "../src/common/types";
 
 describe("WorkflowResourceService", () => {
   jest.setTimeout(120000);

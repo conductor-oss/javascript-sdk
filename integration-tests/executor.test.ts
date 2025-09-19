@@ -1,14 +1,14 @@
 import {expect, describe, test, jest, beforeAll, afterEach, afterAll} from "@jest/globals";
-import {Consistency, ReturnStrategy, SetVariableTaskDef, TaskType, WorkflowDef} from "../../common";
-import { orkesConductorClient } from "../../orkes";
-import { WorkflowExecutor } from "../executor";
+import {Consistency, ReturnStrategy, SetVariableTaskDef, TaskType, WorkflowDef} from "../src/common";
+import { orkesConductorClient } from "../src/orkes";
+import { WorkflowExecutor } from "../src/core/executor";
 import { v4 as uuidv4 } from "uuid";
-import {MetadataClient} from "../metadataClient";
+import {MetadataClient} from "../src/core/metadataClient";
 import {TestUtil} from "./utils/test-util";
-import {TaskResultStatusEnum} from "../../common/open-api/models/TaskResultStatusEnum";
-import {SignalResponse} from "../../common/open-api/models/SignalResponse";
-import { httpTask } from "../sdk";
-import { TaskClient } from "../taskClient";
+import {TaskResultStatusEnum} from "../src/common/open-api/models/TaskResultStatusEnum";
+import {SignalResponse} from "../src/common/open-api/models/SignalResponse";
+import { httpTask } from "../src/core/sdk";
+import { TaskClient } from "../src/core/taskClient";
 
 describe("Executor", () => {
   const clientPromise = orkesConductorClient();
