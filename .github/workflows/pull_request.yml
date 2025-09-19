@@ -6,63 +6,42 @@ jobs:
   linter:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-      - name: Install Dependencies
-        run: npm ci
+      - uses: ./.github/actions/setup-node-deps
       - name: Run Linter
         run: npm run lint
 
   tests:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        test:
+          - name: "Unit"
+            npm_script: "test:unit"
+            output_file: "unit-test-results.xml"
+          - name: "Integration-V5"
+            server_url: ${{ vars.SERVER_URL }}
+            npm_script: "test:integration"
+            output_file: "v5-integration-test-results.xml"
+            cluster: "v5"
+          - name: "Integration-V4"
+            server_url: ${{ vars.SERVER_URL_V4 }}
+            npm_script: "test:integration"
+            output_file: "v4-integration-test-results.xml"
+            cluster: "v4"
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-      - name: Install Dependencies
-        run: npm ci
-      - name: Run Tests and Add Annotations
-        run: npm test -- --ci --reporters=default --reporters=github-actions --reporters=jest-junit
+      - uses: ./.github/actions/setup-node-deps
+      - name: Run ${{ matrix.test.name }} Tests
+        run: npm run ${{ matrix.test.npm_script }} -- --ci --reporters=default --reporters=github-actions --reporters=jest-junit
         env:
-          CONDUCTOR_SERVER_URL: ${{ vars.SERVER_URL }}
-          CONDUCTOR_AUTH_KEY: ${{ secrets.AUTH_KEY }}
-          CONDUCTOR_AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
-      - name: Publish Dorny Test Results Summary
+          CONDUCTOR_SERVER_URL: ${{ matrix.test.server_url }}
+          CONDUCTOR_AUTH_KEY: ${{ matrix.test.cluster == 'v5' && secrets.AUTH_KEY || matrix.test.cluster == 'v4' && secrets.AUTH_KEY_V4 || secrets.AUTH_KEY }}
+          CONDUCTOR_AUTH_SECRET: ${{ matrix.test.cluster == 'v5' && secrets.AUTH_SECRET || matrix.test.cluster == 'v4' && secrets.AUTH_SECRET_V4 || secrets.AUTH_SECRET }}
+          JEST_JUNIT_OUTPUT_NAME: ${{ matrix.test.output_file }}
+      - name: Publish ${{ matrix.test.name }} Test Results
         uses: dorny/test-reporter@v2
         if: ${{ !cancelled() }}
         with:
-          name: Test report
-          path: reports/jest-junit.xml
-          reporter: jest-junit
-
-  tests-v4:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-      - name: Install Dependencies
-        run: npm ci
-      - name: Run Tests and Add Annotations
-        run: npm test -- --ci --reporters=default --reporters=github-actions --reporters=jest-junit
-        env:
-          CONDUCTOR_SERVER_URL: ${{ vars.SERVER_URL_V4 }}
-          CONDUCTOR_AUTH_KEY: ${{ secrets.AUTH_KEY_V4 }}
-          CONDUCTOR_AUTH_SECRET: ${{ secrets.AUTH_SECRET_V4 }}
-      - name: Publish Dorny Test Results Summary
-        uses: dorny/test-reporter@v2
-        if: ${{ !cancelled() }}
-        with:
-          name: Test report
-          path: reports/jest-junit.xml
+          name: ${{ matrix.test.name }} Test Report
+          path: reports/${{ matrix.test.output_file }}
           reporter: jest-junit

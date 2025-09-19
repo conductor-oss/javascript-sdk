@@ -1,10 +1,10 @@
 import { expect, describe, it } from "@jest/globals";
-import { generate, taskGenMapper } from "../src/core/generators/generator";
-import { generateSimpleTask } from "../src/core/generators/SimpleTask";
-import { TaskType, ForkJoinTaskDef } from "../src/common/types";
-import { generateEvaluationCode, generateInlineTask } from "../src/core/generators/InlineTask";
-import { generateDoWhileTask } from "../src/core/generators/DoWhileTask";
-import { generateSubWorkflowTask } from "../src/core/generators/SubWorkflowTask";
+import { generate, taskGenMapper } from "../generator";
+import { generateSimpleTask } from "../SimpleTask";
+import { TaskType, ForkJoinTaskDef } from "../../../common/types";
+import { generateEvaluationCode, generateInlineTask } from "../InlineTask";
+import { generateDoWhileTask } from "../DoWhileTask";
+import { generateSubWorkflowTask } from "../SubWorkflowTask";
 
 describe("Generate", () => {
   describe("DoWhileTask", () => {

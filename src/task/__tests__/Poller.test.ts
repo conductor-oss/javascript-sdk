@@ -1,6 +1,6 @@
-import { Poller } from "../src/task/Poller";
+import { Poller } from "../Poller";
 import { expect, describe, test, jest } from "@jest/globals";
-import { mockLogger } from "./utils/mockLogger";
+import { mockLogger } from "../../../integration-tests/utils/mockLogger";
 
 type Task = { description: string; id: number };
 

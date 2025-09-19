@@ -1,11 +1,11 @@
 import { jest, test, expect } from "@jest/globals";
 import type { Mocked } from "jest-mock";
 
-import { TaskRunner } from "../src/task/TaskRunner";
-import { RunnerArgs } from "../src/task/types";
-import { mockLogger } from "./utils/mockLogger";
-import { TaskResourceService } from "../src/common/open-api";
-import { TaskResultStatusEnum } from "../src/common/open-api/models/TaskResultStatusEnum";
+import { TaskRunner } from "../TaskRunner";
+import { RunnerArgs } from "../types";
+import { mockLogger } from "../../../integration-tests/utils/mockLogger";
+import { TaskResourceService } from "../../common/open-api";
+import { TaskResultStatusEnum } from "../../common/open-api/models/TaskResultStatusEnum";
 
 test("polls tasks", async () => {
   const taskClientStub: Mocked<

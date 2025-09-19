@@ -1,19 +1,19 @@
 import { expect, describe, it } from "@jest/globals";
-import { doWhileTask, newLoopTask } from "../src/core/sdk/doWhile";
-import { dynamicForkTask } from "../src/core/sdk/dynamicFork";
-import { eventTask, sqsEventTask, conductorEventTask } from "../src/core/sdk/event";
-import { forkTask, forkTaskJoin } from "../src/core/sdk/forkJoin";
-import { httpTask } from "../src/core/sdk/http";
-import { inlineTask } from "../src/core/sdk/inline";
-import { joinTask } from "../src/core/sdk/join";
-import { jsonJqTask } from "../src/core/sdk/jsonJq";
-import { kafkaPublishTask } from "../src/core/sdk/kafkaPublish";
-import { setVariableTask } from "../src/core/sdk/setVariable";
-import { subWorkflowTask } from "../src/core/sdk/subWorkflow";
-import { switchTask } from "../src/core/sdk/switch";
-import { terminateTask } from "../src/core/sdk/terminate";
-import { waitTaskDuration, waitTaskUntil } from "../src/core/sdk/wait";
-import { workflow } from "../src/core/sdk/workflow";
+import { doWhileTask, newLoopTask } from "../doWhile";
+import { dynamicForkTask } from "../dynamicFork";
+import { eventTask, sqsEventTask, conductorEventTask } from "../event";
+import { forkTask, forkTaskJoin } from "../forkJoin";
+import { httpTask } from "../http";
+import { inlineTask } from "../inline";
+import { joinTask } from "../join";
+import { jsonJqTask } from "../jsonJq";
+import { kafkaPublishTask } from "../kafkaPublish";
+import { setVariableTask } from "../setVariable";
+import { subWorkflowTask } from "../subWorkflow";
+import { switchTask } from "../switch";
+import { terminateTask } from "../terminate";
+import { waitTaskDuration, waitTaskUntil } from "../wait";
+import { workflow } from "../workflow";
 
 describe("doWhileTask", () => {
   it("Should generate a doWhile task ", () => {

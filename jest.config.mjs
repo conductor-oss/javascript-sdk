@@ -6,6 +6,7 @@ export default {
   coverageProvider: "v8",
   testMatch: [
     "**/integration-tests/**/*.test.[jt]s?(x)",
+    "**/src/**/__tests__/**/*.test.[jt]s?(x)",
   ],
   transformIgnorePatterns: ["/node_modules/", "\\.pnp\\.[^\\/]+$"],
 };

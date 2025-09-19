@@ -1,5 +1,5 @@
 import { expect, describe, test } from "@jest/globals";
-import { dnsResolver } from "../src/orkes/request/fetchCatchDns/DnsResolver";
+import { dnsResolver } from "../DnsResolver";
 
 const sampleDomain = "orkes.io";
 const nonExistingDomain = "non-existing-domain.orkesdemo.io";
