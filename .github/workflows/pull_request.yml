@@ -49,8 +49,8 @@ jobs:
         run: npm run ${{ matrix.test.npm_script }} -- --ci --reporters=default --reporters=github-actions --reporters=jest-junit
         env:
           CONDUCTOR_SERVER_URL: ${{ matrix.test.server_url }}
-          CONDUCTOR_AUTH_KEY: ${{ matrix.test.cluster == 'v5' && secrets.AUTH_KEY || matrix.test.cluster == 'v4' && secrets.AUTH_KEY_V4 || secrets.AUTH_KEY }}
-          CONDUCTOR_AUTH_SECRET: ${{ matrix.test.cluster == 'v5' && secrets.AUTH_SECRET || matrix.test.cluster == 'v4' && secrets.AUTH_SECRET_V4 || secrets.AUTH_SECRET }}
+          CONDUCTOR_AUTH_KEY: ${{ matrix.test.cluster == 'v4' && secrets.AUTH_KEY_V4 || secrets.AUTH_KEY }}
+          CONDUCTOR_AUTH_SECRET: ${{ matrix.test.cluster == 'v4' && secrets.AUTH_SECRET_V4 || secrets.AUTH_SECRET }}
           JEST_JUNIT_OUTPUT_NAME: ${{ matrix.test.output_file }}
       - name: Publish ${{ matrix.test.name }} Test Results
         uses: dorny/test-reporter@v2
