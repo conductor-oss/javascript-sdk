@@ -37,7 +37,7 @@ jobs:
           node-version: "22"
       - name: Install Dependencies
         run: npm ci
-      - name: Run ${{ matrix.test.name }} Tests
+      - name: Run ${{ matrix.test.name }}${{ matrix.test.cluster }} Tests and Add Annotations
         run: npm run test:${{ matrix.test.name }} -- --ci --reporters=default --reporters=github-actions --reporters=jest-junit
         env:
           CONDUCTOR_SERVER_URL: ${{ matrix.test.cluster == 'v4' && vars.SERVER_URL_V4 || vars.SERVER_URL }}
