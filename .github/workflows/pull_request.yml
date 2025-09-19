@@ -23,16 +23,13 @@ jobs:
       fail-fast: false
       matrix:
         test:
-          - name: "Unit"
+          - name: "unit"
             npm_script: "test:unit"
-            output_file: "unit-test-results.xml"
-          - name: "Integration-V5"
+          - name: "integration-v5"
             npm_script: "test:integration"
-            output_file: "v5-integration-test-results.xml"
             cluster: "v5"
-          - name: "Integration-V4"
+          - name: "integration-v4"
             npm_script: "test:integration"
-            output_file: "v4-integration-test-results.xml"
             cluster: "v4"
     steps:
       - name: Checkout
@@ -49,11 +46,11 @@ jobs:
           CONDUCTOR_SERVER_URL: ${{ matrix.test.cluster == 'v4' && vars.SERVER_URL_V4 || vars.SERVER_URL }}
           CONDUCTOR_AUTH_KEY: ${{ matrix.test.cluster == 'v4' && secrets.AUTH_KEY_V4 || secrets.AUTH_KEY }}
           CONDUCTOR_AUTH_SECRET: ${{ matrix.test.cluster == 'v4' && secrets.AUTH_SECRET_V4 || secrets.AUTH_SECRET }}
-          JEST_JUNIT_OUTPUT_NAME: ${{ matrix.test.output_file }}
+          JEST_JUNIT_OUTPUT_NAME: ${{ matrix.test.name }}-test-results.xml
       - name: Publish ${{ matrix.test.name }} Test Results
         uses: dorny/test-reporter@v2
         if: ${{ !cancelled() }}
         with:
           name: ${{ matrix.test.name }} Test Report
-          path: reports/${{ matrix.test.output_file }}
+          path: reports/${{ matrix.test.name }}-test-results.xml
           reporter: jest-junit
