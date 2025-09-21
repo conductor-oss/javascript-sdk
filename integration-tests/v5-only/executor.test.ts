@@ -1,5 +1,5 @@
 import {expect, describe, test, jest, beforeAll, afterEach, afterAll} from "@jest/globals";
-import {Consistency, ReturnStrategy, SetVariableTaskDef, TaskType, WorkflowDef} from "../../src/common";
+import {Consistency, ReturnStrategy} from "../../src/common";
 import { orkesConductorClient } from "../../src/orkes";
 import { WorkflowExecutor } from "../../src/core/executor";
 import { v4 as uuidv4 } from "uuid";
