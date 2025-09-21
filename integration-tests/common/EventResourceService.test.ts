@@ -1,5 +1,5 @@
 import { expect, describe, test } from "@jest/globals";
-import { orkesConductorClient } from "../src/orkes";
+import { orkesConductorClient } from "../../src/orkes";
 
 describe("EventResourceService", () => {
   test("Should create an event handler with description and tags and then delete it", async () => {

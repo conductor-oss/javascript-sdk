@@ -1,9 +1,9 @@
 import { expect, describe, test, jest } from "@jest/globals";
-import { simpleTask, taskDefinition, WorkflowExecutor } from "../src/core";
-import { orkesConductorClient } from "../src/orkes";
-import { TaskManager, ConductorWorker } from "../src/task/index";
-import { mockLogger } from "./utils/mockLogger";
-import { TestUtil } from "./utils/test-util";
+import { simpleTask, taskDefinition, WorkflowExecutor } from "../../src/core";
+import { orkesConductorClient } from "../../src/orkes";
+import { TaskManager, ConductorWorker } from "../../src/task/index";
+import { mockLogger } from "../utils/mockLogger";
+import { TestUtil } from "../utils/test-util";
 
 
 const BASE_TIME = 500;

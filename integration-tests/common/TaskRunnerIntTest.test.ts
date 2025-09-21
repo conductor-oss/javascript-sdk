@@ -1,7 +1,7 @@
 import { expect, describe, test, jest } from "@jest/globals";
-import { TaskRunner } from "../src/task/TaskRunner";
-import { WorkflowExecutor, simpleTask } from "../src/core";
-import { orkesConductorClient } from "../src/orkes";
+import { TaskRunner } from "../../src/task/TaskRunner";
+import { WorkflowExecutor, simpleTask } from "../../src/core";
+import { orkesConductorClient } from "../../src/orkes";
 
 describe("TaskManager", () => {
   const clientPromise = orkesConductorClient();

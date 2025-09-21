@@ -1,7 +1,7 @@
 import {beforeAll, afterEach, describe, expect, jest, test} from "@jest/globals";
-import {ServiceRegistryClient} from "../src/core/serviceRegistryClient";
-import {orkesConductorClient} from "../src/orkes";
-import {ServiceType} from "../src/common/open-api/models/ServiceRegistryModels";
+import {ServiceRegistryClient} from "../../src/core/serviceRegistryClient";
+import {orkesConductorClient} from "../../src/orkes";
+import {ServiceType} from "../../src/common/open-api/models/ServiceRegistryModels";
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -217,7 +217,7 @@ describe("ServiceRegistryClient", () => {
         // Register the service registry
         await serviceRegistryClient.addOrUpdateService(testServiceRegistry);
 
-        const filePath = path.join(__dirname, 'utils', 'metadata', 'compiled.bin');
+        const filePath = path.join(__dirname, 'metadata', 'compiled.bin');
         const fileBuffer = fs.readFileSync(filePath);
         const blob = new Blob([fileBuffer], {type: 'application/octet-stream'});
 

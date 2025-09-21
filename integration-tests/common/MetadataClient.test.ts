@@ -1,7 +1,7 @@
 import { expect, describe, test, jest } from "@jest/globals";
-import { MetadataClient } from "../src/core/metadataClient";
-import { taskDefinition } from "../src/core/sdk";
-import { orkesConductorClient } from "../src/orkes";
+import { MetadataClient } from "../../src/core/metadataClient";
+import { taskDefinition } from "../../src/core/sdk";
+import { orkesConductorClient } from "../../src/orkes";
 
 describe("MetadataClient", () => {
   const clientPromise = orkesConductorClient();
