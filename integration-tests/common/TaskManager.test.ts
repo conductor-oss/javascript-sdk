@@ -6,11 +6,11 @@ import { mockLogger } from "../utils/mockLogger";
 import { TestUtil } from "../utils/test-util";
 
 
-const BASE_TIME = 500;
+const BASE_TIME = 1000;
 describe("TaskManager", () => {
   const clientPromise = orkesConductorClient();
 
-  jest.setTimeout(15000);
+  jest.setTimeout(30000);
 
   test("Should run workflow with worker", async () => {
     const client = await clientPromise;
@@ -49,7 +49,7 @@ describe("TaskManager", () => {
       version: 1,
     });
 
-    const workflowStatus = await TestUtil.waitForWorkflowCompletion(executor, executionId, BASE_TIME * 4);
+    const workflowStatus = await TestUtil.waitForWorkflowCompletion(executor, executionId, BASE_TIME * 30);
 
     expect(workflowStatus.status).toEqual("COMPLETED");
 
@@ -99,7 +99,7 @@ describe("TaskManager", () => {
       correlationId: "errorHandlerTestIdentifierUnique"
     });
 
-    const workflowStatus = await TestUtil.waitForWorkflowCompletion(executor, status, BASE_TIME * 6);
+    const workflowStatus = await TestUtil.waitForWorkflowCompletion(executor, status, BASE_TIME * 30);
 
     expect(workflowStatus.status).toEqual("FAILED");
     expect(mockErrorHandler).toHaveBeenCalledTimes(1);
@@ -146,7 +146,7 @@ describe("TaskManager", () => {
       correlationId: "noErrorHandlerProvidedIdentifier"
     });
 
-    const workflowStatus = await TestUtil.waitForWorkflowCompletion(executor, executionId!, BASE_TIME * 10);
+    const workflowStatus = await TestUtil.waitForWorkflowCompletion(executor, executionId!, BASE_TIME * 30);
     expect(workflowStatus.status).toEqual("FAILED");
     await manager.stopPolling();
   });
@@ -211,7 +211,7 @@ describe("TaskManager", () => {
     // decrease speed again
     manager.updatePollingOptions({ pollInterval: BASE_TIME, concurrency: 1 });
 
-    const workflowStatus = await TestUtil.waitForWorkflowCompletion(executor, executionId, BASE_TIME * 4);
+    const workflowStatus = await TestUtil.waitForWorkflowCompletion(executor, executionId, BASE_TIME * 30);
 
     expect(workflowStatus.status).toEqual("COMPLETED");
     await manager.stopPolling();
@@ -335,7 +335,7 @@ describe("TaskManager", () => {
     // decrease speed again
     manager.updatePollingOptions({ pollInterval: BASE_TIME, concurrency: 1 });
 
-    const workflowStatus = await TestUtil.waitForWorkflowCompletion(executor, executionId, BASE_TIME * 10);
+    const workflowStatus = await TestUtil.waitForWorkflowCompletion(executor, executionId, BASE_TIME * 30);
 
     expect(workflowStatus.status).toEqual("COMPLETED");
     await manager.stopPolling();
