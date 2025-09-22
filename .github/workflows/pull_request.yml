@@ -24,7 +24,7 @@ jobs:
       matrix:
         node-version: [18, 20, 22]
         test: ["unit", "integration:v5", "integration:v4"]
-    name: Node.js v${{ matrix.node-version }} - ${{ matrix.test }}
+    name: Node.js v${{ matrix.node-version }} - ${{ matrix.test }} tests
     steps:
       - name: Checkout
         uses: actions/checkout@v4
