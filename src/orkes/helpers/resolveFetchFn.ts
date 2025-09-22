@@ -1,5 +1,7 @@
 import { FetchFn } from "../types";
-import type { ResponseInit, RequestInfo } from "undici";
+// eslint-disable-next-line
+// @ts-ignore since undici is an optional dependency and it's types could me missing on node18
+import type { RequestInfo, RequestInit } from "undici";
 
 export const resolveFetchFn = async (
   customFetch?: FetchFn
@@ -8,11 +10,13 @@ export const resolveFetchFn = async (
   if (process?.release?.name !== "node") return fetch;
 
   try {
-    const undici = await import("undici");
-    const agent = new undici.Agent({ allowH2: true });
+    // eslint-disable-next-line
+    // @ts-ignore since undici is an optional dependency and it's types could me missing on node18
+    const { fetch: undiciFetch, Agent } = await import("undici");
+    const undiciAgent = new Agent({ allowH2: true });
 
-    return ((input: RequestInfo, init: ResponseInit) =>
-      undici.fetch(input, { ...init, dispatcher: agent })) as FetchFn;
+    return ((input: RequestInfo, init?: RequestInit) =>
+      undiciFetch(input, { ...init, dispatcher: undiciAgent })) as FetchFn;
   } catch {
     return fetch;
   }
