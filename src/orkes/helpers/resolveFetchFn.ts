@@ -1,6 +1,6 @@
 import { FetchFn } from "../types";
 // eslint-disable-next-line
-// @ts-ignore since undici is an optional dependency and it's types could me missing on node18
+// @ts-ignore since undici is an optional dependency and could me missing
 import type { RequestInfo, RequestInit } from "undici";
 
 export const resolveFetchFn = async (
@@ -11,7 +11,7 @@ export const resolveFetchFn = async (
 
   try {
     // eslint-disable-next-line
-    // @ts-ignore since undici is an optional dependency and it's types could me missing on node18
+    // @ts-ignore since undici is an optional dependency and could me missing
     const { fetch: undiciFetch, Agent } = await import("undici");
     const undiciAgent = new Agent({ allowH2: true });
 
