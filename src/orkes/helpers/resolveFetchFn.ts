@@ -13,7 +13,12 @@ export const resolveFetchFn = async (
     // eslint-disable-next-line
     // @ts-ignore since undici is an optional dependency and could me missing
     const { fetch: undiciFetch, Agent } = await import("undici");
-    const undiciAgent = new Agent({ allowH2: true });
+    const undiciAgent = new Agent({
+      allowH2: true,
+      connections: 1,
+      //keepAliveTimeout: 4000,
+      //keepAliveMaxTimeout: 1000 * 60 * 10,
+    });
 
     return ((input: RequestInfo, init?: RequestInit) =>
       undiciFetch(input, { ...init, dispatcher: undiciAgent })) as FetchFn;
