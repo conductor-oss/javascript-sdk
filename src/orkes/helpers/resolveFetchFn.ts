@@ -16,7 +16,7 @@ export const resolveFetchFn = async (
     const undiciAgent = new Agent({
       allowH2: true,
       connections: 1,
-      //keepAliveTimeout: 4000,
+      keepAliveTimeout: 500,
       //keepAliveMaxTimeout: 1000 * 60 * 10,
     });
 
