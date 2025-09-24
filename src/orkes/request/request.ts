@@ -223,8 +223,9 @@ const fetchWithRetry = async (
   } catch (error: unknown) {
     if (retries > 0) {
       console.log(
-        `[${request.method} ${url}] Fetch error encountered. Retrying request in ${delay}ms...`,
-        error
+        `[${request.method} ${url}] fetch error caught.
+        ${error}
+        Retrying request in ${delay}ms...`
       );
       await new Promise((resolve) => setTimeout(resolve, delay));
       return fetchWithRetry(url, request, fetchFn, retries - 1, delay * 2);
