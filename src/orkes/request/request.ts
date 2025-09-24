@@ -306,7 +306,7 @@ export const request = <T>(
       const body = getRequestBody(options);
       const headers = await getHeaders(config, options);
 
-      if (!onCancel.isCancelled) {
+      //if (!onCancel.isCancelled) {
         const response = await sendRequest(
           options,
           url,
@@ -333,7 +333,7 @@ export const request = <T>(
         catchErrorCodes(options, result);
 
         resolve(result.body);
-      }
+      //}
     } catch (error) {
       reject(error);
     }
