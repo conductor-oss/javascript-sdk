@@ -21,14 +21,14 @@ export const resolveFetchFn = async (
       // keepAliveMaxTimeout: 1000 * 60 * 10,
     }).compose(
       interceptors.retry({
-        //maxRetries: 3, // Maximum number of retries (default: 5)
-        //minTimeout: 1000, // Minimum time to wait before retrying (default: 500ms)
-        //maxTimeout: 60000, // Maximum time to wait before retrying (default: 30000ms)
-        //timeoutFactor: 2, // Factor to multiply the timeout by for each retry (default: 2)
+        maxRetries: 10, // Maximum number of retries (default: 5)
+        minTimeout: 2000, // Minimum time to wait before retrying (default: 500ms)
+        maxTimeout: 60000, // Maximum time to wait before retrying (default: 30000ms)
+        timeoutFactor: 2, // Factor to multiply the timeout by for each retry (default: 2)
         //retryAfter: true, // Automatically retry if Retry-After header is present (default: true)
         methods: ["GET", "PUT", "HEAD", "POST", "DELETE", "PATCH", "OPTIONS"], // HTTP methods to retry (default includes GET, PUT, HEAD, OPTIONS, DELETE)
         //statusCodes: [429, 500, 502], // HTTP status codes to retry (default includes 429, 500, 502, 503, 504)
-        errorCodes: ["ECONNRESET"], // Error codes to retry (default includes common network errors)
+        errorCodes: ["ECONNRESET", "read ECONNRESET"], // Error codes to retry (default includes common network errors)
       })
     );
 
