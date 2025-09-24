@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      max-parallel: 1
+      # max-parallel: 1
       matrix:
         node-version: [18, 20, 22]
         test: ["unit", "integration:v5", "integration:v4"]
