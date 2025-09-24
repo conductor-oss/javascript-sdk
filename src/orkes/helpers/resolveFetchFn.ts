@@ -17,7 +17,7 @@ export const resolveFetchFn = async (
       allowH2: true,
       // connections: 1,
       // keepAliveTimeout: 500,
-      // clientTtl: 500,
+      clientTtl: 500,
       // keepAliveMaxTimeout: 1000 * 60 * 10,
     }).compose(
       interceptors.retry({
