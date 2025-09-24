@@ -15,10 +15,10 @@ export const resolveFetchFn = async (
     const { fetch: undiciFetch, Agent, interceptors } = await import("undici");
     const undiciAgent = new Agent({
       allowH2: true,
-      // connections: 1,
-      // keepAliveTimeout: 500,
-      clientTtl: 500,
-      // keepAliveMaxTimeout: 1000 * 60 * 10,
+      //connections: 1,
+      //keepAliveTimeout: 500,
+      //clientTtl: 500,
+      //keepAliveMaxTimeout: 1000 * 60 * 10,
     }).compose(
       interceptors.retry({
         maxRetries: 10, // Maximum number of retries (default: 5)

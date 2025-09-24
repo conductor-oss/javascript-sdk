@@ -216,16 +216,16 @@ const sendRequest = async (
   onCancel: OnCancel,
   fetchFn: FetchFn<RequestInit, Response> = fetch
 ): Promise<Response> => {
-  const controller = new AbortController();
+  //const controller = new AbortController();
 
   const request: RequestInit = {
     headers,
     method: options.method,
     body: body ?? formData,
-    signal: controller.signal as AbortSignal,
+    //signal: controller.signal as AbortSignal,
   };
 
-  onCancel(() => controller.abort());
+  onCancel(() => console.log("Aborting request")); //controller.abort());
 
   return await fetchFn(url, request);
 };
