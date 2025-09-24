@@ -213,19 +213,19 @@ const sendRequest = async (
   body: any,
   formData: FormData | undefined,
   headers: Headers,
-  //onCancel: OnCancel,
+  onCancel: OnCancel,
   fetchFn: FetchFn<RequestInit, Response> = fetch
 ): Promise<Response> => {
-  //const controller = new AbortController();
+  const controller = new AbortController();
 
   const request: RequestInit = {
     headers,
     method: options.method,
     body: body ?? formData,
-    //signal: controller.signal as AbortSignal,
+    signal: controller.signal as AbortSignal,
   };
 
-  //onCancel(() => console.log("Aborting request")); //controller.abort());
+  onCancel(() => controller.abort());
 
   return await fetchFn(url, request);
 };
@@ -298,22 +298,22 @@ export const request = <T>(
   config: OpenAPIConfig,
   options: ApiRequestOptions,
   fetchFn: FetchFn = fetch
-): Promise<T> => { //CancelablePromise<T> => {
-  return new Promise(async (resolve, reject) => {//return new CancelablePromise(async (resolve, reject, onCancel) => {
+): CancelablePromise<T> => {
+  return new CancelablePromise(async (resolve, reject, onCancel) => {
     try {
       const url = getUrl(config, options);
       const formData = getFormData(options);
       const body = getRequestBody(options);
       const headers = await getHeaders(config, options);
 
-      //if (!onCancel.isCancelled) {
+      if (!onCancel.isCancelled) {
         const response = await sendRequest(
           options,
           url,
           body,
           formData,
           headers,
-          //onCancel,
+          onCancel,
           fetchFn
         );
         const responseBody = await getResponseBody(response);
@@ -333,7 +333,7 @@ export const request = <T>(
         catchErrorCodes(options, result);
 
         resolve(result.body);
-      //}
+      }
     } catch (error) {
       reject(error);
     }
