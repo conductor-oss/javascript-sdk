@@ -213,7 +213,7 @@ const sendRequest = async (
   body: any,
   formData: FormData | undefined,
   headers: Headers,
-  onCancel: OnCancel,
+  //onCancel: OnCancel,
   fetchFn: FetchFn<RequestInit, Response> = fetch
 ): Promise<Response> => {
   //const controller = new AbortController();
@@ -225,7 +225,7 @@ const sendRequest = async (
     //signal: controller.signal as AbortSignal,
   };
 
-  onCancel(() => console.log("Aborting request")); //controller.abort());
+  //onCancel(() => console.log("Aborting request")); //controller.abort());
 
   return await fetchFn(url, request);
 };
@@ -298,8 +298,8 @@ export const request = <T>(
   config: OpenAPIConfig,
   options: ApiRequestOptions,
   fetchFn: FetchFn = fetch
-): CancelablePromise<T> => {
-  return new CancelablePromise(async (resolve, reject, onCancel) => {
+): Promise<T> => { //CancelablePromise<T> => {
+  return new Promise(async (resolve, reject) => {//return new CancelablePromise(async (resolve, reject, onCancel) => {
     try {
       const url = getUrl(config, options);
       const formData = getFormData(options);
@@ -313,7 +313,7 @@ export const request = <T>(
           body,
           formData,
           headers,
-          onCancel,
+          //onCancel,
           fetchFn
         );
         const responseBody = await getResponseBody(response);
