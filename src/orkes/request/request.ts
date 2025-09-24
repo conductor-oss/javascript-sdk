@@ -207,6 +207,29 @@ const getRequestBody = (options: ApiRequestOptions): any => {
   return undefined;
 };
 
+const fetchWithRetry = async (
+  url: string,
+  request: RequestInit,
+  fetchFn: FetchFn<RequestInit, Response>,
+  retries: number = 5,
+  delay: number = 1000
+): Promise<Response> => {
+  try {
+    const response = await fetchFn(url, request);
+    if (response.status == 429) {
+      throw new Error(`Request failed with status ${response.status}`);
+    }
+    return response;
+  } catch (error: unknown) {
+    if (retries > 0) {
+      console.warn(`Fetch error encountered. Retrying request in ${delay}ms...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      return await fetchWithRetry(url, request, fetchFn, retries - 1, delay * 2); 
+    }
+    throw error;
+  }
+};
+
 const sendRequest = async (
   options: ApiRequestOptions,
   url: string,
@@ -227,7 +250,7 @@ const sendRequest = async (
 
   onCancel(() => controller.abort());
 
-  return await fetchFn(url, request);
+  return await fetchWithRetry(url, request, fetchFn);
 };
 
 const getResponseHeader = (
