@@ -19,6 +19,11 @@ export const resolveFetchFn = async (
       //keepAliveTimeout: 500,
       //clientTtl: 500,
       //keepAliveMaxTimeout: 1000 * 60 * 10,
+      //pipelining: 1,
+      connect: {
+        rejectUnauthorized: true, // Ensure TLS validation
+        secureProtocol: "TLSv1_2_method", // Use TLS 1.2
+      },
     }).compose(
       interceptors.retry({
         maxRetries: 10, // Maximum number of retries (default: 5)
