@@ -62,7 +62,7 @@ describe("Load Test for ECONNRESET", () => {
           //requestPromises.push(fetch(`https://siliconmint-dev-5x.orkesconductor.io/`));
           const signal = AbortSignal.timeout(60000)
           requestPromises.push(
-            fetch(`https://siliconmint-dev-5x.orkesconductor.io/`, { signal }) //, {
+            fetch(`https://google.com/`, { signal }) //, {
             //   dispatcher: undiciAgent,
             // })
           );
