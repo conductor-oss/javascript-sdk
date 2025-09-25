@@ -47,7 +47,7 @@ describe("Load Test for ECONNRESET", () => {
 
     // Create an array to hold all the request promises.
     const undiciAgent = new UndiciAgent({
-      //allowH2: true,
+      allowH2: true,
       connections: 1,
       //pipelining: 10,
       // keepAliveTimeout: 270000,
