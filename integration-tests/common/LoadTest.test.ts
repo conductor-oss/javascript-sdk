@@ -41,7 +41,7 @@ describe("Load Test for ECONNRESET", () => {
       `Starting load test with workflow execution ID: ${executionId}`
     );
     console.log(
-      `Sending ${CONCURRENT_REQUESTS} staggered requests (1 every 50ms)...`
+      `Sending ${CONCURRENT_REQUESTS} staggered requests (1 every 1ms)...`
     );
 
     // Create an array to hold all the request promises.
@@ -52,7 +52,7 @@ describe("Load Test for ECONNRESET", () => {
 
       if (i < CONCURRENT_REQUESTS - 1) {
         // Wait 100ms before starting the next request.
-        await new Promise((resolve) => setTimeout(resolve, 50));
+        await new Promise((resolve) => setTimeout(resolve, 1));
       }
     }
 
