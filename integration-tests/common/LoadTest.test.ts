@@ -48,6 +48,9 @@ describe("Load Test for ECONNRESET", () => {
     // Create an array to hold all the request promises.
     const undiciAgent = new UndiciAgent({
       connections: 500,
+      //pipelining: 10,
+      keepAliveTimeout: 270000,
+      keepAliveMaxTimeout: 270000,
       connectTimeout: 270000,
       bodyTimeout: 270000,
       headersTimeout: 270000,
