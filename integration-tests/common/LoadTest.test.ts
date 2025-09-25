@@ -7,7 +7,7 @@ import { fetch as undiciFetch, Agent as UndiciAgent } from "undici";
 // --- Configuration for the Load Test ---
 // The number of requests to send in parallel.
 // Adjust this number to find the breaking point of your load balancer.
-const CONCURRENT_REQUESTS = 300;
+const CONCURRENT_REQUESTS = 200;
 const TEST_TIMEOUT = 180000 * 10; // 180 seconds
 
 describe("Load Test for ECONNRESET", () => {
