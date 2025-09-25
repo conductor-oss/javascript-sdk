@@ -67,7 +67,7 @@ describe("Load Test for ECONNRESET", () => {
       //requestPromises.push(executor.getWorkflow(executionId, false));
       //requestPromises.push(fetch(`https://siliconmint-dev-5x.orkesconductor.io/`));
       requestPromises.push(
-        undiciFetch(`https://google.com/`, {
+        undiciFetch(`https://siliconmint-dev-5x.orkesconductor.io/`, {
           dispatcher: undiciAgent,
         })
       );
