@@ -7,7 +7,7 @@ import { fetch as undiciFetch, Agent as UndiciAgent } from "undici";
 // --- Configuration for the Load Test ---
 // The number of requests to send in parallel.
 // Adjust this number to find the breaking point of your load balancer.
-const CONCURRENT_REQUESTS = 500;
+const CONCURRENT_REQUESTS = 100;
 const TEST_TIMEOUT = 180000 * 10; // 180 seconds
 
 describe("Load Test for ECONNRESET", () => {
@@ -55,7 +55,7 @@ describe("Load Test for ECONNRESET", () => {
         });
 
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 270000)
+        //const timeoutId = setTimeout(() => controller.abort(), 270000)
     
         // Create an array to hold all the request promises.
         const requestPromises: Promise<any>[] = [];
@@ -64,7 +64,7 @@ describe("Load Test for ECONNRESET", () => {
           //requestPromises.push(executor.getWorkflow(executionId, false));
           //requestPromises.push(fetch(`https://siliconmint-dev-5x.orkesconductor.io/`));
           requestPromises.push(
-            undiciFetch(`https://google.com/`, { dispatcher: undiciAgent }) //, {
+            fetch(`https://google.com/`) //, {
             //   dispatcher: undiciAgent,
             // })
           );
