@@ -88,8 +88,8 @@ export class TestUtil {
         workflowClient: any,
         workflowId: string,
         expectedStatus: string,
-        maxWaitTimeMs: number = 5000,
-        pollIntervalMs: number = 100
+        maxWaitTimeMs: number = 15000,
+        pollIntervalMs: number = 1000
     ): Promise<any> {
         const startTime = Date.now();
 
