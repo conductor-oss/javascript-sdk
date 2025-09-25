@@ -47,6 +47,7 @@ describe("Load Test for ECONNRESET", () => {
 
         // Create an array to hold all the request promises.
         const undiciAgent = new UndiciAgent({
+          connectTimeout: 270000,
           //allowH2: true,
           connect: {
             timeout: 270000, // Connect timeout in milliseconds (e.g., 60 seconds)
@@ -63,7 +64,7 @@ describe("Load Test for ECONNRESET", () => {
           //requestPromises.push(executor.getWorkflow(executionId, false));
           //requestPromises.push(fetch(`https://siliconmint-dev-5x.orkesconductor.io/`));
           requestPromises.push(
-            fetch(`https://google.com/`, { signal: AbortSignal.timeout(1000000) }) //, {
+            undiciFetch(`https://google.com/`, { dispatcher: undiciAgent }) //, {
             //   dispatcher: undiciAgent,
             // })
           );
