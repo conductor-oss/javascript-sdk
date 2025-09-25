@@ -228,19 +228,19 @@ const sendRequest = async (
   body: any,
   formData: FormData | undefined,
   headers: Headers,
-  onCancel: OnCancel,
+  //onCancel: OnCancel,
   fetchFn: FetchFn<RequestInit, Response> = fetch
 ): Promise<Response> => {
-  const controller = new AbortController();
+  //const controller = new AbortController();
 
   const request: RequestInit = {
     headers,
     method: options.method,
     body: body ?? formData,
-    signal: controller.signal as AbortSignal,
+    //signal: controller.signal as AbortSignal,
   };
 
-  onCancel(() => controller.abort());
+  //onCancel(() => controller.abort());
 
   return await fetchWithRetry(url, request, fetchFn);
 };
@@ -328,7 +328,7 @@ export const request = <T>(
           body,
           formData,
           headers,
-          onCancel,
+          //onCancel,
           fetchFn
         );
         const responseBody = await getResponseBody(response);

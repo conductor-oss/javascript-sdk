@@ -12,7 +12,7 @@ const TEST_TIMEOUT = 60000 * 10; // 60 seconds
 describe("Load Test for ECONNRESET", () => {
   jest.setTimeout(TEST_TIMEOUT);
 
-  test(`should handle ${CONCURRENT_REQUESTS} staggered GET requests (1 every 10ms) without ECONNRESET`, async () => {
+  test(`should handle ${CONCURRENT_REQUESTS} staggered GET requests (1 every 0ms) without ECONNRESET`, async () => {
     const client = await orkesConductorClient();
     const executor = new WorkflowExecutor(client);
 
@@ -41,7 +41,7 @@ describe("Load Test for ECONNRESET", () => {
       `Starting load test with workflow execution ID: ${executionId}`
     );
     console.log(
-      `Sending ${CONCURRENT_REQUESTS} staggered requests (1 every 10ms)...`
+      `Sending ${CONCURRENT_REQUESTS} staggered requests (1 every 0ms)...`
     );
 
     // Create an array to hold all the request promises.
@@ -52,7 +52,7 @@ describe("Load Test for ECONNRESET", () => {
 
       if (i < CONCURRENT_REQUESTS - 1) {
         // Wait 100ms before starting the next request.
-        await new Promise((resolve) => setTimeout(resolve, 10));
+        await new Promise((resolve) => setTimeout(resolve, 0));
       }
     }
 
