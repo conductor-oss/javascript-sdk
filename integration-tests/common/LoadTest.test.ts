@@ -64,7 +64,7 @@ describe("Load Test for ECONNRESET", () => {
           //requestPromises.push(executor.getWorkflow(executionId, false));
           //requestPromises.push(fetch(`https://siliconmint-dev-5x.orkesconductor.io/`));
           requestPromises.push(
-            fetch(`https://google.com/`, { signal: controller.signal }) //, {
+            fetch(`https://siliconmint-dev-5x.orkesconductor.io/`, { signal: controller.signal }) //, {
             //   dispatcher: undiciAgent,
             // })
           );
