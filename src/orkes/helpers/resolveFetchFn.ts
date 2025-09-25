@@ -21,9 +21,15 @@ export const resolveFetchFn = async (
     return ((input: UndiciRequestInfo, init?: UndiciRequestInit) =>
       undiciFetch(input, { ...init, dispatcher: undiciAgent })) as FetchFn;
   } catch {
-    const httpsModule = await import("https");
-    const agent = new httpsModule.Agent({ maxSockets: 1 });
-    return (input: RequestInfo, init?: RequestInit) =>
-      fetch(input, { ...init, agent } as RequestInit & { agent: typeof agent });
+    try {
+      const httpsModule = await import("https");
+      const agent = new httpsModule.Agent({ maxSockets: 1 });
+      return (input: RequestInfo, init?: RequestInit) =>
+        fetch(input, { ...init, agent } as RequestInit & {
+          agent: typeof agent;
+        });
+    } catch {
+      return fetch;
+    }
   }
 };
