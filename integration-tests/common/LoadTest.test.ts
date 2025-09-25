@@ -44,12 +44,26 @@ describe("Load Test for ECONNRESET", () => {
       `Sending ${CONCURRENT_REQUESTS} staggered requests (1 every 0ms)...`
     );
 
-    // Create an array to hold all the request promises.
-    const requestPromises: Promise<any>[] = [];
-    for (let i = 0; i < CONCURRENT_REQUESTS; i++) {
-      // Start the request but don't wait for it to finish here.
-      //requestPromises.push(executor.getWorkflow(executionId, false));
-      requestPromises.push(fetch(`https://google.com/`));
+        // Create an array to hold all the request promises.
+        const { fetch: undiciFetch, Agent } = await import("undici");
+        const undiciAgent = new Agent({
+          //allowH2: true,
+          connect: {
+            timeout: 270000, // Connect timeout in milliseconds (e.g., 60 seconds)
+          },
+        });
+    
+        // Create an array to hold all the request promises.
+        const requestPromises: Promise<any>[] = [];
+        for (let i = 0; i < CONCURRENT_REQUESTS; i++) {
+          // Start the request but don't wait for it to finish here.
+          //requestPromises.push(executor.getWorkflow(executionId, false));
+          //requestPromises.push(fetch(`https://siliconmint-dev-5x.orkesconductor.io/`));
+          requestPromises.push(
+            undiciFetch(`https://google.com/`, {
+              dispatcher: undiciAgent,
+            })
+          );
 
       // if (i < CONCURRENT_REQUESTS - 1) {
       //   // Wait 100ms before starting the next request.
