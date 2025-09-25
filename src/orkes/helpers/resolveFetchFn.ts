@@ -1,7 +1,10 @@
 import { FetchFn } from "../types";
 // eslint-disable-next-line
 // @ts-ignore since undici is an optional dependency and could me missing
-import type { RequestInfo, RequestInit } from "undici";
+import type {
+  RequestInfo as UndiciRequestInfo,
+  RequestInit as UndiciRequestInit,
+} from "undici";
 
 export const resolveFetchFn = async (
   customFetch?: FetchFn
@@ -15,9 +18,12 @@ export const resolveFetchFn = async (
     const { fetch: undiciFetch, Agent } = await import("undici");
     const undiciAgent = new Agent({ allowH2: true, connections: 1 });
 
-    return ((input: RequestInfo, init?: RequestInit) =>
+    return ((input: UndiciRequestInfo, init?: UndiciRequestInit) =>
       undiciFetch(input, { ...init, dispatcher: undiciAgent })) as FetchFn;
   } catch {
-    return fetch;
+    const httpsModule = await import("https");
+    const agent = new httpsModule.Agent({ maxSockets: 1 });
+    return (input: RequestInfo, init?: RequestInit) =>
+      fetch(input, { ...init, agent } as RequestInit & { agent: typeof agent });
   }
 };
