@@ -49,7 +49,7 @@ describe("Load Test for ECONNRESET", () => {
     for (let i = 0; i < CONCURRENT_REQUESTS; i++) {
       // Start the request but don't wait for it to finish here.
       //requestPromises.push(executor.getWorkflow(executionId, false));
-      requestPromises.push(fetch(`https://cloud.orkes.io/`));
+      requestPromises.push(fetch(`https://google.com/`));
 
       // if (i < CONCURRENT_REQUESTS - 1) {
       //   // Wait 100ms before starting the next request.
