@@ -6,7 +6,7 @@ import { TaskType } from "../../src/common";
 // --- Configuration for the Load Test ---
 // The number of requests to send in parallel.
 // Adjust this number to find the breaking point of your load balancer.
-const CONCURRENT_REQUESTS = 100;
+const CONCURRENT_REQUESTS = 1000;
 const TEST_TIMEOUT = 180000 * 10; // 180 seconds
 
 describe("Load Test for ECONNRESET", () => {
