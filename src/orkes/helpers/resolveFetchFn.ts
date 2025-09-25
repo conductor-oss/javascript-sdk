@@ -8,17 +8,16 @@ export const resolveFetchFn = async (
 ): Promise<FetchFn> => {
   if (customFetch) return customFetch;
   if (process?.release?.name !== "node") return fetch;
-  return fetch;
 
-  // try {
-  //   // eslint-disable-next-line
-  //   // @ts-ignore since undici is an optional dependency and could me missing
-  //   const { fetch: undiciFetch, Agent } = await import("undici");
-  //   const undiciAgent = new Agent({ allowH2: true });
+  try {
+    // eslint-disable-next-line
+    // @ts-ignore since undici is an optional dependency and could me missing
+    const { fetch: undiciFetch, Agent } = await import("undici");
+    const undiciAgent = new Agent({ allowH2: true });
 
-  //   return ((input: RequestInfo, init?: RequestInit) =>
-  //     undiciFetch(input, { ...init, dispatcher: undiciAgent })) as FetchFn;
-  // } catch {
-  //   return fetch;
-  // }
+    return ((input: RequestInfo, init?: RequestInit) =>
+      undiciFetch(input, { ...init, dispatcher: undiciAgent })) as FetchFn;
+  } catch {
+    return fetch;
+  }
 };
