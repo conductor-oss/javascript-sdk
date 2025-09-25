@@ -2,6 +2,7 @@ import { describe, test, expect, jest } from "@jest/globals";
 import { orkesConductorClient } from "../../src/orkes";
 import { WorkflowExecutor } from "../../src/core";
 import { TaskType } from "../../src/common";
+import { fetch as undiciFetch, Agent as UndiciAgent } from "undici";
 
 // --- Configuration for the Load Test ---
 // The number of requests to send in parallel.
@@ -45,8 +46,7 @@ describe("Load Test for ECONNRESET", () => {
     );
 
         // Create an array to hold all the request promises.
-        const { fetch: undiciFetch, Agent } = await import("undici");
-        const undiciAgent = new Agent({
+        const undiciAgent = new UndiciAgent({
           //allowH2: true,
           connect: {
             timeout: 270000, // Connect timeout in milliseconds (e.g., 60 seconds)
