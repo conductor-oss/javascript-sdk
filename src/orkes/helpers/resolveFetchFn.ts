@@ -20,7 +20,7 @@ export const resolveFetchFn = async (
 
     return ((input: UndiciRequestInfo, init?: UndiciRequestInit) =>
       undiciFetch(input, { ...init, dispatcher: undiciAgent })) as FetchFn;
-  } catch { 
-    throw new Error("failed to import undici");
+  } catch {
+    return fetch;
   }
 };

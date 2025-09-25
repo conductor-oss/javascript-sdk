@@ -5,4 +5,14 @@ export default {
   clearMocks: true,
   coverageProvider: "v8",
   transformIgnorePatterns: ["/node_modules/", "\\.pnp\\.[^\\/]+$"],
+  transform: {
+    "^.+\\.tsx?$": [
+      "ts-jest",
+      {
+        tsconfig: {
+          module: "commonjs",
+        },
+      },
+    ],
+  },
 };
