@@ -45,27 +45,28 @@ describe("Load Test for ECONNRESET", () => {
       `Sending ${CONCURRENT_REQUESTS} staggered requests (1 every 0ms)...`
     );
 
-        // Create an array to hold all the request promises.
-        const undiciAgent = new UndiciAgent({
-          connectTimeout: 270000,
-          //allowH2: true,
-          connect: {
-            timeout: 270000, // Connect timeout in milliseconds (e.g., 60 seconds)
-          },
-        });
+    // Create an array to hold all the request promises.
+    const undiciAgent = new UndiciAgent({
+      connectTimeout: 270000,
+      bodyTimeout: 270000,
+      headersTimeout: 270000,
+      //allowH2: true,
+      connect: {
+        timeout: 270000, // Connect timeout in milliseconds (e.g., 60 seconds)
+      },
+    });
 
-        // Create an array to hold all the request promises.
-        const requestPromises: Promise<any>[] = [];
-        for (let i = 0; i < CONCURRENT_REQUESTS; i++) {
-          // Start the request but don't wait for it to finish here.
-          //requestPromises.push(executor.getWorkflow(executionId, false));
-          //requestPromises.push(fetch(`https://siliconmint-dev-5x.orkesconductor.io/`));
-          const signal = AbortSignal.timeout(60000)
-          requestPromises.push(
-            fetch(`https://google.com/`, { signal }) //, {
-            //   dispatcher: undiciAgent,
-            // })
-          );
+    // Create an array to hold all the request promises.
+    const requestPromises: Promise<any>[] = [];
+    for (let i = 0; i < CONCURRENT_REQUESTS; i++) {
+      // Start the request but don't wait for it to finish here.
+      //requestPromises.push(executor.getWorkflow(executionId, false));
+      //requestPromises.push(fetch(`https://siliconmint-dev-5x.orkesconductor.io/`));
+      requestPromises.push(
+        undiciFetch(`https://google.com/`, {
+          dispatcher: undiciAgent,
+        })
+      );
 
       // if (i < CONCURRENT_REQUESTS - 1) {
       //   // Wait 100ms before starting the next request.
@@ -111,7 +112,10 @@ describe("Load Test for ECONNRESET", () => {
       console.error("ECONNRESET errors detected:", econnresetErrors);
     }
     if (http429Errors.length > 0) {
-      console.error("HTTP 429 (Too Many Requests) errors detected:", http429Errors);
+      console.error(
+        "HTTP 429 (Too Many Requests) errors detected:",
+        http429Errors
+      );
     }
     if (otherErrors.length > 0) {
       console.error(`\n--- Other Errors (${otherErrors.length}) ---`);
