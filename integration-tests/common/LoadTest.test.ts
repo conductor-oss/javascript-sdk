@@ -49,7 +49,7 @@ describe("Load Test for ECONNRESET", () => {
     for (let i = 0; i < CONCURRENT_REQUESTS; i++) {
       // Start the request but don't wait for it to finish here.
       //requestPromises.push(executor.getWorkflow(executionId, false));
-      requestPromises.push(fetch(`https://siliconmint-dev-5x.orkesconductor.io/`));
+      requestPromises.push(fetch(`https://sdkdev.orkesconductor.io`));
 
       // if (i < CONCURRENT_REQUESTS - 1) {
       //   // Wait 100ms before starting the next request.
