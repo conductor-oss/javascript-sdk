@@ -47,6 +47,7 @@ describe("Load Test for ECONNRESET", () => {
 
     // Create an array to hold all the request promises.
     const undiciAgent = new UndiciAgent({
+      connections: 500,
       connectTimeout: 270000,
       bodyTimeout: 270000,
       headersTimeout: 270000,
@@ -67,6 +68,11 @@ describe("Load Test for ECONNRESET", () => {
           dispatcher: undiciAgent,
         })
       );
+      // requestPromises.push(
+      //   undiciFetch(`https://siliconmint-dev-5x.orkesconductor.io/`, {
+      //     dispatcher: undiciAgent,
+      //   })
+      // );
 
       // if (i < CONCURRENT_REQUESTS - 1) {
       //   // Wait 100ms before starting the next request.
