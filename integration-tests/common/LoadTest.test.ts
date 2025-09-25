@@ -50,15 +50,14 @@ describe("Load Test for ECONNRESET", () => {
       allowH2: true,
       connections: 1,
       //pipelining: 10,
-      keepAliveTimeout: 270000,
-      keepAliveMaxTimeout: 270000,
-      connectTimeout: 270000,
-      bodyTimeout: 270000,
-      headersTimeout: 270000,
-      //allowH2: true,
-      connect: {
-        timeout: 270000, // Connect timeout in milliseconds (e.g., 60 seconds)
-      },
+      // keepAliveTimeout: 270000,
+      // keepAliveMaxTimeout: 270000,
+      // connectTimeout: 270000,
+      // bodyTimeout: 270000,
+      // headersTimeout: 270000,
+      // connect: {
+      //   timeout: 270000, // Connect timeout in milliseconds (e.g., 60 seconds)
+      // },
     });
 
     // Create an array to hold all the request promises.
