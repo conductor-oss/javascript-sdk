@@ -3,30 +3,28 @@ name: Continuous Integration
 on: pull_request
 
 jobs:
-  # linter:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v4
-  #     - name: Set up Node
-  #       uses: actions/setup-node@v4
-  #       with:
-  #         node-version: "22"
-  #     - name: Install Dependencies
-  #       run: npm ci
-  #     - name: Run Linter
-  #       run: npm run lint
+  linter:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install Dependencies
+        run: npm ci
+      - name: Run Linter
+        run: npm run lint
 
   tests:
-    # runs-on: windows-latest
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       max-parallel: 1
       matrix:
-        node-version: [22]
-        # test: ["unit", "integration:v5", "integration:v4"]
-        test: ["integration:v5"]
+        node-version: [18, 20, 22]
+        test: ["unit", "integration:v5", "integration:v4"]
     name: Node.js v${{ matrix.node-version }} - ${{ matrix.test }} tests
     steps:
       - name: Checkout
