@@ -6,7 +6,7 @@ import { TaskType } from "../../src/common";
 // --- Configuration for the Load Test ---
 // The number of requests to send in parallel.
 // Adjust this number to find the breaking point of your load balancer.
-const CONCURRENT_REQUESTS = 50;
+const CONCURRENT_REQUESTS = 100;
 const TEST_TIMEOUT = 180000 * 10; // 180 seconds
 
 describe("Load Test for ECONNRESET", () => {
@@ -49,7 +49,7 @@ describe("Load Test for ECONNRESET", () => {
     for (let i = 0; i < CONCURRENT_REQUESTS; i++) {
       // Start the request but don't wait for it to finish here.
       //requestPromises.push(executor.getWorkflow(executionId, false));
-      requestPromises.push(fetch(`https://siliconmint-dev-5x.orkesconductor.io/`));
+      requestPromises.push(fetch(`https://google.com/`));
 
       // if (i < CONCURRENT_REQUESTS - 1) {
       //   // Wait 100ms before starting the next request.
