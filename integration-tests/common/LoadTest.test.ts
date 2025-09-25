@@ -54,17 +54,15 @@ describe("Load Test for ECONNRESET", () => {
           },
         });
 
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 270000)
-    
         // Create an array to hold all the request promises.
         const requestPromises: Promise<any>[] = [];
         for (let i = 0; i < CONCURRENT_REQUESTS; i++) {
           // Start the request but don't wait for it to finish here.
           //requestPromises.push(executor.getWorkflow(executionId, false));
           //requestPromises.push(fetch(`https://siliconmint-dev-5x.orkesconductor.io/`));
+          const signal = AbortSignal.timeout(60000)
           requestPromises.push(
-            fetch(`https://siliconmint-dev-5x.orkesconductor.io/`, { signal: controller.signal }) //, {
+            fetch(`https://siliconmint-dev-5x.orkesconductor.io/`, { signal }) //, {
             //   dispatcher: undiciAgent,
             // })
           );
