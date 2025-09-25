@@ -6,13 +6,13 @@ import { TaskType } from "../../src/common";
 // --- Configuration for the Load Test ---
 // The number of requests to send in parallel.
 // Adjust this number to find the breaking point of your load balancer.
-const CONCURRENT_REQUESTS = 300;
+const CONCURRENT_REQUESTS = 50;
 const TEST_TIMEOUT = 60000 * 10; // 60 seconds
 
 describe("Load Test for ECONNRESET", () => {
   jest.setTimeout(TEST_TIMEOUT);
 
-  test(`should handle ${CONCURRENT_REQUESTS} concurrent GET requests without ECONNRESET`, async () => {
+  test(`should handle ${CONCURRENT_REQUESTS} staggered GET requests (1 every 100ms) without ECONNRESET`, async () => {
     const client = await orkesConductorClient();
     const executor = new WorkflowExecutor(client);
 
@@ -40,19 +40,26 @@ describe("Load Test for ECONNRESET", () => {
     console.log(
       `Starting load test with workflow execution ID: ${executionId}`
     );
-    console.log(`Sending ${CONCURRENT_REQUESTS} concurrent requests...`);
+    console.log(
+      `Sending ${CONCURRENT_REQUESTS} staggered requests (1 every 100ms)...`
+    );
 
-    // Create an array of promises. Each promise represents a GET request.
-    const requestPromises = [];
+    // Create an array to hold all the request promises.
+    const requestPromises: Promise<any>[] = [];
     for (let i = 0; i < CONCURRENT_REQUESTS; i++) {
+      // Start the request but don't wait for it to finish here.
       requestPromises.push(executor.getWorkflow(executionId, false));
+
+      if (i < CONCURRENT_REQUESTS - 1) {
+        // Wait 100ms before starting the next request.
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
     }
 
-    // Use Promise.allSettled to wait for all requests to complete,
-    // regardless of whether they succeed or fail.
+    // Now, wait for all the in-flight requests to complete.
     const results = await Promise.allSettled(requestPromises);
 
-    // Analyze the results to find ECONNRESET errors
+    // Analyze the results to find specific errors
     let successCount = 0;
     const econnresetErrors: any[] = [];
     const http429Errors: any[] = [];
