@@ -16,7 +16,7 @@ export const resolveFetchFn = async (
     //const undiciAgent = new Agent({ allowH2: true, keepAliveTimeout: 1});
 
     return ((input: RequestInfo, init?: RequestInit) =>
-      undiciFetch(input, { ...init, dispatcher: new Agent({ allowH2: true }) })) as FetchFn;
+      undiciFetch(input, { ...init, dispatcher: new Agent({ allowH2: true, connect: { timeout: 60000 } }) })) as FetchFn;
   } catch {
     return fetch;
   }
