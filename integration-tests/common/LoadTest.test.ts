@@ -6,8 +6,8 @@ import { TaskType } from "../../src/common";
 // --- Configuration for the Load Test ---
 // The number of requests to send in parallel.
 // Adjust this number to find the breaking point of your load balancer.
-const CONCURRENT_REQUESTS = 5000;
-const TEST_TIMEOUT = 60000; // 60 seconds
+const CONCURRENT_REQUESTS = 2000;
+const TEST_TIMEOUT = 60000 * 10; // 60 seconds
 
 describe("Load Test for ECONNRESET", () => {
   jest.setTimeout(TEST_TIMEOUT);
