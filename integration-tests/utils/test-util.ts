@@ -26,9 +26,10 @@ export class TestUtil {
     /**
      * Register a single workflow from JSON file
      */
-    public static async registerWorkflow(workflowName: string): Promise<void> {
+    public static async registerWorkflow(workflowName: string, workflowJsonFilePath: string): Promise<void> {
         try {
-            const workflowDef = this.getWorkflowDef(`../common/metadata/${workflowName}.json`);
+            const workflowDef = this.getWorkflowDef(workflowJsonFilePath);
+            workflowDef.name = workflowName;
             await this.metadataClient.registerWorkflowDef(workflowDef, true);
             console.log(`✓ Registered workflow: ${workflowName}`);
         } catch (error) {

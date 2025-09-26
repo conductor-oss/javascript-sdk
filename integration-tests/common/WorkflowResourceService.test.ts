@@ -14,7 +14,7 @@ describe("WorkflowResourceService", () => {
       simpleTask("simple_ref", "le_simple_task", {}),
     ];
 
-    const wfDef = workflow("unit_test_wf", tasks);
+    const wfDef = workflow(`jsSdkTest-test_wf-${Date.now()}`, tasks);
     wfDef.outputParameters = { message: "${simple_ref.output.message}" };
     metadataClient.registerWorkflowDef(wfDef, true);
 

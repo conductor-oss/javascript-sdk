@@ -11,11 +11,13 @@ describe("TaskManager", () => {
   test("worker example ", async () => {
     const client = await clientPromise;
     const executor = new WorkflowExecutor(client);
+    const taskName = `jsSdkTest-task-manager-int-test-${Date.now()}`;
+    const workflowName = `jsSdkTest-task-manager-int-test-wf-${Date.now()}`;
 
     const taskRunner = new TaskRunner({
       taskResource: client.taskResource,
       worker: {
-        taskDefName: "task-manager-int-test",
+        taskDefName: taskName,
         execute: async () => {
           return {
             outputData: {
@@ -35,12 +37,12 @@ describe("TaskManager", () => {
     taskRunner.startPolling();
 
     expect(taskRunner.isPolling).toEqual(true);
-    const workflowName = "task-manager-int-test-wf";
+
     await executor.registerWorkflow(true, {
       name: workflowName,
       version: 1,
       ownerEmail: "developers@orkes.io",
-      tasks: [simpleTask("task-manager-int-test", "task-manager-int-test", {})],
+      tasks: [simpleTask(taskName, taskName, {})],
       inputParameters: [],
       outputParameters: {},
       timeoutSeconds: 0,
@@ -53,7 +55,7 @@ describe("TaskManager", () => {
       },
       workflowName,
       1,
-      "RunnerIdentifier"
+      `${workflowName}-id`
     );
     expect(executionId).toBeDefined();
 
@@ -62,7 +64,7 @@ describe("TaskManager", () => {
     const workflowStatus = await TestUtil.waitForWorkflowStatus(executor, executionId!, "COMPLETED");
 
     const [firstTask] = workflowStatus.tasks || [];
-    expect(firstTask?.taskType).toEqual("task-manager-int-test");
+    expect(firstTask?.taskType).toEqual(taskName);
     expect(workflowStatus.status).toEqual("COMPLETED");
 
     await taskRunner.stopPolling();

@@ -7,10 +7,11 @@ describe("ScheduleExecutor", () => {
   const clientPromise = orkesConductorClient();
   jest.setTimeout(15000);
 
-  const name = `testSchedule_${Date.now()}`;
+  const now = Date.now();
+  const name = `jsSdkTestSchedule_${now}`;
   const cronExpression = "0/5 * * ? * *"; //every 5 second
 
-  const workflowName = `testScheduleWf_${Date.now()}`;
+  const workflowName = `jsSdkTestScheduleWf_${now}`;
   const workflowVersion = 1;
 
   test("Should be able to register a workflow and retrieve it", async () => {
@@ -115,7 +116,7 @@ describe("ScheduleExecutor", () => {
   });
 
   test("Should be able to retrieve  next (default 3) execution times for a scheduler", async () => {
-    const cronExpression = "0 0 * ? * *"; //every hour
+    const cronExpression = "0 0 * * * *"; //every hour
     const client = await clientPromise;
     const executor = new SchedulerClient(client);
     const result = await executor.getNextFewSchedules(cronExpression);

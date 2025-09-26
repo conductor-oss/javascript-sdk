@@ -7,8 +7,8 @@ describe("EventResourceService", () => {
     const eventApi = orkesClient.eventResource;
 
     const [eventName, event, eventDescription, eventTagKey, eventTagValue] = [
-      "jsSdkTestEventName",
-      "jsSdkTest:eventHandler:1",
+      `jsSdkTest-EventName-${Date.now()}`,
+      `jsSdkTest:eventHandler:1${Date.now()}`,
       "jsSdkTestDescription",
       "jsSdkTestTagKey",
       "jsSdkTestTagValue",

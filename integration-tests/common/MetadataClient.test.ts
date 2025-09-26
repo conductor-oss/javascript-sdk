@@ -5,6 +5,7 @@ import { orkesConductorClient } from "../../src/orkes";
 
 describe("MetadataClient", () => {
   const clientPromise = orkesConductorClient();
+  const taskName = `jsSdkTest-test_task_definition-${Date.now()}`;
 
   jest.setTimeout(15000);
   test("Should register a task definition", async () => {
@@ -12,7 +13,7 @@ describe("MetadataClient", () => {
     const metadataClient = new MetadataClient(client);
 
     const newTaskDefinition = taskDefinition({
-      name: "test_task_definition",
+      name: taskName,
       description: "New Task Definition",
       retryCount: 4,
       timeoutSeconds: 7200,
@@ -62,7 +63,7 @@ describe("MetadataClient", () => {
     const metadataClient = new MetadataClient(client);
 
     const newTaskDefinition = taskDefinition({
-      name: "test_task_definition",
+      name: taskName,
       description: "New Task Definition Update",
       retryCount: 5,
       timeoutSeconds: 7201,
@@ -110,14 +111,13 @@ describe("MetadataClient", () => {
   test("Should unregister a task definition", async () => {
     const client = await clientPromise;
     const metadataClient = new MetadataClient(client);
-    const name ="test_task_definition";
 
     await expect(
-      metadataClient.unregisterTask("test_task_definition")
+      metadataClient.unregisterTask(taskName)
     ).resolves.not.toThrow();
 
     await expect(client.metadataResource.getTaskDef(
-      name
+      taskName
     )).rejects.toThrow();
   })
 });

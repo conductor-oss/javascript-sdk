@@ -11,7 +11,7 @@ describe("Executor", () => {
   const clientPromise = orkesConductorClient();
 
   jest.setTimeout(15000);
-  const name = `testWorkflow-${Date.now()}`;
+  const name = `jsSdkTest-Workflow-${Date.now()}`;
   const version = 1;
   test("Should be able to register a workflow", async () => {
     const client = await clientPromise;
@@ -114,19 +114,21 @@ describe("Executor", () => {
   test("Should run workflow with http task with asyncComplete true", async () => {
     const client = await clientPromise;
     const executor = new WorkflowExecutor(client);
+    const workflowName = `jsSdkTest-wf_with_asyncComplete_http_task-${Date.now()}`;
+    const taskName = `jsSdkTest-http_task_with_asyncComplete_true-${Date.now()}`;
   
     await executor.registerWorkflow(true, {
-      name: "test_jssdk_workflow_with_http_task_with_asyncComplete_true",
+      name: workflowName,
       version: 1,
       ownerEmail: "developers@orkes.io",
-      tasks: [httpTask("test_jssdk_http_task_with_asyncComplete_true", { uri: "http://www.yahoo.com", method: "GET" }, true)],
+      tasks: [httpTask(taskName, { uri: "http://www.yahoo.com", method: "GET" }, true)],
       inputParameters: [],
       outputParameters: {},
       timeoutSeconds: 300,
     });
   
     const executionId = await executor.startWorkflow({
-      name: "test_jssdk_workflow_with_http_task_with_asyncComplete_true",
+      name: workflowName,
       input: {},
       version: 1,
     });
@@ -136,7 +138,7 @@ describe("Executor", () => {
     expect(["IN_PROGRESS", "SCHEDULED"]).toContain(workflowStatusBefore.tasks?.[0]?.status);
   
     const taskClient = new TaskClient(client);
-    taskClient.updateTaskResult(executionId, "test_jssdk_http_task_with_asyncComplete_true", "COMPLETED", { hello: "From manuall api call updating task result" });
+    taskClient.updateTaskResult(executionId, taskName, "COMPLETED", { hello: "From manuall api call updating task result" });
   
     const workflowStatusAfter = await TestUtil.waitForWorkflowStatus(executor, executionId, "COMPLETED");
   
@@ -145,19 +147,21 @@ describe("Executor", () => {
 
   test("Should run workflow with an optional http task", async () => {
     const executor = new WorkflowExecutor(await clientPromise);
+    const workflowName = `jsSdkTest-wf_with_optional_http_task-${Date.now()}`;
+    const taskName = `jsSdkTest-optional_http_task-${Date.now()}`;
   
     await executor.registerWorkflow(true, {
-      name: "test_jssdk_workflow_with_optional_http_task",
+      name: workflowName,
       version: 1,
       ownerEmail: "developers@orkes.io",
-      tasks: [httpTask("test_jssdk_optional_http_task", { uri: "uncorrect_uri", method: "GET" }, false, true)],
+      tasks: [httpTask(taskName, { uri: "uncorrect_uri", method: "GET" }, false, true)],
       inputParameters: [],
       outputParameters: {},
       timeoutSeconds: 300,
     });
   
     const executionId = await executor.startWorkflow({
-      name: "test_jssdk_workflow_with_optional_http_task",
+      name: workflowName,
       input: {},
       version: 1,
     });

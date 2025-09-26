@@ -11,10 +11,17 @@ import {SignalResponse} from "../../src/common/open-api/models/SignalResponse";
 describe("Execute with Return Strategy and Consistency", () => {
   // Constants specific to this test suite
   const WORKFLOW_NAMES = {
-    COMPLEX_WF: 'complex_wf_signal_test',
-    SUB_WF_1: 'complex_wf_signal_test_subworkflow_1',
-    SUB_WF_2: 'complex_wf_signal_test_subworkflow_2',
-    WAIT_SIGNAL_TEST: 'wait_signal_test'
+    COMPLEX_WF: `jsSdkTest-Complex_wf_signal_test-${Date.now()}`,
+    SUB_WF_1: `jsSdkTest-Complex_wf_signal_test_subworkflow_1-${Date.now()}`,
+    SUB_WF_2: `jsSdkTest-Complex_wf_signal_test_subworkflow_2-${Date.now()}`,
+    WAIT_SIGNAL_TEST: `jsSdkTest-Wait_signal_test-${Date.now()}`
+  };
+
+  const WORKFLOW_JSON_FILE_PATHS = {
+    COMPLEX_WF: `../v5-only/metadata/complex_wf_signal_test.json`,
+    SUB_WF_1: `../v5-only/metadata/complex_wf_signal_test_subworkflow_1.json`,
+    SUB_WF_2: `../v5-only/metadata/complex_wf_signal_test_subworkflow_2.json`,
+    WAIT_SIGNAL_TEST: `../v5-only/metadata/wait_signal_test.json`
   };
 
   const clientPromise = orkesConductorClient();
@@ -63,10 +70,10 @@ describe("Execute with Return Strategy and Consistency", () => {
   async function registerAllWorkflows(): Promise<void> {
     try {
       await Promise.all([
-        TestUtil.registerWorkflow(WORKFLOW_NAMES.COMPLEX_WF),
-        TestUtil.registerWorkflow(WORKFLOW_NAMES.SUB_WF_1),
-        TestUtil.registerWorkflow(WORKFLOW_NAMES.SUB_WF_2),
-        TestUtil.registerWorkflow(WORKFLOW_NAMES.WAIT_SIGNAL_TEST)
+        TestUtil.registerWorkflow(WORKFLOW_NAMES.COMPLEX_WF, WORKFLOW_JSON_FILE_PATHS.COMPLEX_WF),
+        TestUtil.registerWorkflow(WORKFLOW_NAMES.SUB_WF_1, WORKFLOW_JSON_FILE_PATHS.SUB_WF_1),
+        TestUtil.registerWorkflow(WORKFLOW_NAMES.SUB_WF_2, WORKFLOW_JSON_FILE_PATHS.SUB_WF_2),
+        TestUtil.registerWorkflow(WORKFLOW_NAMES.WAIT_SIGNAL_TEST, WORKFLOW_JSON_FILE_PATHS.WAIT_SIGNAL_TEST)
       ]);
 
       // Add to cleanup list
