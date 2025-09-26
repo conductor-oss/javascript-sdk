@@ -82,7 +82,7 @@ describe("TaskManager", () => {
       },
       workflowWithWaitTask.name,
       1,
-      "someId"
+      `${workflowWithWaitTask.name}-id`
     );
     const workflowStatus = await executor.getWorkflow(executionId!, true);
 
