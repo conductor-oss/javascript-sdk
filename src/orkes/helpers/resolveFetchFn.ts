@@ -1,6 +1,6 @@
 import { FetchFn } from "../types";
 // eslint-disable-next-line
-// @ts-ignore since undici is an optional dependency and could me missing
+// @ts-ignore since undici is an optional dependency and could be missing
 import type {
   RequestInfo as UndiciRequestInfo,
   RequestInit as UndiciRequestInit,
@@ -15,7 +15,7 @@ export const resolveFetchFn = async (
 
   try {
     // eslint-disable-next-line
-    // @ts-ignore since undici is an optional dependency and could me missing
+    // @ts-ignore since undici is an optional dependency and could be missing
     const { fetch: undiciFetch, Agent } = await import("undici");
     const undiciAgent = new Agent({ allowH2: true, connections: maxHttpConnections });
 

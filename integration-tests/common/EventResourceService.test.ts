@@ -6,9 +6,10 @@ describe("EventResourceService", () => {
     const orkesClient = await orkesConductorClient();
     const eventApi = orkesClient.eventResource;
 
+    const now = Date.now();
     const [eventName, event, eventDescription, eventTagKey, eventTagValue] = [
-      `jsSdkTest-EventName-${Date.now()}`,
-      `jsSdkTest:eventHandler:1${Date.now()}`,
+      `jsSdkTest-EventName-${now}`,
+      `jsSdkTest:eventHandler:1${now}`,
       "jsSdkTestDescription",
       "jsSdkTestTagKey",
       "jsSdkTestTagValue",
