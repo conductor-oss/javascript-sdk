@@ -16,7 +16,7 @@ export const orkesConductorClient = async (
   config?: Partial<OrkesApiConfig>,
   customFetch?: FetchFn
 ) => {
-  const { serverUrl, keyId, keySecret, maxHttpConnections } =
+  const { serverUrl, keyId, keySecret, maxHttp2Connections } =
     resolveOrkesConfig(config);
 
   if (!serverUrl) throw new Error("Conductor server URL is not set");
@@ -24,7 +24,7 @@ export const orkesConductorClient = async (
   const conductorClientWithAuth = new ConductorClientWithAuth(
     { ...config, BASE: serverUrl },
     createOrkesHttpRequest(
-      await resolveFetchFn(customFetch, maxHttpConnections)
+      await resolveFetchFn(customFetch, maxHttp2Connections)
     )
   );
 

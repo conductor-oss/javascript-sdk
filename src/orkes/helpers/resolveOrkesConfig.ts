@@ -5,7 +5,7 @@ export const resolveOrkesConfig = (config?: Partial<OrkesApiConfig>) => {
     serverUrl: process.env.CONDUCTOR_SERVER_URL || config?.serverUrl,
     keyId: process.env.CONDUCTOR_AUTH_KEY || config?.keyId,
     keySecret: process.env.CONDUCTOR_AUTH_SECRET || config?.keySecret,
-    maxHttpConnections:
-      Number(process.env.CONDUCTOR_MAX_HTTP_CONNECTIONS) || config?.maxHttpConnections,
+    maxHttp2Connections:
+      Number(process.env.CONDUCTOR_MAX_HTTP2_CONNECTIONS) || config?.maxHttp2Connections,
   };
 };
