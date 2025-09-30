@@ -7,19 +7,19 @@ import {MetadataClient} from "../../src/core/metadataClient";
 import {waitForWorkflowStatus} from "../utils/waitForWorkflowStatus";
 import {TaskResultStatusEnum} from "../../src/common/open-api/models/TaskResultStatusEnum";
 import {SignalResponse} from "../../src/common/open-api/models/SignalResponse";
-import { getComplexSignalTestWfData } from "./metadata/complex_wf_signal_test";
-import { getComplexSignalTestSubWf1Data } from "./metadata/complex_wf_signal_test_subworkflow_1";
-import { getComplexSignalTestSubWf2Data } from "./metadata/complex_wf_signal_test_subworkflow_2";
-import { getWaitSignalTestWfData } from "./metadata/wait_signal_test";
+import { getComplexSignalTestWfDef } from "./metadata/complex_wf_signal_test";
+import { getComplexSignalTestSubWf1Def } from "./metadata/complex_wf_signal_test_subworkflow_1";
+import { getComplexSignalTestSubWf2Def } from "./metadata/complex_wf_signal_test_subworkflow_2";
+import { getWaitSignalTestWfDef } from "./metadata/wait_signal_test";
 
 describe("Execute with Return Strategy and Consistency", () => {
   // Constants specific to this test suite
   const now = Date.now();
   const WORKFLOWS = {
-    COMPLEX_WF: getComplexSignalTestWfData(now),
-    SUB_WF_1: getComplexSignalTestSubWf1Data(now),
-    SUB_WF_2: getComplexSignalTestSubWf2Data(now),
-    WAIT_SIGNAL_TEST: getWaitSignalTestWfData(now)
+    COMPLEX_WF: getComplexSignalTestWfDef(now),
+    SUB_WF_1: getComplexSignalTestSubWf1Def(now),
+    SUB_WF_2: getComplexSignalTestSubWf2Def(now),
+    WAIT_SIGNAL_TEST: getWaitSignalTestWfDef(now)
   };
 
   const clientPromise = orkesConductorClient();

@@ -1,4 +1,4 @@
-export const getComplexSignalTestWfData = (date: number) => {
+export const getComplexSignalTestWfDef = (date: number) => {
   return {
     createTime: 1744299182957,
     updateTime: 1744299435683,

@@ -1,4 +1,4 @@
-export const getWaitSignalTestWfData = (date: number) => {
+export const getWaitSignalTestWfDef = (date: number) => {
   return {
     createTime: 1744183953775,
     updateTime: 0,
