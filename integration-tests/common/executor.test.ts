@@ -3,7 +3,7 @@ import { SetVariableTaskDef, TaskType, WorkflowDef} from "../../src/common";
 import { orkesConductorClient } from "../../src/orkes";
 import { WorkflowExecutor } from "../../src/core/executor";
 import { v4 as uuidv4 } from "uuid";
-import {TestUtil} from "../utils/test-util";
+import { waitForWorkflowStatus } from "../utils/waitForWorkflowStatus";
 import { httpTask } from "../../src/core/sdk";
 import { TaskClient } from "../../src/core/taskClient";
 
@@ -133,14 +133,14 @@ describe("Executor", () => {
       version: 1,
     });
   
-    const workflowStatusBefore = await TestUtil.waitForWorkflowStatus(executor, executionId, "RUNNING");
+    const workflowStatusBefore = await waitForWorkflowStatus(executor, executionId, "RUNNING");
   
     expect(["IN_PROGRESS", "SCHEDULED"]).toContain(workflowStatusBefore.tasks?.[0]?.status);
   
     const taskClient = new TaskClient(client);
     taskClient.updateTaskResult(executionId, taskName, "COMPLETED", { hello: "From manuall api call updating task result" });
   
-    const workflowStatusAfter = await TestUtil.waitForWorkflowStatus(executor, executionId, "COMPLETED");
+    const workflowStatusAfter = await waitForWorkflowStatus(executor, executionId, "COMPLETED");
   
     expect(workflowStatusAfter.tasks?.[0]?.status).toEqual("COMPLETED");
   });
@@ -166,7 +166,7 @@ describe("Executor", () => {
       version: 1,
     });
   
-    const workflowStatus = await TestUtil.waitForWorkflowStatus(executor, executionId, "COMPLETED");
+    const workflowStatus = await waitForWorkflowStatus(executor, executionId, "COMPLETED");
     expect(["FAILED", "COMPLETED_WITH_ERRORS"]).toContain(workflowStatus.tasks?.[0]?.status);
   });
 });

@@ -2,7 +2,7 @@ import { expect, describe, test, jest } from "@jest/globals";
 import { TaskRunner } from "../../src/task/TaskRunner";
 import { WorkflowExecutor, simpleTask } from "../../src/core";
 import { orkesConductorClient } from "../../src/orkes";
-import { TestUtil } from "../utils/test-util";
+import { waitForWorkflowStatus } from "../utils/waitForWorkflowStatus";
 
 describe("TaskManager", () => {
   const clientPromise = orkesConductorClient();
@@ -61,7 +61,7 @@ describe("TaskManager", () => {
 
     taskRunner.updateOptions({ concurrency: 1, pollInterval: 100 });
 
-    const workflowStatus = await TestUtil.waitForWorkflowStatus(executor, executionId!, "COMPLETED");
+    const workflowStatus = await waitForWorkflowStatus(executor, executionId!, "COMPLETED");
 
     const [firstTask] = workflowStatus.tasks || [];
     expect(firstTask?.taskType).toEqual(taskName);

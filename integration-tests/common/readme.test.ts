@@ -3,7 +3,7 @@ import { orkesConductorClient } from "../../src/orkes";
 import { WorkflowExecutor, simpleTask, generate } from "../../src/core";
 import { TaskType } from "../../src/common";
 import { TaskRunner } from "../../src/task";
-import { TestUtil } from "../utils/test-util";
+import { waitForWorkflowStatus } from "../utils/waitForWorkflowStatus";
 
 describe("TaskManager", () => {
   const clientPromise = orkesConductorClient();
@@ -54,7 +54,7 @@ describe("TaskManager", () => {
       version: 1,
     });
 
-    const workflowStatus = await TestUtil.waitForWorkflowStatus(executor, executionId, "COMPLETED");
+    const workflowStatus = await waitForWorkflowStatus(executor, executionId, "COMPLETED");
 
     const [firstTask] = workflowStatus.tasks || [];
     expect(firstTask?.taskType).toEqual(taskName);
@@ -162,7 +162,7 @@ describe("TaskManager", () => {
       `workflow${sumTwoNumbers.name}`
     );
 
-    const workflowStatus = await TestUtil.waitForWorkflowStatus(executor, executionId!, "COMPLETED");
+    const workflowStatus = await waitForWorkflowStatus(executor, executionId!, "COMPLETED");
 
     expect(workflowStatus.status).toEqual("COMPLETED");
     expect(workflowStatus.output?.result).toEqual(3);

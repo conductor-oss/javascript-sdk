@@ -4,24 +4,22 @@ import { orkesConductorClient } from "../../src/orkes";
 import { WorkflowExecutor } from "../../src/core/executor";
 import { v4 as uuidv4 } from "uuid";
 import {MetadataClient} from "../../src/core/metadataClient";
-import {TestUtil} from "../utils/test-util";
+import {waitForWorkflowStatus} from "../utils/waitForWorkflowStatus";
 import {TaskResultStatusEnum} from "../../src/common/open-api/models/TaskResultStatusEnum";
 import {SignalResponse} from "../../src/common/open-api/models/SignalResponse";
+import { getComplexWfSignalTest } from "./metadata/complex_wf_signal_test";
+import { getComplexWfSignalTestSubworkflow1 } from "./metadata/complex_wf_signal_test_subworkflow_1";
+import { getComplexWfSignalTestSubworkflow2 } from "./metadata/complex_wf_signal_test_subworkflow_2";
+import { getWaitSignalTest } from "./metadata/wait_signal_test";
 
 describe("Execute with Return Strategy and Consistency", () => {
   // Constants specific to this test suite
-  const WORKFLOW_NAMES = {
-    COMPLEX_WF: `jsSdkTest-Complex_wf_signal_test-${Date.now()}`,
-    SUB_WF_1: `jsSdkTest-Complex_wf_signal_test_subworkflow_1-${Date.now()}`,
-    SUB_WF_2: `jsSdkTest-Complex_wf_signal_test_subworkflow_2-${Date.now()}`,
-    WAIT_SIGNAL_TEST: `jsSdkTest-Wait_signal_test-${Date.now()}`
-  };
-
-  const WORKFLOW_JSON_FILE_PATHS = {
-    COMPLEX_WF: `../v5-only/metadata/complex_wf_signal_test.json`,
-    SUB_WF_1: `../v5-only/metadata/complex_wf_signal_test_subworkflow_1.json`,
-    SUB_WF_2: `../v5-only/metadata/complex_wf_signal_test_subworkflow_2.json`,
-    WAIT_SIGNAL_TEST: `../v5-only/metadata/wait_signal_test.json`
+  const now = Date.now();
+  const WORKFLOWS = {
+    COMPLEX_WF: getComplexWfSignalTest(now),
+    SUB_WF_1: getComplexWfSignalTestSubworkflow1(now),
+    SUB_WF_2: getComplexWfSignalTestSubworkflow2(now),
+    WAIT_SIGNAL_TEST: getWaitSignalTest(now)
   };
 
   const clientPromise = orkesConductorClient();
@@ -37,7 +35,6 @@ describe("Execute with Return Strategy and Consistency", () => {
     client = await clientPromise;
     executor = new WorkflowExecutor(client);
     metadataClient = new MetadataClient(client);
-    TestUtil.setMetadataClient(metadataClient);
 
     // Register all test workflows
     await registerAllWorkflows();
@@ -70,15 +67,15 @@ describe("Execute with Return Strategy and Consistency", () => {
   async function registerAllWorkflows(): Promise<void> {
     try {
       await Promise.all([
-        TestUtil.registerWorkflow(WORKFLOW_NAMES.COMPLEX_WF, WORKFLOW_JSON_FILE_PATHS.COMPLEX_WF),
-        TestUtil.registerWorkflow(WORKFLOW_NAMES.SUB_WF_1, WORKFLOW_JSON_FILE_PATHS.SUB_WF_1),
-        TestUtil.registerWorkflow(WORKFLOW_NAMES.SUB_WF_2, WORKFLOW_JSON_FILE_PATHS.SUB_WF_2),
-        TestUtil.registerWorkflow(WORKFLOW_NAMES.WAIT_SIGNAL_TEST, WORKFLOW_JSON_FILE_PATHS.WAIT_SIGNAL_TEST)
+        metadataClient.registerWorkflowDef(WORKFLOWS.COMPLEX_WF, true),
+        metadataClient.registerWorkflowDef(WORKFLOWS.SUB_WF_1, true),
+        metadataClient.registerWorkflowDef(WORKFLOWS.SUB_WF_2, true),
+        metadataClient.registerWorkflowDef(WORKFLOWS.WAIT_SIGNAL_TEST, true)
       ]);
 
       // Add to cleanup list
-      Object.values(WORKFLOW_NAMES).forEach(name => {
-        workflowsToCleanup.push({name, version: 1});
+      Object.values(WORKFLOWS).forEach(workflow => {
+        workflowsToCleanup.push({name: workflow.name, version: 1});
       });
 
       console.log('✓ All workflows registered successfully');
@@ -89,7 +86,7 @@ describe("Execute with Return Strategy and Consistency", () => {
 
   async function cleanupAllWorkflows(): Promise<void> {
     const cleanupPromises = workflowsToCleanup.map(({name, version}) =>
-        TestUtil.unregisterWorkflow(name, version)
+      metadataClient.unregisterWorkflow(name, version)
     );
 
     const results = await Promise.allSettled(cleanupPromises);
@@ -172,8 +169,8 @@ describe("Execute with Return Strategy and Consistency", () => {
 
       // 1. Execute workflow with return strategy
       const rawResult = await executor.executeWorkflow(
-          { name: WORKFLOW_NAMES.COMPLEX_WF, version: 1 },
-          WORKFLOW_NAMES.COMPLEX_WF,
+          { name: WORKFLOWS.COMPLEX_WF.name, version: 1 },
+          WORKFLOWS.COMPLEX_WF.name,
           1,
           uuidv4(),
           "", // waitUntilTaskRef
@@ -299,7 +296,7 @@ describe("Execute with Return Strategy and Consistency", () => {
       );
 
       // Wait for workflow completion
-      const finalWorkflow = await TestUtil.waitForWorkflowStatus(
+      const finalWorkflow = await waitForWorkflowStatus(
           executor,
           workflowId,
           'COMPLETED',
@@ -318,8 +315,8 @@ describe("Execute with Return Strategy and Consistency", () => {
 
         // Execute workflow
         const rawResult = await executor.executeWorkflow(
-            { name: WORKFLOW_NAMES.COMPLEX_WF, version: 1 },
-            WORKFLOW_NAMES.COMPLEX_WF,
+            { name: WORKFLOWS.COMPLEX_WF.name, version: 1 },
+            WORKFLOWS.COMPLEX_WF.name,
             1,
             uuidv4(),
             "",
@@ -377,7 +374,7 @@ describe("Execute with Return Strategy and Consistency", () => {
         await executor.signal(workflowId, TaskResultStatusEnum.COMPLETED, { result: "signal1" });
         await executor.signal(workflowId, TaskResultStatusEnum.COMPLETED, { result: "signal2" });
 
-        await TestUtil.waitForWorkflowStatus(executor, workflowId, 'COMPLETED', 300000, 200);
+        await waitForWorkflowStatus(executor, workflowId, 'COMPLETED', 300000, 200);
         console.log(`✓ ${testCase.name} test completed successfully`);
       });
     });
