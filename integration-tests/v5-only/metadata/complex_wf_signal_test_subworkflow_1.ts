@@ -1,4 +1,4 @@
-export const getComplexWfSignalTestSubworkflow1 = (date: number) => {
+export const getComplexSignalTestSubWf1Data = (date: number) => {
   return {
     createTime: 1744299356718,
     updateTime: 1744287643769,
