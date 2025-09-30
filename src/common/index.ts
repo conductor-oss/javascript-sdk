@@ -4,14 +4,25 @@ export * from "./types";
 
 export {
   ConductorClient,
-  ApiRequestOptions,
-  ApiResult,
-  OpenAPIConfig,
-  OnCancel,
   ApiError,
   BaseHttpRequest,
   CancelablePromise,
   CancelError,
+  EventResourceService,
+  HealthCheckResourceService,
+  MetadataResourceService,
+  SchedulerResourceService,
+  TaskResourceService,
+  TokenResourceService,
+  WorkflowBulkResourceService,
+  WorkflowResourceService,
+} from "./open-api";
+
+export type {
+  ApiRequestOptions,
+  ApiResult,
+  OpenAPIConfig,
+  OnCancel,
   Action,
   EventHandler,
   ExternalStorageLocation,
@@ -42,14 +53,6 @@ export {
   WorkflowStatus,
   WorkflowSummary,
   WorkflowTask,
-  EventResourceService,
-  HealthCheckResourceService,
-  MetadataResourceService,
-  SchedulerResourceService,
-  TaskResourceService,
-  TokenResourceService,
-  WorkflowBulkResourceService,
-  WorkflowResourceService,
   HTScrollableSearchResultHumanTaskEntry,
   Terminate,
   TimeoutPolicy,
@@ -61,5 +64,5 @@ export {
   HumanTaskTemplate,
   HumanTaskSearchResult,
   HumanTaskSearch,
-  HumanTaskEntry
+  HumanTaskEntry,
 } from "./open-api";

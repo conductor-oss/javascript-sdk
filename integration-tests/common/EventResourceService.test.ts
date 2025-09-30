@@ -1,14 +1,15 @@
 import { expect, describe, test } from "@jest/globals";
-import { orkesConductorClient } from "../../../orkes";
+import { orkesConductorClient } from "../../src/orkes";
 
 describe("EventResourceService", () => {
   test("Should create an event handler with description and tags and then delete it", async () => {
     const orkesClient = await orkesConductorClient();
     const eventApi = orkesClient.eventResource;
 
+    const now = Date.now();
     const [eventName, event, eventDescription, eventTagKey, eventTagValue] = [
-      "jsSdkTestEventName",
-      "jsSdkTest:eventHandler:1",
+      `jsSdkTest-EventName-${now}`,
+      `jsSdkTest:eventHandler:1${now}`,
       "jsSdkTestDescription",
       "jsSdkTestTagKey",
       "jsSdkTestTagValue",

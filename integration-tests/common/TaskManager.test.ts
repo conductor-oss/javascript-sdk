@@ -1,23 +1,25 @@
 import { expect, describe, test, jest } from "@jest/globals";
-import { simpleTask, taskDefinition, WorkflowExecutor } from "../../core";
-import { orkesConductorClient } from "../../orkes";
-import { TaskManager, ConductorWorker } from "../index";
-import { mockLogger } from "./mockLogger";
-import { TestUtil } from "../../core/__test__/utils/test-util";
+import { simpleTask, taskDefinition, WorkflowExecutor } from "../../src/core";
+import { orkesConductorClient } from "../../src/orkes";
+import { TaskManager, ConductorWorker } from "../../src/task/index";
+import { mockLogger } from "../utils/mockLogger";
+import { waitForWorkflowCompletion } from "../utils/waitForWorkflowCompletion";
 
 
-const BASE_TIME = 500;
+const BASE_TIME = 1000;
 describe("TaskManager", () => {
   const clientPromise = orkesConductorClient();
 
-  jest.setTimeout(15000);
+  jest.setTimeout(30000);
 
   test("Should run workflow with worker", async () => {
     const client = await clientPromise;
     const executor = new WorkflowExecutor(client);
+    const taskName = `jsSdkTest-taskmanager-test-${Date.now()}`;
+    const workflowName = `jsSdkTest-taskmanager-test-wf-${Date.now()}`;
 
     const worker: ConductorWorker = {
-      taskDefName: "taskmanager-test",
+      taskDefName: taskName,
       execute: async () => {
         return {
           outputData: {
@@ -34,22 +36,22 @@ describe("TaskManager", () => {
     manager.startPolling();
 
     await executor.registerWorkflow(true, {
-      name: "TaskManagerTest",
+      name: workflowName,
       version: 1,
       ownerEmail: "developers@orkes.io",
-      tasks: [simpleTask("taskmanager-test", "taskmanager-test", {})],
+      tasks: [simpleTask(taskName, taskName, {})],
       inputParameters: [],
       outputParameters: {},
       timeoutSeconds: 0,
     });
 
     const executionId = await executor.startWorkflow({
-      name: "TaskManagerTest",
+      name: workflowName,
       input: {},
       version: 1,
     });
 
-    const workflowStatus = await TestUtil.waitForWorkflowCompletion(executor, executionId, BASE_TIME * 4);
+    const workflowStatus = await waitForWorkflowCompletion(executor, executionId, BASE_TIME * 30);
 
     expect(workflowStatus.status).toEqual("COMPLETED");
 
@@ -59,18 +61,20 @@ describe("TaskManager", () => {
   test("On error it should call the errorHandler provided", async () => {
     const client = await clientPromise;
     const executor = new WorkflowExecutor(client);
+    const taskName = `jsSdkTest-taskmanager-error-handler-test-${Date.now()}`;
+    const workflowName = `jsSdkTest-taskmanager-error-handler-test-wf-${Date.now()}`;
 
     const mockErrorHandler = jest.fn();
 
     const worker: ConductorWorker = {
-      taskDefName: "taskmanager-error-handler-test-unique",
+      taskDefName: taskName,
       execute: async () => {
         throw new Error("This is a forced error for testing error handler");
       },
     };
 
     await client.metadataResource.registerTaskDef([taskDefinition({
-      name: "taskmanager-error-handler-test-unique",
+      name: taskName,
       timeoutSeconds: 0,
       retryCount: 0,
     })]);
@@ -83,23 +87,23 @@ describe("TaskManager", () => {
     manager.startPolling();
 
     await executor.registerWorkflow(true, {
-      name: "TaskManagerTestErrorHandlerUnique",
+      name: workflowName,
       version: 1,
       ownerEmail: "developers@orkes.io",
-      tasks: [simpleTask("taskmanager-error-handler-test-unique", "taskmanager-error-handler-test-unique", {})],
+      tasks: [simpleTask(taskName, taskName, {})],
       inputParameters: [],
       outputParameters: {},
       timeoutSeconds: 0,
     });
 
     const status = await executor.startWorkflow({
-      name: "TaskManagerTestErrorHandlerUnique",
+      name: workflowName,
       input: {},
       version: 1,
-      correlationId: "errorHandlerTestIdentifierUnique"
+      correlationId: `${workflowName}-id`
     });
 
-    const workflowStatus = await TestUtil.waitForWorkflowCompletion(executor, status, BASE_TIME * 6);
+    const workflowStatus = await waitForWorkflowCompletion(executor, status, BASE_TIME * 30);
 
     expect(workflowStatus.status).toEqual("FAILED");
     expect(mockErrorHandler).toHaveBeenCalledTimes(1);
@@ -109,16 +113,18 @@ describe("TaskManager", () => {
   test("If no error handler provided. it should just update the task", async () => {
     const client = await clientPromise;
     const executor = new WorkflowExecutor(client);
+    const taskName = `jsSdkTest-taskmanager-error-test-${Date.now()}`;
+    const workflowName = `jsSdkTest-taskmanager-error-test-wf-${Date.now()}`;
 
     const worker: ConductorWorker = {
-      taskDefName: "taskmanager-error-test",
+      taskDefName: taskName,
       execute: async () => {
         throw new Error("This is a forced error");
       },
     };
 
     await client.metadataResource.registerTaskDef([taskDefinition({
-      name: "taskmanager-error-test",
+      name: taskName,
       timeoutSeconds: 0,
       retryCount: 0,
     })]);
@@ -130,23 +136,23 @@ describe("TaskManager", () => {
     manager.startPolling();
 
     await executor.registerWorkflow(true, {
-      name: "TaskManagerTestE",
+      name: workflowName,
       version: 1,
       ownerEmail: "developers@orkes.io",
-      tasks: [simpleTask("taskmanager-error-test", "taskmanager-error-test", {})],
+      tasks: [simpleTask(taskName, taskName, {})],
       inputParameters: [],
       outputParameters: {},
       timeoutSeconds: 0,
     });
 
     const executionId = await executor.startWorkflow({
-      name: "TaskManagerTestE",
+      name: workflowName,
       input: {},
       version: 1,
-      correlationId: "noErrorHandlerProvidedIdentifier"
+      correlationId: `${workflowName}-id`
     });
 
-    const workflowStatus = await TestUtil.waitForWorkflowCompletion(executor, executionId!, BASE_TIME * 10);
+    const workflowStatus = await waitForWorkflowCompletion(executor, executionId!, BASE_TIME * 30);
     expect(workflowStatus.status).toEqual("FAILED");
     await manager.stopPolling();
   });
@@ -158,7 +164,7 @@ describe("TaskManager", () => {
     // just create a bunch of worker names
     const workerNames: string[] = Array.from({ length: 3 })
       .fill(0)
-      .map((_, i: number) => `taskman-multi-${1 + i}`);
+      .map((_, i: number) => `jsSdkTest-taskman-multi-${1 + i}-${Date.now()}`);
 
     // names to actual workers
     const workers: ConductorWorker[] = workerNames.map((name) => ({
@@ -183,7 +189,7 @@ describe("TaskManager", () => {
 
     expect(manager.isPolling).toBeTruthy();
 
-    const workflowName = "TaskManagerTestMulti";
+    const workflowName = `jsSdkTest-taskmanager-multi-test-wf-${Date.now()}`;
 
     // increase polling speed
     manager.updatePollingOptions({ concurrency: 4 });
@@ -203,7 +209,7 @@ describe("TaskManager", () => {
     const executionId = await executor.startWorkflow({
       name: workflowName,
       version: 1,
-      correlationId: "identifierTaskManMulti"
+      correlationId: `${workflowName}-id`
     });
 
     expect(executionId).toBeDefined();
@@ -211,7 +217,7 @@ describe("TaskManager", () => {
     // decrease speed again
     manager.updatePollingOptions({ pollInterval: BASE_TIME, concurrency: 1 });
 
-    const workflowStatus = await TestUtil.waitForWorkflowCompletion(executor, executionId, BASE_TIME * 4);
+    const workflowStatus = await waitForWorkflowCompletion(executor, executionId, BASE_TIME * 30);
 
     expect(workflowStatus.status).toEqual("COMPLETED");
     await manager.stopPolling();
@@ -233,10 +239,11 @@ describe("TaskManager", () => {
 
   test("Should not be able to startPolling if duplicate workers", async () => {
     const client = await clientPromise;
+    const workerName = `jsSdkTest-worker-name-${Date.now()}`;
 
     const workerNames: string[] = Array.from({ length: 3 })
       .fill(0)
-      .map(() => `worker-name`);
+      .map(() => workerName);
 
     // names to actual workers
     const workers: ConductorWorker[] = workerNames.map((name) => ({
@@ -255,7 +262,7 @@ describe("TaskManager", () => {
       options: { pollInterval: BASE_TIME, concurrency: 2 },
     });
     expect(() => manager.startPolling()).toThrow(
-      "Duplicate worker taskDefName: worker-name"
+      `Duplicate worker taskDefName: ${workerName}`
     );
   });
 
@@ -263,12 +270,13 @@ describe("TaskManager", () => {
     const client = await clientPromise;
 
     const executor = new WorkflowExecutor(client);
+    const workerName = `jsSdkTest-taskman-single-worker-update-${Date.now()}`;
     // just create a bunch of worker names
     const workerNames: string[] = Array.from({ length: 3 })
       .fill(0)
-      .map((_, i: number) => `taskman-single-worker-update${1 + i}`);
+      .map((_, i: number) => `${workerName}-${1 + i}`);
 
-    const candidateWorkerUpdate = "taskman-single-worker-update1";
+    const candidateWorkerUpdate = `${workerName}-1`;
     const initialCandidateWorkflowOptions = {
       concurrency: 1,
       pollInterval: BASE_TIME * 3,
@@ -300,7 +308,7 @@ describe("TaskManager", () => {
 
     expect(manager.isPolling).toBeTruthy();
 
-    const workflowName = "TaskManagerTestMultiSingleWorkerUpdate";
+    const workflowName = `jsSdkTest-taskmanager-multi-single-worker-update-wf-${Date.now()}`;
 
     const updatedWorkerOptions = {
       concurrency: 3,
@@ -328,14 +336,14 @@ describe("TaskManager", () => {
     const executionId = await executor.startWorkflow({
       name: workflowName,
       version: 1,
-      correlationId: "identifierTaskManMulti"
+      correlationId: `${workflowName}-id`
     });
     expect(executionId).toBeDefined();
 
     // decrease speed again
     manager.updatePollingOptions({ pollInterval: BASE_TIME, concurrency: 1 });
 
-    const workflowStatus = await TestUtil.waitForWorkflowCompletion(executor, executionId, BASE_TIME * 10);
+    const workflowStatus = await waitForWorkflowCompletion(executor, executionId, BASE_TIME * 30);
 
     expect(workflowStatus.status).toEqual("COMPLETED");
     await manager.stopPolling();

@@ -3,7 +3,7 @@ import type { Mocked } from "jest-mock";
 
 import { TaskRunner } from "../TaskRunner";
 import { RunnerArgs } from "../types";
-import { mockLogger } from "./mockLogger";
+import { mockLogger } from "../../../integration-tests/utils/mockLogger";
 import { TaskResourceService } from "../../common/open-api";
 import { TaskResultStatusEnum } from "../../common/open-api/models/TaskResultStatusEnum";
 

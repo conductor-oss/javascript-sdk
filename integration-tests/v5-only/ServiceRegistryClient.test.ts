@@ -1,7 +1,7 @@
 import {beforeAll, afterEach, describe, expect, jest, test} from "@jest/globals";
-import {ServiceRegistryClient} from "../serviceRegistryClient";
-import {orkesConductorClient} from "../../orkes";
-import {ServiceType} from "../../common/open-api/models/ServiceRegistryModels";
+import {ServiceRegistryClient} from "../../src/core/serviceRegistryClient";
+import {orkesConductorClient} from "../../src/orkes";
+import {ServiceType} from "../../src/common/open-api/models/ServiceRegistryModels";
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -33,7 +33,7 @@ describe("ServiceRegistryClient", () => {
     test("Should add and retrieve a service registry", async () => {
         // Create a test service registry
         const testServiceRegistry = {
-            name: "test_service_registry",
+            name: `jsSdkTest-test_service_registry${Date.now()}`,
             type: ServiceType.HTTP,
             serviceURI: "http://httpbin:8081/api-docs",
             config: {
@@ -87,7 +87,7 @@ describe("ServiceRegistryClient", () => {
     test("Should add and remove a service registry", async () => {
         // Create a test service registry
         const testServiceRegistry = {
-            name: "test_service_registry_to_remove",
+            name: `jsSdkTest-test_service_registry_to_remove-${Date.now()}`,
             type: ServiceType.HTTP,
             serviceURI: "http://httpbin:8081/api-docs"
         };
@@ -119,7 +119,7 @@ describe("ServiceRegistryClient", () => {
     test("Should add a service method to a registry", async () => {
         // Create a test service registry
         const testServiceRegistry = {
-            name: "test_service_registry_with_method",
+            name: `jsSdkTest-test_service_registry_with_method-${Date.now()}`,
             type: ServiceType.HTTP,
             serviceURI: "http://httpbin:8081/api-docs"
         };
@@ -173,7 +173,7 @@ describe("ServiceRegistryClient", () => {
     test("Should discover methods from a http service", async () => {
         // Create a test service registry for discovery
         const testServiceRegistry = {
-            name: "test_service_registry_discovery",
+            name: `jsSdkTest-test_service_registry_discovery-${Date.now()}`,
             type: ServiceType.HTTP,
             serviceURI: "http://httpbin:8081/api-docs"
         };
@@ -206,7 +206,7 @@ describe("ServiceRegistryClient", () => {
     test("Should discover methods from a gRPC service", async () => {
         // Create a test service registry for discovery
         const testServiceRegistry = {
-            name: "test_gRPC_service_registry_discovery",
+            name: `jsSdkTest-test_gRPC_service_registry_discovery-${Date.now()}`,
             type: ServiceType.gRPC,
             serviceURI: "grpcbin:50051"
         };

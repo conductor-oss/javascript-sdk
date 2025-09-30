@@ -6,5 +6,6 @@
       "dom"
     ],
     "noEmit": true,
+    "isolatedModules": true
   }
 }

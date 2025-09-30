@@ -1,16 +1,17 @@
 import { expect, describe, test, jest } from "@jest/globals";
-import { orkesConductorClient } from "../../orkes";
-import { SchedulerClient } from "../schedulerClient";
-import { SaveScheduleRequest, TaskType, WorkflowDef } from "../../common";
+import { orkesConductorClient } from "../../src/orkes";
+import { SchedulerClient } from "../../src/core/schedulerClient";
+import { SaveScheduleRequest, TaskType, WorkflowDef } from "../../src/common";
 
 describe("ScheduleExecutor", () => {
   const clientPromise = orkesConductorClient();
   jest.setTimeout(15000);
 
-  const name = `testSchedule_${Date.now()}`;
+  const now = Date.now();
+  const name = `jsSdkTestSchedule_${now}`;
   const cronExpression = "0/5 * * ? * *"; //every 5 second
 
-  const workflowName = `testScheduleWf_${Date.now()}`;
+  const workflowName = `jsSdkTestScheduleWf_${now}`;
   const workflowVersion = 1;
 
   test("Should be able to register a workflow and retrieve it", async () => {

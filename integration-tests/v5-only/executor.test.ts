@@ -1,182 +1,25 @@
 import {expect, describe, test, jest, beforeAll, afterEach, afterAll} from "@jest/globals";
-import {Consistency, ReturnStrategy, SetVariableTaskDef, TaskType, WorkflowDef} from "../../common";
-import { orkesConductorClient } from "../../orkes";
-import { WorkflowExecutor } from "../executor";
+import {Consistency, ReturnStrategy} from "../../src/common";
+import { orkesConductorClient } from "../../src/orkes";
+import { WorkflowExecutor } from "../../src/core/executor";
 import { v4 as uuidv4 } from "uuid";
-import {MetadataClient} from "../metadataClient";
-import {TestUtil} from "./utils/test-util";
-import {TaskResultStatusEnum} from "../../common/open-api/models/TaskResultStatusEnum";
-import {SignalResponse} from "../../common/open-api/models/SignalResponse";
-import { httpTask } from "../sdk";
-import { TaskClient } from "../taskClient";
-
-describe("Executor", () => {
-  const clientPromise = orkesConductorClient();
-
-  jest.setTimeout(15000);
-  const name = `testWorkflow-${Date.now()}`;
-  const version = 1;
-  test("Should be able to register a workflow", async () => {
-    const client = await clientPromise;
-    const executor = new WorkflowExecutor(client);
-
-    const workflowDefinition: WorkflowDef = {
-      name,
-      version,
-      tasks: [
-        {
-          type: TaskType.SET_VARIABLE,
-          name: "setVariable",
-          taskReferenceName: "httpTaskRef",
-          inputParameters: {
-            hello: "world",
-          },
-        },
-      ],
-      inputParameters: [],
-      timeoutSeconds: 15,
-    };
-
-    await expect(
-        executor.registerWorkflow(true, workflowDefinition)
-    ).resolves.not.toThrow();
-    const workflowDefinitionFromApi = await client.metadataResource.get(
-        name,
-        version
-    );
-    expect(workflowDefinitionFromApi.name).toEqual(name);
-    expect(workflowDefinitionFromApi.version).toEqual(version);
-    expect(workflowDefinitionFromApi.tasks[0].name).toEqual(
-        workflowDefinition.tasks[0].name
-    );
-    expect(workflowDefinitionFromApi.tasks[0].taskReferenceName).toEqual(
-        workflowDefinition.tasks[0].taskReferenceName
-    );
-    expect(workflowDefinitionFromApi.tasks[0].inputParameters).toEqual(
-        (workflowDefinition.tasks[0] as SetVariableTaskDef).inputParameters
-    );
-  });
-
-  let executionId: string | undefined = undefined;
-  test("Should be able to start a workflow", async () => {
-    const client = await clientPromise;
-    const executor = new WorkflowExecutor(client);
-    executionId = await executor.startWorkflow({ name, version });
-    expect(executionId).toBeTruthy();
-  });
-
-  test("Should be able to execute workflow synchronously", async () => {
-    const client = await clientPromise;
-    const executor = new WorkflowExecutor(client);
-    const workflowRun = await executor.executeWorkflow(
-        {
-          name: name,
-          version: version,
-        },
-        name,
-        version,
-        uuidv4()
-    );
-    expect(workflowRun.status).toEqual("COMPLETED");
-  });
-
-  test("Should be able to get workflow execution status ", async () => {
-    const client = await clientPromise;
-    const executor = new WorkflowExecutor(client);
-    const workflowStatus = await executor.getWorkflowStatus(
-        executionId!,
-        true,
-        true
-    );
-    expect(workflowStatus.status).toBeTruthy();
-  });
-
-  test("Should return workflow status detail", async () => {
-    const client = await clientPromise;
-    const executor = new WorkflowExecutor(client);
-    const workflowStatus = await executor.getWorkflow(executionId!, true);
-
-    expect(workflowStatus.status).toBeTruthy();
-    expect(workflowStatus.tasks?.length).toBe(1);
-  });
-  test("Should execute a workflow with indempotency key", async () => {
-    const client = await clientPromise;
-    const executor = new WorkflowExecutor(client);
-    const idempotencyKey = uuidv4();
-    const executionId = await executor.startWorkflow({
-      name: name,
-      version: version,
-      idempotencyKey,
-      idempotencyStrategy: "RETURN_EXISTING",
-    });
-
-    const executionDetails = await executor.getWorkflow(executionId!, true);
-    expect(executionDetails.idempotencyKey).toEqual(idempotencyKey);
-  });
-
-  test("Should run workflow with http task with asyncComplete true", async () => {
-    const client = await clientPromise;
-    const executor = new WorkflowExecutor(client);
-  
-    await executor.registerWorkflow(true, {
-      name: "test_jssdk_workflow_with_http_task_with_asyncComplete_true",
-      version: 1,
-      ownerEmail: "developers@orkes.io",
-      tasks: [httpTask("test_jssdk_http_task_with_asyncComplete_true", { uri: "http://www.yahoo.com", method: "GET" }, true)],
-      inputParameters: [],
-      outputParameters: {},
-      timeoutSeconds: 300,
-    });
-  
-    const executionId = await executor.startWorkflow({
-      name: "test_jssdk_workflow_with_http_task_with_asyncComplete_true",
-      input: {},
-      version: 1,
-    });
-  
-    const workflowStatusBefore = await TestUtil.waitForWorkflowStatus(executor, executionId, "RUNNING");
-  
-    expect(["IN_PROGRESS", "SCHEDULED"]).toContain(workflowStatusBefore.tasks?.[0]?.status);
-  
-    const taskClient = new TaskClient(client);
-    taskClient.updateTaskResult(executionId, "test_jssdk_http_task_with_asyncComplete_true", "COMPLETED", { hello: "From manuall api call updating task result" });
-  
-    const workflowStatusAfter = await TestUtil.waitForWorkflowStatus(executor, executionId, "COMPLETED");
-  
-    expect(workflowStatusAfter.tasks?.[0]?.status).toEqual("COMPLETED");
-  });
-
-  test("Should run workflow with an optional http task", async () => {
-    const executor = new WorkflowExecutor(await clientPromise);
-  
-    await executor.registerWorkflow(true, {
-      name: "test_jssdk_workflow_with_optional_http_task",
-      version: 1,
-      ownerEmail: "developers@orkes.io",
-      tasks: [httpTask("test_jssdk_optional_http_task", { uri: "uncorrect_uri", method: "GET" }, false, true)],
-      inputParameters: [],
-      outputParameters: {},
-      timeoutSeconds: 300,
-    });
-  
-    const executionId = await executor.startWorkflow({
-      name: "test_jssdk_workflow_with_optional_http_task",
-      input: {},
-      version: 1,
-    });
-  
-    const workflowStatus = await TestUtil.waitForWorkflowStatus(executor, executionId, "COMPLETED");
-    expect(["FAILED", "COMPLETED_WITH_ERRORS"]).toContain(workflowStatus.tasks?.[0]?.status);
-  });
-});
+import {MetadataClient} from "../../src/core/metadataClient";
+import {waitForWorkflowStatus} from "../utils/waitForWorkflowStatus";
+import {TaskResultStatusEnum} from "../../src/common/open-api/models/TaskResultStatusEnum";
+import {SignalResponse} from "../../src/common/open-api/models/SignalResponse";
+import { getComplexSignalTestWfDef } from "./metadata/complex_wf_signal_test";
+import { getComplexSignalTestSubWf1Def } from "./metadata/complex_wf_signal_test_subworkflow_1";
+import { getComplexSignalTestSubWf2Def } from "./metadata/complex_wf_signal_test_subworkflow_2";
+import { getWaitSignalTestWfDef } from "./metadata/wait_signal_test";
 
 describe("Execute with Return Strategy and Consistency", () => {
   // Constants specific to this test suite
-  const WORKFLOW_NAMES = {
-    COMPLEX_WF: 'complex_wf_signal_test',
-    SUB_WF_1: 'complex_wf_signal_test_subworkflow_1',
-    SUB_WF_2: 'complex_wf_signal_test_subworkflow_2',
-    WAIT_SIGNAL_TEST: 'wait_signal_test'
+  const now = Date.now();
+  const WORKFLOWS = {
+    COMPLEX_WF: getComplexSignalTestWfDef(now),
+    SUB_WF_1: getComplexSignalTestSubWf1Def(now),
+    SUB_WF_2: getComplexSignalTestSubWf2Def(now),
+    WAIT_SIGNAL_TEST: getWaitSignalTestWfDef(now)
   };
 
   const clientPromise = orkesConductorClient();
@@ -192,7 +35,6 @@ describe("Execute with Return Strategy and Consistency", () => {
     client = await clientPromise;
     executor = new WorkflowExecutor(client);
     metadataClient = new MetadataClient(client);
-    TestUtil.setMetadataClient(metadataClient);
 
     // Register all test workflows
     await registerAllWorkflows();
@@ -225,15 +67,15 @@ describe("Execute with Return Strategy and Consistency", () => {
   async function registerAllWorkflows(): Promise<void> {
     try {
       await Promise.all([
-        TestUtil.registerWorkflow(WORKFLOW_NAMES.COMPLEX_WF),
-        TestUtil.registerWorkflow(WORKFLOW_NAMES.SUB_WF_1),
-        TestUtil.registerWorkflow(WORKFLOW_NAMES.SUB_WF_2),
-        TestUtil.registerWorkflow(WORKFLOW_NAMES.WAIT_SIGNAL_TEST)
+        metadataClient.registerWorkflowDef(WORKFLOWS.COMPLEX_WF, true),
+        metadataClient.registerWorkflowDef(WORKFLOWS.SUB_WF_1, true),
+        metadataClient.registerWorkflowDef(WORKFLOWS.SUB_WF_2, true),
+        metadataClient.registerWorkflowDef(WORKFLOWS.WAIT_SIGNAL_TEST, true)
       ]);
 
       // Add to cleanup list
-      Object.values(WORKFLOW_NAMES).forEach(name => {
-        workflowsToCleanup.push({name, version: 1});
+      Object.values(WORKFLOWS).forEach(workflow => {
+        workflowsToCleanup.push({name: workflow.name, version: 1});
       });
 
       console.log('✓ All workflows registered successfully');
@@ -244,7 +86,7 @@ describe("Execute with Return Strategy and Consistency", () => {
 
   async function cleanupAllWorkflows(): Promise<void> {
     const cleanupPromises = workflowsToCleanup.map(({name, version}) =>
-        TestUtil.unregisterWorkflow(name, version)
+      metadataClient.unregisterWorkflow(name, version)
     );
 
     const results = await Promise.allSettled(cleanupPromises);
@@ -327,8 +169,8 @@ describe("Execute with Return Strategy and Consistency", () => {
 
       // 1. Execute workflow with return strategy
       const rawResult = await executor.executeWorkflow(
-          { name: WORKFLOW_NAMES.COMPLEX_WF, version: 1 },
-          WORKFLOW_NAMES.COMPLEX_WF,
+          { name: WORKFLOWS.COMPLEX_WF.name, version: 1 },
+          WORKFLOWS.COMPLEX_WF.name,
           1,
           uuidv4(),
           "", // waitUntilTaskRef
@@ -454,7 +296,7 @@ describe("Execute with Return Strategy and Consistency", () => {
       );
 
       // Wait for workflow completion
-      const finalWorkflow = await TestUtil.waitForWorkflowStatus(
+      const finalWorkflow = await waitForWorkflowStatus(
           executor,
           workflowId,
           'COMPLETED',
@@ -473,8 +315,8 @@ describe("Execute with Return Strategy and Consistency", () => {
 
         // Execute workflow
         const rawResult = await executor.executeWorkflow(
-            { name: WORKFLOW_NAMES.COMPLEX_WF, version: 1 },
-            WORKFLOW_NAMES.COMPLEX_WF,
+            { name: WORKFLOWS.COMPLEX_WF.name, version: 1 },
+            WORKFLOWS.COMPLEX_WF.name,
             1,
             uuidv4(),
             "",
@@ -532,7 +374,7 @@ describe("Execute with Return Strategy and Consistency", () => {
         await executor.signal(workflowId, TaskResultStatusEnum.COMPLETED, { result: "signal1" });
         await executor.signal(workflowId, TaskResultStatusEnum.COMPLETED, { result: "signal2" });
 
-        await TestUtil.waitForWorkflowStatus(executor, workflowId, 'COMPLETED', 300000, 200);
+        await waitForWorkflowStatus(executor, workflowId, 'COMPLETED', 300000, 200);
         console.log(`✓ ${testCase.name} test completed successfully`);
       });
     });

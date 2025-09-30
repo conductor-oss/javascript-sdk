@@ -1,18 +1,26 @@
 import { FetchFn } from "../types";
-import type { ResponseInit, RequestInfo } from "undici";
+// eslint-disable-next-line
+// @ts-ignore since undici is an optional dependency and could be missing
+import type {
+  RequestInfo as UndiciRequestInfo,
+  RequestInit as UndiciRequestInit,
+} from "undici";
 
 export const resolveFetchFn = async (
-  customFetch?: FetchFn
+  customFetch?: FetchFn,
+  maxHttpConnections: number = 1
 ): Promise<FetchFn> => {
   if (customFetch) return customFetch;
   if (process?.release?.name !== "node") return fetch;
 
   try {
-    const undici = await import("undici");
-    const agent = new undici.Agent({ allowH2: true });
+    // eslint-disable-next-line
+    // @ts-ignore since undici is an optional dependency and could be missing
+    const { fetch: undiciFetch, Agent } = await import("undici");
+    const undiciAgent = new Agent({ allowH2: true, connections: maxHttpConnections });
 
-    return ((input: RequestInfo, init: ResponseInit) =>
-      undici.fetch(input, { ...init, dispatcher: agent })) as FetchFn;
+    return ((input: UndiciRequestInfo, init?: UndiciRequestInit) =>
+      undiciFetch(input, { ...init, dispatcher: undiciAgent })) as FetchFn;
   } catch {
     return fetch;
   }

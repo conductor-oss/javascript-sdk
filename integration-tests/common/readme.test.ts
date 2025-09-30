@@ -1,8 +1,9 @@
 import { expect, describe, test, jest } from "@jest/globals";
-import { orkesConductorClient } from "../orkes";
-import { WorkflowExecutor, simpleTask, generate } from "../core";
-import { TaskType } from "../common";
-import { TaskRunner } from "../task";
+import { orkesConductorClient } from "../../src/orkes";
+import { WorkflowExecutor, simpleTask, generate } from "../../src/core";
+import { TaskType } from "../../src/common";
+import { TaskRunner } from "../../src/task";
+import { waitForWorkflowStatus } from "../utils/waitForWorkflowStatus";
 
 describe("TaskManager", () => {
   const clientPromise = orkesConductorClient();
@@ -11,11 +12,13 @@ describe("TaskManager", () => {
   test("worker example ", async () => {
     const client = await clientPromise;
     const executor = new WorkflowExecutor(client);
+    const workflowName = `jsSdkTest-my_first_js_wf-${Date.now()}`;
+    const taskName = `jsSdkTest-taskmanager-test-${Date.now()}`;
 
     const taskRunner = new TaskRunner({
       taskResource: client.taskResource,
       worker: {
-        taskDefName: "taskmanager-test",
+        taskDefName: taskName,
         execute: async () => {
           return {
             outputData: {
@@ -34,26 +37,27 @@ describe("TaskManager", () => {
     });
     taskRunner.startPolling();
 
+    
     await executor.registerWorkflow(true, {
-      name: "my_first_js_wf",
+      name: workflowName,
       version: 1,
       ownerEmail: "developers@orkes.io",
-      tasks: [simpleTask("taskmanager-test", "taskmanager-test", {})],
+      tasks: [simpleTask(taskName, taskName, {})],
       inputParameters: [],
       outputParameters: {},
       timeoutSeconds: 0,
     });
 
     const executionId = await executor.startWorkflow({
-      name: "my_first_js_wf",
+      name: workflowName,
       input: {},
       version: 1,
     });
-    await new Promise((r) => setTimeout(() => r(true), 900));
-    const workflowStatus = await executor.getWorkflow(executionId, true);
+
+    const workflowStatus = await waitForWorkflowStatus(executor, executionId, "COMPLETED");
 
     const [firstTask] = workflowStatus.tasks || [];
-    expect(firstTask?.taskType).toEqual("taskmanager-test");
+    expect(firstTask?.taskType).toEqual(taskName);
     expect(workflowStatus.status).toEqual("COMPLETED");
 
     taskRunner.stopPolling();
@@ -64,9 +68,9 @@ describe("TaskManager", () => {
   test("update task example ", async () => {
     const client = await clientPromise;
     const executor = new WorkflowExecutor(client);
-    const waitTaskReference = "wait_task_ref";
+    const waitTaskReference = `jsSdkTest-wait_task_ref-${Date.now()}`;
     const workflowWithWaitTask = generate({
-      name: "waitTaskWf",
+      name: `jsSdkTest-waitTaskWf-${Date.now()}`,
       tasks: [{ type: TaskType.WAIT, taskReferenceName: waitTaskReference }],
     });
     await executor.registerWorkflow(true, workflowWithWaitTask);
@@ -79,7 +83,7 @@ describe("TaskManager", () => {
       },
       workflowWithWaitTask.name,
       1,
-      "someId"
+      `${workflowWithWaitTask.name}-id`
     );
     const workflowStatus = await executor.getWorkflow(executionId!, true);
 
@@ -113,13 +117,15 @@ describe("TaskManager", () => {
 
     //Create new workflow executor
     const executor = new WorkflowExecutor(client);
+    const taskName = `jsSdkTest-sum_two_numbers-task-${Date.now()}`;
+    const workflowName = `jsSdkTest-sumTwoNumbersWf-${Date.now()}`;
 
     // Create a workflow
     const sumTwoNumbers = generate({
-      name: "sumTwoNumbers",
+      name: workflowName,
       tasks: [
         {
-          name: "sum_two_numbers",
+          name: taskName,
           inputParameters: {
             numberOne: "${workflow.input.numberOne}",
             numberTwo: "${workflow.input.numberTwo}",
@@ -135,7 +141,7 @@ describe("TaskManager", () => {
       ],
       inputParameters: ["numberOne", "numberTwo"],
       outputParameters: {
-        result: "${sum_two_numbers_ref.output.result}",
+        result: `\${${taskName}_ref.output.result}`,
       },
     });
 
@@ -153,10 +159,10 @@ describe("TaskManager", () => {
       },
       sumTwoNumbers.name,
       1,
-      "workflowSummTwoNumbers"
+      `workflow${sumTwoNumbers.name}`
     );
 
-    const workflowStatus = await executor.getWorkflow(executionId!, true);
+    const workflowStatus = await waitForWorkflowStatus(executor, executionId!, "COMPLETED");
 
     expect(workflowStatus.status).toEqual("COMPLETED");
     expect(workflowStatus.output?.result).toEqual(3);
