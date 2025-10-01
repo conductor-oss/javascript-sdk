@@ -15,6 +15,7 @@ export type HumanTaskSearch = {
   start?: number;
   states?: Array<'PENDING' | 'ASSIGNED' | 'IN_PROGRESS' | 'COMPLETED' | 'TIMED_OUT' | 'DELETED'>;
   taskRefNames?: Array<string>;
+  workflowIds?: Array<string>;
   workflowNames?: Array<string>;
 };
 

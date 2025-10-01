@@ -1,17 +1,16 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { HumanTaskAssignment } from '../models/HumanTaskAssignment';
-import type { HumanTaskEntry } from '../models/HumanTaskEntry';
-import type { HumanTaskSearch } from '../models/HumanTaskSearch';
-import type { HumanTaskSearchResult } from '../models/HumanTaskSearchResult';
-import type { HumanTaskTemplate } from '../models/HumanTaskTemplate';
+import type { HumanTaskAssignment } from "../models/HumanTaskAssignment";
+import type { HumanTaskEntry } from "../models/HumanTaskEntry";
+import type { HumanTaskSearch } from "../models/HumanTaskSearch";
+import type { HumanTaskSearchResult } from "../models/HumanTaskSearchResult";
+import type { HumanTaskTemplate } from "../models/HumanTaskTemplate";
 
-import type { CancelablePromise } from '../core/CancelablePromise';
-import type { BaseHttpRequest } from '../core/BaseHttpRequest';
+import type { CancelablePromise } from "../core/CancelablePromise";
+import type { BaseHttpRequest } from "../core/BaseHttpRequest";
 
 export class HumanTaskService {
-
   constructor(public readonly httpRequest: BaseHttpRequest) {}
 
   /**
@@ -105,12 +104,16 @@ export class HumanTaskService {
    */
   public getTask1(
     taskId: string,
+    withTemplate: boolean = false
   ): CancelablePromise<HumanTaskEntry> {
     return this.httpRequest.request({
       method: 'GET',
       url: '/human/tasks/{taskId}',
       path: {
-        'taskId': taskId,
+        taskId: taskId,
+      },
+      query: {
+        withTemplate,
       },
     });
   }
@@ -245,8 +248,8 @@ export class HumanTaskService {
     complete: boolean = false,
   ): CancelablePromise<any> {
     return this.httpRequest.request({
-      method: 'POST',
-      url: '/human/tasks/{taskId}/update',
+      method: "POST",
+      url: "/human/tasks/{taskId}/update",
       path: {
         'taskId': taskId,
       },

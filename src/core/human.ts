@@ -30,6 +30,11 @@ type PollIntervalOptions = {
   pollInterval: number;
   maxPollTimes: number;
 };
+
+type ClaimOptions = {
+  overrideAssignment: boolean;
+  withTemplate: boolean;
+};
 export class HumanExecutor {
   public readonly _client: ConductorClient;
 
@@ -60,7 +65,7 @@ export class HumanExecutor {
     claimedBy?: string,
     taskName?: string,
     taskInputQuery?: string,
-    taskOutputQuery?: string,
+    taskOutputQuery?: string
   ): Promise<HumanTaskEntry[]> {
     const [claimedUserType, claimedUser] = claimedBy?.split(":") ?? [];
 
@@ -76,7 +81,7 @@ export class HumanExecutor {
         : [],
       taskRefNames: taskName ? [taskName] : [],
       taskInputQuery,
-      taskOutputQuery
+      taskOutputQuery,
     });
 
     return response;
@@ -141,8 +146,13 @@ export class HumanExecutor {
    * @param taskId
    * @returns
    */
-  public getTaskById(taskId: string): Promise<HumanTaskEntry> {
-    return tryCatchReThrow(() => this._client.humanTask.getTask1(taskId!));
+  public getTaskById(
+    taskId: string,
+    withTemplate: boolean = false
+  ): Promise<HumanTaskEntry> {
+    return tryCatchReThrow(() =>
+      this._client.humanTask.getTask1(taskId!, withTemplate)
+    );
   }
 
   /**
@@ -154,10 +164,15 @@ export class HumanExecutor {
   public async claimTaskAsExternalUser(
     taskId: string,
     assignee: string,
-    options?:Record<string,boolean>
+    options?: ClaimOptions
   ): Promise<HumanTaskEntry> {
     return tryCatchReThrow(() =>
-      this._client.humanTask.assignAndClaim(taskId, assignee,options?.overrideAssignment,options?.withTemplate)
+      this._client.humanTask.assignAndClaim(
+        taskId,
+        assignee,
+        options?.overrideAssignment,
+        options?.withTemplate
+      )
     );
   }
 
@@ -168,9 +183,15 @@ export class HumanExecutor {
    */
   public async claimTaskAsConductorUser(
     taskId: string,
-    options?:Record<string,boolean>
+    options?: ClaimOptions
   ): Promise<HumanTaskEntry> {
-    return tryCatchReThrow(() => this._client.humanTask.claimTask(taskId,options?.overrideAssignment,options?.withTemplate));
+    return tryCatchReThrow(() =>
+      this._client.humanTask.claimTask(
+        taskId,
+        options?.overrideAssignment,
+        options?.withTemplate
+      )
+    );
   }
 
   /**
