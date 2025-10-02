@@ -233,32 +233,9 @@ The scheduler allows you to schedule workflows to run at specific times or inter
 
 ## Task Types
 
-Conductor provides various task types to build workflows. Understanding which tasks require custom workers and which are managed by Conductor is essential for effective workflow design.
+Conductor provides various task types to build workflows. Understanding which tasks require custom workers and which are managed by Conductor is essential for effective workflow design. Tasks in Conductor are divided into two main categories based on **who executes them**:
 
-### Task Categories
-
-Tasks in Conductor are divided into two main categories based on **who executes them**:
-
-#### SIMPLE Tasks - Require Custom Workers
-
-SIMPLE tasks execute **your custom business logic**. You must implement and deploy workers to handle these tasks.
-
-**When to use:**
-- Custom business logic specific to your application
-- Integration with internal systems and databases
-- File processing, data validation, notifications
-- Any functionality not provided by system tasks
-
-**How they work:**
-1. Define a SIMPLE task in your workflow
-2. Implement a worker that polls Conductor for this task type
-3. Worker executes your custom logic when task is assigned
-4. Worker reports results back to Conductor
-5. Workflow continues based on task result
-
-See the [Workers](#workers) section for implementation details.
-
-#### System Tasks - Managed by Conductor
+### System Tasks - Managed by Conductor Server
 
 System tasks are fully managed by Conductor. No custom workers needed - just reference them in your workflow and they execute automatically.
 
@@ -279,6 +256,25 @@ System tasks are fully managed by Conductor. No custom workers needed - just ref
 - **Terminate** - End workflow with success or failure
 - **Human** - Pause workflow until a person completes an action (approval, form submission, etc.). Managed via the `HumanExecutor` API. See [Human Tasks](#human-tasks) section for details.
 
+### SIMPLE Tasks - Require Custom Workers
+
+SIMPLE tasks execute **your custom business logic**. You must implement and deploy workers to handle these tasks.
+
+**When to use:**
+- Custom business logic specific to your application
+- Integration with internal systems and databases
+- File processing, data validation, notifications
+- Any functionality not provided by system tasks
+
+**How they work:**
+1. Define a SIMPLE task in your workflow
+2. Implement a worker that polls Conductor for this task type
+3. Worker executes your custom logic when task is assigned
+4. Worker reports results back to Conductor
+5. Workflow continues based on task result
+
+See the [Workers](#workers) section for implementation details.
+
 ---
 
 ### Task Reference
@@ -286,8 +282,6 @@ System tasks are fully managed by Conductor. No custom workers needed - just ref
 Below are code examples for each task type.
 
 **Note:** These generators create workflow task references. To register task metadata (retry policies, timeouts, rate limits), use `taskDefinition()` or `MetadataClient` (see [Metadata](#metadata)).
-
----
 
 ### Simple Task
 
