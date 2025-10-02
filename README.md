@@ -262,7 +262,7 @@ System tasks are fully managed by Conductor. No custom workers needed - just ref
 
 ### SIMPLE Tasks - Require Custom Workers
 
-SIMPLE tasks execute **your custom business logic**. You must implement and workers to handle these tasks.
+SIMPLE tasks execute **your custom business logic**. You must implement workers to handle these tasks.
 
 **When to use:**
 - Custom business logic specific to your application
@@ -1908,89 +1908,4 @@ const uiTemplate = {
 };
 
 await templateClient.registerTemplate(uiTemplate);
-```
-
-## Error Handling
-
-### Worker Error Handling
-
-```typescript
-const worker: ConductorWorker = {
-  taskDefName: "error_prone_task",
-  execute: async (task) => {
-    try {
-      const result = await riskyOperation(task.inputData);
-      return {
-        outputData: result,
-        status: "COMPLETED"
-      };
-    } catch (error) {
-      return {
-        outputData: {},
-        status: "FAILED",
-        reasonForIncompletion: error.message
-      };
-    }
-  }
-};
-```
-
-### Task Manager Error Handling
-
-```typescript
-const manager = new TaskManager(client, workers, {
-  onError: (error, task) => {
-    console.error(`Error processing task ${task.taskId}:`, error);
-    // Custom error handling logic
-  },
-  maxRetries: 3
-});
-```
-
-### Workflow Error Handling
-
-```typescript
-try {
-  const executionId = await executor.startWorkflow({
-    name: "workflow_name",
-    version: 1,
-    input: {}
-  });
-} catch (error) {
-  console.error("Failed to start workflow:", error);
-}
-```
-
-## Logging
-
-### Default Logger
-
-```typescript
-import { DefaultLogger } from "@io-orkes/conductor-javascript";
-
-const logger = new DefaultLogger();
-```
-
-### Custom Logger
-
-```typescript
-import { ConductorLogger } from "@io-orkes/conductor-javascript";
-
-class CustomLogger implements ConductorLogger {
-  info(message: string, ...args: any[]): void {
-    console.log(`[INFO] ${message}`, ...args);
-  }
-  
-  error(message: string, ...args: any[]): void {
-    console.error(`[ERROR] ${message}`, ...args);
-  }
-  
-  debug(message: string, ...args: any[]): void {
-    console.debug(`[DEBUG] ${message}`, ...args);
-  }
-}
-
-const manager = new TaskManager(client, workers, {
-  logger: new CustomLogger()
-});
 ```
