@@ -49,14 +49,8 @@ Show support for the Conductor OSS.  Please help spread the awareness by starrin
     - [Dynamic Fork Task](#dynamic-fork-task)
     - [Join Task](#join-task)
     - [Human Task](#human-task)
-  - [Workflow Lifecycle Operations](#workflow-lifecycle-operations)
-    - [Register Workflow](#register-workflow)
-    - [Start Workflow](#start-workflow)
-    - [Get Workflow Status](#get-workflow-status)
-    - [Pause Workflow](#pause-workflow)
-    - [Resume Workflow](#resume-workflow)
-    - [Terminate Workflow](#terminate-workflow)
-    - [Search Workflows](#search-workflows)
+  - [Managing Workflow Execution](#managing-workflow-execution)
+  - [WorkflowExecutor API Reference](#workflowexecutor-api-reference)
   - [Monitoring & Debugging Tasks](#monitoring--debugging-tasks)
     - [Task Statuses](#task-statuses)
     - [Searching & Filtering Tasks](#searching--filtering-tasks)
@@ -647,283 +641,100 @@ const task = humanTask("human_ref", "approval_task", {
 });
 ```
 
-### Workflow Lifecycle Operations
+### Managing Workflow Execution
 
-This section covers all operations for managing workflow execution and lifecycle.
+Once your workflow is running, you can monitor and control its execution using these operations:
 
-#### Register Workflow
+#### Monitor Workflow Status
 
 ```typescript
-const workflowDef = {
-  name: "my_workflow",
-  version: 1,
-  ownerEmail: "developer@example.com",
-  tasks: [/* task definitions */],
-  inputParameters: [],
-  outputParameters: {},
-  timeoutSeconds: 0
-};
+// Get workflow execution details
+const workflow = await executor.getWorkflow(executionId, true);
+console.log(`Status: ${workflow.status}`);
 
-// Register workflow (overwrite=true means it will replace existing definition)
-await executor.registerWorkflow(true, workflowDef);
+// Get workflow status summary
+const status = await executor.getWorkflowStatus(
+  executionId,
+  true,   // includeOutput
+  true    // includeVariables
+);
 ```
 
-#### Start Workflow
+#### Control Workflow Execution
 
 ```typescript
-const executionId = await executor.startWorkflow({
-  name: "my_workflow",
-  version: 1,
-  input: { /* workflow input */ }
-});
-```
-
-#### Get Workflow Status
-
-```typescript
-const workflowStatus = await executor.getWorkflow(executionId, true);
-console.log(`Status: ${workflowStatus.status}`);
-```
-
-The `getWorkflow()` method returns a `Workflow` object with the following properties:
-
-```typescript
-interface Workflow {
-  // Basic identification
-  workflowId?: string;
-  workflowName?: string;
-  workflowVersion?: number;
-  
-  // Status and timing
-  status?: 'RUNNING' | 'COMPLETED' | 'FAILED' | 'TIMED_OUT' | 'TERMINATED' | 'PAUSED';
-  createTime?: number;
-  updateTime?: number;
-  startTime?: number;
-  endTime?: number;
-  lastRetriedTime?: number;
-  
-  // Data
-  input?: Record<string, any>;
-  output?: Record<string, any>;
-  variables?: Record<string, any>;
-  
-  // Relationships
-  parentWorkflowId?: string;
-  parentWorkflowTaskId?: string;
-  reRunFromWorkflowId?: string;
-  correlationId?: string;
-  
-  // Tasks and execution
-  tasks?: Array<Task>;
-  failedReferenceTaskNames?: Array<string>;
-  taskToDomain?: Record<string, string>;
-  
-  // Configuration
-  priority?: number;
-  externalInputPayloadStoragePath?: string;
-  externalOutputPayloadStoragePath?: string;
-  
-  // Metadata
-  ownerApp?: string;
-  createdBy?: string;
-  updatedBy?: string;
-  reasonForIncompletion?: string;
-  event?: string;
-  workflowDefinition?: WorkflowDef;
-}
-```
-
-#### Pause Workflow
-
-```typescript
+// Pause a running workflow
 await executor.pause(executionId);
-```
 
-#### Resume Workflow
-
-```typescript
+// Resume a paused workflow
 await executor.resume(executionId);
-```
 
-#### Terminate Workflow
-
-```typescript
+// Terminate a workflow with a reason
 await executor.terminate(executionId, "Terminating due to error");
+
+// Restart a completed/failed workflow
+await executor.restart(executionId, true);  // useLatestDefinitions
+
+// Retry a failed workflow from the last failed task
+await executor.retry(executionId, false);  // resumeSubworkflowTasks
+
+// Rerun a workflow with potentially modified parameters
+const newWorkflowId = await executor.reRun(executionId);
 ```
 
 #### Search Workflows
 
 ```typescript
+// Search for workflows with filters
 const searchResults = await executor.search(
   0,                 // start: starting index
   10,                // size: number of results
-  "status:RUNNING",  // query: e.g., "workflowType:my_workflow"
+  "status:RUNNING",  // query: e.g., "workflowType:my_workflow AND status:FAILED"
   "*",               // freeText: use "*" for all
-  "startTime:DESC",  // sort (optional, default: "")
-  false              // skipCache (optional, default: false)
+  "startTime:DESC",  // sort (optional)
+  false              // skipCache (optional)
 );
+
+// Common search patterns:
+// - By status: "status:RUNNING"
+// - By name: "workflowType:order_fulfillment"
+// - By date: "startTime:[2025-01-01 TO 2025-12-31]"
+// - Combined: "workflowType:my_workflow AND status:FAILED"
 ```
 
-### WorkflowExecutor Complete API Reference
+### WorkflowExecutor API Reference
 
-The `WorkflowExecutor` provides the following methods for workflow management:
+Complete method reference for the `WorkflowExecutor` class:
 
-#### Core Workflow Operations
+**Workflow Lifecycle:**
+- `registerWorkflow(override: boolean, workflow: WorkflowDef): Promise<void>` - Register or update a workflow definition
+- `startWorkflow(request: StartWorkflowRequest): Promise<string>` - Start a new workflow execution
+- `executeWorkflow(...)` - Execute workflow synchronously and wait for completion
+- `getWorkflow(id: string, includeTasks: boolean): Promise<Workflow>` - Get workflow execution details
+- `getWorkflowStatus(id: string, includeOutput: boolean, includeVariables: boolean): Promise<WorkflowStatus>` - Get status summary
+- `search(start: number, size: number, query: string, freeText: string, sort?: string, skipCache?: boolean)` - Search workflows
 
-```typescript
-// Register a workflow definition
-await executor.registerWorkflow(
-  override: boolean,      // If true, replaces existing definition
-  workflow: WorkflowDef
-): Promise<void>
+**Workflow Control:**
+- `pause(workflowId: string): Promise<void>` - Pause a running workflow
+- `resume(workflowId: string): Promise<void>` - Resume a paused workflow
+- `terminate(workflowId: string, reason: string): Promise<void>` - Terminate with reason
+- `restart(workflowId: string, useLatestDefinitions: boolean): Promise<void>` - Restart a workflow
+- `retry(workflowId: string, resumeSubworkflowTasks: boolean): Promise<void>` - Retry from last failed task
+- `reRun(workflowId: string, request?: Partial<RerunWorkflowRequest>): Promise<string>` - Rerun with new parameters
+- `skipTasksFromWorkflow(workflowId: string, taskRefName: string, request: Partial<SkipTaskRequest>): Promise<void>` - Skip a task
 
-// Start a workflow
-const workflowId = await executor.startWorkflow(
-  workflowRequest: StartWorkflowRequest
-): Promise<string>  // Returns workflow instance ID
+**Task Operations:**
+- `getTask(taskId: string): Promise<Task>` - Get task by ID
+- `updateTask(taskId: string, workflowId: string, status: TaskResultStatus, output: Record<string, any>): Promise<string>` - Update task by ID
+- `updateTaskByRefName(taskRefName: string, workflowId: string, status: TaskResultStatus, output: Record<string, any>): Promise<string>` - Update by reference name
+- `updateTaskSync(taskRefName: string, workflowId: string, status: TaskResultStatusEnum, output: Record<string, any>, workerId?: string): Promise<Workflow>` - Update and return workflow
+- `signal(workflowId: string, status: TaskResultStatusEnum, output: Record<string, any>, returnStrategy?: ReturnStrategy): Promise<SignalResponse>` - Send signal to workflow
+- `signalAsync(workflowId: string, status: TaskResultStatusEnum, output: Record<string, any>): Promise<void>` - Signal asynchronously
 
-// Execute workflow synchronously
-const result = await executor.executeWorkflow(
-  workflowRequest: StartWorkflowRequest,
-  name: string,
-  version: number,
-  requestId: string,
-  waitUntilTaskRef?: string,     // (optional) wait until specific task completes
-  waitForSeconds?: number,       // (optional) max wait time
-  consistency?: Consistency,     // (optional)
-  returnStrategy?: ReturnStrategy  // (optional)
-): Promise<WorkflowRun | SignalResponse>
-
-// Get workflow execution details
-const workflow = await executor.getWorkflow(
-  workflowInstanceId: string,
-  includeTasks: boolean,
-  retry?: number  // (optional, default: 0)
-): Promise<Workflow>
-
-// Get workflow execution (alias for getWorkflow)
-const execution = await executor.getExecution(
-  workflowInstanceId: string,
-  includeTasks?: boolean  // (optional, default: true)
-): Promise<Workflow>
-
-// Get workflow status summary
-const status = await executor.getWorkflowStatus(
-  workflowInstanceId: string,
-  includeOutput: boolean,
-  includeVariables: boolean
-): Promise<WorkflowStatus>
-```
-
-#### Workflow Control Operations
-
-```typescript
-// Pause a running workflow
-await executor.pause(workflowInstanceId: string): Promise<void>
-
-// Resume a paused workflow
-await executor.resume(workflowInstanceId: string): Promise<void>
-
-// Terminate a workflow
-await executor.terminate(
-  workflowInstanceId: string,
-  reason: string
-): Promise<void>
-
-// Restart a workflow
-await executor.restart(
-  workflowInstanceId: string,
-  useLatestDefinitions: boolean
-): Promise<void>
-
-// Retry a failed workflow from last failed task
-await executor.retry(
-  workflowInstanceId: string,
-  resumeSubworkflowTasks: boolean
-): Promise<void>
-
-// Rerun a workflow with new parameters
-const newWorkflowId = await executor.reRun(
-  workflowInstanceId: string,
-  rerunWorkflowRequest?: Partial<RerunWorkflowRequest>  // (optional)
-): Promise<string>
-
-// Skip a task in a running workflow
-await executor.skipTasksFromWorkflow(
-  workflowInstanceId: string,
-  taskReferenceName: string,
-  skipTaskRequest: Partial<SkipTaskRequest>
-): Promise<void>
-```
-
-#### Task Operations
-
-```typescript
-// Get task by ID
-const task = await executor.getTask(taskId: string): Promise<Task>
-
-// Update task by ID
-const result = await executor.updateTask(
-  taskId: string,
-  workflowInstanceId: string,
-  taskStatus: TaskResultStatus,  // COMPLETED, FAILED, etc.
-  outputData: Record<string, any>
-): Promise<string>
-
-// Update task by reference name
-const result = await executor.updateTaskByRefName(
-  taskReferenceName: string,
-  workflowInstanceId: string,
-  status: TaskResultStatus,
-  taskOutput: Record<string, any>
-): Promise<string>
-
-// Update task synchronously and return workflow
-const workflow = await executor.updateTaskSync(
-  taskReferenceName: string,
-  workflowInstanceId: string,
-  status: TaskResultStatusEnum,
-  taskOutput: Record<string, any>,
-  workerId?: string  // (optional)
-): Promise<Workflow>
-
-// Signal a workflow task
-const response = await executor.signal(
-  workflowInstanceId: string,
-  status: TaskResultStatusEnum,
-  taskOutput: Record<string, any>,
-  returnStrategy?: ReturnStrategy  // (optional, default: TARGET_WORKFLOW)
-): Promise<SignalResponse>
-
-// Signal a workflow task asynchronously (fire-and-forget)
-await executor.signalAsync(
-  workflowInstanceId: string,
-  status: TaskResultStatusEnum,
-  taskOutput: Record<string, any>
-): Promise<void>
-```
-
-#### Advanced Operations
-
-```typescript
-// Go back to a specific task and rerun from there
-await executor.goBackToTask(
-  workflowInstanceId: string,
-  taskFinderPredicate: (task: Task) => boolean,
-  rerunWorkflowRequestOverrides?: Partial<RerunWorkflowRequest>  // (optional)
-): Promise<void>
-
-// Go back to first task matching type
-await executor.goBackToFirstTaskMatchingType(
-  workflowInstanceId: string,
-  taskType: string
-): Promise<void>
-
-// Start multiple workflows
-const workflowIds = executor.startWorkflows(
-  workflowsRequest: StartWorkflowRequest[]
-): Promise<string>[]
-```
+**Advanced:**
+- `goBackToTask(workflowId: string, predicate: (task: Task) => boolean, overrides?: Partial<RerunWorkflowRequest>): Promise<void>` - Rerun from specific task
+- `goBackToFirstTaskMatchingType(workflowId: string, taskType: string): Promise<void>` - Rerun from first task of type
+- `startWorkflows(requests: StartWorkflowRequest[]): Promise<string>[]` - Start multiple workflows
 
 ### Monitoring & Debugging Tasks
 
