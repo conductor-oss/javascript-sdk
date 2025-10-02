@@ -32,8 +32,6 @@ Show support for the Conductor OSS.  Please help spread the awareness by starrin
 - [Workflows](#workflows)
   - [WorkflowExecutor](#workflowexecutor)
   - [Creating Workflows](#creating-workflows)
-    - [Workflow Factory](#workflow-factory)
-    - [Example: Combining Task Types](#example-combining-task-types)
   - [Task Generators Reference](#task-generators-reference)
     - [Simple Task](#simple-task)
     - [HTTP Task](#http-task)
@@ -252,18 +250,219 @@ See the [Workers](#workers) section for implementation details.
 
 ## Workflows
 
-Workflows in Conductor are defined using task generators and managed through the `WorkflowExecutor` class. This section covers:
-- **Creating workflows** using the workflow factory and task generators
-- **Managing workflow lifecycle** (register, start, pause, resume, terminate, search)
+Workflows orchestrate the execution of multiple tasks in a coordinated sequence. This section explains:
+- **What workflows are** and how they work
+- **How to create workflows** step-by-step using task generators
+- **How to manage workflow lifecycle** (register, start, pause, resume, terminate, search)
+- **Task generator reference** for all available task types
 
 ### WorkflowExecutor
 
-The `WorkflowExecutor` class provides methods for managing workflow lifecycle:
+The `WorkflowExecutor` class is your main interface for managing workflows. It provides methods to register, start, monitor, and control workflow execution.
 
 ```typescript
 import { WorkflowExecutor } from "@io-orkes/conductor-javascript";
 
+// Create executor instance
 const executor = new WorkflowExecutor(client);
+```
+
+### Creating Workflows
+
+Creating a workflow in Conductor involves three main steps:
+
+#### Step 1: Define Your Workflow Structure
+
+A workflow definition is a JavaScript object that describes your workflow:
+
+```typescript
+const workflowDef = {
+  name: "order_fulfillment",           // Unique workflow name
+  version: 1,                           // Version number
+  description: "Process and fulfill customer orders",
+  ownerEmail: "team@example.com",       // Optional: owner email
+  tasks: [
+    // Tasks will be added here (Step 2)
+  ],
+  inputParameters: [],                  // Expected input parameter names
+  outputParameters: {},                 // Output mapping from task results
+  timeoutSeconds: 3600,                 // Workflow timeout (0 = no timeout)
+  timeoutPolicy: "ALERT_ONLY"           // What to do on timeout
+};
+```
+
+#### Step 2: Build Your Task List
+
+Use **task generators** to create the task list for your workflow. Task generators are helper functions that create properly formatted task definitions:
+
+```typescript
+import { 
+  simpleTask, 
+  httpTask, 
+  switchTask 
+} from "@io-orkes/conductor-javascript";
+
+const workflowDef = {
+  name: "order_fulfillment",
+  version: 1,
+  description: "Process and fulfill customer orders",
+  tasks: [
+    // Task 1: Validate order (custom worker)
+    simpleTask(
+      "validate_order_ref",              // taskReferenceName: unique within workflow
+      "validate_order",                  // taskName: matches worker's taskDefName
+      {                                   // inputParameters: data for this task
+        orderId: "${workflow.input.orderId}",
+        customerId: "${workflow.input.customerId}"
+      }
+    ),
+    
+    // Task 2: Check inventory via HTTP API
+    httpTask(
+      "check_inventory_ref",
+      {
+        uri: "https://api.inventory.com/check",
+        method: "POST",
+        body: {
+          productId: "${workflow.input.productId}",
+          quantity: "${workflow.input.quantity}"
+        },
+        headers: {
+          "Content-Type": "application/json"
+        }
+      }
+    ),
+    
+    // Task 3: Conditional routing based on inventory
+    switchTask(
+      "route_order_ref",
+      "${check_inventory_ref.output.inStock}",
+      {
+        "true": [
+          simpleTask("fulfill_order_ref", "fulfill_order", {
+            orderId: "${workflow.input.orderId}"
+          })
+        ],
+        "false": [
+          simpleTask("backorder_ref", "create_backorder", {
+            orderId: "${workflow.input.orderId}"
+          })
+        ]
+      }
+    )
+  ],
+  inputParameters: ["orderId", "customerId", "productId", "quantity"],
+  outputParameters: {
+    status: "${route_order_ref.output.status}",
+    fulfillmentId: "${fulfill_order_ref.output.fulfillmentId}"
+  }
+};
+```
+
+**Key Concepts:**
+
+- **taskReferenceName**: A unique identifier for the task within this workflow. Used to reference task outputs (e.g., `${task_ref.output.fieldName}`)
+- **inputParameters**: Use `${workflow.input.fieldName}` to access workflow inputs and `${other_task_ref.output.fieldName}` to access previous task outputs
+- **Task Generators**: Each task type has a generator function (e.g., `simpleTask`, `httpTask`, `switchTask`). See [Task Generators Reference](#task-generators-reference) for all available types.
+
+#### Step 3: Register and Start Your Workflow
+
+Once your workflow definition is ready, register it with Conductor and start executing it:
+
+```typescript
+// Register the workflow definition
+await executor.registerWorkflow(
+  true,          // overwrite: replace existing definition if it exists
+  workflowDef
+);
+
+// Start a workflow execution
+const executionId = await executor.startWorkflow({
+  name: "order_fulfillment",
+  version: 1,
+  input: {
+    orderId: "ORDER-123",
+    customerId: "CUST-456",
+    productId: "PROD-789",
+    quantity: 2
+  }
+});
+
+console.log(`Workflow started with ID: ${executionId}`);
+
+// Monitor workflow status
+const workflow = await executor.getWorkflow(executionId, true);
+console.log(`Workflow status: ${workflow.status}`);
+```
+
+**Complete Example - Simple Notification Workflow:**
+
+Here's a complete example showing all three steps:
+
+```typescript
+import { 
+  orkesConductorClient,
+  WorkflowExecutor,
+  simpleTask,
+  httpTask
+} from "@io-orkes/conductor-javascript";
+
+// Initialize client and executor
+const client = await orkesConductorClient({
+  serverUrl: "https://play.orkes.io/api",
+  keyId: "your-key-id",
+  keySecret: "your-key-secret"
+});
+
+const executor = new WorkflowExecutor(client);
+
+// Step 1 & 2: Define workflow with tasks
+const notificationWorkflow = {
+  name: "user_notification",
+  version: 1,
+  description: "Send notification to user via multiple channels",
+  tasks: [
+    // Fetch user preferences
+    httpTask("get_user_prefs_ref", {
+      uri: "https://api.example.com/users/${workflow.input.userId}/preferences",
+      method: "GET"
+    }),
+    
+    // Send email notification
+    simpleTask("send_email_ref", "send_email", {
+      to: "${get_user_prefs_ref.output.email}",
+      subject: "${workflow.input.subject}",
+      body: "${workflow.input.message}"
+    }),
+    
+    // Send SMS if enabled
+    simpleTask("send_sms_ref", "send_sms", {
+      phone: "${get_user_prefs_ref.output.phone}",
+      message: "${workflow.input.message}"
+    }, true)  // optional=true: workflow continues even if SMS fails
+  ],
+  inputParameters: ["userId", "subject", "message"],
+  outputParameters: {
+    emailSent: "${send_email_ref.output.sent}",
+    smsSent: "${send_sms_ref.output.sent}"
+  },
+  timeoutSeconds: 300
+};
+
+// Step 3: Register and start
+await executor.registerWorkflow(true, notificationWorkflow);
+
+const workflowId = await executor.startWorkflow({
+  name: "user_notification",
+  version: 1,
+  input: {
+    userId: "user123",
+    subject: "Welcome!",
+    message: "Thanks for signing up"
+  }
+});
+
+console.log(`Notification workflow started: ${workflowId}`);
 ```
 
 ### Task Generators Reference
