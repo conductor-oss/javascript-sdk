@@ -73,7 +73,6 @@ Show support for the Conductor OSS.  Please help spread the awareness by starrin
   - [TaskManager Advanced Configuration](#taskmanager-advanced-configuration)
     - [Dynamic Configuration Updates](#dynamic-configuration-updates)
     - [Graceful Shutdown](#graceful-shutdown)
-  - [Configuration Options](#configuration-options-1)
 - [Scheduling](#scheduling)
   - [SchedulerClient](#schedulerclient)
 - [Service Registry](#service-registry)
@@ -1032,22 +1031,22 @@ const manager = new TaskManager(client, workers, {
   
   // Polling and execution options
   options: {
-    pollInterval: 1000,           // Poll every 1 second (default: 100ms)
-    concurrency: 5,               // Execute up to 5 tasks concurrently per worker
+    pollInterval: 1000,           // How often to poll for tasks (milliseconds) (default: 100)
+    concurrency: 5,               // Max concurrent task executions per worker (default: 1)
     workerID: "worker-group-1",   // Unique identifier for this worker group
     domain: "production",         // Task domain for isolation (optional)
-    batchPollingTimeout: 100      // Timeout for batch polling in ms
+    batchPollingTimeout: 10-0      // Batch polling timeout in milliseconds (default: 100)
   },
   
-  // Global error handler for all workers
+  // Global error handler called when workers fail
   onError: (error, task) => {
     console.error(`Error in task ${task?.taskType}:`, error);
     // Send to error tracking service
     errorTracker.log(error, { taskId: task?.taskId });
   },
   
-  // Maximum retry attempts before giving up
-  maxRetries: 3
+  // Maximum retry attempts before giving up (default: 3)
+  maxRetries: 5
 });
 
 await manager.startPolling();
@@ -1076,35 +1075,6 @@ process.on('SIGTERM', async () => {
   await manager.stopPolling();
   console.log('Workers stopped gracefully');
   process.exit(0);
-});
-```
-
-### Configuration Options
-
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `logger` | `ConductorLogger` | - | Custom logger instance for monitoring and debugging |
-| `options.pollInterval` | `number` | `100` | How often to poll for tasks (milliseconds) |
-| `options.concurrency` | `number` | `1` | Max concurrent task executions per worker |
-| `options.workerID` | `string` | - | Unique identifier for this worker group |
-| `options.domain` | `string` | - | Task domain for isolation (optional) |
-| `options.batchPollingTimeout` | `number` | `100` | Batch polling timeout in milliseconds |
-| `onError` | `(error, task?) => void` | - | Global error handler called when workers fail |
-| `maxRetries` | `number` | `3` | Max retry attempts for failed operations |
-
-**Example with all options:**
-```typescript
-const manager = new TaskManager(client, workers, {
-  logger: new CustomLogger(),
-  options: {
-    pollInterval: 1000,
-    concurrency: 5,
-    workerID: "prod-worker-1",
-    domain: "production",
-    batchPollingTimeout: 100
-  },
-  onError: (error, task) => console.error("Error:", error),
-  maxRetries: 3
 });
 ```
 
