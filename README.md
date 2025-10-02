@@ -63,7 +63,6 @@ Show support for the Conductor OSS.  Please help spread the awareness by starrin
     - [Task Statuses](#task-statuses)
     - [Searching & Filtering Tasks](#searching--filtering-tasks)
     - [Common Search Queries](#common-search-queries)
-    - [Debugging Task Execution](#debugging-task-execution)
 - [Workers](#workers)
   - [Overview](#overview)
   - [Quick Start: Your First Worker](#quick-start-your-first-worker)
@@ -71,8 +70,7 @@ Show support for the Conductor OSS.  Please help spread the awareness by starrin
   - [Worker Design Principles](#worker-design-principles)
   - [Handling Task Results](#handling-task-results)
   - [Working with Multiple Workers](#working-with-multiple-workers)
-  - [TaskManager](#taskmanager)
-    - [Advanced Configuration](#advanced-configuration)
+  - [TaskManager Advanced Configuration](#taskmanager-advanced-configuration)
     - [Dynamic Configuration Updates](#dynamic-configuration-updates)
     - [Graceful Shutdown](#graceful-shutdown)
   - [Configuration Options](#configuration-options-1)
@@ -737,11 +735,11 @@ Workers are background processes that execute tasks in your workflows. Think of 
 Workflow → Creates Tasks → Workers Poll for Tasks → Execute Logic → Return Results → Workflow Continues
 ```
 
-The SDK provides the **TaskManager** class - an easy-to-use interface for managing multiple workers efficiently.
+The SDK provides the **TaskManager** class - an easy-to-use interface for managing workers efficiently.
 
 ### Quick Start: Your First Worker
 
-Here's a complete, simple example to get you started:
+Here's a simple example to get you started:
 
 ```typescript
 import { 
@@ -1023,11 +1021,7 @@ console.log("✅ All 3 workers are now running!");
 - A single `TaskManager` manages all workers together
 - Workers only pick up tasks that match their `taskDefName`
 
-### TaskManager
-
-`TaskManager` is the interface that manages multiple workers. You've already seen the basic usage above. This section covers advanced configuration and features.
-
-#### Advanced Configuration
+### TaskManager Advanced Configuration
 
 ```typescript
 import { TaskManager, ConductorWorker, DefaultLogger } from "@io-orkes/conductor-javascript";
@@ -1083,18 +1077,6 @@ process.on('SIGTERM', async () => {
   console.log('Workers stopped gracefully');
   process.exit(0);
 });
-
-// Or with timeout
-async function gracefulShutdown() {
-  const timeout = setTimeout(() => {
-    console.error('Force shutdown after timeout');
-    process.exit(1);
-  }, 30000); // 30 second timeout
-  
-  await manager.stopPolling();
-  clearTimeout(timeout);
-  process.exit(0);
-}
 ```
 
 ### Configuration Options
