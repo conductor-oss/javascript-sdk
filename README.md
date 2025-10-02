@@ -8,11 +8,9 @@ The `@io-orkes/conductor-javascript` SDK provides a comprehensive TypeScript/Jav
 - [Quick Start](#quick-start)
 - [Authentication & Configuration](#authentication--configuration)
 - [Core Concepts](#core-concepts)
-- [Client Management](#client-management)
 - [Task Types](#task-types)
-- [SDK Factory Functions](#sdk-factory-functions)
 - [Workflow Management](#workflow-management)
-- [Task Management](#task-management)
+- [Task Management](#worker-management)
 - [Scheduler Management](#scheduler-management)
 - [Service Registry](#service-registry)
 - [Human Tasks](#human-tasks)
@@ -133,28 +131,17 @@ Workflows are the main orchestration units in Conductor. They define a sequence 
 ### Workers
 Workers are applications that execute specific types of tasks. They poll for work and execute tasks assigned to them.
 
-### Task Definitions
-Task definitions describe the metadata and configuration for tasks, including retry policies, timeouts, and input/output schemas.
-
-## Client Management
-
-### OrkesConductorClient
-
-The `orkesConductorClient` function creates a configured client instance:
-
-```typescript
-import { orkesConductorClient } from "@io-orkes/conductor-javascript";
-
-const client = await orkesConductorClient({
-  serverUrl: "https://play.orkes.io/api",
-  keyId: "your-key-id",
-  keySecret: "your-key-secret"
-});
-```
+### Scheduler
+The scheduler allows you to schedule workflows to run at specific times or intervals, enabling automated workflow execution based on time-based triggers.
 
 ## Task Types
 
-The SDK provides generators for various task types:
+The SDK provides generators for various task types. These generators can be used in two ways:
+
+1. **Creating Workflows** - Use task generators to build workflow definitions
+2. **Registering Metadata** - Use task generators to create task definitions for registration
+
+### Available Task Generators
 
 ### Simple Task
 
@@ -332,66 +319,34 @@ const task = humanTask("human_ref", "approval_task", {
 });
 ```
 
-## SDK Factory Functions
+### Usage Examples
 
-### Workflow Factory
-
+#### In Workflow Creation
 ```typescript
-import { workflow } from "@io-orkes/conductor-javascript";
+import { workflow, simpleTask, httpTask } from "@io-orkes/conductor-javascript";
 
-const myWorkflow = workflow("workflow_name", [
-  simpleTask("task1", "process_1", {}),
-  simpleTask("task2", "process_2", {})
+const myWorkflow = workflow("order_processing", [
+  simpleTask("validate_order", "validate_order_task", {}),
+  httpTask("call_payment", "https://api.payment.com/charge", {
+    method: "POST",
+    headers: { "Authorization": "Bearer token" }
+  }),
+  simpleTask("send_confirmation", "send_email_task", {})
 ]);
 ```
 
-### Task Definition Factory
-
+#### In Metadata Registration
 ```typescript
-import { taskDefinition } from "@io-orkes/conductor-javascript";
+import { MetadataClient, simpleTask, httpTask } from "@io-orkes/conductor-javascript";
 
-const taskDef = taskDefinition("task_name", {
-  timeoutSeconds: 300,
-  retryCount: 3,
-  retryDelaySeconds: 60,
-  responseTimeoutSeconds: 300,
-  pollTimeoutSeconds: 300,
-  pollIntervalSeconds: 30,
-  concurrentExecLimit: 10,
-  rateLimitPerFrequency: 100,
-  rateLimitFrequencyInSeconds: 60,
-  ownerEmail: "owner@example.com",
-  description: "Task description",
-  inputTemplate: {
-    param1: "default_value"
-  },
-  outputTemplate: {
-    result: "computed_value"
-  },
-  inputKeys: ["param1", "param2"],
-  outputKeys: ["result"],
-  tags: ["tag1", "tag2"],
-  executionNameSpace: "namespace",
-  isolationGroupId: "isolation_group",
-  maxConcurrentExecutions: 5,
-  concurrentExecLimit: 10,
-  rateLimitPerFrequency: 100,
-  rateLimitFrequencyInSeconds: 60,
-  ownerEmail: "owner@example.com",
-  description: "Task description",
-  inputTemplate: {
-    param1: "default_value"
-  },
-  outputTemplate: {
-    result: "computed_value"
-  },
-  inputKeys: ["param1", "param2"],
-  outputKeys: ["result"],
-  tags: ["tag1", "tag2"],
-  executionNameSpace: "namespace",
-  isolationGroupId: "isolation_group",
-  maxConcurrentExecutions: 5
-});
+const metadataClient = new MetadataClient(client);
+
+// Register individual task definitions
+await metadataClient.registerTask(simpleTask("validate_order", "validate_order_task", {}));
+await metadataClient.registerTask(httpTask("call_payment", "https://api.payment.com/charge", {
+  method: "POST",
+  headers: { "Authorization": "Bearer token" }
+}));
 ```
 
 ## Workflow Management
@@ -404,6 +359,19 @@ The `WorkflowExecutor` class provides methods for managing workflows:
 import { WorkflowExecutor } from "@io-orkes/conductor-javascript";
 
 const executor = new WorkflowExecutor(client);
+```
+
+### Workflow Factory
+
+The `workflow` function provides a convenient way to create workflow definitions:
+
+```typescript
+import { workflow, simpleTask } from "@io-orkes/conductor-javascript";
+
+const myWorkflow = workflow("workflow_name", [
+  simpleTask("task1", "process_1", {}),
+  simpleTask("task2", "process_2", {})
+]);
 ```
 
 #### Register Workflow
@@ -439,6 +407,54 @@ const workflowStatus = await executor.getWorkflow(executionId, true);
 console.log(`Status: ${workflowStatus.status}`);
 ```
 
+The `getWorkflow()` method returns a `Workflow` object with the following properties:
+
+```typescript
+interface Workflow {
+  // Basic identification
+  workflowId?: string;
+  workflowName?: string;
+  workflowVersion?: number;
+  
+  // Status and timing
+  status?: 'RUNNING' | 'COMPLETED' | 'FAILED' | 'TIMED_OUT' | 'TERMINATED' | 'PAUSED';
+  createTime?: number;
+  updateTime?: number;
+  startTime?: number;
+  endTime?: number;
+  lastRetriedTime?: number;
+  
+  // Data
+  input?: Record<string, any>;
+  output?: Record<string, any>;
+  variables?: Record<string, any>;
+  
+  // Relationships
+  parentWorkflowId?: string;
+  parentWorkflowTaskId?: string;
+  reRunFromWorkflowId?: string;
+  correlationId?: string;
+  
+  // Tasks and execution
+  tasks?: Array<Task>;
+  failedReferenceTaskNames?: Array<string>;
+  taskToDomain?: Record<string, string>;
+  
+  // Configuration
+  priority?: number;
+  externalInputPayloadStoragePath?: string;
+  externalOutputPayloadStoragePath?: string;
+  
+  // Metadata
+  ownerApp?: string;
+  createdBy?: string;
+  updatedBy?: string;
+  reasonForIncompletion?: string;
+  event?: string;
+  workflowDefinition?: WorkflowDef;
+}
+```
+
 #### Pause Workflow
 
 ```typescript
@@ -467,20 +483,95 @@ const searchResults = await executor.searchWorkflows({
 });
 ```
 
-## Task Management
+## Worker Management
 
-### TaskManager
+### Overview
 
-The `TaskManager` class manages multiple workers and handles task polling:
+Workers are applications that execute specific types of tasks. The SDK provides two main approaches for managing workers:
+
+- **TaskManager** - High-level interface for managing multiple workers (recommended)
+- **TaskRunner** - Low-level interface for individual worker control
+
+### Worker Design Principles
+
+When creating workers, follow these principles:
+
+#### 1. Stateless Workers
+Workers should be stateless and not rely on external state:
 
 ```typescript
-import { TaskManager, ConductorWorker } from "@io-orkes/conductor-javascript";
+// ✅ Good - Stateless
+const worker: ConductorWorker = {
+  taskDefName: "process_data",
+  execute: async (task) => {
+    const result = await processData(task.inputData);
+    return { outputData: result, status: "COMPLETED" };
+  }
+};
+
+// ❌ Bad - Stateful
+let processedCount = 0;
+const worker: ConductorWorker = {
+  taskDefName: "process_data",
+  execute: async (task) => {
+    processedCount++; // This creates state dependency
+    return { outputData: { count: processedCount }, status: "COMPLETED" };
+  }
+};
+```
+
+#### 2. Idempotent Operations
+Workers should produce the same result when executed multiple times:
+
+```typescript
+// ✅ Good - Idempotent
+const worker: ConductorWorker = {
+  taskDefName: "update_user",
+  execute: async (task) => {
+    const { userId, data } = task.inputData;
+    await updateUser(userId, data); // Safe to retry
+    return { outputData: { updated: true }, status: "COMPLETED" };
+  }
+};
+```
+
+#### 3. Specific Task Types
+Each worker should handle one specific task type:
+
+```typescript
+// ✅ Good - Specific
+const emailWorker: ConductorWorker = {
+  taskDefName: "send_email",
+  execute: async (task) => {
+    await sendEmail(task.inputData);
+    return { outputData: { sent: true }, status: "COMPLETED" };
+  }
+};
+
+// ❌ Bad - Generic
+const genericWorker: ConductorWorker = {
+  taskDefName: "do_anything",
+  execute: async (task) => {
+    // Handles multiple different operations - hard to maintain
+    if (task.inputData.type === "email") { /* ... */ }
+    else if (task.inputData.type === "sms") { /* ... */ }
+    // ...
+  }
+};
+```
+
+### TaskManager (Recommended)
+
+`TaskManager` is the high-level interface that manages multiple workers and their corresponding `TaskRunner` instances. It's the recommended approach for most use cases.
+
+```typescript
+import { TaskManager, ConductorWorker, DefaultLogger } from "@io-orkes/conductor-javascript";
 
 const workers: ConductorWorker[] = [
   {
     taskDefName: "greeting_task",
     execute: async (task) => {
-    return {
+      return {
         outputData: { greeting: "Hello!" },
         status: "COMPLETED"
       };
@@ -489,6 +580,7 @@ const workers: ConductorWorker[] = [
 ];
 
 const manager = new TaskManager(client, workers, {
+  logger: new DefaultLogger(),
   options: {
     pollInterval: 1000,
     concurrency: 2,
@@ -496,24 +588,58 @@ const manager = new TaskManager(client, workers, {
     domain: "production",
     batchPollingTimeout: 100
   },
-  logger: customLogger,
-  onError: errorHandler,
+  onError: (error) => console.error("Worker error:", error),
   maxRetries: 3
 });
 
-// Start polling
-manager.startPolling();
+// Start all workers
+await manager.startPolling();
 
 // Update polling options
 manager.updatePollingOptions({ pollInterval: 500 });
 
-// Stop polling
-await manager.stopPolling();
+// Stop all workers
+await manager.shutdown();
 ```
 
-#### TaskManager Configuration
+### TaskRunner (Low-level)
 
-The `TaskManager` supports comprehensive configuration options:
+`TaskRunner` is the low-level interface used internally by `TaskManager`. It handles individual worker execution, polling the server for work, and updating results back to the server. Use this when you need fine-grained control over a single worker.
+
+```typescript
+import { TaskRunner, ConductorWorker, DefaultLogger } from "@io-orkes/conductor-javascript";
+
+const worker: ConductorWorker = {
+  taskDefName: "HelloWorldWorker",
+  execute: async ({ inputData, taskId }) => {
+    return {
+      outputData: { greeting: "Hello World" },
+      status: "COMPLETED"
+    };
+  }
+};
+
+const taskRunner = new TaskRunner({
+  worker: worker,
+  taskResource: client.taskResource,
+  options: {
+    pollInterval: 1000,
+    concurrency: 1,
+    workerID: "my-worker"
+  },
+  logger: new DefaultLogger()
+});
+
+// Start the worker
+await taskRunner.startPolling();
+
+// Stop the worker
+await taskRunner.shutdown();
+```
+
+### Configuration Options
+
+#### TaskManager Configuration
 
 ```typescript
 interface TaskManagerConfig {
@@ -532,131 +658,24 @@ interface TaskManagerOptions {
 }
 ```
 
-#### Starting Workers
-
-There are two ways to start workers in the SDK:
-
-##### Using TaskManager (Recommended)
-
-`TaskManager` is the high-level interface that manages multiple workers and their corresponding `TaskRunner` instances. It's the recommended approach for most use cases.
+#### TaskRunner Configuration
 
 ```typescript
-import {
-  OrkesApiConfig,
-  orkesConductorClient,
-  TaskManager,
-} from "@io-orkes/conductor-javascript";
-
-const client = await orkesConductorClient({
-  keyId: "XXX",
-  keySecret: "XXXX",
-  serverUrl: "https://play.orkes.io/api",
-});
-
-const taskDefName = "HelloWorldWorker";
-
-const customWorker: ConductorWorker = {
-  taskDefName,
-  execute: async ({ inputData, taskId }) => {
-    return {
-      outputData: {
-        greeting: "Hello World",
-      },
-      status: "COMPLETED",
-    };
-  },
-};
-
-const taskManager = new TaskManager(client, [customWorker], {
-  logger: new DefaultLogger(),
-  options: {
-    pollInterval: 1000,
-    concurrency: 1,
-    workerID: "my-worker",
-  },
-});
-
-// Start all workers
-await taskManager.startPolling();
-
-// Stop all workers
-await taskManager.shutdown();
+interface TaskRunnerOptions {
+  workerID?: string;
+  pollInterval?: number;
+  domain?: string;
+  concurrency?: number;
+  batchPollingTimeout?: number;
+}
 ```
 
-##### Using TaskRunner (Low-level)
-
-`TaskRunner` is the low-level interface used internally by `TaskManager`. It handles individual worker execution, polling the server for work, and updating results back to the server. Use this when you need fine-grained control over a single worker.
-
-```typescript
-import {
-  orkesConductorClient,
-  TaskRunner,
-  DefaultLogger,
-} from "@io-orkes/conductor-javascript";
-
-const client = await orkesConductorClient({
-  keyId: "XXX",
-  keySecret: "XXXX",
-  serverUrl: "https://play.orkes.io/api",
-});
-
-const customWorker: ConductorWorker = {
-  taskDefName: "HelloWorldWorker",
-  execute: async ({ inputData, taskId }) => {
-    return {
-      outputData: {
-        greeting: "Hello World",
-      },
-      status: "COMPLETED",
-    };
-  },
-};
-
-const taskRunner = new TaskRunner({
-  worker: customWorker,
-  taskResource: client.taskResource,
-  options: {
-    pollInterval: 1000,
-    concurrency: 1,
-    workerID: "my-worker",
-  },
-  logger: new DefaultLogger(),
-});
-
-// Start the worker
-await taskRunner.startPolling();
-
-// Stop the worker
-await taskRunner.shutdown();
-```
-
-##### When to Use Each Approach
+### When to Use Each Approach
 
 - **Use TaskManager** when you have multiple workers or want the convenience of managing all workers together
 - **Use TaskRunner** when you need fine-grained control over a single worker or want to implement custom worker management logic
 
-// Worker Options will take precedence over options defined in the manager
-const manager = new TaskManager(client, [customWorker], {
-  options: { pollInterval: 100, concurrency: 1 },
-});
-
-manager.startPolling();
-
-// You can update all worker settings at once using
-manager.updatePollingOptions({ pollInterval: 100, concurrency: 1 });
-
-// You can update a single worker setting using:
-manager.updatePollingOptionForWorker(taskDefName, {
-  pollInterval: 100,
-  concurrency: 1,
-});
-
-manager.isPolling; // Will resolve to true
-
-await manager.stopPolling();
-
-manager.isPolling; // Will resolve to false
-```
+## Scheduler Management
 
 #### Polling Mechanism
 
@@ -862,7 +881,7 @@ const runner = new TaskRunner({
   taskResource: client.taskResource,
   options: {
     pollInterval: 1000,
-    concurrency: 1,
+  concurrency: 1,
     workerID: "worker-1",
     domain: "production",
     batchPollingTimeout: 100
@@ -1104,6 +1123,40 @@ The `MetadataClient` class provides methods for managing task and workflow defin
 import { MetadataClient } from "@io-orkes/conductor-javascript";
 
 const metadataClient = new MetadataClient(client);
+```
+
+### Task Definition Factory
+
+The `taskDefinition` function provides a convenient way to create task definitions:
+
+```typescript
+import { taskDefinition } from "@io-orkes/conductor-javascript";
+
+const taskDef = taskDefinition("task_name", {
+  timeoutSeconds: 300,
+  retryCount: 3,
+  retryDelaySeconds: 60,
+  responseTimeoutSeconds: 300,
+  pollTimeoutSeconds: 300,
+  pollIntervalSeconds: 30,
+  concurrentExecLimit: 10,
+  rateLimitPerFrequency: 100,
+  rateLimitFrequencyInSeconds: 60,
+  ownerEmail: "owner@example.com",
+  description: "Task description",
+  inputTemplate: {
+    param1: "default_value"
+  },
+  outputTemplate: {
+    result: "computed_value"
+  },
+  inputKeys: ["param1", "param2"],
+  outputKeys: ["result"],
+  tags: ["tag1", "tag2"],
+  executionNameSpace: "namespace",
+  isolationGroupId: "isolation_group",
+  maxConcurrentExecutions: 5
+});
 ```
 
 #### Register Task Definition
