@@ -220,47 +220,45 @@ const client = await orkesConductorClient(config, fetch);
 Tasks are individual units of work in Conductor. There are **two types of tasks**:
 
 #### 1. System Tasks (Built-in Workers)
-System tasks are executed by **built-in workers running inside the Conductor server**. You don't need to write or deploy any code - Conductor handles everything.
+These tasks are executed by **built-in workers that run inside the Conductor server**. Conductor provides and manages these workers for you.
 
 **Examples:** HTTP, Event, Inline, JSON JQ Transform, Kafka, Switch, Fork/Join, Sub-Workflow, Set Variable, Wait, Terminate
 
-**Benefits:**
-- ✅ No need to write or deploy workers
-- ✅ Execute immediately (no polling delay)
-- ✅ Built-in and optimized by Conductor
+**What you get:**
+- ✅ Ready to use - just reference them in your workflow
+- ✅ No code to write or deploy
+- ✅ Optimized and maintained by Conductor
 - ✅ Perfect for common operations (API calls, data transforms, flow control)
 
-**Technical Note:** These tasks are still executed by workers - they're just built-in workers managed by the Conductor server.
-
-#### 2. SIMPLE Tasks (Custom/External Workers)
-SIMPLE tasks require **your own custom workers** that you write and deploy. These execute your business-specific logic.
+#### 2. SIMPLE Tasks (Custom Workers)
+These tasks are executed by **custom workers that you write and deploy**. You implement the business logic and manage the worker lifecycle.
 
 **Examples:** `send_email`, `process_payment`, `generate_report`, `process_order`
 
 **When to use:**
-- Custom business logic
+- Custom business logic specific to your application
 - Integration with internal systems
 - Database operations
 - File processing
-- Any custom functionality unique to your application
+- Any functionality not provided by system tasks
 
-**How they work:**
+**Worker execution flow:**
 1. Workflow creates a SIMPLE task
 2. Your worker polls Conductor: "Any tasks for me?"
-3. Conductor assigns the task
-4. Worker executes your custom logic
-5. Worker reports results back
+3. Conductor assigns the task to your worker
+4. Your worker executes the custom logic
+5. Worker reports results back to Conductor
 
 ### What are Workflows?
-Workflows are the main orchestration units in Conductor. They define a sequence of tasks and their dependencies, combining both system tasks and worker tasks to accomplish complex business processes.
+Workflows are the main orchestration units in Conductor. They define a sequence of tasks and their dependencies. You can combine system tasks (like HTTP calls and data transforms) with your custom SIMPLE tasks to build complex business processes.
 
 ### What are Workers?
-Workers are applications that poll Conductor for tasks and execute them. There are two kinds:
+Workers are applications that poll Conductor for tasks and execute them. Conductor uses two types:
 
-- **Built-in Workers** - These run inside the Conductor server and execute system tasks (HTTP, Event, Inline, etc.). You don't manage these.
-- **Custom Workers** - These are applications **you write and deploy** to execute SIMPLE tasks with your custom business logic.
+- **Built-in Workers** - Run inside the Conductor server to execute system tasks (HTTP, Event, Inline, etc.). Conductor manages these for you.
+- **Custom Workers** - Applications **you write and deploy** to execute SIMPLE tasks with your custom business logic. You're responsible for implementing and running these.
 
-This documentation focuses on custom workers since you need to implement and manage them yourself.
+This SDK helps you build and manage custom workers for your SIMPLE tasks.
 
 ### What is the Scheduler?
 The scheduler allows you to schedule workflows to run at specific times or intervals, enabling automated workflow execution based on time-based triggers.
@@ -271,18 +269,19 @@ The SDK provides generators for various task types to build workflow definitions
 
 ### Understanding Task Execution
 
-Tasks fall into two categories based on **who provides the worker**:
+All tasks in Conductor are executed by workers. The key difference is **who provides the worker**:
 
-**🔵 System Tasks** - Executed by built-in workers in Conductor server
+**🔵 System Tasks** - Use Conductor's built-in workers
 - HTTP, Event, Inline, JSON JQ Transform, Kafka, Switch, Fork-Join, Dynamic Fork, Join, Sub-Workflow, Set Variable, Wait, Terminate, Do-While
-- Built-in workers handle these automatically
-- Perfect for common operations, flow control, and data transformations
-- No need to write or deploy any code
+- Workers are provided and managed by Conductor
+- Just reference these tasks in your workflow - they work automatically
+- Ideal for common operations, flow control, and data transformations
 
-**🟢 SIMPLE Tasks** - Executed by your custom workers
-- SIMPLE tasks - for your custom business logic
-- HUMAN tasks - for human interaction/approvals (special type of SIMPLE task)
-- You must write, deploy, and manage workers for these tasks
+**🟢 SIMPLE Tasks** - Use your custom workers
+- For your unique business logic and integrations
+- HUMAN tasks are a special type that requires human interaction
+- You write, deploy, and manage these workers
+- See the [Workers](#workers) section for implementation guide
 
 ---
 
