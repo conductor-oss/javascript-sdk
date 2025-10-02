@@ -23,10 +23,13 @@ Show support for the Conductor OSS.  Please help spread the awareness by starrin
   - [Custom Fetch Function](#custom-fetch-function)
 - [Core Concepts](#core-concepts)
   - [What are Tasks?](#what-are-tasks)
+    - [System Tasks (Built-in Workers)](#1-system-tasks-built-in-workers)
+    - [SIMPLE Tasks (Custom/External Workers)](#2-simple-tasks-customexternal-workers)
   - [What are Workflows?](#what-are-workflows)
   - [What are Workers?](#what-are-workers)
   - [What is the Scheduler?](#what-is-the-scheduler)
 - [Task Types](#task-types)
+  - [Understanding Task Execution](#understanding-task-execution)
   - [Simple Task](#simple-task)
   - [HTTP Task](#http-task)
   - [Switch Task](#switch-task)
@@ -213,13 +216,51 @@ const client = await orkesConductorClient(config, fetch);
 ## Core Concepts
 
 ### What are Tasks?
-Tasks are individual units of work that can be executed by workers or handled by the Conductor server.
+
+Tasks are individual units of work in Conductor. There are **two types of tasks**:
+
+#### 1. System Tasks (Built-in Workers)
+System tasks are executed by **built-in workers running inside the Conductor server**. You don't need to write or deploy any code - Conductor handles everything.
+
+**Examples:** HTTP, Event, Inline, JSON JQ Transform, Kafka, Switch, Fork/Join, Sub-Workflow, Set Variable, Wait, Terminate
+
+**Benefits:**
+- ✅ No need to write or deploy workers
+- ✅ Execute immediately (no polling delay)
+- ✅ Built-in and optimized by Conductor
+- ✅ Perfect for common operations (API calls, data transforms, flow control)
+
+**Technical Note:** These tasks are still executed by workers - they're just built-in workers managed by the Conductor server.
+
+#### 2. SIMPLE Tasks (Custom/External Workers)
+SIMPLE tasks require **your own custom workers** that you write and deploy. These execute your business-specific logic.
+
+**Examples:** `send_email`, `process_payment`, `generate_report`, `process_order`
+
+**When to use:**
+- Custom business logic
+- Integration with internal systems
+- Database operations
+- File processing
+- Any custom functionality unique to your application
+
+**How they work:**
+1. Workflow creates a SIMPLE task
+2. Your worker polls Conductor: "Any tasks for me?"
+3. Conductor assigns the task
+4. Worker executes your custom logic
+5. Worker reports results back
 
 ### What are Workflows?
-Workflows are the main orchestration units in Conductor. They define a sequence of tasks and their dependencies.
+Workflows are the main orchestration units in Conductor. They define a sequence of tasks and their dependencies, combining both system tasks and worker tasks to accomplish complex business processes.
 
 ### What are Workers?
-Workers are applications that execute specific types of tasks. They poll for work and execute tasks assigned to them.
+Workers are applications that poll Conductor for tasks and execute them. There are two kinds:
+
+- **Built-in Workers** - These run inside the Conductor server and execute system tasks (HTTP, Event, Inline, etc.). You don't manage these.
+- **Custom Workers** - These are applications **you write and deploy** to execute SIMPLE tasks with your custom business logic.
+
+This documentation focuses on custom workers since you need to implement and manage them yourself.
 
 ### What is the Scheduler?
 The scheduler allows you to schedule workflows to run at specific times or intervals, enabling automated workflow execution based on time-based triggers.
@@ -228,9 +269,30 @@ The scheduler allows you to schedule workflows to run at specific times or inter
 
 The SDK provides generators for various task types to build workflow definitions. These generators create workflow task references that are used within workflow definitions.
 
+### Understanding Task Execution
+
+Tasks fall into two categories based on **who provides the worker**:
+
+**🔵 System Tasks** - Executed by built-in workers in Conductor server
+- HTTP, Event, Inline, JSON JQ Transform, Kafka, Switch, Fork-Join, Dynamic Fork, Join, Sub-Workflow, Set Variable, Wait, Terminate, Do-While
+- Built-in workers handle these automatically
+- Perfect for common operations, flow control, and data transformations
+- No need to write or deploy any code
+
+**🟢 SIMPLE Tasks** - Executed by your custom workers
+- SIMPLE tasks - for your custom business logic
+- HUMAN tasks - for human interaction/approvals (special type of SIMPLE task)
+- You must write, deploy, and manage workers for these tasks
+
+---
+
 **Note:** These task generators create workflow task references, not task metadata definitions. To register task metadata (like task definitions with retry policies, timeouts, etc.), use the `taskDefinition()` factory function or plain objects with the `MetadataClient` (see [Metadata](#metadata) section).
 
-### Simple Task
+---
+
+### Simple Task 🟢
+
+**Type:** SIMPLE Task (requires custom worker implementation)
 
 ```typescript
 import { simpleTask } from "@io-orkes/conductor-javascript";
@@ -240,7 +302,9 @@ const task = simpleTask("task_ref", "task_name", {
 }, false); // optional: if true, workflow continues even if task fails
 ```
 
-### HTTP Task
+### HTTP Task 🔵
+
+**Type:** System Task (executed by built-in workers)
 
 ```typescript
 import { httpTask } from "@io-orkes/conductor-javascript";
@@ -253,7 +317,9 @@ const task = httpTask("http_ref", "http://api.example.com/data", {
 });
 ```
 
-### Switch Task
+### Switch Task 🔵
+
+**Type:** System Task (executed by built-in workers)
 
 ```typescript
 import { switchTask } from "@io-orkes/conductor-javascript";
@@ -265,7 +331,9 @@ const task = switchTask("switch_ref", "input.status", {
 });
 ```
 
-### Fork-Join Task
+### Fork-Join Task 🔵
+
+**Type:** System Task (executed by built-in workers)
 
 ```typescript
 import { forkJoinTask } from "@io-orkes/conductor-javascript";
@@ -277,7 +345,9 @@ const task = forkJoinTask("fork_ref", [
 ]);
 ```
 
-### Do-While Task
+### Do-While Task 🔵
+
+**Type:** System Task (executed by built-in workers)
 
 ```typescript
 import { doWhileTask } from "@io-orkes/conductor-javascript";
@@ -293,7 +363,9 @@ const task = doWhileTask("while_ref", "workflow.variables.counter < 10", [
 ]);
 ```
 
-### Sub-Workflow Task
+### Sub-Workflow Task 🔵
+
+**Type:** System Task (executed by built-in workers)
 
 ```typescript
 import { subWorkflowTask } from "@io-orkes/conductor-javascript";
@@ -303,7 +375,9 @@ const task = subWorkflowTask("sub_ref", "child_workflow", 1, {
 }, "COMPLETED"); // wait for completion status
 ```
 
-### Event Task
+### Event Task 🔵
+
+**Type:** System Task (executed by built-in workers)
 
 ```typescript
 import { eventTask } from "@io-orkes/conductor-javascript";
@@ -314,7 +388,9 @@ const task = eventTask("event_ref", "event_name", {
 });
 ```
 
-### Wait Task
+### Wait Task 🔵
+
+**Type:** System Task (executed by built-in workers)
 
 ```typescript
 import { waitTask } from "@io-orkes/conductor-javascript";
@@ -322,7 +398,9 @@ import { waitTask } from "@io-orkes/conductor-javascript";
 const task = waitTask("wait_ref", 30); // wait 30 seconds
 ```
 
-### Terminate Task
+### Terminate Task 🔵
+
+**Type:** System Task (executed by built-in workers)
 
 ```typescript
 import { terminateTask } from "@io-orkes/conductor-javascript";
@@ -330,7 +408,9 @@ import { terminateTask } from "@io-orkes/conductor-javascript";
 const task = terminateTask("terminate_ref", "FAILED", "Error message");
 ```
 
-### Set Variable Task
+### Set Variable Task 🔵
+
+**Type:** System Task (executed by built-in workers)
 
 ```typescript
 import { setVariableTask } from "@io-orkes/conductor-javascript";
@@ -341,7 +421,9 @@ const task = setVariableTask("var_ref", {
 });
 ```
 
-### JSON JQ Transform Task
+### JSON JQ Transform Task 🔵
+
+**Type:** System Task (executed by built-in workers)
 
 ```typescript
 import { jsonJqTask } from "@io-orkes/conductor-javascript";
@@ -349,7 +431,9 @@ import { jsonJqTask } from "@io-orkes/conductor-javascript";
 const task = jsonJqTask("transform_ref", ".data.items[] | {id: .id, name: .name}");
 ```
 
-### Kafka Publish Task
+### Kafka Publish Task 🔵
+
+**Type:** System Task (executed by built-in workers)
 
 ```typescript
 import { kafkaPublishTask } from "@io-orkes/conductor-javascript";
@@ -362,7 +446,9 @@ const task = kafkaPublishTask("kafka_ref", "topic_name", {
 });
 ```
 
-### Inline Task
+### Inline Task 🔵
+
+**Type:** System Task (executed by built-in workers)
 
 ```typescript
 import { inlineTask } from "@io-orkes/conductor-javascript";
@@ -374,7 +460,9 @@ const task = inlineTask("inline_ref", `
 `);
 ```
 
-### Dynamic Fork Task
+### Dynamic Fork Task 🔵
+
+**Type:** System Task (executed by built-in workers)
 
 ```typescript
 import { dynamicForkTask } from "@io-orkes/conductor-javascript";
@@ -382,7 +470,9 @@ import { dynamicForkTask } from "@io-orkes/conductor-javascript";
 const task = dynamicForkTask("dynamic_ref", "input.tasks", "task_name");
 ```
 
-### Join Task
+### Join Task 🔵
+
+**Type:** System Task (executed by built-in workers)
 
 ```typescript
 import { joinTask } from "@io-orkes/conductor-javascript";
@@ -390,7 +480,9 @@ import { joinTask } from "@io-orkes/conductor-javascript";
 const task = joinTask("join_ref");
 ```
 
-### Human Task
+### Human Task 🟢
+
+**Type:** SIMPLE Task (requires human interaction via custom UI)
 
 ```typescript
 import { humanTask } from "@io-orkes/conductor-javascript";
