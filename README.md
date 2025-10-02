@@ -383,10 +383,6 @@ const executionId = await executor.startWorkflow({
 });
 
 console.log(`Workflow started with ID: ${executionId}`);
-
-// Monitor workflow status
-const workflow = await executor.getWorkflow(executionId, true);
-console.log(`Workflow status: ${workflow.status}`);
 ```
 
 ### Task Generators Reference
@@ -648,10 +644,6 @@ Once your workflow is running, you can monitor and control its execution using t
 #### Monitor Workflow Status
 
 ```typescript
-// Get workflow execution details
-const workflow = await executor.getWorkflow(executionId, true);
-console.log(`Status: ${workflow.status}`);
-
 // Get workflow status summary
 const status = await executor.getWorkflowStatus(
   executionId,
@@ -660,51 +652,15 @@ const status = await executor.getWorkflowStatus(
 );
 ```
 
-The `getWorkflow()` method returns a `Workflow` object with the following properties:
+The `getWorkflowStatus()` method returns a `Workflow` object with the following properties:
 
 ```typescript
-interface Workflow {
-  // Basic identification
+interface WorkflowStatus {
   workflowId?: string;
-  workflowName?: string;
-  workflowVersion?: number;
-  
-  // Status and timing
-  status?: 'RUNNING' | 'COMPLETED' | 'FAILED' | 'TIMED_OUT' | 'TERMINATED' | 'PAUSED';
-  createTime?: number;
-  updateTime?: number;
-  startTime?: number;
-  endTime?: number;
-  lastRetriedTime?: number;
-  
-  // Data
-  input?: Record<string, any>;
+  correlationId?: string;
   output?: Record<string, any>;
   variables?: Record<string, any>;
-  
-  // Relationships
-  parentWorkflowId?: string;
-  parentWorkflowTaskId?: string;
-  reRunFromWorkflowId?: string;
-  correlationId?: string;
-  
-  // Tasks and execution
-  tasks?: Array<Task>;
-  failedReferenceTaskNames?: Array<string>;
-  taskToDomain?: Record<string, string>;
-  
-  // Configuration
-  priority?: number;
-  externalInputPayloadStoragePath?: string;
-  externalOutputPayloadStoragePath?: string;
-  
-  // Metadata
-  ownerApp?: string;
-  createdBy?: string;
-  updatedBy?: string;
-  reasonForIncompletion?: string;
-  event?: string;
-  workflowDefinition?: WorkflowDef;
+  status?: "RUNNING" | "COMPLETED" | "FAILED" | "TIMED_OUT" | "TERMINATED" | "PAUSED";
 }
 ```
 
@@ -1314,19 +1270,6 @@ const manager = new TaskManager(client, workers, {
 await manager.startPolling();
 ```
 
-**Configuration Parameters:**
-
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `logger` | ConductorLogger | No | DefaultLogger | Logger instance for debugging and monitoring |
-| `options.pollInterval` | number | No | 100 | Polling interval in milliseconds |
-| `options.concurrency` | number | No | 1 | Maximum concurrent task executions per worker |
-| `options.workerID` | string | No | hostname | Unique identifier for this worker group |
-| `options.domain` | string | No | undefined | Task domain for isolation |
-| `options.batchPollingTimeout` | number | No | 100 | Batch polling timeout in milliseconds |
-| `onError` | TaskErrorHandler | No | noop | Global error handler function |
-| `maxRetries` | number | No | 3 | Maximum retry attempts before giving up |
-
 #### Dynamic Configuration Updates
 
 You can update polling options at runtime without stopping workers:
@@ -1602,29 +1545,6 @@ const taskDef = taskDefinition({
   backoffScaleFactor: 1                   // Optional: backoff multiplier for retry (default: 1)
 });
 ```
-
-**Task Definition Parameters:**
-
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `name` | string | Yes | - | Task name (must be unique) |
-| `ownerApp` | string | No | "" | Owner application name |
-| `description` | string | No | "" | Task description |
-| `retryCount` | number | No | 3 | Number of retry attempts |
-| `timeoutSeconds` | number | No | 3600 | Task timeout in seconds |
-| `inputKeys` | string[] | No | [] | List of expected input keys |
-| `outputKeys` | string[] | No | [] | List of output keys |
-| `timeoutPolicy` | string | No | "TIME_OUT_WF" | Timeout policy: "RETRY", "TIME_OUT_WF", "ALERT_ONLY" |
-| `retryLogic` | string | No | "FIXED" | Retry logic: "FIXED", "EXPONENTIAL_BACKOFF", "LINEAR_BACKOFF" |
-| `retryDelaySeconds` | number | No | 60 | Delay between retries in seconds |
-| `responseTimeoutSeconds` | number | No | 600 | Response timeout in seconds |
-| `concurrentExecLimit` | number | No | 0 | Max concurrent executions (0 = unlimited) |
-| `inputTemplate` | object | No | {} | Default input template |
-| `rateLimitPerFrequency` | number | No | 0 | Rate limit count (0 = no limit) |
-| `rateLimitFrequencyInSeconds` | number | No | 1 | Rate limit window in seconds |
-| `ownerEmail` | string | No | "" | Owner email address |
-| `pollTimeoutSeconds` | number | No | 3600 | Poll timeout in seconds |
-| `backoffScaleFactor` | number | No | 1 | Backoff multiplier for exponential/linear retry |
 
 ### Register Task Definition
 
