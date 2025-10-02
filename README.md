@@ -158,15 +158,25 @@ The SDK supports authentication using API keys. See [Access Control](https://ork
 import { OrkesApiConfig, orkesConductorClient } from "@io-orkes/conductor-javascript";
 
 const config: Partial<OrkesApiConfig> = {
-  serverUrl: "https://play.orkes.io/api", // server api url
-  keyId: "your-key-id",                   // authentication key
-  keySecret: "your-key-secret",           // authentication secret
-  refreshTokenInterval: 0,                // optional: token refresh interval, 0 = no refresh (default: 30min)
-  maxHttp2Connections: 1                  // optional: max HTTP2 connections (default: 1)
+  serverUrl: "https://play.orkes.io/api",  // Required: server api url
+  keyId: "your-key-id",                    // Required: authentication key
+  keySecret: "your-key-secret",            // Required: authentication secret
+  refreshTokenInterval: 1800000,           // Optional: token refresh interval in ms (default: 1800000 = 30 minutes)
+  maxHttp2Connections: 1                   // Optional: max HTTP2 connections (default: 1)
 };
 
 const client = await orkesConductorClient(config);
 ```
+
+**Configuration Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `serverUrl` | string | Yes | - | Conductor server API URL |
+| `keyId` | string | No* | - | Authentication key ID (*required for auth) |
+| `keySecret` | string | No* | - | Authentication secret (*required for auth) |
+| `refreshTokenInterval` | number | No | 1800000 | Token refresh interval in milliseconds (30 minutes) |
+| `maxHttp2Connections` | number | No | 1 | Maximum simultaneous HTTP2 connections to Conductor server |
 
 ### Environment Variables
 
@@ -269,16 +279,42 @@ const executor = new WorkflowExecutor(client);
 
 #### Workflow Factory
 
-The `workflow` function provides a convenient way to create workflow definitions:
+The `workflow` function provides a convenient way to create workflow definitions with sensible defaults:
 
 ```typescript
 import { workflow, simpleTask } from "@io-orkes/conductor-javascript";
 
-const myWorkflow = workflow("workflow_name", [
-  simpleTask("task1", "process_1", {}),
-  simpleTask("task2", "process_2", {})
-]);
+const myWorkflow = workflow(
+  "workflow_name",                     // name (required): workflow name
+  [                                    // tasks (required): array of task definitions
+    simpleTask("task1", "process_1", {}),
+    simpleTask("task2", "process_2", {})
+  ]
+);
+
+// Returns a WorkflowDef with these default values:
+// {
+//   name: "workflow_name",
+//   version: 1,                       // Default: 1
+//   tasks: [...],
+//   inputParameters: [],              // Default: []
+//   timeoutSeconds: 0                 // Default: 0 (no timeout)
+// }
 ```
+
+**Workflow Factory Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `name` | string | Yes | - | Workflow name (must be unique) |
+| `tasks` | TaskDefTypes[] | Yes | - | Array of task definitions |
+
+**Default Values Set by Factory:**
+- `version`: 1
+- `inputParameters`: []
+- `timeoutSeconds`: 0 (no timeout)
+
+**Note:** For more control over workflow definition, you can manually create a `WorkflowDef` object with additional properties like `ownerEmail`, `description`, `outputParameters`, `failureWorkflow`, `restartable`, etc.
 
 #### Example: Combining Task Types
 
@@ -288,12 +324,19 @@ Here's how to combine different task types in a workflow:
 import { workflow, simpleTask, httpTask } from "@io-orkes/conductor-javascript";
 
 const myWorkflow = workflow("order_processing", [
-  simpleTask("validate_order", "validate_order_task", {}),    // Custom worker
-  httpTask("call_payment", "https://api.payment.com/charge", { // System task
+  // SIMPLE task - requires custom worker
+  simpleTask("validate_order", "validate_order_task", {}),
+  
+  // HTTP task - system task (no worker needed)
+  httpTask("call_payment", {
+    uri: "https://api.payment.com/charge",
     method: "POST",
-    headers: { "Authorization": "Bearer token" }
+    headers: { "Authorization": "Bearer token" },
+    body: { amount: "${workflow.input.amount}" }
   }),
-  simpleTask("send_confirmation", "send_email_task", {})      // Custom worker
+  
+  // SIMPLE task - requires custom worker
+  simpleTask("send_confirmation", "send_email_task", {})
 ]);
 ```
 
@@ -310,9 +353,14 @@ This section provides code examples for each task type generator. Use these to b
 ```typescript
 import { simpleTask } from "@io-orkes/conductor-javascript";
 
-const task = simpleTask("task_ref", "task_name", {
-  inputParam: "value"
-}, false); // optional: if true, workflow continues even if task fails
+const task = simpleTask(
+  "task_ref",          // taskReferenceName (required)
+  "task_name",         // name (required): must match worker's taskDefName
+  {                    // inputParameters (required)
+    inputParam: "value"
+  },
+  false                // optional (optional): if true, workflow continues on failure
+);
 ```
 
 #### HTTP Task
@@ -322,12 +370,18 @@ const task = simpleTask("task_ref", "task_name", {
 ```typescript
 import { httpTask } from "@io-orkes/conductor-javascript";
 
-const task = httpTask("http_ref", "http://api.example.com/data", {
-  method: "GET",
-  headers: { "Authorization": "Bearer token" },
-  connectionTimeOut: 5000,
-  readTimeOut: 10000
-});
+const task = httpTask(
+  "http_ref",
+  {
+    uri: "http://api.example.com/data",
+    method: "GET",
+    headers: { "Authorization": "Bearer token" },
+    connectionTimeOut: 5000,
+    readTimeOut: 10000
+  },
+  false,  // asyncComplete (optional)
+  false   // optional (optional): workflow continues on failure
+);
 ```
 
 #### Switch Task
@@ -337,11 +391,16 @@ const task = httpTask("http_ref", "http://api.example.com/data", {
 ```typescript
 import { switchTask } from "@io-orkes/conductor-javascript";
 
-const task = switchTask("switch_ref", "input.status", {
-  "active": [simpleTask("active_task", "process_active", {})],
-  "inactive": [simpleTask("inactive_task", "process_inactive", {})],
-  "default": [simpleTask("default_task", "process_default", {})]
-});
+const task = switchTask(
+  "switch_ref",
+  "input.status",      // expression to evaluate
+  {
+    "active": [simpleTask("active_task", "process_active", {})],
+    "inactive": [simpleTask("inactive_task", "process_inactive", {})]
+  },
+  [simpleTask("default_task", "process_default", {})],  // defaultCase (optional)
+  false  // optional (optional): workflow continues on failure
+);
 ```
 
 #### Fork-Join Task
@@ -383,9 +442,15 @@ const task = doWhileTask("while_ref", "workflow.variables.counter < 10", [
 ```typescript
 import { subWorkflowTask } from "@io-orkes/conductor-javascript";
 
-const task = subWorkflowTask("sub_ref", "child_workflow", 1, {
-  inputParam: "value"
-}, "COMPLETED"); // wait for completion status
+const task = subWorkflowTask(
+  "sub_ref",
+  "child_workflow",  // workflowName
+  1,                 // version (optional): uses latest if not specified
+  false              // optional (optional)
+);
+
+// Set input parameters
+task.inputParameters = { inputParam: "value" };
 ```
 
 #### Event Task
@@ -403,12 +468,24 @@ const task = eventTask("event_ref", "event_name", {
 
 #### Wait Task
 
-*System Task* - Pauses workflow execution for a specified duration.
+*System Task* - Pauses workflow execution for a specified duration or until a specific time.
 
 ```typescript
-import { waitTask } from "@io-orkes/conductor-javascript";
+import { waitTaskDuration, waitTaskUntil } from "@io-orkes/conductor-javascript";
 
-const task = waitTask("wait_ref", 30); // wait 30 seconds
+// Wait for a duration (e.g., "30s", "5m", "1h", "2d")
+const taskDuration = waitTaskDuration(
+  "wait_ref",
+  "30s",      // duration string
+  false       // optional (optional)
+);
+
+// Wait until a specific time (ISO 8601 format)
+const taskUntil = waitTaskUntil(
+  "wait_until_ref",
+  "2025-12-31T23:59:59Z",  // ISO 8601 timestamp
+  false                     // optional (optional)
+);
 ```
 
 #### Terminate Task
@@ -418,7 +495,11 @@ const task = waitTask("wait_ref", 30); // wait 30 seconds
 ```typescript
 import { terminateTask } from "@io-orkes/conductor-javascript";
 
-const task = terminateTask("terminate_ref", "FAILED", "Error message");
+const task = terminateTask(
+  "terminate_ref",
+  "FAILED",         // status: "COMPLETED" or "FAILED"
+  "Error message"   // terminationReason (optional)
+);
 ```
 
 #### Set Variable Task
@@ -619,20 +700,175 @@ await executor.terminate(executionId, "Terminating due to error");
 
 ```typescript
 const searchResults = await executor.search(
-  0,                    // start
-  10,                   // size
-  "status:RUNNING",     // query
-  "*",                  // freeText
-  "startTime:DESC"      // sort (optional)
+  0,                 // start: starting index
+  10,                // size: number of results
+  "status:RUNNING",  // query: e.g., "workflowType:my_workflow"
+  "*",               // freeText: use "*" for all
+  "startTime:DESC",  // sort (optional, default: "")
+  false              // skipCache (optional, default: false)
 );
 ```
 
-**Search Parameters:**
-- `start`: Starting index for pagination (default: 0)
-- `size`: Number of results to return (default: 100)
-- `sort`: Query string (e.g., "status:RUNNING", "workflowType:my_workflow")
-- `freeText`: Free text search term (use "*" for all)
-- `orderBy`: Sort field and direction (e.g., "startTime:DESC", "status:ASC")
+### WorkflowExecutor Complete API Reference
+
+The `WorkflowExecutor` provides the following methods for workflow management:
+
+#### Core Workflow Operations
+
+```typescript
+// Register a workflow definition
+await executor.registerWorkflow(
+  override: boolean,      // If true, replaces existing definition
+  workflow: WorkflowDef
+): Promise<void>
+
+// Start a workflow
+const workflowId = await executor.startWorkflow(
+  workflowRequest: StartWorkflowRequest
+): Promise<string>  // Returns workflow instance ID
+
+// Execute workflow synchronously
+const result = await executor.executeWorkflow(
+  workflowRequest: StartWorkflowRequest,
+  name: string,
+  version: number,
+  requestId: string,
+  waitUntilTaskRef?: string,     // (optional) wait until specific task completes
+  waitForSeconds?: number,       // (optional) max wait time
+  consistency?: Consistency,     // (optional)
+  returnStrategy?: ReturnStrategy  // (optional)
+): Promise<WorkflowRun | SignalResponse>
+
+// Get workflow execution details
+const workflow = await executor.getWorkflow(
+  workflowInstanceId: string,
+  includeTasks: boolean,
+  retry?: number  // (optional, default: 0)
+): Promise<Workflow>
+
+// Get workflow execution (alias for getWorkflow)
+const execution = await executor.getExecution(
+  workflowInstanceId: string,
+  includeTasks?: boolean  // (optional, default: true)
+): Promise<Workflow>
+
+// Get workflow status summary
+const status = await executor.getWorkflowStatus(
+  workflowInstanceId: string,
+  includeOutput: boolean,
+  includeVariables: boolean
+): Promise<WorkflowStatus>
+```
+
+#### Workflow Control Operations
+
+```typescript
+// Pause a running workflow
+await executor.pause(workflowInstanceId: string): Promise<void>
+
+// Resume a paused workflow
+await executor.resume(workflowInstanceId: string): Promise<void>
+
+// Terminate a workflow
+await executor.terminate(
+  workflowInstanceId: string,
+  reason: string
+): Promise<void>
+
+// Restart a workflow
+await executor.restart(
+  workflowInstanceId: string,
+  useLatestDefinitions: boolean
+): Promise<void>
+
+// Retry a failed workflow from last failed task
+await executor.retry(
+  workflowInstanceId: string,
+  resumeSubworkflowTasks: boolean
+): Promise<void>
+
+// Rerun a workflow with new parameters
+const newWorkflowId = await executor.reRun(
+  workflowInstanceId: string,
+  rerunWorkflowRequest?: Partial<RerunWorkflowRequest>  // (optional)
+): Promise<string>
+
+// Skip a task in a running workflow
+await executor.skipTasksFromWorkflow(
+  workflowInstanceId: string,
+  taskReferenceName: string,
+  skipTaskRequest: Partial<SkipTaskRequest>
+): Promise<void>
+```
+
+#### Task Operations
+
+```typescript
+// Get task by ID
+const task = await executor.getTask(taskId: string): Promise<Task>
+
+// Update task by ID
+const result = await executor.updateTask(
+  taskId: string,
+  workflowInstanceId: string,
+  taskStatus: TaskResultStatus,  // COMPLETED, FAILED, etc.
+  outputData: Record<string, any>
+): Promise<string>
+
+// Update task by reference name
+const result = await executor.updateTaskByRefName(
+  taskReferenceName: string,
+  workflowInstanceId: string,
+  status: TaskResultStatus,
+  taskOutput: Record<string, any>
+): Promise<string>
+
+// Update task synchronously and return workflow
+const workflow = await executor.updateTaskSync(
+  taskReferenceName: string,
+  workflowInstanceId: string,
+  status: TaskResultStatusEnum,
+  taskOutput: Record<string, any>,
+  workerId?: string  // (optional)
+): Promise<Workflow>
+
+// Signal a workflow task
+const response = await executor.signal(
+  workflowInstanceId: string,
+  status: TaskResultStatusEnum,
+  taskOutput: Record<string, any>,
+  returnStrategy?: ReturnStrategy  // (optional, default: TARGET_WORKFLOW)
+): Promise<SignalResponse>
+
+// Signal a workflow task asynchronously (fire-and-forget)
+await executor.signalAsync(
+  workflowInstanceId: string,
+  status: TaskResultStatusEnum,
+  taskOutput: Record<string, any>
+): Promise<void>
+```
+
+#### Advanced Operations
+
+```typescript
+// Go back to a specific task and rerun from there
+await executor.goBackToTask(
+  workflowInstanceId: string,
+  taskFinderPredicate: (task: Task) => boolean,
+  rerunWorkflowRequestOverrides?: Partial<RerunWorkflowRequest>  // (optional)
+): Promise<void>
+
+// Go back to first task matching type
+await executor.goBackToFirstTaskMatchingType(
+  workflowInstanceId: string,
+  taskType: string
+): Promise<void>
+
+// Start multiple workflows
+const workflowIds = executor.startWorkflows(
+  workflowsRequest: StartWorkflowRequest[]
+): Promise<string>[]
+```
 
 ### Monitoring & Debugging Tasks
 
@@ -1022,35 +1258,50 @@ console.log("✅ All 3 workers are now running!");
 
 ### TaskManager Advanced Configuration
 
+The `TaskManager` accepts configuration options to control worker behavior, polling, and error handling.
+
 ```typescript
 import { TaskManager, ConductorWorker, DefaultLogger } from "@io-orkes/conductor-javascript";
 
 const manager = new TaskManager(client, workers, {
-  // Custom logger for debugging and monitoring
+  // Custom logger for debugging and monitoring (optional)
   logger: new DefaultLogger(),
   
-  // Polling and execution options
+  // Polling and execution options (optional)
   options: {
-    pollInterval: 1000,           // How often to poll for tasks (milliseconds) (default: 100)
+    pollInterval: 1000,           // How often to poll for tasks in ms (default: 100)
     concurrency: 5,               // Max concurrent task executions per worker (default: 1)
-    workerID: "worker-group-1",   // Unique identifier for this worker group
-    domain: "production",         // Task domain for isolation (optional)
-    batchPollingTimeout: 10-0      // Batch polling timeout in milliseconds (default: 100)
+    workerID: "worker-group-1",   // Unique identifier for this worker group (default: hostname)
+    domain: undefined,            // Task domain for isolation (default: undefined)
+    batchPollingTimeout: 100      // Batch polling timeout in ms (default: 100)
   },
   
-  // Global error handler called when workers fail
+  // Global error handler called when workers fail (optional)
   onError: (error, task) => {
     console.error(`Error in task ${task?.taskType}:`, error);
     // Send to error tracking service
     errorTracker.log(error, { taskId: task?.taskId });
   },
   
-  // Maximum retry attempts before giving up (default: 3)
+  // Maximum retry attempts before giving up (optional, default: 3)
   maxRetries: 5
 });
 
 await manager.startPolling();
 ```
+
+**Configuration Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `logger` | ConductorLogger | No | DefaultLogger | Logger instance for debugging and monitoring |
+| `options.pollInterval` | number | No | 100 | Polling interval in milliseconds |
+| `options.concurrency` | number | No | 1 | Maximum concurrent task executions per worker |
+| `options.workerID` | string | No | hostname | Unique identifier for this worker group |
+| `options.domain` | string | No | undefined | Task domain for isolation |
+| `options.batchPollingTimeout` | number | No | 100 | Batch polling timeout in milliseconds |
+| `onError` | TaskErrorHandler | No | noop | Global error handler function |
+| `maxRetries` | number | No | 3 | Maximum retry attempts before giving up |
 
 #### Dynamic Configuration Updates
 
@@ -1082,59 +1333,109 @@ process.on('SIGTERM', async () => {
 
 ### SchedulerClient
 
-The `SchedulerClient` manages workflow scheduling:
+The `SchedulerClient` manages workflow scheduling and provides methods for creating, managing, and monitoring scheduled workflows.
 
 ```typescript
 import { SchedulerClient } from "@io-orkes/conductor-javascript";
 
 const scheduler = new SchedulerClient(client);
+```
 
-// Create a schedule
+#### Schedule Management
+
+```typescript
+// Create or update a schedule
 await scheduler.saveSchedule({
-  name: "daily_report",
-  cronExpression: "0 0 9 * * ?", // Every day at 9 AM
+  name: string,
+  cronExpression: string,  // e.g., "0 0 9 * * ?"
   startWorkflowRequest: {
-    name: "report_workflow",
-    version: 1,
-    input: { reportType: "daily" }
-  }
-});
+    name: string,
+    version?: number,
+    input?: Record<string, any>,
+    correlationId?: string,
+    priority?: number,
+    taskToDomain?: Record<string, string>
+  },
+  paused?: boolean,                   // (optional, default: false)
+  runCatchupScheduleInstances?: boolean,  // (optional, default: false)
+  scheduleStartTime?: number,         // (optional) epoch ms
+  scheduleEndTime?: number            // (optional) epoch ms
+}): Promise<void>
 
-// Get schedule
-const schedule = await scheduler.getSchedule("daily_report");
-
-// Pause schedule
-await scheduler.pauseSchedule("daily_report");
-
-// Resume schedule
-await scheduler.resumeSchedule("daily_report");
-
-// Delete schedule
-await scheduler.deleteSchedule("daily_report");
+// Get a specific schedule
+const schedule = await scheduler.getSchedule(name: string): Promise<WorkflowSchedule>
 
 // Get all schedules
-const allSchedules = await scheduler.getAllSchedules();
+const schedules = await scheduler.getAllSchedules(
+  workflowName?: string  // (optional) filter by workflow name
+): Promise<WorkflowSchedule[]>
 
-// Get next few execution times
-const nextExecutions = await scheduler.getNextFewSchedules(
-  "0 0 9 * * ?",
-  Date.now(),
-  Date.now() + 7 * 24 * 60 * 60 * 1000, // Next 7 days
-  5
-);
+// Delete a schedule
+await scheduler.deleteSchedule(name: string): Promise<void>
 
-// Search schedule executions
-const executions = await scheduler.search(0, 10, "", "", "status:RUNNING");
+// Pause a schedule
+await scheduler.pauseSchedule(name: string): Promise<void>
 
-// Pause all schedules (debugging only)
-await scheduler.pauseAllSchedules();
+// Resume a paused schedule
+await scheduler.resumeSchedule(name: string): Promise<void>
+```
+
+#### Bulk Schedule Operations
+
+```typescript
+// Pause all schedules (use with caution)
+await scheduler.pauseAllSchedules(): Promise<void>
 
 // Resume all schedules
-await scheduler.resumeAllSchedules();
+await scheduler.resumeAllSchedules(): Promise<void>
 
 // Requeue all execution records
-await scheduler.requeueAllExecutionRecords();
+await scheduler.requeueAllExecutionRecords(): Promise<void>
 ```
+
+#### Schedule Execution Preview
+
+```typescript
+// Get next few execution times for a cron expression
+const nextExecutions = await scheduler.getNextFewSchedules(
+  cronExpression: string,
+  scheduleTime: number,      // epoch ms
+  scheduleEndTime: number,   // epoch ms
+  limit: number
+): Promise<number[]>  // array of timestamps
+
+// Example: Get next 5 executions over the next 7 days
+const nextTimes = await scheduler.getNextFewSchedules(
+  "0 0 9 * * ?",
+  Date.now(),
+  Date.now() + 7 * 24 * 60 * 60 * 1000,
+  5
+);
+```
+
+#### Search Schedule Executions
+
+```typescript
+// Search schedule execution history
+const executions = await scheduler.search(
+  start: number,
+  size: number,
+  sort: string,       // (optional, default: "")
+  freeText: string,   // (default: "*")
+  query: string       // e.g., "status:RUNNING"
+): Promise<SearchResultWorkflowScheduleExecutionModel>
+
+// Example
+const results = await scheduler.search(0, 10, "startTime:DESC", "*", "status:RUNNING");
+```
+
+**Cron Expression Format:**
+- Standard cron format: `second minute hour day month dayOfWeek`
+- Examples:
+  - `"0 0 9 * * ?"` - Every day at 9 AM
+  - `"0 */30 * * * ?"` - Every 30 minutes
+  - `"0 0 0 1 * ?"` - First day of every month at midnight
+  - `"0 0 12 ? * MON-FRI"` - Weekdays at noon
 
 ## Service Registry
 
@@ -1205,7 +1506,7 @@ await serviceRegistry.removeService("user-service");
 
 ### MetadataClient
 
-The `MetadataClient` class provides methods for managing task and workflow definitions:
+The `MetadataClient` class provides methods for managing task and workflow definitions in Conductor.
 
 ```typescript
 import { MetadataClient } from "@io-orkes/conductor-javascript";
@@ -1213,40 +1514,93 @@ import { MetadataClient } from "@io-orkes/conductor-javascript";
 const metadataClient = new MetadataClient(client);
 ```
 
+#### Complete MetadataClient API Reference
+
+```typescript
+// Task Definition Management
+await metadataClient.registerTask(taskDef: TaskDef): Promise<void>
+await metadataClient.updateTask(taskDef: TaskDef): Promise<void>
+const taskDef = await metadataClient.getTaskDef(taskName: string): Promise<TaskDef>
+const allTasks = await metadataClient.getAllTaskDefs(): Promise<TaskDef[]>
+await metadataClient.unregisterTask(taskName: string): Promise<void>
+
+// Workflow Definition Management
+await metadataClient.registerWorkflowDef(
+  workflowDef: WorkflowDef,
+  overwrite?: boolean  // (optional, default: false)
+): Promise<void>
+
+await metadataClient.updateWorkflowDef(workflowDef: WorkflowDef): Promise<void>
+
+const workflowDef = await metadataClient.getWorkflowDef(
+  workflowName: string,
+  version?: number  // (optional) uses latest if not specified
+): Promise<WorkflowDef>
+
+const allVersions = await metadataClient.getAllWorkflowDefs(
+  workflowName: string
+): Promise<WorkflowDef[]>
+
+await metadataClient.unregisterWorkflow(
+  workflowName: string,
+  version: number
+): Promise<void>
+```
+
 ### Task Definition Factory
 
-The `taskDefinition` function provides a convenient way to create task definitions:
+The `taskDefinition` function provides a convenient way to create task definitions with default values:
 
 ```typescript
 import { taskDefinition } from "@io-orkes/conductor-javascript";
 
 const taskDef = taskDefinition({
-  name: "task_name",
-  timeoutSeconds: 300,
-  retryCount: 3,
-  retryDelaySeconds: 60,
-  responseTimeoutSeconds: 300,
-  pollTimeoutSeconds: 300,
-  pollIntervalSeconds: 30,
-  concurrentExecLimit: 10,
-  rateLimitPerFrequency: 100,
-  rateLimitFrequencyInSeconds: 60,
-  ownerEmail: "owner@example.com",
-  description: "Task description",
-  inputTemplate: {
-    param1: "default_value"
-  },
-  outputTemplate: {
-    result: "computed_value"
-  },
-  inputKeys: ["param1", "param2"],
-  outputKeys: ["result"],
-  tags: ["tag1", "tag2"],
-  executionNameSpace: "namespace",
-  isolationGroupId: "isolation_group",
-  maxConcurrentExecutions: 5
+  // Required fields
+  name: "task_name",                      // Task name (required)
+  
+  // Optional fields with defaults
+  ownerApp: "",                           // Optional: owner application (default: "")
+  description: "",                        // Optional: task description (default: "")
+  retryCount: 3,                          // Optional: number of retries (default: 3)
+  timeoutSeconds: 3600,                   // Optional: task timeout in seconds (default: 3600 = 1 hour)
+  inputKeys: [],                          // Optional: list of input keys (default: [])
+  outputKeys: [],                         // Optional: list of output keys (default: [])
+  timeoutPolicy: "TIME_OUT_WF",           // Optional: "RETRY" | "TIME_OUT_WF" | "ALERT_ONLY" (default: "TIME_OUT_WF")
+  retryLogic: "FIXED",                    // Optional: "FIXED" | "EXPONENTIAL_BACKOFF" | "LINEAR_BACKOFF" (default: "FIXED")
+  retryDelaySeconds: 60,                  // Optional: delay between retries in seconds (default: 60)
+  responseTimeoutSeconds: 600,            // Optional: response timeout in seconds (default: 600)
+  concurrentExecLimit: 0,                 // Optional: max concurrent executions (0 = unlimited) (default: 0)
+  inputTemplate: {},                      // Optional: default input template (default: {})
+  rateLimitPerFrequency: 0,               // Optional: rate limit count (0 = no limit) (default: 0)
+  rateLimitFrequencyInSeconds: 1,         // Optional: rate limit window in seconds (default: 1)
+  ownerEmail: "",                         // Optional: owner email (default: "")
+  pollTimeoutSeconds: 3600,               // Optional: poll timeout in seconds (default: 3600)
+  backoffScaleFactor: 1                   // Optional: backoff multiplier for retry (default: 1)
 });
 ```
+
+**Task Definition Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `name` | string | Yes | - | Task name (must be unique) |
+| `ownerApp` | string | No | "" | Owner application name |
+| `description` | string | No | "" | Task description |
+| `retryCount` | number | No | 3 | Number of retry attempts |
+| `timeoutSeconds` | number | No | 3600 | Task timeout in seconds |
+| `inputKeys` | string[] | No | [] | List of expected input keys |
+| `outputKeys` | string[] | No | [] | List of output keys |
+| `timeoutPolicy` | string | No | "TIME_OUT_WF" | Timeout policy: "RETRY", "TIME_OUT_WF", "ALERT_ONLY" |
+| `retryLogic` | string | No | "FIXED" | Retry logic: "FIXED", "EXPONENTIAL_BACKOFF", "LINEAR_BACKOFF" |
+| `retryDelaySeconds` | number | No | 60 | Delay between retries in seconds |
+| `responseTimeoutSeconds` | number | No | 600 | Response timeout in seconds |
+| `concurrentExecLimit` | number | No | 0 | Max concurrent executions (0 = unlimited) |
+| `inputTemplate` | object | No | {} | Default input template |
+| `rateLimitPerFrequency` | number | No | 0 | Rate limit count (0 = no limit) |
+| `rateLimitFrequencyInSeconds` | number | No | 1 | Rate limit window in seconds |
+| `ownerEmail` | string | No | "" | Owner email address |
+| `pollTimeoutSeconds` | number | No | 3600 | Poll timeout in seconds |
+| `backoffScaleFactor` | number | No | 1 | Backoff multiplier for exponential/linear retry |
 
 ### Register Task Definition
 
