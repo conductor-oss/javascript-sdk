@@ -53,6 +53,11 @@ Show support for the Conductor OSS.  Please help spread the awareness by starrin
   - [Resume Workflow](#resume-workflow)
   - [Terminate Workflow](#terminate-workflow)
   - [Workflow Search](#workflow-search)
+  - [Monitoring & Debugging Tasks](#monitoring--debugging-tasks)
+    - [Task Statuses](#task-statuses)
+    - [Searching & Filtering Tasks](#searching--filtering-tasks)
+    - [Common Search Queries](#common-search-queries)
+    - [Debugging Task Execution](#debugging-task-execution)
 - [Workers](#workers)
   - [Overview](#overview)
   - [Quick Start: Your First Worker](#quick-start-your-first-worker)
@@ -67,11 +72,6 @@ Show support for the Conductor OSS.  Please help spread the awareness by starrin
   - [TaskRunner (Low-level)](#taskrunner-low-level)
   - [Configuration Options](#configuration-options-1)
   - [When to Use Each Approach](#when-to-use-each-approach)
-- [Tasks](#tasks)
-  - [TaskClient](#taskclient)
-  - [Task Status and Monitoring](#task-status-and-monitoring)
-  - [Task Search and Filtering](#task-search-and-filtering)
-  - [Task Debugging](#task-debugging)
 - [Scheduling](#scheduling)
   - [SchedulerClient](#schedulerclient)
 - [Service Registry](#service-registry)
@@ -558,6 +558,116 @@ const searchResults = await executor.search(
 );
 ```
 
+### Monitoring & Debugging Tasks
+
+The `TaskClient` provides capabilities for monitoring and debugging tasks within your workflow executions:
+
+```typescript
+import { TaskClient } from "@io-orkes/conductor-javascript";
+
+const taskClient = new TaskClient(client);
+
+// Search tasks
+const searchResults = await taskClient.search(0, 10, "", "*", "status:COMPLETED");
+
+// Get task by ID
+const task = await taskClient.getTask(taskId);
+
+// Update task result (advanced use case)
+await taskClient.updateTaskResult(
+  workflowId,
+  taskReferenceName,
+  "COMPLETED",
+  { result: "success" }
+);
+```
+
+#### Task Statuses
+
+Tasks in Conductor have various statuses that indicate their current state:
+
+- **SCHEDULED**: Task is scheduled for execution
+- **IN_PROGRESS**: Task is currently being executed
+- **COMPLETED**: Task completed successfully
+- **COMPLETED_WITH_ERRORS**: Task completed but with errors
+- **FAILED**: Task execution failed
+- **FAILED_WITH_TERMINAL_ERROR**: Task failed with a terminal error (no retries)
+- **TIMED_OUT**: Task execution timed out
+- **CANCELED**: Task was canceled
+- **SKIPPED**: Task was skipped
+
+#### Searching & Filtering Tasks
+
+You can search for tasks using various criteria:
+
+```typescript
+// Search by status
+const completedTasks = await taskClient.search(0, 10, "", "*", "status:COMPLETED");
+
+// Search by workflow
+const workflowTasks = await taskClient.search(0, 10, "", "*", "workflowId:workflow-123");
+
+// Search by task type
+const simpleTasks = await taskClient.search(0, 10, "", "*", "taskType:SIMPLE");
+
+// Search by free text
+const textSearch = await taskClient.search(0, 10, "", "error", "");
+
+// Search with sorting
+const sortedTasks = await taskClient.search(0, 10, "startTime:DESC", "*", "status:FAILED");
+```
+
+**Search Parameters:**
+- `start`: Starting index for pagination (default: 0)
+- `size`: Number of results to return (default: 100)
+- `sort`: Sort field and direction (e.g., "startTime:DESC", "status:ASC")
+- `freeText`: Free text search term (use "*" for all)
+- `query`: Structured query string (e.g., "status:FAILED", "workflowId:workflow-123")
+
+#### Common Search Queries
+
+```typescript
+// Find all failed tasks
+const failedTasks = await taskClient.search(0, 100, "startTime:DESC", "*", "status:FAILED");
+
+// Find tasks for a specific workflow
+const workflowTasks = await taskClient.search(0, 100, "", "*", "workflowId:my-workflow-123");
+
+// Find tasks by worker ID
+const workerTasks = await taskClient.search(0, 100, "", "*", "workerId:worker-123");
+
+// Find tasks with specific input data
+const inputTasks = await taskClient.search(0, 100, "", "*", "inputData.orderId:order-123");
+
+// Find tasks that timed out
+const timeoutTasks = await taskClient.search(0, 100, "endTime:DESC", "*", "status:TIMED_OUT");
+```
+
+#### Debugging Task Execution
+
+When debugging task execution issues:
+
+```typescript
+try {
+  // Get detailed task information
+  const task = await taskClient.getTask(taskId);
+
+  console.log("Task Status:", task.status);
+  console.log("Task Input:", task.inputData);
+  console.log("Task Output:", task.outputData);
+  console.log("Retry Count:", task.retryCount);
+  console.log("Execution Time:", task.endTime - task.startTime);
+
+  // Check for failed tasks in a workflow
+  const failedTasks = await taskClient.search(0, 50, "", "*", "status:FAILED");
+  failedTasks.results.forEach(task => {
+    console.log(`Task ${task.taskId} failed: ${task.reasonForIncompletion}`);
+  });
+} catch (error) {
+  console.error("Error debugging tasks:", error);
+}
+```
+
 ## Workers
 
 ### Overview
@@ -1037,121 +1147,6 @@ const manager = new TaskManager(client, workers, {
 - 🔧 You need direct access to low-level worker operations
 
 **💡 Recommendation:** Start with `TaskManager`. Only use `TaskRunner` if you have specific advanced requirements that TaskManager doesn't support.
-
-## Tasks
-
-### TaskClient
-
-The `TaskClient` provides additional task management capabilities for querying and updating existing tasks:
-
-```typescript
-import { TaskClient } from "@io-orkes/conductor-javascript";
-
-const taskClient = new TaskClient(client);
-
-// Search tasks
-const searchResults = await taskClient.search(0, 10, "", "*", "status:COMPLETED");
-
-// Get task by ID
-const task = await taskClient.getTask(taskId);
-
-// Update task result
-await taskClient.updateTaskResult(
-  workflowId,
-  taskReferenceName,
-  "COMPLETED",
-  { result: "success" }
-);
-```
-
-### Task Status and Monitoring
-
-Tasks in Conductor have various statuses that indicate their current state:
-
-- **SCHEDULED**: Task is scheduled for execution
-- **IN_PROGRESS**: Task is currently being executed
-- **COMPLETED**: Task completed successfully
-- **COMPLETED_WITH_ERRORS**: Task completed but with errors
-- **FAILED**: Task execution failed
-- **FAILED_WITH_TERMINAL_ERROR**: Task failed with a terminal error (no retries)
-- **TIMED_OUT**: Task execution timed out
-- **CANCELED**: Task was canceled
-- **SKIPPED**: Task was skipped
-
-### Task Search and Filtering
-
-You can search for tasks using various criteria:
-
-```typescript
-// Search by status
-const completedTasks = await taskClient.search(0, 10, "", "*", "status:COMPLETED");
-
-// Search by workflow
-const workflowTasks = await taskClient.search(0, 10, "", "*", "workflowId:workflow-123");
-
-// Search by task type
-const simpleTasks = await taskClient.search(0, 10, "", "*", "taskType:SIMPLE");
-
-// Search by free text
-const textSearch = await taskClient.search(0, 10, "", "error", "");
-
-// Search with sorting
-const sortedTasks = await taskClient.search(0, 10, "startTime:DESC", "*", "status:FAILED");
-```
-
-### Task Debugging
-
-When debugging task execution issues:
-
-```typescript
-try {
-  // Get detailed task information
-  const task = await taskClient.getTask(taskId);
-
-  console.log("Task Status:", task.status);
-  console.log("Task Input:", task.inputData);
-  console.log("Task Output:", task.outputData);
-  console.log("Retry Count:", task.retryCount);
-  console.log("Execution Time:", task.endTime - task.startTime);
-
-  // Check for failed tasks
-  const failedTasks = await taskClient.search(0, 50, "", "*", "status:FAILED");
-  failedTasks.results.forEach(task => {
-    console.log(`Task ${task.taskId} failed: ${task.reasonForIncompletion}`);
-  });
-} catch (error) {
-  console.error("Error debugging tasks:", error);
-}
-```
-
-### Task Search Parameters
-
-The `search` method accepts the following parameters:
-
-- `start`: Starting index for pagination (default: 0)
-- `size`: Number of results to return (default: 100)
-- `sort`: Sort field and direction (e.g., "startTime:DESC", "status:ASC")
-- `freeText`: Free text search term (use "*" for all)
-- `query`: Structured query string (e.g., "status:FAILED", "workflowId:workflow-123")
-
-### Common Search Queries
-
-```typescript
-// Find all failed tasks
-const failedTasks = await taskClient.search(0, 100, "startTime:DESC", "*", "status:FAILED");
-
-// Find tasks for a specific workflow
-const workflowTasks = await taskClient.search(0, 100, "", "*", "workflowId:my-workflow-123");
-
-// Find tasks by worker ID
-const workerTasks = await taskClient.search(0, 100, "", "*", "workerId:worker-123");
-
-// Find tasks with specific input data
-const inputTasks = await taskClient.search(0, 100, "", "*", "inputData.orderId:order-123");
-
-// Find tasks that timed out
-const timeoutTasks = await taskClient.search(0, 100, "endTime:DESC", "*", "status:TIMED_OUT");
-```
 
 ## Scheduling
 
