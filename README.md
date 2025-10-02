@@ -31,8 +31,10 @@ Show support for the Conductor OSS.  Please help spread the awareness by starrin
   - [SIMPLE Tasks - Require Custom Workers](#simple-tasks---require-custom-workers)
 - [Workflows](#workflows)
   - [WorkflowExecutor](#workflowexecutor)
-  - [Workflow Factory](#workflow-factory)
-  - [Building Workflows with Task Generators](#building-workflows-with-task-generators)
+  - [Creating Workflows](#creating-workflows)
+    - [Workflow Factory](#workflow-factory)
+    - [Example: Combining Task Types](#example-combining-task-types)
+  - [Task Generators Reference](#task-generators-reference)
     - [Simple Task](#simple-task)
     - [HTTP Task](#http-task)
     - [Switch Task](#switch-task)
@@ -49,13 +51,14 @@ Show support for the Conductor OSS.  Please help spread the awareness by starrin
     - [Dynamic Fork Task](#dynamic-fork-task)
     - [Join Task](#join-task)
     - [Human Task](#human-task)
-  - [Register Workflow](#register-workflow)
-  - [Start Workflow](#start-workflow)
-  - [Get Workflow Status](#get-workflow-status)
-  - [Pause Workflow](#pause-workflow)
-  - [Resume Workflow](#resume-workflow)
-  - [Terminate Workflow](#terminate-workflow)
-  - [Workflow Search](#workflow-search)
+  - [Workflow Lifecycle Operations](#workflow-lifecycle-operations)
+    - [Register Workflow](#register-workflow)
+    - [Start Workflow](#start-workflow)
+    - [Get Workflow Status](#get-workflow-status)
+    - [Pause Workflow](#pause-workflow)
+    - [Resume Workflow](#resume-workflow)
+    - [Terminate Workflow](#terminate-workflow)
+    - [Search Workflows](#search-workflows)
   - [Monitoring & Debugging Tasks](#monitoring--debugging-tasks)
     - [Task Statuses](#task-statuses)
     - [Searching & Filtering Tasks](#searching--filtering-tasks)
@@ -74,6 +77,8 @@ Show support for the Conductor OSS.  Please help spread the awareness by starrin
     - [Graceful Shutdown](#graceful-shutdown)
   - [TaskRunner (Low-level)](#taskrunner-low-level)
   - [Configuration Options](#configuration-options-1)
+    - [TaskManager Configuration](#taskmanager-configuration)
+    - [TaskRunner Configuration](#taskrunner-configuration)
   - [When to Use Each Approach](#when-to-use-each-approach)
 - [Scheduling](#scheduling)
   - [SchedulerClient](#schedulerclient)
@@ -90,8 +95,8 @@ Show support for the Conductor OSS.  Please help spread the awareness by starrin
 - [Human Tasks](#human-tasks)
   - [HumanExecutor](#humanexecutor)
   - [TemplateClient](#templateclient)
-  - [Register Form Template](#register-form-template)
-  - [Register UI Template](#register-ui-template)
+    - [Register Form Template](#register-form-template)
+    - [Register UI Template](#register-ui-template)
 - [Error Handling](#error-handling)
   - [Worker Error Handling](#worker-error-handling)
   - [Task Manager Error Handling](#task-manager-error-handling)
@@ -276,9 +281,14 @@ See the [Workers](#workers) section for implementation details.
 
 ## Workflows
 
+Workflows in Conductor are defined using task generators and managed through the `WorkflowExecutor` class. This section covers:
+- **Creating workflows** using the workflow factory and task generators
+- **Managing workflow lifecycle** (register, start, pause, resume, terminate, search)
+- **Monitoring and debugging** workflow tasks
+
 ### WorkflowExecutor
 
-The `WorkflowExecutor` class provides methods for managing workflows:
+The `WorkflowExecutor` class provides methods for managing workflow lifecycle:
 
 ```typescript
 import { WorkflowExecutor } from "@io-orkes/conductor-javascript";
@@ -286,7 +296,9 @@ import { WorkflowExecutor } from "@io-orkes/conductor-javascript";
 const executor = new WorkflowExecutor(client);
 ```
 
-### Workflow Factory
+### Creating Workflows
+
+#### Workflow Factory
 
 The `workflow` function provides a convenient way to create workflow definitions:
 
@@ -299,7 +311,24 @@ const myWorkflow = workflow("workflow_name", [
 ]);
 ```
 
-### Building Workflows with Task Generators
+#### Example: Combining Task Types
+
+Here's how to combine different task types in a workflow:
+
+```typescript
+import { workflow, simpleTask, httpTask } from "@io-orkes/conductor-javascript";
+
+const myWorkflow = workflow("order_processing", [
+  simpleTask("validate_order", "validate_order_task", {}),    // Custom worker
+  httpTask("call_payment", "https://api.payment.com/charge", { // System task
+    method: "POST",
+    headers: { "Authorization": "Bearer token" }
+  }),
+  simpleTask("send_confirmation", "send_email_task", {})      // Custom worker
+]);
+```
+
+### Task Generators Reference
 
 This section provides code examples for each task type generator. Use these to build your workflow task lists.
 
@@ -513,22 +542,11 @@ const task = humanTask("human_ref", "approval_task", {
 });
 ```
 
-#### Example: Combining Task Types in Workflows
+### Workflow Lifecycle Operations
 
-```typescript
-import { workflow, simpleTask, httpTask } from "@io-orkes/conductor-javascript";
+This section covers all operations for managing workflow execution and lifecycle.
 
-const myWorkflow = workflow("order_processing", [
-  simpleTask("validate_order", "validate_order_task", {}),    // Custom worker
-  httpTask("call_payment", "https://api.payment.com/charge", { // System task
-    method: "POST",
-    headers: { "Authorization": "Bearer token" }
-  }),
-  simpleTask("send_confirmation", "send_email_task", {})      // Custom worker
-]);
-```
-
-### Register Workflow
+#### Register Workflow
 
 ```typescript
 const workflowDef = {
@@ -628,7 +646,7 @@ await executor.resume(executionId);
 await executor.terminate(executionId, "Terminating due to error");
 ```
 
-#### Workflow Search
+#### Search Workflows
 
 ```typescript
 const searchResults = await executor.search(
@@ -639,6 +657,13 @@ const searchResults = await executor.search(
   "startTime:DESC"      // sort (optional)
 );
 ```
+
+**Search Parameters:**
+- `start`: Starting index for pagination (default: 0)
+- `size`: Number of results to return (default: 100)
+- `sort`: Query string (e.g., "status:RUNNING", "workflowType:my_workflow")
+- `freeText`: Free text search term (use "*" for all)
+- `orderBy`: Sort field and direction (e.g., "startTime:DESC", "status:ASC")
 
 ### Monitoring & Debugging Tasks
 
@@ -1400,7 +1425,7 @@ const taskDef = taskDefinition({
 });
 ```
 
-#### Register Task Definition
+### Register Task Definition
 
 ```typescript
 const taskDef = {
@@ -1435,7 +1460,7 @@ const taskDef = {
 await metadataClient.registerTask(taskDef);
 ```
 
-#### Update Task Definition
+### Update Task Definition
 
 ```typescript
 const updatedTaskDef = {
@@ -1447,13 +1472,13 @@ const updatedTaskDef = {
 await metadataClient.updateTask(updatedTaskDef);
 ```
 
-#### Unregister Task Definition
+### Unregister Task Definition
 
 ```typescript
 await metadataClient.unregisterTask("process_order");
 ```
 
-#### Register Workflow Definition
+### Register Workflow Definition
 
 ```typescript
 const workflowDef = {
@@ -1510,7 +1535,7 @@ const workflowDef = {
 await metadataClient.registerWorkflowDef(workflowDef);
 ```
 
-#### Unregister Workflow Definition
+### Unregister Workflow Definition
 
 ```typescript
 await metadataClient.unregisterWorkflow("order_processing_workflow", 1);
