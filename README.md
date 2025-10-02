@@ -257,7 +257,6 @@ See the [Workers](#workers) section for implementation details.
 Workflows in Conductor are defined using task generators and managed through the `WorkflowExecutor` class. This section covers:
 - **Creating workflows** using the workflow factory and task generators
 - **Managing workflow lifecycle** (register, start, pause, resume, terminate, search)
-- **Monitoring and debugging** workflow tasks
 
 ### WorkflowExecutor
 
@@ -721,31 +720,6 @@ const inputTasks = await taskClient.search(0, 100, "", "*", "inputData.orderId:o
 
 // Find tasks that timed out
 const timeoutTasks = await taskClient.search(0, 100, "endTime:DESC", "*", "status:TIMED_OUT");
-```
-
-#### Debugging Task Execution
-
-When debugging task execution issues:
-
-```typescript
-try {
-  // Get detailed task information
-  const task = await taskClient.getTask(taskId);
-
-  console.log("Task Status:", task.status);
-  console.log("Task Input:", task.inputData);
-  console.log("Task Output:", task.outputData);
-  console.log("Retry Count:", task.retryCount);
-  console.log("Execution Time:", task.endTime - task.startTime);
-
-  // Check for failed tasks in a workflow
-  const failedTasks = await taskClient.search(0, 50, "", "*", "status:FAILED");
-  failedTasks.results.forEach(task => {
-    console.log(`Task ${task.taskId} failed: ${task.reasonForIncompletion}`);
-  });
-} catch (error) {
-  console.error("Error debugging tasks:", error);
-}
 ```
 
 ## Workers
