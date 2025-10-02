@@ -262,7 +262,7 @@ System tasks are fully managed by Conductor. No custom workers needed - just ref
 
 ### SIMPLE Tasks - Require Custom Workers
 
-SIMPLE tasks execute **your custom business logic**. You must implement and deploy workers to handle these tasks.
+SIMPLE tasks execute **your custom business logic**. You must implement and workers to handle these tasks.
 
 **When to use:**
 - Custom business logic specific to your application
