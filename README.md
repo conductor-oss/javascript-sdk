@@ -159,40 +159,31 @@ import { OrkesApiConfig, orkesConductorClient } from "@io-orkes/conductor-javasc
 
 const config: Partial<OrkesApiConfig> = {
   serverUrl: "https://play.orkes.io/api",  // Required: server api url
-  keyId: "your-key-id",                    // Required: authentication key
-  keySecret: "your-key-secret",            // Required: authentication secret
-  refreshTokenInterval: 1800000,           // Optional: token refresh interval in ms (default: 1800000 = 30 minutes)
+  keyId: "your-key-id",                    // Required for server with auth: authentication key
+  keySecret: "your-key-secret",            // Required for server with auth: authentication secret
+  refreshTokenInterval: 0,                 // Optional: token refresh interval in ms (default: 30 minutes, 0 = no refresh)
   maxHttp2Connections: 1                   // Optional: max HTTP2 connections (default: 1)
 };
 
 const client = await orkesConductorClient(config);
 ```
 
-**Configuration Parameters:**
-
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `serverUrl` | string | Yes | - | Conductor server API URL |
-| `keyId` | string | No* | - | Authentication key ID (*required for auth) |
-| `keySecret` | string | No* | - | Authentication secret (*required for auth) |
-| `refreshTokenInterval` | number | No | 1800000 | Token refresh interval in milliseconds (30 minutes) |
-| `maxHttp2Connections` | number | No | 1 | Maximum simultaneous HTTP2 connections to Conductor server |
-
 ### Environment Variables
 
-You can configure authentication using environment variables:
+You can configure client using environment variables:
 
 ```bash
 CONDUCTOR_SERVER_URL=https://play.orkes.io/api
 CONDUCTOR_AUTH_KEY=your-key-id
 CONDUCTOR_AUTH_SECRET=your-key-secret
+CONDUCTOR_REFRESH_TOKEN_INTERVAL=0
 CONDUCTOR_MAX_HTTP2_CONNECTIONS=1
 ```
 Environment variables are prioritized over config variables.
 
 ### Custom Fetch Function
 
-You can provide a custom fetch function for HTTP requests:
+You can provide a custom fetch function for SDK HTTP requests:
 
 ```typescript
 const client = await orkesConductorClient(config, fetch);
@@ -273,71 +264,6 @@ The `WorkflowExecutor` class provides methods for managing workflow lifecycle:
 import { WorkflowExecutor } from "@io-orkes/conductor-javascript";
 
 const executor = new WorkflowExecutor(client);
-```
-
-### Creating Workflows
-
-#### Workflow Factory
-
-The `workflow` function provides a convenient way to create workflow definitions with sensible defaults:
-
-```typescript
-import { workflow, simpleTask } from "@io-orkes/conductor-javascript";
-
-const myWorkflow = workflow(
-  "workflow_name",                     // name (required): workflow name
-  [                                    // tasks (required): array of task definitions
-    simpleTask("task1", "process_1", {}),
-    simpleTask("task2", "process_2", {})
-  ]
-);
-
-// Returns a WorkflowDef with these default values:
-// {
-//   name: "workflow_name",
-//   version: 1,                       // Default: 1
-//   tasks: [...],
-//   inputParameters: [],              // Default: []
-//   timeoutSeconds: 0                 // Default: 0 (no timeout)
-// }
-```
-
-**Workflow Factory Parameters:**
-
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `name` | string | Yes | - | Workflow name (must be unique) |
-| `tasks` | TaskDefTypes[] | Yes | - | Array of task definitions |
-
-**Default Values Set by Factory:**
-- `version`: 1
-- `inputParameters`: []
-- `timeoutSeconds`: 0 (no timeout)
-
-**Note:** For more control over workflow definition, you can manually create a `WorkflowDef` object with additional properties like `ownerEmail`, `description`, `outputParameters`, `failureWorkflow`, `restartable`, etc.
-
-#### Example: Combining Task Types
-
-Here's how to combine different task types in a workflow:
-
-```typescript
-import { workflow, simpleTask, httpTask } from "@io-orkes/conductor-javascript";
-
-const myWorkflow = workflow("order_processing", [
-  // SIMPLE task - requires custom worker
-  simpleTask("validate_order", "validate_order_task", {}),
-  
-  // HTTP task - system task (no worker needed)
-  httpTask("call_payment", {
-    uri: "https://api.payment.com/charge",
-    method: "POST",
-    headers: { "Authorization": "Bearer token" },
-    body: { amount: "${workflow.input.amount}" }
-  }),
-  
-  // SIMPLE task - requires custom worker
-  simpleTask("send_confirmation", "send_email_task", {})
-]);
 ```
 
 ### Task Generators Reference
