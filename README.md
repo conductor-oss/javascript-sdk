@@ -71,15 +71,11 @@ Show support for the Conductor OSS.  Please help spread the awareness by starrin
   - [Worker Design Principles](#worker-design-principles)
   - [Handling Task Results](#handling-task-results)
   - [Working with Multiple Workers](#working-with-multiple-workers)
-  - [TaskManager (Recommended)](#taskmanager-recommended)
+  - [TaskManager](#taskmanager)
     - [Advanced Configuration](#advanced-configuration)
     - [Dynamic Configuration Updates](#dynamic-configuration-updates)
     - [Graceful Shutdown](#graceful-shutdown)
-  - [TaskRunner (Low-level)](#taskrunner-low-level)
   - [Configuration Options](#configuration-options-1)
-    - [TaskManager Configuration](#taskmanager-configuration)
-    - [TaskRunner Configuration](#taskrunner-configuration)
-  - [When to Use Each Approach](#when-to-use-each-approach)
 - [Scheduling](#scheduling)
   - [SchedulerClient](#schedulerclient)
 - [Service Registry](#service-registry)
@@ -767,9 +763,7 @@ Workers are background processes that execute tasks in your workflows. Think of 
 Workflow → Creates Tasks → Workers Poll for Tasks → Execute Logic → Return Results → Workflow Continues
 ```
 
-The SDK provides two approaches for managing workers:
-- **TaskManager** - Easy-to-use interface for managing multiple workers (⭐ **recommended for most use cases**)
-- **TaskRunner** - Low-level interface for fine-grained control of individual workers
+The SDK provides the **TaskManager** class - an easy-to-use interface for managing multiple workers efficiently.
 
 ### Quick Start: Your First Worker
 
@@ -1055,9 +1049,9 @@ console.log("✅ All 3 workers are now running!");
 - A single `TaskManager` manages all workers together
 - Workers only pick up tasks that match their `taskDefName`
 
-### TaskManager (Recommended)
+### TaskManager
 
-`TaskManager` is the high-level interface that manages multiple workers. You've already seen the basic usage above. This section covers advanced configuration and features.
+`TaskManager` is the interface that manages multiple workers. You've already seen the basic usage above. This section covers advanced configuration and features.
 
 #### Advanced Configuration
 
@@ -1129,53 +1123,7 @@ async function gracefulShutdown() {
 }
 ```
 
-### TaskRunner (Low-level)
-
-`TaskRunner` is the low-level interface used internally by `TaskManager`. **Most developers should use `TaskManager` instead.** Use `TaskRunner` only if you need:
-
-- Fine-grained control over a single worker's lifecycle
-- Custom polling logic or worker management
-- Integration with existing worker management systems
-
-**Basic Example:**
-
-```typescript
-import { TaskRunner, ConductorWorker } from "@io-orkes/conductor-javascript";
-
-const worker: ConductorWorker = {
-  taskDefName: "specialized_task",
-  execute: async (task) => {
-    return {
-      outputData: { result: "processed" },
-      status: "COMPLETED"
-    };
-  }
-};
-
-const taskRunner = new TaskRunner({
-  worker: worker,
-  taskResource: client.taskResource,  // Note: Direct access to taskResource
-  options: {
-    pollInterval: 1000,
-    concurrency: 1,
-    workerID: "specialized-worker"
-  }
-});
-
-await taskRunner.startPolling();
-// ... later
-await taskRunner.stopPolling();
-```
-
-**Key Differences from TaskManager:**
-- Manages only ONE worker (vs TaskManager managing multiple)
-- Requires direct `taskResource` access
-- No built-in error handling or retry logic
-- More manual lifecycle management
-
 ### Configuration Options
-
-#### TaskManager Configuration
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
@@ -1203,34 +1151,6 @@ const manager = new TaskManager(client, workers, {
   maxRetries: 3
 });
 ```
-
-#### TaskRunner Configuration
-
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `worker` | `ConductorWorker` | **required** | The worker definition to run |
-| `taskResource` | `TaskResourceService` | **required** | Task resource service from client |
-| `options.pollInterval` | `number` | `100` | Polling interval in milliseconds |
-| `options.concurrency` | `number` | `1` | Max concurrent executions |
-| `options.workerID` | `string` | - | Unique worker identifier |
-| `options.domain` | `string` | - | Task domain for isolation |
-| `logger` | `ConductorLogger` | - | Custom logger instance |
-
-### When to Use Each Approach
-
-**Use TaskManager when:**
-- ✅ You have multiple workers (most common case)
-- ✅ You want simple, high-level worker management
-- ✅ You need built-in error handling and retries
-- ✅ You're building a standard worker application
-
-**Use TaskRunner when:**
-- 🔧 You need fine-grained control over a single worker
-- 🔧 You're implementing custom worker management logic
-- 🔧 You're integrating with existing polling/execution frameworks
-- 🔧 You need direct access to low-level worker operations
-
-**💡 Recommendation:** Start with `TaskManager`. Only use `TaskRunner` if you have specific advanced requirements that TaskManager doesn't support.
 
 ## Scheduling
 
