@@ -55,10 +55,18 @@ Show support for the Conductor OSS.  Please help spread the awareness by starrin
   - [Workflow Search](#workflow-search)
 - [Workers](#workers)
   - [Overview](#overview)
+  - [Quick Start: Your First Worker](#quick-start-your-first-worker)
+  - [Understanding Worker Execution Flow](#understanding-worker-execution-flow)
   - [Worker Design Principles](#worker-design-principles)
+  - [Handling Task Results](#handling-task-results)
+  - [Working with Multiple Workers](#working-with-multiple-workers)
   - [TaskManager (Recommended)](#taskmanager-recommended)
+    - [Advanced Configuration](#advanced-configuration)
+    - [Dynamic Configuration Updates](#dynamic-configuration-updates)
+    - [Graceful Shutdown](#graceful-shutdown)
   - [TaskRunner (Low-level)](#taskrunner-low-level)
   - [Configuration Options](#configuration-options-1)
+  - [When to Use Each Approach](#when-to-use-each-approach)
 - [Tasks](#tasks)
   - [TaskClient](#taskclient)
   - [Task Status and Monitoring](#task-status-and-monitoring)
@@ -554,10 +562,92 @@ const searchResults = await executor.search(
 
 ### Overview
 
-Workers are applications that execute specific types of tasks. The SDK provides two main approaches for managing workers:
+Workers are background processes that execute tasks in your workflows. Think of them as specialized functions that:
 
-- **TaskManager** - High-level interface for managing multiple workers (recommended)
-- **TaskRunner** - Low-level interface for individual worker control
+1. **Poll** the Conductor server asking "Do you have any work for me?"
+2. **Execute** the task logic when work is assigned
+3. **Report** the results back to Conductor
+
+**How Workers Fit In:**
+```
+Workflow → Creates Tasks → Workers Poll for Tasks → Execute Logic → Return Results → Workflow Continues
+```
+
+The SDK provides two approaches for managing workers:
+- **TaskManager** - Easy-to-use interface for managing multiple workers (⭐ **recommended for most use cases**)
+- **TaskRunner** - Low-level interface for fine-grained control of individual workers
+
+### Quick Start: Your First Worker
+
+Here's a complete, simple example to get you started:
+
+```typescript
+import { 
+  orkesConductorClient, 
+  TaskManager, 
+  ConductorWorker 
+} from "@io-orkes/conductor-javascript";
+
+// Step 1: Create your client
+const client = await orkesConductorClient({
+  serverUrl: "https://play.orkes.io/api",
+  keyId: "your-key-id",
+  keySecret: "your-key-secret"
+});
+
+// Step 2: Define your worker(s)
+const workers: ConductorWorker[] = [
+  {
+    // This must match the task name in your workflow
+    taskDefName: "send_email",
+    
+    // This function executes when a task is assigned
+    execute: async (task) => {
+      // Get input data from the workflow
+      const { to, subject, body } = task.inputData;
+      
+      // Do your work (send email, call API, process data, etc.)
+      console.log(`Sending email to ${to}: ${subject}`);
+      await sendEmailViaAPI(to, subject, body);
+      
+      // Return the result
+      return {
+        outputData: { 
+          sent: true, 
+          timestamp: new Date().toISOString() 
+        },
+        status: "COMPLETED"
+      };
+    }
+  }
+];
+
+// Step 3: Create TaskManager and start polling
+const manager = new TaskManager(client, workers);
+await manager.startPolling();
+
+console.log("✅ Worker is now running and waiting for tasks!");
+
+// When you're done (e.g., on shutdown):
+// await manager.stopPolling();
+```
+
+**That's it!** Your worker is now running and will automatically:
+- Poll for tasks named `send_email`
+- Execute the task logic
+- Report results back to Conductor
+- Handle errors and retries
+
+### Understanding Worker Execution Flow
+
+Here's what happens when a workflow creates a task:
+
+1. **Workflow runs** and creates a task (e.g., `send_email`)
+2. **Worker polls** Conductor: "Any `send_email` tasks for me?"
+3. **Conductor responds** with the task and its input data
+4. **Worker executes** your `execute` function with the task data
+5. **Worker returns** the result (`COMPLETED`, `FAILED`, etc.)
+6. **Workflow continues** to the next task based on the result
 
 ### Worker Design Principles
 
@@ -627,60 +717,242 @@ const genericWorker: ConductorWorker = {
 };
 ```
 
-### TaskManager (Recommended)
+### Handling Task Results
 
-`TaskManager` is the high-level interface that manages multiple workers and their corresponding `TaskRunner` instances. It's the recommended approach for most use cases.
+Your worker's `execute` function must return an object with at least these two properties:
 
 ```typescript
-import { TaskManager, ConductorWorker, DefaultLogger } from "@io-orkes/conductor-javascript";
+{
+  status: "COMPLETED" | "FAILED" | "FAILED_WITH_TERMINAL_ERROR" | "IN_PROGRESS",
+  outputData: { /* your result data */ }
+}
+```
+
+#### Common Return Patterns
+
+**✅ Success:**
+```typescript
+return {
+  status: "COMPLETED",
+  outputData: { result: "success", data: processedData }
+};
+```
+
+**❌ Failure (will retry based on task configuration):**
+```typescript
+return {
+  status: "FAILED",
+  outputData: {},
+  logs: [{ log: "Error details for debugging" }]
+};
+```
+
+**❌ Terminal Failure (no retry, workflow fails immediately):**
+```typescript
+return {
+  status: "FAILED_WITH_TERMINAL_ERROR",
+  outputData: { error: "Invalid input - cannot proceed" }
+};
+```
+
+**⏳ In Progress (for long-running tasks):**
+```typescript
+return {
+  status: "IN_PROGRESS",
+  outputData: { progress: 50, message: "Processing..." },
+  callbackAfterSeconds: 30  // Conductor will check back after 30 seconds
+};
+```
+
+#### Error Handling in Workers
+
+Always wrap your worker logic in try-catch to handle errors gracefully:
+
+```typescript
+const worker: ConductorWorker = {
+  taskDefName: "risky_operation",
+  execute: async (task) => {
+    try {
+      const result = await performRiskyOperation(task.inputData);
+      return {
+        status: "COMPLETED",
+        outputData: { result }
+      };
+    } catch (error) {
+      console.error("Worker error:", error);
+      
+      // Decide: retry or fail permanently?
+      const shouldRetry = error.code !== 'INVALID_INPUT';
+      
+      return {
+        status: shouldRetry ? "FAILED" : "FAILED_WITH_TERMINAL_ERROR",
+        outputData: { error: error.message },
+        logs: [{ 
+          log: `Error: ${error.message}`,
+          createdTime: Date.now()
+        }]
+      };
+    }
+  }
+};
+```
+
+### Working with Multiple Workers
+
+In real applications, you'll typically have multiple workers for different tasks:
+
+```typescript
+import { TaskManager, ConductorWorker } from "@io-orkes/conductor-javascript";
 
 const workers: ConductorWorker[] = [
+  // Worker 1: Send emails
   {
-    taskDefName: "greeting_task",
+    taskDefName: "send_email",
     execute: async (task) => {
+      const { to, subject, body } = task.inputData;
+      await emailService.send(to, subject, body);
       return {
-        outputData: { greeting: "Hello!" },
-        status: "COMPLETED"
+        status: "COMPLETED",
+        outputData: { sent: true, messageId: "msg_123" }
+      };
+    }
+  },
+  
+  // Worker 2: Process payments
+  {
+    taskDefName: "process_payment",
+    execute: async (task) => {
+      const { amount, currency, cardToken } = task.inputData;
+      const charge = await paymentGateway.charge(amount, currency, cardToken);
+      return {
+        status: "COMPLETED",
+        outputData: { 
+          transactionId: charge.id,
+          status: charge.status 
+        }
+      };
+    }
+  },
+  
+  // Worker 3: Generate reports
+  {
+    taskDefName: "generate_report",
+    execute: async (task) => {
+      const { reportType, startDate, endDate } = task.inputData;
+      const reportUrl = await reportService.generate(reportType, startDate, endDate);
+      return {
+        status: "COMPLETED",
+        outputData: { reportUrl, generatedAt: new Date().toISOString() }
       };
     }
   }
 ];
 
+// Start all workers with a single TaskManager
+const manager = new TaskManager(client, workers);
+await manager.startPolling();
+
+console.log("✅ All 3 workers are now running!");
+```
+
+**Key Points:**
+- Each worker handles a specific task type (identified by `taskDefName`)
+- All workers run concurrently and independently
+- A single `TaskManager` manages all workers together
+- Workers only pick up tasks that match their `taskDefName`
+
+### TaskManager (Recommended)
+
+`TaskManager` is the high-level interface that manages multiple workers. You've already seen the basic usage above. This section covers advanced configuration and features.
+
+#### Advanced Configuration
+
+```typescript
+import { TaskManager, ConductorWorker, DefaultLogger } from "@io-orkes/conductor-javascript";
+
 const manager = new TaskManager(client, workers, {
+  // Custom logger for debugging and monitoring
   logger: new DefaultLogger(),
+  
+  // Polling and execution options
   options: {
-    pollInterval: 1000,
-    concurrency: 2,
-    workerID: "worker-group-1",
-    domain: "production",
-    batchPollingTimeout: 100
+    pollInterval: 1000,           // Poll every 1 second (default: 100ms)
+    concurrency: 5,               // Execute up to 5 tasks concurrently per worker
+    workerID: "worker-group-1",   // Unique identifier for this worker group
+    domain: "production",         // Task domain for isolation (optional)
+    batchPollingTimeout: 100      // Timeout for batch polling in ms
   },
-  onError: (error) => console.error("Worker error:", error),
+  
+  // Global error handler for all workers
+  onError: (error, task) => {
+    console.error(`Error in task ${task?.taskType}:`, error);
+    // Send to error tracking service
+    errorTracker.log(error, { taskId: task?.taskId });
+  },
+  
+  // Maximum retry attempts before giving up
   maxRetries: 3
 });
 
-// Start all workers
 await manager.startPolling();
+```
 
-// Update polling options
-manager.updatePollingOptions({ pollInterval: 500 });
+#### Dynamic Configuration Updates
 
-// Stop all workers
-await manager.stopPolling();
+You can update polling options at runtime without stopping workers:
+
+```typescript
+// Adjust polling interval based on load
+manager.updatePollingOptions({ 
+  pollInterval: 2000,  // Slow down during high load
+  concurrency: 10      // Increase parallelism
+});
+```
+
+#### Graceful Shutdown
+
+Properly stop workers when your application shuts down:
+
+```typescript
+// Graceful shutdown handler
+process.on('SIGTERM', async () => {
+  console.log('Shutting down workers...');
+  await manager.stopPolling();
+  console.log('Workers stopped gracefully');
+  process.exit(0);
+});
+
+// Or with timeout
+async function gracefulShutdown() {
+  const timeout = setTimeout(() => {
+    console.error('Force shutdown after timeout');
+    process.exit(1);
+  }, 30000); // 30 second timeout
+  
+  await manager.stopPolling();
+  clearTimeout(timeout);
+  process.exit(0);
+}
 ```
 
 ### TaskRunner (Low-level)
 
-`TaskRunner` is the low-level interface used internally by `TaskManager`. It handles individual worker execution, polling the server for work, and updating results back to the server. Use this when you need fine-grained control over a single worker.
+`TaskRunner` is the low-level interface used internally by `TaskManager`. **Most developers should use `TaskManager` instead.** Use `TaskRunner` only if you need:
+
+- Fine-grained control over a single worker's lifecycle
+- Custom polling logic or worker management
+- Integration with existing worker management systems
+
+**Basic Example:**
 
 ```typescript
-import { TaskRunner, ConductorWorker, DefaultLogger } from "@io-orkes/conductor-javascript";
+import { TaskRunner, ConductorWorker } from "@io-orkes/conductor-javascript";
 
 const worker: ConductorWorker = {
-  taskDefName: "HelloWorldWorker",
-  execute: async ({ inputData, taskId }) => {
+  taskDefName: "specialized_task",
+  execute: async (task) => {
     return {
-      outputData: { greeting: "Hello World" },
+      outputData: { result: "processed" },
       status: "COMPLETED"
     };
   }
@@ -688,59 +960,83 @@ const worker: ConductorWorker = {
 
 const taskRunner = new TaskRunner({
   worker: worker,
-  taskResource: client.taskResource,
+  taskResource: client.taskResource,  // Note: Direct access to taskResource
   options: {
     pollInterval: 1000,
     concurrency: 1,
-    workerID: "my-worker"
-  },
-  logger: new DefaultLogger()
+    workerID: "specialized-worker"
+  }
 });
 
-// Start the worker
 await taskRunner.startPolling();
-
-// Stop the worker
+// ... later
 await taskRunner.stopPolling();
 ```
+
+**Key Differences from TaskManager:**
+- Manages only ONE worker (vs TaskManager managing multiple)
+- Requires direct `taskResource` access
+- No built-in error handling or retry logic
+- More manual lifecycle management
 
 ### Configuration Options
 
 #### TaskManager Configuration
 
-```typescript
-interface TaskManagerConfig {
-  logger?: ConductorLogger;
-  options?: Partial<TaskManagerOptions>;
-  onError?: TaskErrorHandler;
-  maxRetries?: number;
-}
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `logger` | `ConductorLogger` | - | Custom logger instance for monitoring and debugging |
+| `options.pollInterval` | `number` | `100` | How often to poll for tasks (milliseconds) |
+| `options.concurrency` | `number` | `1` | Max concurrent task executions per worker |
+| `options.workerID` | `string` | - | Unique identifier for this worker group |
+| `options.domain` | `string` | - | Task domain for isolation (optional) |
+| `options.batchPollingTimeout` | `number` | `100` | Batch polling timeout in milliseconds |
+| `onError` | `(error, task?) => void` | - | Global error handler called when workers fail |
+| `maxRetries` | `number` | `3` | Max retry attempts for failed operations |
 
-interface TaskManagerOptions {
-  workerID?: string;           // Unique worker identifier
-  pollInterval?: number;       // Polling interval in milliseconds
-  domain?: string;            // Task domain for isolation
-  concurrency?: number;       // Number of concurrent executions
-  batchPollingTimeout?: number; // Batch polling timeout
-}
+**Example with all options:**
+```typescript
+const manager = new TaskManager(client, workers, {
+  logger: new CustomLogger(),
+  options: {
+    pollInterval: 1000,
+    concurrency: 5,
+    workerID: "prod-worker-1",
+    domain: "production",
+    batchPollingTimeout: 100
+  },
+  onError: (error, task) => console.error("Error:", error),
+  maxRetries: 3
+});
 ```
 
 #### TaskRunner Configuration
 
-```typescript
-interface TaskRunnerOptions {
-  workerID?: string;
-  pollInterval?: number;
-  domain?: string;
-  concurrency?: number;
-  batchPollingTimeout?: number;
-}
-```
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `worker` | `ConductorWorker` | **required** | The worker definition to run |
+| `taskResource` | `TaskResourceService` | **required** | Task resource service from client |
+| `options.pollInterval` | `number` | `100` | Polling interval in milliseconds |
+| `options.concurrency` | `number` | `1` | Max concurrent executions |
+| `options.workerID` | `string` | - | Unique worker identifier |
+| `options.domain` | `string` | - | Task domain for isolation |
+| `logger` | `ConductorLogger` | - | Custom logger instance |
 
 ### When to Use Each Approach
 
-- **Use TaskManager** when you have multiple workers or want the convenience of managing all workers together
-- **Use TaskRunner** when you need fine-grained control over a single worker or want to implement custom worker management logic
+**Use TaskManager when:**
+- ✅ You have multiple workers (most common case)
+- ✅ You want simple, high-level worker management
+- ✅ You need built-in error handling and retries
+- ✅ You're building a standard worker application
+
+**Use TaskRunner when:**
+- 🔧 You need fine-grained control over a single worker
+- 🔧 You're implementing custom worker management logic
+- 🔧 You're integrating with existing polling/execution frameworks
+- 🔧 You need direct access to low-level worker operations
+
+**💡 Recommendation:** Start with `TaskManager`. Only use `TaskRunner` if you have specific advanced requirements that TaskManager doesn't support.
 
 ## Tasks
 
