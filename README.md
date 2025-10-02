@@ -1,6 +1,6 @@
 # Conductor OSS JavaScript/TypeScript SDK
 
-A comprehensive TypeScript/JavaScript client for [Conductor OSS](https://github.com/conductor-oss/conductor) and [Orkes Conductor](https://orkes.io/content), enabling developers to build, orchestrate, and monitor distributed workflows with ease.
+A comprehensive TypeScript/JavaScript client for [Conductor OSS](https://github.com/conductor-oss/conductor), enabling developers to build, orchestrate, and monitor distributed workflows with ease.
 
 [Conductor](https://www.conductor-oss.org/) is the leading open-source orchestration platform allowing developers to build highly scalable distributed applications.
 
