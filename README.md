@@ -1,27 +1,109 @@
-# Conductor JavaScript/TypeScript SDK
+# Conductor OSS JavaScript/TypeScript SDK
 
-The `@io-orkes/conductor-javascript` SDK provides a comprehensive TypeScript/JavaScript client for building workflows and task workers with Netflix Conductor and Orkes Conductor.
+A comprehensive TypeScript/JavaScript client for [Netflix Conductor](https://github.com/conductor-oss/conductor) and [Orkes Conductor](https://orkes.io/content), enabling developers to build, orchestrate, and monitor distributed workflows with ease.
+
+[Conductor](https://www.conductor-oss.org/) is the leading open-source orchestration platform allowing developers to build highly scalable distributed applications.
+
+Check out the [official documentation for Conductor](https://orkes.io/content).
+
+## ⭐ Conductor OSS
+
+Show support for the Conductor OSS.  Please help spread the awareness by starring Conductor repo.
+
+[![GitHub stars](https://img.shields.io/github/stars/conductor-oss/conductor.svg?style=social&label=Star&maxAge=)](https://GitHub.com/conductor-oss/conductor/)
 
 ## Table of Contents
 
 - [Installation](#installation)
 - [Quick Start](#quick-start)
 - [Authentication & Configuration](#authentication--configuration)
+  - [Access Control Setup](#access-control-setup)
+  - [Configuration Options](#configuration-options)
+  - [Environment Variables](#environment-variables)
+  - [Custom Fetch Function](#custom-fetch-function)
 - [Core Concepts](#core-concepts)
+  - [What are Tasks?](#what-are-tasks)
+  - [What are Workflows?](#what-are-workflows)
+  - [What are Workers?](#what-are-workers)
+  - [What is the Scheduler?](#what-is-the-scheduler)
 - [Task Types](#task-types)
-- [Workflow Management](#workflow-management)
-- [Worker Management](#worker-management)
-- [Task Management](#task-management)
-- [Scheduler Management](#scheduler-management)
+  - [Simple Task](#simple-task)
+  - [HTTP Task](#http-task)
+  - [Switch Task](#switch-task)
+  - [Fork-Join Task](#fork-join-task)
+  - [Do-While Task](#do-while-task)
+  - [Sub-Workflow Task](#sub-workflow-task)
+  - [Event Task](#event-task)
+  - [Wait Task](#wait-task)
+  - [Terminate Task](#terminate-task)
+  - [Set Variable Task](#set-variable-task)
+  - [JSON JQ Transform Task](#json-jq-transform-task)
+  - [Kafka Publish Task](#kafka-publish-task)
+  - [Inline Task](#inline-task)
+  - [Dynamic Fork Task](#dynamic-fork-task)
+  - [Join Task](#join-task)
+  - [Human Task](#human-task)
+- [Workflows](#workflows)
+  - [WorkflowExecutor](#workflowexecutor)
+  - [Workflow Factory](#workflow-factory)
+  - [Register Workflow](#register-workflow)
+  - [Start Workflow](#start-workflow)
+  - [Get Workflow Status](#get-workflow-status)
+  - [Pause Workflow](#pause-workflow)
+  - [Resume Workflow](#resume-workflow)
+  - [Terminate Workflow](#terminate-workflow)
+  - [Workflow Search](#workflow-search)
+- [Workers](#workers)
+  - [Overview](#overview)
+  - [Worker Design Principles](#worker-design-principles)
+  - [TaskManager (Recommended)](#taskmanager-recommended)
+  - [TaskRunner (Low-level)](#taskrunner-low-level)
+  - [Configuration Options](#configuration-options-1)
+- [Tasks](#tasks)
+  - [TaskClient](#taskclient)
+  - [Task Status and Monitoring](#task-status-and-monitoring)
+  - [Task Search and Filtering](#task-search-and-filtering)
+  - [Task Debugging](#task-debugging)
+- [Scheduling](#scheduling)
+  - [SchedulerClient](#schedulerclient)
 - [Service Registry](#service-registry)
+  - [ServiceRegistryClient](#serviceregistryclient)
+- [Metadata](#metadata)
+  - [MetadataClient](#metadataclient)
+  - [Task Definition Factory](#task-definition-factory)
+  - [Register Task Definition](#register-task-definition)
+  - [Update Task Definition](#update-task-definition)
+  - [Unregister Task Definition](#unregister-task-definition)
+  - [Register Workflow Definition](#register-workflow-definition)
+  - [Unregister Workflow Definition](#unregister-workflow-definition)
 - [Human Tasks](#human-tasks)
-- [Metadata Management](#metadata-management)
+  - [HumanExecutor](#humanexecutor)
+  - [TemplateClient](#templateclient)
+  - [Register Form Template](#register-form-template)
+  - [Register UI Template](#register-ui-template)
 - [Error Handling](#error-handling)
+  - [Worker Error Handling](#worker-error-handling)
+  - [Task Manager Error Handling](#task-manager-error-handling)
+  - [Workflow Error Handling](#workflow-error-handling)
 - [Logging](#logging)
+  - [Default Logger](#default-logger)
+  - [Custom Logger](#custom-logger)
 - [Best Practices](#best-practices)
+  - [Worker Design](#worker-design)
+  - [Workflow Design](#workflow-design)
+  - [Performance](#performance)
+  - [Security](#security)
 - [API Reference](#api-reference)
+  - [Core Classes](#core-classes)
+  - [Task Generators](#task-generators)
+  - [Factory Functions](#factory-functions)
+  - [Configuration Options](#configuration-options-2)
 - [Examples](#examples)
+  - [Complete Example: Order Processing Workflow](#complete-example-order-processing-workflow)
 - [Troubleshooting](#troubleshooting)
+  - [Common Issues](#common-issues)
+  - [Debug Mode](#debug-mode)
+  - [Health Checks](#health-checks)
 
 ## Installation
 
@@ -122,25 +204,23 @@ const client = await orkesConductorClient(config, fetch);
 
 ## Core Concepts
 
-### Tasks
+### What are Tasks?
 Tasks are individual units of work that can be executed by workers or handled by the Conductor server.
 
-### Workflows
+### What are Workflows?
 Workflows are the main orchestration units in Conductor. They define a sequence of tasks and their dependencies.
 
-### Workers
+### What are Workers?
 Workers are applications that execute specific types of tasks. They poll for work and execute tasks assigned to them.
 
-### Scheduler
+### What is the Scheduler?
 The scheduler allows you to schedule workflows to run at specific times or intervals, enabling automated workflow execution based on time-based triggers.
 
 ## Task Types
 
 The SDK provides generators for various task types to build workflow definitions. These generators create workflow task references that are used within workflow definitions.
 
-**Note:** These task generators create workflow task references, not task metadata definitions. To register task metadata (like task definitions with retry policies, timeouts, etc.), use the `taskDefinition()` factory function or plain objects with the `MetadataClient` (see [Metadata Management](#metadata-management) section).
-
-### Available Task Generators
+**Note:** These task generators create workflow task references, not task metadata definitions. To register task metadata (like task definitions with retry policies, timeouts, etc.), use the `taskDefinition()` factory function or plain objects with the `MetadataClient` (see [Metadata](#metadata) section).
 
 ### Simple Task
 
@@ -333,7 +413,7 @@ const myWorkflow = workflow("order_processing", [
 ]);
 ```
 
-## Workflow Management
+## Workflows
 
 ### WorkflowExecutor
 
@@ -470,7 +550,7 @@ const searchResults = await executor.search(
 );
 ```
 
-## Worker Management
+## Workers
 
 ### Overview
 
@@ -662,7 +742,7 @@ interface TaskRunnerOptions {
 - **Use TaskManager** when you have multiple workers or want the convenience of managing all workers together
 - **Use TaskRunner** when you need fine-grained control over a single worker or want to implement custom worker management logic
 
-## Task Management
+## Tasks
 
 ### TaskClient
 
@@ -777,7 +857,7 @@ const inputTasks = await taskClient.search(0, 100, "", "*", "inputData.orderId:o
 const timeoutTasks = await taskClient.search(0, 100, "endTime:DESC", "*", "status:TIMED_OUT");
 ```
 
-## Scheduler Management
+## Scheduling
 
 ### SchedulerClient
 
@@ -900,7 +980,7 @@ const methods = await serviceRegistry.discover("user-service", true);
 await serviceRegistry.removeService("user-service");
 ```
 
-## Metadata Management
+## Metadata
 
 ### MetadataClient
 
@@ -1063,9 +1143,81 @@ await metadataClient.registerWorkflowDef(workflowDef);
 await metadataClient.unregisterWorkflow("order_processing_workflow", 1);
 ```
 
+## Human Tasks
+
+### HumanExecutor
+
+The `HumanExecutor` class provides comprehensive human task management:
+
+```typescript
+import { HumanExecutor } from "@io-orkes/conductor-javascript";
+
+const humanExecutor = new HumanExecutor(client);
+
+// Search human tasks
+const tasks = await humanExecutor.search({
+  states: ["PENDING", "ASSIGNED"],
+  assignees: [{ userType: "EXTERNAL_USER", user: "john@example.com" }],
+  taskRefNames: ["approval_task"],
+  taskInputQuery: "priority:high",
+  size: 10,
+  start: 0
+});
+
+// Poll for tasks until found
+const polledTasks = await humanExecutor.pollSearch({
+  states: ["PENDING"],
+  assignees: [{ userType: "EXTERNAL_USER", user: "john@example.com" }]
+}, {
+  pollInterval: 1000,
+  maxPollTimes: 30
+});
+
+// Get task by ID
+const task = await humanExecutor.getTaskById(taskId);
+
+// Claim task as external user
+const claimedTask = await humanExecutor.claimTaskAsExternalUser(
+  taskId, 
+  "john@example.com",
+  { overrideAssignment: false, withTemplate: true }
+);
+
+// Claim task as conductor user
+const conductorClaimedTask = await humanExecutor.claimTaskAsConductorUser(
+  taskId,
+  { overrideAssignment: false, withTemplate: true }
+);
+
+// Release task
+await humanExecutor.releaseTask(taskId);
+
+// Update task output
+await humanExecutor.updateTaskOutput(taskId, {
+  output: {
+    approved: true,
+    comments: "Approved with conditions"
+  }
+});
+
+// Complete task
+await humanExecutor.completeTask(taskId, {
+  output: {
+    approved: true,
+    comments: "Task completed"
+  }
+});
+
+// Get template by name and version
+const template = await humanExecutor.getTemplateByNameVersion("approval_template", 1);
+
+// Get template by ID (deprecated, use getTemplateByNameVersion)
+const templateById = await humanExecutor.getTemplateById("approval_template");
+```
+
 ### TemplateClient
 
-The `TemplateClient` class provides methods for managing human task templates:
+The `TemplateClient` class provides methods for managing human task templates (forms and UI):
 
 ```typescript
 import { TemplateClient } from "@io-orkes/conductor-javascript";
@@ -1349,110 +1501,6 @@ const uiTemplate = {
 await templateClient.registerTemplate(uiTemplate);
 ```
 
-## Human Tasks
-
-### HumanExecutor
-
-The `HumanExecutor` class provides comprehensive human task management:
-
-```typescript
-import { HumanExecutor } from "@io-orkes/conductor-javascript";
-
-const humanExecutor = new HumanExecutor(client);
-
-// Search human tasks
-const tasks = await humanExecutor.search({
-  states: ["PENDING", "ASSIGNED"],
-  assignees: [{ userType: "EXTERNAL_USER", user: "john@example.com" }],
-  taskRefNames: ["approval_task"],
-  taskInputQuery: "priority:high",
-  size: 10,
-  start: 0
-});
-
-// Poll for tasks until found
-const polledTasks = await humanExecutor.pollSearch({
-  states: ["PENDING"],
-  assignees: [{ userType: "EXTERNAL_USER", user: "john@example.com" }]
-}, {
-  pollInterval: 1000,
-  maxPollTimes: 30
-});
-
-// Get task by ID
-const task = await humanExecutor.getTaskById(taskId);
-
-// Claim task as external user
-const claimedTask = await humanExecutor.claimTaskAsExternalUser(
-  taskId, 
-  "john@example.com",
-  { overrideAssignment: false, withTemplate: true }
-);
-
-// Claim task as conductor user
-const conductorClaimedTask = await humanExecutor.claimTaskAsConductorUser(
-  taskId,
-  { overrideAssignment: false, withTemplate: true }
-);
-
-// Release task
-await humanExecutor.releaseTask(taskId);
-
-// Update task output
-await humanExecutor.updateTaskOutput(taskId, {
-  output: {
-    approved: true,
-    comments: "Approved with conditions"
-  }
-});
-
-// Complete task
-await humanExecutor.completeTask(taskId, {
-  output: {
-    approved: true,
-    comments: "Task completed"
-  }
-});
-
-// Get template by name and version
-const template = await humanExecutor.getTemplateByNameVersion("approval_template", 1);
-
-// Get template by ID (deprecated, use getTemplateByNameVersion)
-const templateById = await humanExecutor.getTemplateById("approval_template");
-```
-
-## SDK Factory Functions
-
-### Workflow Factory
-
-```typescript
-import { workflow } from "@io-orkes/conductor-javascript";
-
-const myWorkflow = workflow("workflow_name", [
-  simpleTask("task1", "process_1", {}),
-  simpleTask("task2", "process_2", {})
-]);
-```
-
-### Task Definition Factory
-
-```typescript
-import { taskDefinition } from "@io-orkes/conductor-javascript";
-
-const taskDef = taskDefinition({
-  name: "task_name",
-  timeoutSeconds: 300,
-  retryCount: 3,
-  retryDelaySeconds: 60,
-  retryLogic: "FIXED",
-  timeoutPolicy: "RETRY",
-  inputKeys: ["param1", "param2"],
-  outputKeys: ["result"],
-  rateLimitPerFrequency: 100,
-  rateLimitFrequencyInSeconds: 60
-});
-```
-
 ## Error Handling
 
 ### Worker Error Handling
@@ -1542,10 +1590,11 @@ const manager = new TaskManager(client, workers, {
 
 ### Worker Design
 
-1. **Stateless**: Workers should be stateless and not maintain workflow-specific state
-2. **Idempotent**: Workers should handle cases where tasks are rescheduled due to timeouts
-3. **Specific**: Each worker should execute a very specific task with well-defined inputs/outputs
-4. **No Retry Logic**: Let Conductor handle retries; workers should focus on task execution
+Follow the [Worker Design Principles](#worker-design-principles) outlined in the Workers section:
+- Keep workers **stateless** and avoid maintaining workflow-specific state
+- Design workers to be **idempotent** to handle task rescheduling
+- Ensure each worker is **specific** to one task type with well-defined inputs/outputs
+- Let Conductor handle retries; workers should focus on task execution
 
 ### Workflow Design
 
