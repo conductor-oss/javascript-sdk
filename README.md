@@ -91,11 +91,10 @@ import { OrkesApiConfig, orkesConductorClient } from "@io-orkes/conductor-javasc
 
 const config: Partial<OrkesApiConfig> = {
   serverUrl: "https://play.orkes.io/api", // server api url
-  keyId: "your-key-id",                  // authentication key
-  keySecret: "your-key-secret",          // authentication secret
-  refreshTokenInterval: 0,               // optional: token refresh interval, 0 = no refresh (default: 30min)
-  maxHttp2Connections: 1,              // optional: max HTTP2 connections (default: 1)
-  useEnvVars: false                      // DEPRECATED: has no effect
+  keyId: "your-key-id",                   // authentication key
+  keySecret: "your-key-secret",           // authentication secret
+  refreshTokenInterval: 0,                // optional: token refresh interval, 0 = no refresh (default: 30min)
+  maxHttp2Connections: 1                  // optional: max HTTP2 connections (default: 1)
 };
 
 const client = await orkesConductorClient(config);
@@ -137,10 +136,9 @@ The scheduler allows you to schedule workflows to run at specific times or inter
 
 ## Task Types
 
-The SDK provides generators for various task types. These generators can be used in two ways:
+The SDK provides generators for various task types to build workflow definitions. These generators create workflow task references that are used within workflow definitions.
 
-1. **Creating Workflows** - Use task generators to build workflow definitions
-2. **Registering Metadata** - Use task generators to create task definitions for registration
+**Note:** These task generators create workflow task references, not task metadata definitions. To register task metadata (like task definitions with retry policies, timeouts, etc.), use the `taskDefinition()` factory function or plain objects with the `MetadataClient` (see [Metadata Management](#metadata-management) section).
 
 ### Available Task Generators
 
@@ -151,7 +149,7 @@ import { simpleTask } from "@io-orkes/conductor-javascript";
 
 const task = simpleTask("task_ref", "task_name", {
   inputParam: "value"
-}, false); // optional parameter
+}, false); // optional: if true, workflow continues even if task fails
 ```
 
 ### HTTP Task
@@ -320,9 +318,8 @@ const task = humanTask("human_ref", "approval_task", {
 });
 ```
 
-### Usage Examples
+### Usage Example: Creating Workflows
 
-#### In Workflow Creation
 ```typescript
 import { workflow, simpleTask, httpTask } from "@io-orkes/conductor-javascript";
 
@@ -334,20 +331,6 @@ const myWorkflow = workflow("order_processing", [
   }),
   simpleTask("send_confirmation", "send_email_task", {})
 ]);
-```
-
-#### In Metadata Registration
-```typescript
-import { MetadataClient, simpleTask, httpTask } from "@io-orkes/conductor-javascript";
-
-const metadataClient = new MetadataClient(client);
-
-// Register individual task definitions
-await metadataClient.registerTask(simpleTask("validate_order", "validate_order_task", {}));
-await metadataClient.registerTask(httpTask("call_payment", "https://api.payment.com/charge", {
-  method: "POST",
-  headers: { "Authorization": "Bearer token" }
-}));
 ```
 
 ## Workflow Management
@@ -388,6 +371,7 @@ const workflowDef = {
   timeoutSeconds: 0
 };
 
+// Register workflow (overwrite=true means it will replace existing definition)
 await executor.registerWorkflow(true, workflowDef);
 ```
 
@@ -459,29 +443,31 @@ interface Workflow {
 #### Pause Workflow
 
 ```typescript
-await executor.pauseWorkflow(executionId, "Pausing for maintenance");
+await executor.pause(executionId);
 ```
 
 #### Resume Workflow
 
 ```typescript
-await executor.resumeWorkflow(executionId);
+await executor.resume(executionId);
 ```
 
 #### Terminate Workflow
 
 ```typescript
-await executor.terminateWorkflow(executionId, "Terminating due to error");
+await executor.terminate(executionId, "Terminating due to error");
 ```
 
 #### Workflow Search
 
 ```typescript
-const searchResults = await executor.searchWorkflows({
-  query: "status:RUNNING",
-  start: 0,
-  size: 10
-});
+const searchResults = await executor.search(
+  0,                    // start
+  10,                   // size
+  "status:RUNNING",     // query
+  "*",                  // freeText
+  "startTime:DESC"      // sort (optional)
+);
 ```
 
 ## Worker Management
@@ -600,7 +586,7 @@ await manager.startPolling();
 manager.updatePollingOptions({ pollInterval: 500 });
 
 // Stop all workers
-await manager.shutdown();
+await manager.stopPolling();
 ```
 
 ### TaskRunner (Low-level)
@@ -635,7 +621,7 @@ const taskRunner = new TaskRunner({
 await taskRunner.startPolling();
 
 // Stop the worker
-await taskRunner.shutdown();
+await taskRunner.stopPolling();
 ```
 
 ### Configuration Options
@@ -933,7 +919,8 @@ The `taskDefinition` function provides a convenient way to create task definitio
 ```typescript
 import { taskDefinition } from "@io-orkes/conductor-javascript";
 
-const taskDef = taskDefinition("task_name", {
+const taskDef = taskDefinition({
+  name: "task_name",
   timeoutSeconds: 300,
   retryCount: 3,
   retryDelaySeconds: 60,
@@ -1004,7 +991,7 @@ const updatedTaskDef = {
   retryCount: 5 // Increased retry count
 };
 
-await metadataClient.updateTask(taskDef.name, updatedTaskDef);
+await metadataClient.updateTask(updatedTaskDef);
 ```
 
 #### Unregister Task Definition
@@ -1436,165 +1423,6 @@ const templateById = await humanExecutor.getTemplateById("approval_template");
 
 ## SDK Factory Functions
 
-The `MetadataClient` manages task and workflow definitions:
-
-```typescript
-import { MetadataClient } from "@io-orkes/conductor-javascript";
-
-const metadataClient = new MetadataClient(client);
-
-// Register a task definition
-await metadataClient.registerTask({
-  name: "email_sender",
-  description: "Sends email notifications",
-  timeoutSeconds: 300,
-  retryCount: 3,
-  retryDelaySeconds: 60,
-  retryLogic: "FIXED",
-  timeoutPolicy: "RETRY",
-  inputKeys: ["to", "subject", "body"],
-  outputKeys: ["messageId", "status"],
-  rateLimitPerFrequency: 100,
-  rateLimitFrequencyInSeconds: 60
-});
-
-// Update an existing task definition
-await metadataClient.updateTask({
-  name: "email_sender",
-  description: "Updated email sender task",
-  timeoutSeconds: 600, // Increased timeout
-  retryCount: 5,       // Increased retries
-  // ... other properties
-});
-
-// Unregister a task definition
-await metadataClient.unregisterTask("email_sender");
-
-// Register a workflow definition
-await metadataClient.registerWorkflowDef({
-  name: "notification_workflow",
-  version: 1,
-  description: "Sends notifications to users",
-  tasks: [
-    simpleTask("send_email", "email_sender", {}),
-    simpleTask("send_sms", "sms_sender", {})
-  ],
-  inputParameters: ["userId", "message"],
-  outputParameters: {
-    emailSent: "${send_email.output.success}",
-    smsSent: "${send_sms.output.success}"
-  },
-  timeoutSeconds: 3600,
-  timeoutPolicy: "ALERT_ONLY",
-  retryPolicy: {
-    retryCount: 2,
-    retryDelaySeconds: 120,
-    retryLogic: "EXPONENTIAL_BACKOFF"
-  }
-}, true); // overwrite = true
-
-// Unregister a workflow definition
-await metadataClient.unregisterWorkflow("notification_workflow", 1);
-```
-
-### TemplateClient
-
-The `TemplateClient` manages human task templates:
-
-```typescript
-import { TemplateClient } from "@io-orkes/conductor-javascript";
-
-const templateClient = new TemplateClient(client);
-
-// Register a human task template
-await templateClient.registerTemplate({
-  name: "approval_template",
-  version: 1,
-  description: "Template for approval tasks",
-  formTemplate: {
-    fields: [
-      {
-        name: "approved",
-        type: "boolean",
-        required: true,
-        description: "Whether the request is approved"
-      },
-      {
-        name: "comments",
-        type: "text",
-        required: false,
-        description: "Additional comments"
-      },
-      {
-        name: "priority",
-        type: "select",
-        required: true,
-        options: ["low", "medium", "high"],
-        defaultValue: "medium"
-      }
-    ]
-  },
-  uiTemplate: {
-    template: `
-      <div class="approval-form">
-        <h3>Approval Request</h3>
-        <div class="field">
-          <label>Approved:</label>
-          <input type="checkbox" name="approved" />
-        </div>
-        <div class="field">
-          <label>Comments:</label>
-          <textarea name="comments" rows="4"></textarea>
-        </div>
-        <div class="field">
-          <label>Priority:</label>
-          <select name="priority">
-            <option value="low">Low</option>
-            <option value="medium">Medium</option>
-            <option value="high">High</option>
-          </select>
-        </div>
-      </div>
-    `
-  }
-}, false); // asNewVersion = false
-
-// Register a new version of existing template
-await templateClient.registerTemplate({
-  name: "approval_template",
-  version: 2,
-  description: "Updated approval template with new fields",
-  formTemplate: {
-    fields: [
-      {
-        name: "approved",
-        type: "boolean",
-        required: true
-      },
-      {
-        name: "comments",
-        type: "text",
-        required: false
-      },
-      {
-        name: "approver",
-        type: "text",
-        required: true,
-        description: "Name of the approver"
-      },
-      {
-        name: "approvalDate",
-        type: "date",
-        required: true,
-        description: "Date of approval"
-      }
-    ]
-  }
-}, true); // asNewVersion = true
-```
-
-## SDK Factory Functions
-
 ### Workflow Factory
 
 ```typescript
@@ -1611,7 +1439,8 @@ const myWorkflow = workflow("workflow_name", [
 ```typescript
 import { taskDefinition } from "@io-orkes/conductor-javascript";
 
-const taskDef = taskDefinition("task_name", {
+const taskDef = taskDefinition({
+  name: "task_name",
   timeoutSeconds: 300,
   retryCount: 3,
   retryDelaySeconds: 60,
@@ -1784,9 +1613,8 @@ const manager = new TaskManager(client, workers, {
 - `serverUrl`: Conductor server URL
 - `keyId`: Authentication key ID
 - `keySecret`: Authentication key secret
-- `refreshTokenInterval`: Token refresh interval (0 = no refresh)
+- `refreshTokenInterval`: Token refresh interval in milliseconds (0 = no refresh, default: 30 minutes)
 - `maxHttp2Connections`: Maximum HTTP2 connections (default: 1)
-- `useEnvVars`: DEPRECATED, has no effect
 
 #### TaskManagerOptions
 - `pollInterval`: Polling interval in milliseconds
@@ -1821,13 +1649,13 @@ import {
 async function setupOrderProcessing() {
   // Create client
   const client = await orkesConductorClient({
-  serverUrl: "https://play.orkes.io/api",
+    serverUrl: "https://play.orkes.io/api",
     keyId: "your-key-id",
     keySecret: "your-key-secret"
-});
+  });
 
   // Create workflow executor
-const executor = new WorkflowExecutor(client);
+  const executor = new WorkflowExecutor(client);
   const scheduler = new SchedulerClient(client);
 
   // Define order processing workflow
@@ -1879,7 +1707,7 @@ const executor = new WorkflowExecutor(client);
     cronExpression: "0 0 2 * * ?", // Every day at 2 AM
     startWorkflowRequest: {
       name: "order_processing",
-  version: 1,
+      version: 1,
       input: { batchProcessing: true }
     }
   });
@@ -1933,9 +1761,9 @@ const executor = new WorkflowExecutor(client);
   manager.startPolling();
 
   // Start workflow execution
-const executionId = await executor.startWorkflow({
+  const executionId = await executor.startWorkflow({
     name: "order_processing",
-  version: 1,
+    version: 1,
     input: {
       orderId: "ORD-123",
       customerId: "CUST-456",
