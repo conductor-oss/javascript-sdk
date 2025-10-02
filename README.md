@@ -23,8 +23,8 @@ Show support for the Conductor OSS.  Please help spread the awareness by starrin
   - [Custom Fetch Function](#custom-fetch-function)
 - [Core Concepts](#core-concepts)
   - [What are Tasks?](#what-are-tasks)
-    - [System Tasks (Built-in Workers)](#1-system-tasks-built-in-workers)
-    - [SIMPLE Tasks (Custom/External Workers)](#2-simple-tasks-customexternal-workers)
+    - [System Tasks - Managed by Conductor](#1-system-tasks---managed-by-conductor)
+    - [SIMPLE Tasks - Executed by Custom Workers](#2-simple-tasks---executed-by-custom-workers)
   - [What are Workflows?](#what-are-workflows)
   - [What are Workers?](#what-are-workers)
   - [What is the Scheduler?](#what-is-the-scheduler)
@@ -217,20 +217,26 @@ const client = await orkesConductorClient(config, fetch);
 
 ### What are Tasks?
 
-Tasks are individual units of work in Conductor. There are **two types of tasks**:
+Tasks are individual units of work in Conductor. There are **two main categories**:
 
-#### 1. System Tasks (Built-in Workers)
-These tasks are executed by **built-in workers that run inside the Conductor server**. Conductor provides and manages these workers for you.
+#### 1. System Tasks - Managed by Conductor
+These tasks are managed by Conductor - you don't write or deploy any workers. They include:
 
-**Examples:** HTTP, Event, Inline, JSON JQ Transform, Kafka, Switch, Fork/Join, Sub-Workflow, Set Variable, Wait, Terminate
+**Automated System Tasks** (executed by built-in workers):
+- HTTP, Event, Inline, JSON JQ Transform, Kafka, Switch, Fork/Join, Sub-Workflow, Set Variable, Wait, Terminate
+- Execute automatically without human intervention
+
+**Human Tasks** (require human interaction):
+- HUMAN tasks pause workflow and wait for a person to complete a form/approval
+- Managed via HumanExecutor API
 
 **What you get:**
 - ✅ Ready to use - just reference them in your workflow
 - ✅ No code to write or deploy
-- ✅ Optimized and maintained by Conductor
-- ✅ Perfect for common operations (API calls, data transforms, flow control)
+- ✅ Managed and maintained by Conductor
+- ✅ Perfect for common operations, flow control, and human approvals
 
-#### 2. SIMPLE Tasks (Custom Workers)
+#### 2. SIMPLE Tasks - Executed by Custom Workers
 These tasks are executed by **custom workers that you write and deploy**. You implement the business logic and manage the worker lifecycle.
 
 **Examples:** `send_email`, `process_payment`, `generate_report`, `process_order`
@@ -250,7 +256,7 @@ These tasks are executed by **custom workers that you write and deploy**. You im
 5. Worker reports results back to Conductor
 
 ### What are Workflows?
-Workflows are the main orchestration units in Conductor. They define a sequence of tasks and their dependencies. You can combine system tasks (like HTTP calls and data transforms) with your custom SIMPLE tasks to build complex business processes.
+Workflows are the main orchestration units in Conductor. They define a sequence of tasks and their dependencies. You can combine system tasks (like HTTP calls and data transforms), custom SIMPLE tasks (your business logic), and HUMAN tasks (requiring human interaction) to build complex business processes.
 
 ### What are Workers?
 Workers are applications that poll Conductor for tasks and execute them. Conductor uses two types:
@@ -269,18 +275,24 @@ The SDK provides generators for various task types to build workflow definitions
 
 ### Understanding Task Execution
 
-All tasks in Conductor are executed by workers. The key difference is **who provides the worker**:
+Tasks in Conductor are categorized by **who manages them**:
 
-**🔵 System Tasks** - Use Conductor's built-in workers
-- HTTP, Event, Inline, JSON JQ Transform, Kafka, Switch, Fork-Join, Dynamic Fork, Join, Sub-Workflow, Set Variable, Wait, Terminate, Do-While
-- Workers are provided and managed by Conductor
+**🔵 System Tasks** - Managed by Conductor (no custom workers)
+
+Includes two types:
+- **Automated tasks**: HTTP, Event, Inline, JSON JQ Transform, Kafka, Switch, Fork-Join, Dynamic Fork, Join, Sub-Workflow, Set Variable, Wait, Terminate, Do-While
+  - Executed by built-in workers automatically
+- **Human tasks**: HUMAN task type
+  - Pause workflow and wait for human action via HumanExecutor API
+
+**What you get:**
 - Just reference these tasks in your workflow - they work automatically
-- Ideal for common operations, flow control, and data transformations
+- No code to write or deploy
+- Ideal for common operations, flow control, data transformations, and approvals
 
-**🟢 SIMPLE Tasks** - Use your custom workers
-- For your unique business logic and integrations
-- HUMAN tasks are a special type that requires human interaction
-- You write, deploy, and manage these workers
+**🟢 SIMPLE Tasks** - Managed by you (custom workers required)
+- For your unique business logic and integrations  
+- You write, deploy, and manage the workers
 - See the [Workers](#workers) section for implementation guide
 
 ---
@@ -291,7 +303,7 @@ All tasks in Conductor are executed by workers. The key difference is **who prov
 
 ### Simple Task 🟢
 
-**Type:** SIMPLE Task (requires custom worker implementation)
+**Type:** SIMPLE Task (executed by Custom Workers)
 
 ```typescript
 import { simpleTask } from "@io-orkes/conductor-javascript";
@@ -303,7 +315,7 @@ const task = simpleTask("task_ref", "task_name", {
 
 ### HTTP Task 🔵
 
-**Type:** System Task (executed by built-in workers)
+**Type:** System Task (executed by Built-in Workers)
 
 ```typescript
 import { httpTask } from "@io-orkes/conductor-javascript";
@@ -318,7 +330,7 @@ const task = httpTask("http_ref", "http://api.example.com/data", {
 
 ### Switch Task 🔵
 
-**Type:** System Task (executed by built-in workers)
+**Type:** System Task (executed by Built-in Workers)
 
 ```typescript
 import { switchTask } from "@io-orkes/conductor-javascript";
@@ -332,7 +344,7 @@ const task = switchTask("switch_ref", "input.status", {
 
 ### Fork-Join Task 🔵
 
-**Type:** System Task (executed by built-in workers)
+**Type:** System Task (executed by Built-in Workers)
 
 ```typescript
 import { forkJoinTask } from "@io-orkes/conductor-javascript";
@@ -346,7 +358,7 @@ const task = forkJoinTask("fork_ref", [
 
 ### Do-While Task 🔵
 
-**Type:** System Task (executed by built-in workers)
+**Type:** System Task (executed by Built-in Workers)
 
 ```typescript
 import { doWhileTask } from "@io-orkes/conductor-javascript";
@@ -364,7 +376,7 @@ const task = doWhileTask("while_ref", "workflow.variables.counter < 10", [
 
 ### Sub-Workflow Task 🔵
 
-**Type:** System Task (executed by built-in workers)
+**Type:** System Task (executed by Built-in Workers)
 
 ```typescript
 import { subWorkflowTask } from "@io-orkes/conductor-javascript";
@@ -376,7 +388,7 @@ const task = subWorkflowTask("sub_ref", "child_workflow", 1, {
 
 ### Event Task 🔵
 
-**Type:** System Task (executed by built-in workers)
+**Type:** System Task (executed by Built-in Workers)
 
 ```typescript
 import { eventTask } from "@io-orkes/conductor-javascript";
@@ -389,7 +401,7 @@ const task = eventTask("event_ref", "event_name", {
 
 ### Wait Task 🔵
 
-**Type:** System Task (executed by built-in workers)
+**Type:** System Task (executed by Built-in Workers)
 
 ```typescript
 import { waitTask } from "@io-orkes/conductor-javascript";
@@ -399,7 +411,7 @@ const task = waitTask("wait_ref", 30); // wait 30 seconds
 
 ### Terminate Task 🔵
 
-**Type:** System Task (executed by built-in workers)
+**Type:** System Task (executed by Built-in Workers)
 
 ```typescript
 import { terminateTask } from "@io-orkes/conductor-javascript";
@@ -409,7 +421,7 @@ const task = terminateTask("terminate_ref", "FAILED", "Error message");
 
 ### Set Variable Task 🔵
 
-**Type:** System Task (executed by built-in workers)
+**Type:** System Task (executed by Built-in Workers)
 
 ```typescript
 import { setVariableTask } from "@io-orkes/conductor-javascript";
@@ -422,7 +434,7 @@ const task = setVariableTask("var_ref", {
 
 ### JSON JQ Transform Task 🔵
 
-**Type:** System Task (executed by built-in workers)
+**Type:** System Task (executed by Built-in Workers)
 
 ```typescript
 import { jsonJqTask } from "@io-orkes/conductor-javascript";
@@ -432,7 +444,7 @@ const task = jsonJqTask("transform_ref", ".data.items[] | {id: .id, name: .name}
 
 ### Kafka Publish Task 🔵
 
-**Type:** System Task (executed by built-in workers)
+**Type:** System Task (executed by Built-in Workers)
 
 ```typescript
 import { kafkaPublishTask } from "@io-orkes/conductor-javascript";
@@ -447,7 +459,7 @@ const task = kafkaPublishTask("kafka_ref", "topic_name", {
 
 ### Inline Task 🔵
 
-**Type:** System Task (executed by built-in workers)
+**Type:** System Task (executed by Built-in Workers)
 
 ```typescript
 import { inlineTask } from "@io-orkes/conductor-javascript";
@@ -461,7 +473,7 @@ const task = inlineTask("inline_ref", `
 
 ### Dynamic Fork Task 🔵
 
-**Type:** System Task (executed by built-in workers)
+**Type:** System Task (executed by Built-in Workers)
 
 ```typescript
 import { dynamicForkTask } from "@io-orkes/conductor-javascript";
@@ -471,7 +483,7 @@ const task = dynamicForkTask("dynamic_ref", "input.tasks", "task_name");
 
 ### Join Task 🔵
 
-**Type:** System Task (executed by built-in workers)
+**Type:** System Task (executed by Built-in Workers)
 
 ```typescript
 import { joinTask } from "@io-orkes/conductor-javascript";
@@ -479,9 +491,9 @@ import { joinTask } from "@io-orkes/conductor-javascript";
 const task = joinTask("join_ref");
 ```
 
-### Human Task 🟢
+### Human Task 🟡
 
-**Type:** SIMPLE Task (requires human interaction via custom UI)
+**Type:** System Task for human interaction (managed via HumanExecutor API)
 
 ```typescript
 import { humanTask } from "@io-orkes/conductor-javascript";
@@ -1526,6 +1538,17 @@ await metadataClient.unregisterWorkflow("order_processing_workflow", 1);
 ```
 
 ## Human Tasks
+
+HUMAN tasks are a **type of system task** that enable human interaction within workflows. They pause execution until a person completes an action like approving a request, filling out a form, or reviewing data.
+
+**As System Tasks:**
+- **No custom workers needed** - Managed by Conductor, not by your code
+- **Configured, not coded** - Use the `HumanExecutor` API to manage task lifecycle
+- **Form-based** - Users interact through forms you define with TemplateClient
+- **Assignment-based** - Tasks are assigned to users or groups  
+- **State management** - Tasks can be claimed, released, updated, and completed via API
+
+**Unlike other system tasks** (which execute automatically), HUMAN tasks wait for user action via the HumanExecutor API.
 
 ### HumanExecutor
 
