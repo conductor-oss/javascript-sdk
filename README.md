@@ -10,7 +10,8 @@ The `@io-orkes/conductor-javascript` SDK provides a comprehensive TypeScript/Jav
 - [Core Concepts](#core-concepts)
 - [Task Types](#task-types)
 - [Workflow Management](#workflow-management)
-- [Task Management](#worker-management)
+- [Worker Management](#worker-management)
+- [Task Management](#task-management)
 - [Scheduler Management](#scheduler-management)
 - [Service Registry](#service-registry)
 - [Human Tasks](#human-tasks)
@@ -675,300 +676,11 @@ interface TaskRunnerOptions {
 - **Use TaskManager** when you have multiple workers or want the convenience of managing all workers together
 - **Use TaskRunner** when you need fine-grained control over a single worker or want to implement custom worker management logic
 
-## Scheduler Management
-
-#### Polling Mechanism
-
-The TaskManager uses a sophisticated polling mechanism:
-
-1. **Batch Polling**: Workers poll for multiple tasks at once for better performance
-2. **Concurrent Execution**: Multiple tasks can be executed simultaneously
-3. **Domain Isolation**: Tasks can be isolated by domain
-4. **Worker Identification**: Each worker has a unique identifier
-5. **Retry Logic**: Built-in retry mechanism for failed operations
-
-#### Polling Configuration Examples
-
-```typescript
-// High-frequency polling for critical tasks
-const criticalManager = new TaskManager(client, criticalWorkers, {
-  options: {
-    pollInterval: 100,        // Poll every 100ms
-    concurrency: 5,           // High concurrency
-    batchPollingTimeout: 50   // Quick batch timeout
-  }
-});
-
-// Low-frequency polling for background tasks
-const backgroundManager = new TaskManager(client, backgroundWorkers, {
-  options: {
-    pollInterval: 5000,       // Poll every 5 seconds
-    concurrency: 1,           // Single execution
-    batchPollingTimeout: 1000 // Longer batch timeout
-  }
-});
-
-// Domain-specific polling
-const productionManager = new TaskManager(client, productionWorkers, {
-  options: {
-    domain: "production",
-    pollInterval: 1000,
-    concurrency: 2
-  }
-});
-```
-
-### ConductorWorker
-
-Define workers using the `ConductorWorker` interface:
-
-```typescript
-const worker: ConductorWorker = {
-  taskDefName: "my_task",
-  execute: async (task) => {
-    // Process the task
-    const result = await processTask(task.inputData);
-    
-    return {
-      outputData: result,
-      status: "COMPLETED"
-    };
-  },
-  pollInterval: 1000,  // optional
-  concurrency: 1,      // optional
-  domain: "production" // optional
-};
-```
-
-#### Worker Design Principles
-
-Each worker embodies design patterns and follows certain basic principles:
-
-1. **Workers are stateless** and do not implement workflow-specific logic
-2. **Each worker executes a very specific task** and produces well-defined output given specific inputs
-3. **Workers are meant to be idempotent** (or should handle cases where the task that is partially executed gets rescheduled due to timeouts etc.)
-4. **Workers do not implement the logic to handle retries** etc, that is taken care by the Conductor server
-
-#### Task Worker Implementation
-
-Task worker is implemented using a function that conforms to the following interface:
-
-```typescript
-import { ConductorWorker, Task } from "@io-orkes/conductor-javascript";
-
-const worker: ConductorWorker = {
-  taskDefName: "task-def-name",
-  execute: async (
-    task: Task
-  ): Promise<Omit<TaskResult, "workflowInstanceId" | "taskId">> => {
-    // Your task execution logic here
-  },
-};
-```
-
-Worker returns an object as the output of the task execution. The object is just a JSON that follows the TaskResult interface.
-If an `error` is returned, the task is marked as `FAILED`
-
-#### Task Worker that Returns an Object
-
-```typescript
-import { ConductorWorker, Task } from "@io-orkes/conductor-javascript";
-
-const worker: ConductorWorker = {
-  taskDefName: "task-def-name",
-  execute: async (task: Task) => {
-    // Sample output
-    return {
-      outputData: {
-        hello: "From your worker",
-      },
-      status: "COMPLETED",
-    };
-  },
-};
-```
-
-#### Controlling Execution for Long-running Tasks
-
-For long-running tasks you might want to spawn another process/routine and update the status of the task at a later point and complete the execution function without actually marking the task as `COMPLETED`. Use `TaskResult` Interface that allows you to specify more fine-grained control.
-
-Here is an example of a task execution function that returns with `IN_PROGRESS` status asking server to push the task again in 60 seconds.
-
-```typescript
-const worker: ConductorWorker = {
-  taskDefName: "task-def-name",
-  execute: async (task: Task) => {
-    // Sample output
-    return {
-      outputData: {},
-      status: "IN_PROGRESS",
-      callbackAfterSeconds: 60,
-    };
-  },
-  pollInterval: 100, // optional
-  concurrency: 2, // optional
-};
-```
-
-#### Worker Configuration Options
-
-Workers support several configuration options:
-
-```typescript
-const worker: ConductorWorker = {
-  taskDefName: "my_task",
-  execute: async (task) => {
-    return { outputData: {}, status: "COMPLETED" };
-  },
-  pollInterval: 1000,    // Polling interval in milliseconds
-  concurrency: 2,        // Number of concurrent executions
-  domain: "production"   // Task domain for isolation
-};
-```
-
-#### Worker Error Handling
-
-```typescript
-const worker: ConductorWorker = {
-  taskDefName: "error_prone_task",
-  execute: async (task) => {
-    try {
-      const result = await riskyOperation(task.inputData);
-      return {
-        outputData: result,
-        status: "COMPLETED"
-      };
-    } catch (error) {
-      return {
-        outputData: {},
-        status: "FAILED",
-        reasonForIncompletion: error.message
-      };
-    }
-  }
-};
-```
-
-#### Long-running Tasks
-
-For long-running tasks, you can return `IN_PROGRESS` status:
-
-```typescript
-const worker: ConductorWorker = {
-  taskDefName: "long_task",
-  execute: async (task) => {
-    // Start long-running process
-    startLongProcess();
-    
-    return {
-      outputData: {},
-      status: "IN_PROGRESS",
-      callbackAfterSeconds: 60  // Check again in 60 seconds
-    };
-  }
-};
-```
-
-### TaskRunner
-
-For more control, use `TaskRunner` directly:
-
-```typescript
-import { TaskRunner } from "@io-orkes/conductor-javascript";
-
-const runner = new TaskRunner({
-  worker,
-  taskResource: client.taskResource,
-  options: {
-    pollInterval: 1000,
-  concurrency: 1,
-    workerID: "worker-1",
-    domain: "production",
-    batchPollingTimeout: 100
-  },
-  logger: customLogger,
-  onError: errorHandler,
-  maxRetries: 3
-});
-
-runner.startPolling();
-```
-
-#### TaskRunner Configuration
-
-The `TaskRunner` provides fine-grained control over individual worker execution:
-
-```typescript
-interface RunnerArgs {
-  worker: ConductorWorker;
-  taskResource: TaskResourceService;
-  options: TaskRunnerOptions;
-  logger?: ConductorLogger;
-  onError?: TaskErrorHandler;
-  maxRetries?: number;
-}
-
-interface TaskRunnerOptions {
-  workerID?: string;           // Unique worker identifier
-  pollInterval?: number;       // Polling interval in milliseconds
-  domain?: string;            // Task domain for isolation
-  concurrency?: number;       // Number of concurrent executions
-  batchPollingTimeout?: number; // Batch polling timeout
-}
-```
-
-#### TaskRunner Lifecycle
-
-```typescript
-const runner = new TaskRunner({
-  worker: myWorker,
-  taskResource: client.taskResource,
-  options: {
-    pollInterval: 1000,
-    concurrency: 2,
-    workerID: "my-worker-1"
-  }
-});
-
-// Start polling
-runner.startPolling();
-
-// Check if polling
-console.log(runner.isPolling); // true
-
-// Update options dynamically
-runner.updateOptions({
-  pollInterval: 500,
-  concurrency: 3
-});
-
-// Get current options
-const currentOptions = runner.getOptions;
-
-// Stop polling
-await runner.stopPolling();
-```
-
-#### TaskRunner vs TaskManager
-
-- **TaskRunner**: Manages a single worker with fine-grained control
-- **TaskManager**: Manages multiple workers with centralized configuration
-
-Use `TaskRunner` when you need:
-- Individual worker control
-- Different polling strategies per worker
-- Custom error handling per worker
-- Dynamic configuration updates
-
-Use `TaskManager` when you need:
-- Centralized worker management
-- Consistent configuration across workers
-- Simplified worker lifecycle management
-- Bulk operations on multiple workers
+## Task Management
 
 ### TaskClient
 
-The `TaskClient` provides additional task management capabilities:
+The `TaskClient` provides additional task management capabilities for querying and updating existing tasks:
 
 ```typescript
 import { TaskClient } from "@io-orkes/conductor-javascript";
@@ -976,7 +688,7 @@ import { TaskClient } from "@io-orkes/conductor-javascript";
 const taskClient = new TaskClient(client);
 
 // Search tasks
-const searchResults = await taskClient.search(0, 10, "status:COMPLETED", "", "");
+const searchResults = await taskClient.search(0, 10, "", "*", "status:COMPLETED");
 
 // Get task by ID
 const task = await taskClient.getTask(taskId);
@@ -988,6 +700,95 @@ await taskClient.updateTaskResult(
   "COMPLETED",
   { result: "success" }
 );
+```
+
+### Task Status and Monitoring
+
+Tasks in Conductor have various statuses that indicate their current state:
+
+- **SCHEDULED**: Task is scheduled for execution
+- **IN_PROGRESS**: Task is currently being executed
+- **COMPLETED**: Task completed successfully
+- **COMPLETED_WITH_ERRORS**: Task completed but with errors
+- **FAILED**: Task execution failed
+- **FAILED_WITH_TERMINAL_ERROR**: Task failed with a terminal error (no retries)
+- **TIMED_OUT**: Task execution timed out
+- **CANCELED**: Task was canceled
+- **SKIPPED**: Task was skipped
+
+### Task Search and Filtering
+
+You can search for tasks using various criteria:
+
+```typescript
+// Search by status
+const completedTasks = await taskClient.search(0, 10, "", "*", "status:COMPLETED");
+
+// Search by workflow
+const workflowTasks = await taskClient.search(0, 10, "", "*", "workflowId:workflow-123");
+
+// Search by task type
+const simpleTasks = await taskClient.search(0, 10, "", "*", "taskType:SIMPLE");
+
+// Search by free text
+const textSearch = await taskClient.search(0, 10, "", "error", "");
+
+// Search with sorting
+const sortedTasks = await taskClient.search(0, 10, "startTime:DESC", "*", "status:FAILED");
+```
+
+### Task Debugging
+
+When debugging task execution issues:
+
+```typescript
+try {
+  // Get detailed task information
+  const task = await taskClient.getTask(taskId);
+
+  console.log("Task Status:", task.status);
+  console.log("Task Input:", task.inputData);
+  console.log("Task Output:", task.outputData);
+  console.log("Retry Count:", task.retryCount);
+  console.log("Execution Time:", task.endTime - task.startTime);
+
+  // Check for failed tasks
+  const failedTasks = await taskClient.search(0, 50, "", "*", "status:FAILED");
+  failedTasks.results.forEach(task => {
+    console.log(`Task ${task.taskId} failed: ${task.reasonForIncompletion}`);
+  });
+} catch (error) {
+  console.error("Error debugging tasks:", error);
+}
+```
+
+### Task Search Parameters
+
+The `search` method accepts the following parameters:
+
+- `start`: Starting index for pagination (default: 0)
+- `size`: Number of results to return (default: 100)
+- `sort`: Sort field and direction (e.g., "startTime:DESC", "status:ASC")
+- `freeText`: Free text search term (use "*" for all)
+- `query`: Structured query string (e.g., "status:FAILED", "workflowId:workflow-123")
+
+### Common Search Queries
+
+```typescript
+// Find all failed tasks
+const failedTasks = await taskClient.search(0, 100, "startTime:DESC", "*", "status:FAILED");
+
+// Find tasks for a specific workflow
+const workflowTasks = await taskClient.search(0, 100, "", "*", "workflowId:my-workflow-123");
+
+// Find tasks by worker ID
+const workerTasks = await taskClient.search(0, 100, "", "*", "workerId:worker-123");
+
+// Find tasks with specific input data
+const inputTasks = await taskClient.search(0, 100, "", "*", "inputData.orderId:order-123");
+
+// Find tasks that timed out
+const timeoutTasks = await taskClient.search(0, 100, "endTime:DESC", "*", "status:TIMED_OUT");
 ```
 
 ## Scheduler Management
