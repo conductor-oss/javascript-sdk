@@ -23,12 +23,14 @@ Show support for the Conductor OSS.  Please help spread the awareness by starrin
   - [Custom Fetch Function](#custom-fetch-function)
 - [Core Concepts](#core-concepts)
   - [What are Tasks?](#what-are-tasks)
-    - [System Tasks - Managed by Conductor](#1-system-tasks---managed-by-conductor)
-    - [SIMPLE Tasks - Executed by Custom Workers](#2-simple-tasks---executed-by-custom-workers)
   - [What are Workflows?](#what-are-workflows)
   - [What are Workers?](#what-are-workers)
   - [What is the Scheduler?](#what-is-the-scheduler)
 - [Task Types](#task-types)
+  - [Task Categories](#task-categories)
+    - [System Tasks - Managed by Conductor](#system-tasks---managed-by-conductor)
+    - [SIMPLE Tasks - Require Custom Workers](#simple-tasks---require-custom-workers)
+  - [Task Reference](#task-reference)
   - [Simple Task](#simple-task)
   - [HTTP Task](#http-task)
   - [Switch Task](#switch-task)
@@ -216,55 +218,78 @@ const client = await orkesConductorClient(config, fetch);
 
 ### What are Tasks?
 
-Tasks are individual units of work in Conductor. There are **two main categories**:
-
-#### 1. System Tasks - Managed by Conductor
-Tasks managed by Conductor - no custom workers needed.
-
-**Automated System Tasks:**
-- HTTP, Event, Inline, JSON JQ Transform, Kafka, Switch, Fork/Join, Sub-Workflow, Set Variable, Wait, Terminate
-- Executed automatically by built-in workers
-
-**Human Tasks:**
-- HUMAN task type - pauses workflow for human interaction (approvals, forms, reviews)
-- Managed via HumanExecutor API
-
-#### 2. SIMPLE Tasks - Executed by Custom Workers
-Tasks executed by **custom workers you write and deploy**.
-
-**Examples:** `send_email`, `process_payment`, `generate_report`, `process_order`
-
-**How it works:**
-1. Workflow creates a SIMPLE task
-2. Your worker polls Conductor for work
-3. Worker executes your custom logic
-4. Worker reports results back
-
-**Use for:** Custom business logic, internal integrations, database operations, file processing, or any functionality not provided by system tasks.
+Tasks are individual units of work in Conductor workflows. Each task performs a specific operation, such as making an HTTP call, transforming data, executing custom business logic, or waiting for human approval. Tasks can be executed automatically by Conductor's built-in workers or by custom workers you implement.
 
 ### What are Workflows?
-Workflows are the main orchestration units in Conductor. They define a sequence of tasks and their dependencies. You can combine system tasks (like HTTP calls and data transforms), custom SIMPLE tasks (your business logic), and HUMAN tasks (requiring human interaction) to build complex business processes.
+
+Workflows are the main orchestration units in Conductor. They define a sequence of tasks and their dependencies, creating automated business processes. Workflows coordinate task execution, handle failures, manage retries, and ensure your business logic flows correctly from start to finish.
 
 ### What are Workers?
-Workers are applications that poll Conductor for tasks and execute them. Conductor uses two types:
 
-- **Built-in Workers** - Run inside the Conductor server to execute system tasks (HTTP, Event, Inline, etc.). Conductor manages these for you.
-- **Custom Workers** - Applications **you write and deploy** to execute SIMPLE tasks with your custom business logic. You're responsible for implementing and running these.
-
-This SDK helps you build and manage custom workers for your SIMPLE tasks.
+Workers are applications that poll Conductor for tasks and execute them. Conductor has built-in workers for common operations (HTTP calls, data transforms, etc.), and you can implement custom workers to execute your business-specific logic. This SDK provides tools to build and manage custom workers.
 
 ### What is the Scheduler?
 The scheduler allows you to schedule workflows to run at specific times or intervals, enabling automated workflow execution based on time-based triggers.
 
 ## Task Types
 
-The SDK provides generators for various task types to build workflow definitions. Below are the available task types with usage examples:
+Conductor provides various task types to build workflows. Understanding which tasks require custom workers and which are managed by Conductor is essential for effective workflow design.
 
-- **🔵 System Tasks** - Managed by Conductor (no custom workers needed)
-- **🟢 SIMPLE Tasks** - Require custom workers you implement
-- **🟡 HUMAN Tasks** - System tasks requiring human interaction via API
+### Task Categories
 
-**Note:** These generators create workflow task references for use in workflow definitions. To register task metadata with retry policies, timeouts, rate limits, etc., use the `taskDefinition()` factory function or the `MetadataClient` (see [Metadata](#metadata) section).
+Tasks are categorized by **who manages their execution**:
+
+#### System Tasks 🔵 - Managed by Conductor
+
+System tasks are fully managed by Conductor - you don't need to write or deploy any workers. Just reference them in your workflow and they execute automatically.
+
+**Automated System Tasks** (executed by built-in workers):
+- **HTTP** - Make HTTP/REST API calls
+- **Inline** - Execute JavaScript expressions
+- **JSON JQ Transform** - Transform JSON data using JQ expressions  
+- **Kafka Publish** - Publish messages to Kafka topics
+- **Event** - Publish events to eventing systems
+- **Switch** - Conditional branching based on input
+- **Fork-Join** - Execute tasks in parallel and wait for completion
+- **Dynamic Fork** - Dynamically create parallel task executions
+- **Join** - Join point for forked tasks
+- **Sub-Workflow** - Execute another workflow as a task
+- **Do-While** - Loop execution with conditions
+- **Set Variable** - Set workflow variables
+- **Wait** - Pause workflow for a specified duration
+- **Terminate** - End workflow with success or failure
+
+**Human Tasks** 🟡 (require human interaction):
+- **HUMAN** - Pause workflow until a person completes a form or approval
+- Managed via `HumanExecutor` API (see [Human Tasks](#human-tasks) section)
+- No custom workers needed - uses form templates and assignment policies
+
+#### SIMPLE Tasks 🟢 - Require Custom Workers
+
+SIMPLE tasks execute **your custom business logic**. You must implement workers to poll for and execute these tasks.
+
+**Use SIMPLE tasks for:**
+- Custom business logic specific to your application
+- Integration with internal systems and databases
+- File processing, data validation, notifications
+- Any functionality not provided by system tasks
+
+**How they work:**
+1. Define a SIMPLE task in your workflow
+2. Implement a worker that polls Conductor for this task type
+3. Worker executes your custom logic when task is assigned
+4. Worker reports results back to Conductor
+5. Workflow continues based on task result
+
+See the [Workers](#workers) section for implementation details.
+
+---
+
+### Task Reference
+
+Below are code examples for each task type. 
+
+**Note:** These generators create workflow task references. To register task metadata (retry policies, timeouts, rate limits), use `taskDefinition()` or `MetadataClient` (see [Metadata](#metadata)).
 
 ---
 
