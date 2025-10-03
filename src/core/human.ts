@@ -70,7 +70,7 @@ export class HumanExecutor {
 
     const response = await this.search({
       states: [state],
-      assignees: assignee ? [{ userType: assigneeType!, user: assignee }] : [],
+      assignees: assignee ? [{ userType: assigneeType, user: assignee }] : [],
       claimants: claimedBy
         ? [{ userType: claimedUserType as UserType, user: claimedUser }]
         : [],
@@ -142,7 +142,7 @@ export class HumanExecutor {
    * @returns
    */
   public getTaskById(taskId: string): Promise<HumanTaskEntry> {
-    return tryCatchReThrow(() => this._client.humanTask.getTask1(taskId!));
+    return tryCatchReThrow(() => this._client.humanTask.getTask1(taskId));
   }
 
   /**
@@ -182,7 +182,7 @@ export class HumanExecutor {
   public async releaseTask(taskId: string) {
     try {
       await this._client.humanTask.releaseTask(taskId);
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw errorMapper(error);
     }
   }
@@ -220,11 +220,11 @@ export class HumanExecutor {
    */
   public async updateTaskOutput(
     taskId: string,
-    requestBody: Record<string, Record<string, any>>
-  ) {
+    requestBody: Record<string, Record<string, unknown>>
+  ): Promise<void> {
     try {
       await this._client.humanTask.updateTaskOutput(taskId, requestBody, false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw errorMapper(error);
     }
   }
@@ -236,11 +236,11 @@ export class HumanExecutor {
    */
   public async completeTask(
     taskId: string,
-    requestBody: Record<string, Record<string, any>> = {}
+    requestBody: Record<string, Record<string, unknown>> = {}
   ) {
     try {
       await this._client.humanTask.updateTaskOutput(taskId, requestBody, true);
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw errorMapper(error);
     }
   }

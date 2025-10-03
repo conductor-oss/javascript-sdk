@@ -1,4 +1,8 @@
-import { InlineTaskDef, TaskType, InlineTaskInputParameters } from "../../common/types";
+import {
+  InlineTaskDef,
+  TaskType,
+  InlineTaskInputParameters,
+} from "../../common/types";
 import { InlineTaskDefGen, InlineTaskInputParametersGen } from "./types";
 import { nameTaskNameGenerator } from "./common";
 
@@ -18,6 +22,11 @@ export const generateEvaluationCode = (
     typeof inlineExpression === "function"
   ) {
     const resultingFunction = inlineExpression();
+
+    if (typeof resultingFunction !== "function") {
+      throw new Error("Inline expression function must return a function");
+    }
+
     const resultingFunctionAsString = resultingFunction.toString();
 
     const toReturn: InlineTaskInputParameters = {

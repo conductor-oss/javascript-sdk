@@ -58,7 +58,7 @@ export type DoWhileTaskDefGen = Omit<DoWhileTaskDef, "loopOver"> & {
 
 export interface InlineTaskInputParametersGen
   extends Omit<InlineTaskInputParameters, "expression"> {
-  expression: string | Function;
+  expression: string | ((...args: never[]) => unknown);
 }
 
 export interface InlineTaskDefGen
@@ -66,4 +66,6 @@ export interface InlineTaskDefGen
   inputParameters: InlineTaskInputParametersGen;
 }
 
-export type NestedTaskMapper = (tasks: Partial<TaskDefTypesGen>[]) => TaskDefTypes[];
+export type NestedTaskMapper = (
+  tasks: Partial<TaskDefTypesGen>[]
+) => TaskDefTypes[];

@@ -83,7 +83,7 @@ test("Should set the task as failed if the task has an error", async () => {
     worker: {
       taskDefName: "test",
       execute: async () => {
-        throw new Error("Error from worker");
+        throw new Error("Expected error from worker");
       },
     },
     options: {
@@ -119,7 +119,7 @@ test("Should set the task as failed if the task has an error", async () => {
     workerId: workerID,
     status: TaskResultStatusEnum.FAILED,
     outputData: {},
-    reasonForIncompletion: "Error from worker",
+    reasonForIncompletion: "Expected error from worker",
   };
   expect(taskClientStub.updateTask1).toHaveBeenCalledWith(expected);
 });
