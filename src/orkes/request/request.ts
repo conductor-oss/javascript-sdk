@@ -23,27 +23,27 @@ const isStringWithValue = (value: unknown): value is string => {
   return isString(value) && value !== "";
 };
 
-const isBlob = (value: any): value is Blob => {
+const isBlob = (value: unknown): value is Blob => {
   return (
-    typeof value === "object" &&
-    typeof value.type === "string" &&
-    typeof value.stream === "function" &&
-    typeof value.arrayBuffer === "function" &&
+    typeof value === "object" && value !== null &&
+    typeof (value as Blob).type === "string" &&
+    typeof (value as Blob).stream === "function" &&
+    typeof (value as Blob).arrayBuffer === "function" &&
     typeof value.constructor === "function" &&
     typeof value.constructor.name === "string" &&
     /^(Blob|File)$/.test(value.constructor.name) &&
-    /^(Blob|File)$/.test(value[Symbol.toStringTag])
+    /^(Blob|File)$/.test((value as { [Symbol.toStringTag]: string })[Symbol.toStringTag])
   );
 };
 
-const isFormData = (value: any): value is FormData => {
+const isFormData = (value: unknown): value is FormData => {
   return value instanceof FormData;
 };
 
 const base64 = (str: string): string => {
   try {
     return btoa(str);
-  } catch (err) {
+  } catch {
     return Buffer.from(str).toString("base64");
   }
 };
