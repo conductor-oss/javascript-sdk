@@ -1,9 +1,5 @@
 import os from "os";
-import {
-  TaskRunner,
-  noopErrorHandler,
-  MAX_RETRIES,
-} from "./TaskRunner";
+import { TaskRunner, noopErrorHandler, MAX_RETRIES } from "./TaskRunner";
 import { ConductorLogger, DefaultLogger } from "../common";
 import { ConductorWorker } from "./Worker";
 import { ConductorClient } from "../common/open-api";
@@ -39,18 +35,18 @@ function workerId(options: Partial<TaskManagerOptions>) {
  * Responsible for initializing and managing the runners that poll and work different task queues.
  */
 export class TaskManager {
-  private workerRunners: Map<string, TaskRunner> = new Map();
+  private workerRunners = new Map<string, TaskRunner>();
   private readonly client: ConductorClient;
   private readonly logger: ConductorLogger;
   private readonly errorHandler: TaskErrorHandler;
-  private workers: Array<ConductorWorker>;
+  private workers: ConductorWorker[];
   readonly options: Required<TaskManagerOptions>;
-  private polling: boolean = false;
+  private polling = false;
   private maxRetries: number = MAX_RETRIES;
 
   constructor(
     client: ConductorClient,
-    workers: Array<ConductorWorker>,
+    workers: ConductorWorker[],
     config: TaskManagerConfig = {}
   ) {
     if (!workers) {

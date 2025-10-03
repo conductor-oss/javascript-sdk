@@ -54,7 +54,7 @@ export class MetadataClient {
    */
   public registerWorkflowDef(
     workflowDef: WorkflowDef,
-    overwrite: boolean = false
+    overwrite = false
   ) {
     return tryCatchReThrow(() =>
       this._client.metadataResource.create(workflowDef, overwrite)
@@ -70,7 +70,7 @@ export class MetadataClient {
    */
   public unregisterWorkflow(
       workflowName: string,
-      version: number = 1,
+      version = 1,
   ) {
     return tryCatchReThrow(() =>
         this._client.metadataResource.unregisterWorkflowDef(workflowName, version)

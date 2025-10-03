@@ -27,7 +27,7 @@ export class TaskClient {
   public search(
     start: number,
     size: number,
-    sort: string = "",
+    sort = "",
     freeText: string,
     query: string
   ): Promise<SearchResultTask> {

@@ -2,10 +2,10 @@ import { SwitchTaskDef, TaskType, TaskDefTypes } from "../../common/types";
 import { nameTaskNameGenerator, mapArrValues } from "./common";
 import { NestedTaskMapper, SwitchTaskDefGen } from "./types";
 
-type DefinedCases = {
+interface DefinedCases {
   decisionCases: Record<string, TaskDefTypes[]>;
   defaultCase: TaskDefTypes[];
-};
+}
 
 const fillSwitchTaskBranches = (
   task: Partial<SwitchTaskDefGen>,

@@ -92,9 +92,6 @@ describe("ServiceRegistryClient", () => {
             serviceURI: "http://httpbin:8081/api-docs"
         };
 
-        // Add service to cleanup list
-        testServicesToCleanup.push(testServiceRegistry.name);
-
         // Register the service registry
         await expect(
             serviceRegistryClient.addOrUpdateService(testServiceRegistry)

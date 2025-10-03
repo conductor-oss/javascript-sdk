@@ -1,15 +1,7 @@
-import type { BaseHttpRequest, OpenAPIConfig } from "../common";
 import { ConductorClient } from "../common";
 
 export class ConductorClientWithAuth extends ConductorClient {
   private intervalId?: NodeJS.Timeout | undefined;
-
-  constructor(
-    config: Partial<OpenAPIConfig>,
-    HttpRequest?: new (config: OpenAPIConfig) => BaseHttpRequest
-  ) {
-    super(config, HttpRequest);
-  }
 
   private setToken(token: string | undefined) {
     this.request.config.TOKEN = token;

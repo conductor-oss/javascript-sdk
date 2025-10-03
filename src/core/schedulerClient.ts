@@ -37,7 +37,7 @@ export class SchedulerClient {
   public search(
     start: number,
     size: number,
-    sort: string = "",
+    sort = "",
     freeText: string,
     query: string
   ): Promise<SearchResultWorkflowScheduleExecutionModel> {
@@ -105,7 +105,7 @@ export class SchedulerClient {
    */
   public getAllSchedules(
     workflowName?: string
-  ): Promise<Array<WorkflowSchedule>> {
+  ): Promise<WorkflowSchedule[]> {
     return tryCatchReThrow(() =>
       this._client.schedulerResource.getAllSchedules(workflowName)
     );
@@ -124,8 +124,8 @@ export class SchedulerClient {
     cronExpression: string,
     scheduleStartTime?: number,
     scheduleEndTime?: number,
-    limit: number = 3
-  ): Promise<Array<number[]>> {
+    limit = 3
+  ): Promise<number[][]> {
     return tryCatchReThrow(() =>
       this._client.schedulerResource.getNextFewSchedules(
         cronExpression,

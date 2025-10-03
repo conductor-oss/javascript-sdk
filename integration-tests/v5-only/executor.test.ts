@@ -1,5 +1,5 @@
 import {expect, describe, test, jest, beforeAll, afterEach, afterAll} from "@jest/globals";
-import {Consistency, ReturnStrategy} from "../../src/common";
+import {ConductorClient, Consistency, ReturnStrategy} from "../../src/common";
 import { orkesConductorClient } from "../../src/orkes";
 import { WorkflowExecutor } from "../../src/core/executor";
 import { v4 as uuidv4 } from "uuid";
@@ -25,7 +25,7 @@ describe("Execute with Return Strategy and Consistency", () => {
   const clientPromise = orkesConductorClient();
   jest.setTimeout(300000);
 
-  let client: any;
+  let client: ConductorClient;
   let executor: WorkflowExecutor;
   let metadataClient: MetadataClient;
   const workflowsToCleanup: {name: string, version: number}[] = [];
@@ -212,10 +212,13 @@ describe("Execute with Return Strategy and Consistency", () => {
         expect(result.updateTime).toBeGreaterThan(0);
         expect(result.tasks).toBeDefined();
         expect(Array.isArray(result.tasks)).toBe(true);
-        expect(result.tasks!.length).toBeGreaterThan(0);
+        if (!result.tasks) {
+          throw new Error("result.tasks is undefined");
+        }
+        expect(result.tasks.length).toBeGreaterThan(0);
 
         // Validate first task
-        const firstTask = result.tasks![0];
+        const firstTask = result.tasks[0];
         expect(firstTask.taskId).toBeDefined();
         expect(firstTask.taskType).toBeDefined();
         expect(firstTask.referenceTaskName).toBeDefined();
@@ -272,7 +275,10 @@ describe("Execute with Return Strategy and Consistency", () => {
       }
 
       // ========== SIGNAL THE WORKFLOW ==========
-      const workflowId = result.workflowId!;
+      const workflowId = result.workflowId;
+      if (!workflowId) {
+        throw new Error("workflowId is undefined");
+      }
 
       // Signal workflow with same return strategy
       const signalResponse = await executor.signal(
@@ -370,7 +376,10 @@ describe("Execute with Return Strategy and Consistency", () => {
         }
 
         // Complete workflow
-        const workflowId = result.workflowId!;
+        const workflowId = result.workflowId;
+        if (!workflowId) {
+          throw new Error("workflowId is undefined");
+        }
         await executor.signal(workflowId, TaskResultStatusEnum.COMPLETED, { result: "signal1" });
         await executor.signal(workflowId, TaskResultStatusEnum.COMPLETED, { result: "signal2" });
 

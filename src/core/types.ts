@@ -1,7 +1,7 @@
 import { TaskResult }  from "../common/open-api";
 export class ConductorError extends Error {
   private _trace;
-  private __proto__: any;
+  private __proto__: unknown;
 
   constructor(message?: string, innerError?: Error) {
     super(message);
@@ -16,3 +16,4 @@ export class ConductorError extends Error {
   }
 }
 export type TaskResultStatus = NonNullable<TaskResult['status']>;
+export type TaskResultOutputData = NonNullable<TaskResult['outputData']>;

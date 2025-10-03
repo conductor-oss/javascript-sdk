@@ -5,7 +5,6 @@ import { TaskManager, ConductorWorker } from "../../src/task/index";
 import { mockLogger } from "../utils/mockLogger";
 import { waitForWorkflowCompletion } from "../utils/waitForWorkflowCompletion";
 
-
 const BASE_TIME = 1000;
 describe("TaskManager", () => {
   const clientPromise = orkesConductorClient();
@@ -51,7 +50,11 @@ describe("TaskManager", () => {
       version: 1,
     });
 
-    const workflowStatus = await waitForWorkflowCompletion(executor, executionId, BASE_TIME * 30);
+    const workflowStatus = await waitForWorkflowCompletion(
+      executor,
+      executionId,
+      BASE_TIME * 30
+    );
 
     expect(workflowStatus.status).toEqual("COMPLETED");
 
@@ -73,11 +76,13 @@ describe("TaskManager", () => {
       },
     };
 
-    await client.metadataResource.registerTaskDef([taskDefinition({
-      name: taskName,
-      timeoutSeconds: 0,
-      retryCount: 0,
-    })]);
+    await client.metadataResource.registerTaskDef([
+      taskDefinition({
+        name: taskName,
+        timeoutSeconds: 0,
+        retryCount: 0,
+      }),
+    ]);
 
     const manager = new TaskManager(client, [worker], {
       options: { pollInterval: BASE_TIME },
@@ -100,10 +105,14 @@ describe("TaskManager", () => {
       name: workflowName,
       input: {},
       version: 1,
-      correlationId: `${workflowName}-id`
+      correlationId: `${workflowName}-id`,
     });
 
-    const workflowStatus = await waitForWorkflowCompletion(executor, status, BASE_TIME * 30);
+    const workflowStatus = await waitForWorkflowCompletion(
+      executor,
+      status,
+      BASE_TIME * 30
+    );
 
     expect(workflowStatus.status).toEqual("FAILED");
     expect(mockErrorHandler).toHaveBeenCalledTimes(1);
@@ -123,11 +132,13 @@ describe("TaskManager", () => {
       },
     };
 
-    await client.metadataResource.registerTaskDef([taskDefinition({
-      name: taskName,
-      timeoutSeconds: 0,
-      retryCount: 0,
-    })]);
+    await client.metadataResource.registerTaskDef([
+      taskDefinition({
+        name: taskName,
+        timeoutSeconds: 0,
+        retryCount: 0,
+      }),
+    ]);
 
     const manager = new TaskManager(client, [worker], {
       options: { pollInterval: BASE_TIME },
@@ -149,10 +160,14 @@ describe("TaskManager", () => {
       name: workflowName,
       input: {},
       version: 1,
-      correlationId: `${workflowName}-id`
+      correlationId: `${workflowName}-id`,
     });
 
-    const workflowStatus = await waitForWorkflowCompletion(executor, executionId!, BASE_TIME * 30);
+    const workflowStatus = await waitForWorkflowCompletion(
+      executor,
+      executionId,
+      BASE_TIME * 30
+    );
     expect(workflowStatus.status).toEqual("FAILED");
     await manager.stopPolling();
   });
@@ -209,7 +224,7 @@ describe("TaskManager", () => {
     const executionId = await executor.startWorkflow({
       name: workflowName,
       version: 1,
-      correlationId: `${workflowName}-id`
+      correlationId: `${workflowName}-id`,
     });
 
     expect(executionId).toBeDefined();
@@ -217,7 +232,11 @@ describe("TaskManager", () => {
     // decrease speed again
     manager.updatePollingOptions({ pollInterval: BASE_TIME, concurrency: 1 });
 
-    const workflowStatus = await waitForWorkflowCompletion(executor, executionId, BASE_TIME * 30);
+    const workflowStatus = await waitForWorkflowCompletion(
+      executor,
+      executionId,
+      BASE_TIME * 30
+    );
 
     expect(workflowStatus.status).toEqual("COMPLETED");
     await manager.stopPolling();
@@ -336,14 +355,18 @@ describe("TaskManager", () => {
     const executionId = await executor.startWorkflow({
       name: workflowName,
       version: 1,
-      correlationId: `${workflowName}-id`
+      correlationId: `${workflowName}-id`,
     });
     expect(executionId).toBeDefined();
 
     // decrease speed again
     manager.updatePollingOptions({ pollInterval: BASE_TIME, concurrency: 1 });
 
-    const workflowStatus = await waitForWorkflowCompletion(executor, executionId, BASE_TIME * 30);
+    const workflowStatus = await waitForWorkflowCompletion(
+      executor,
+      executionId,
+      BASE_TIME * 30
+    );
 
     expect(workflowStatus.status).toEqual("COMPLETED");
     await manager.stopPolling();
@@ -354,7 +377,6 @@ describe("TaskManager", () => {
     expect(mockLogger.info).toHaveBeenCalledWith(
       `TaskWorker ${candidateWorkerUpdate} initialized with concurrency of ${initialCandidateWorkflowOptions.concurrency} and poll interval of ${initialCandidateWorkflowOptions.pollInterval}`
     );
-
 
     expect(mockLogger.info).toHaveBeenCalledWith(
       `TaskWorker ${candidateWorkerUpdate} configuration updated with concurrency of ${updatedWorkerOptions.concurrency} and poll interval of ${updatedWorkerOptions.pollInterval}`

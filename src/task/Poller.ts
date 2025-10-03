@@ -14,11 +14,11 @@ interface PollerOptions {
 export class Poller<T> {
   private timeoutHandler?: NodeJS.Timeout;
   private pollFunction: (count: number) => Promise<T[]>;
-  private performWorkFunction: (work: T) => Promise<void> = async () => {};
+  private performWorkFunction: (work: T) => Promise<void>;
   private polling = false;
   private _tasksInProcess = 0;
   private _counterAtO = 0;
-  private _pollerId: string = "";
+  private _pollerId = "";
   options: PollerOptions = {
     pollInterval: DEFAULT_POLL_INTERVAL,
     concurrency: DEFAULT_CONCURRENCY,
@@ -65,7 +65,7 @@ export class Poller<T> {
    */
   stopPolling = async () => {
     this.polling = false;
-    clearTimeout(this.timeoutHandler!);
+    clearTimeout(this.timeoutHandler);
   };
 
   private performWork = async (work: T) => {
@@ -106,8 +106,13 @@ export class Poller<T> {
           // Don't wait for the tasks to finish only 'listen' to the number of tasks being processes
           tasksResult.forEach(this.performWork);
         }
-      } catch (e: any) {
-        this.logger.error(`Error polling for tasks: ${e.message}`, e);
+      } catch (error: unknown) {
+        this.logger.error(
+          `Error polling for tasks: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`,
+          error
+        );
       }
 
       await new Promise((r) =>

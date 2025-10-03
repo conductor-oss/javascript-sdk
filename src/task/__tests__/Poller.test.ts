@@ -2,7 +2,10 @@ import { Poller } from "../Poller";
 import { expect, describe, test, jest } from "@jest/globals";
 import { mockLogger } from "../../../integration-tests/utils/mockLogger";
 
-type Task = { description: string; id: number };
+interface Task {
+  description: string;
+  id: number;
+}
 
 const fakeTaskGenerator = (count: number): Promise<Task[]> =>
   Promise.resolve(

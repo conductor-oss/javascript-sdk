@@ -218,7 +218,7 @@ export class HumanTaskService {
   public skipTask(
     taskId: string,
     reason?: string,
-  ): CancelablePromise<any> {
+  ): CancelablePromise<Response> {
     return this.httpRequest.request({
       method: 'POST',
       url: '/human/tasks/{taskId}/skip',
@@ -241,9 +241,9 @@ export class HumanTaskService {
    */
   public updateTaskOutput(
     taskId: string,
-    requestBody: Record<string, any>,
+    requestBody: Record<string, unknown>,
     complete: boolean = false,
-  ): CancelablePromise<any> {
+  ): CancelablePromise<Response> {
     return this.httpRequest.request({
       method: 'POST',
       url: '/human/tasks/{taskId}/update',

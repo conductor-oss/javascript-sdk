@@ -4,8 +4,8 @@ import type { WorkflowExecutor } from "../../src/core/executor";
 export const waitForWorkflowCompletion = async (
   executor: WorkflowExecutor,
   workflowId: string,
-  maxWaitMs: number = 300000, // 5 minutes default
-  pollIntervalMs: number = 100 // 100ms default
+  maxWaitMs = 300000, // 5 minutes default
+  pollIntervalMs = 100 // 100ms default
 ) => {
   const startTime = Date.now();
 
@@ -13,10 +13,13 @@ export const waitForWorkflowCompletion = async (
     try {
       const workflowStatus = await executor.getWorkflow(workflowId, true);
 
+      if (!workflowStatus.status) {
+        throw new Error("Workflow status is undefined");
+      }
       // Check if workflow is in a terminal state
       if (
         ["COMPLETED", "FAILED", "TERMINATED", "TIMED_OUT"].includes(
-          workflowStatus.status!
+          workflowStatus.status
         )
       ) {
         console.debug(

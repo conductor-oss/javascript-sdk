@@ -1,9 +1,23 @@
 import { ConductorError } from "./types";
 
-export const errorMapper = (error: any): ConductorError =>
-  new ConductorError(error?.body?.message, error);
+export const errorMapper = (error: unknown): ConductorError => {
+  const message =
+    error &&
+    typeof error === "object" &&
+    "body" in error &&
+    error.body &&
+    typeof error.body === "object" &&
+    "message" in error.body &&
+    typeof error.body.message === "string"
+      ? error.body.message
+      : undefined;
 
-export const tryCatchReThrow = (fn: Function) => {
+  const innerError = error instanceof Error ? error : undefined;
+
+  return new ConductorError(message, innerError);
+};
+
+export const tryCatchReThrow = <T>(fn: () => T): T => {
   try {
     return fn();
   } catch (error) {
