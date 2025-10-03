@@ -291,7 +291,7 @@ const catchErrorCodes = (
   }
 
   if (!result.ok) {
-    throw new ApiError(options, result, "Generic Error");
+    throw new ApiError(options, result, `Generic Error:\n${result}`);
   }
 };
 
