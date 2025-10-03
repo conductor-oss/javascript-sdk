@@ -9,7 +9,7 @@ export default defineConfig(
   {
     ignores: [
       "dist/**",
-      "src/common/open-api/**",
+      "src/common/open-api/**", // OpenAPI auto-generated code
       "docs/**",
       "node_modules/**",
     ],
