@@ -650,11 +650,8 @@ const status = await executor.getWorkflowStatus(
   true,   // includeOutput
   true    // includeVariables
 );
-```
 
-The `getWorkflowStatus()` method returns a `Workflow` object with the following properties:
-
-```typescript
+// The `getWorkflowStatus()` method returns a `Workflow` object with the following properties:
 interface WorkflowStatus {
   workflowId?: string;
   correlationId?: string;
