@@ -1,13 +1,16 @@
+import { Workflow } from "../../src/common";
+import { WorkflowExecutor } from "../../src/core";
+
 /**
  * Wait for workflow to reach expected status
  */
 export const waitForWorkflowStatus = async (
-  workflowClient: any,
+  workflowClient: WorkflowExecutor,
   workflowId: string,
   expectedStatus: string,
   maxWaitTimeMs = 30000,
   pollIntervalMs = 1000
-): Promise<any> => {
+): Promise<Workflow> => {
   const startTime = Date.now();
 
   while (Date.now() - startTime < maxWaitTimeMs) {

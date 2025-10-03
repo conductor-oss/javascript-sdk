@@ -95,7 +95,11 @@ describe("Executor", () => {
   test("Should return workflow status detail", async () => {
     const client = await clientPromise;
     const executor = new WorkflowExecutor(client);
-    const workflowStatus = await executor.getWorkflow(executionId!, true);
+    expect(executionId).toBeDefined();
+    if (!executionId) {
+      throw new Error("Execution ID is undefined");
+    }
+    const workflowStatus = await executor.getWorkflow(executionId, true);
 
     expect(workflowStatus.status).toBeTruthy();
     expect(workflowStatus.tasks?.length).toBe(1);
@@ -111,7 +115,7 @@ describe("Executor", () => {
       idempotencyStrategy: "RETURN_EXISTING",
     });
 
-    const executionDetails = await executor.getWorkflow(executionId!, true);
+    const executionDetails = await executor.getWorkflow(executionId, true);
     expect(executionDetails.idempotencyKey).toEqual(idempotencyKey);
   });
 

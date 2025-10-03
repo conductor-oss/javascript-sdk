@@ -13,10 +13,13 @@ export const waitForWorkflowCompletion = async (
     try {
       const workflowStatus = await executor.getWorkflow(workflowId, true);
 
+      if (!workflowStatus.status) {
+        throw new Error("Workflow status is undefined");
+      }
       // Check if workflow is in a terminal state
       if (
         ["COMPLETED", "FAILED", "TERMINATED", "TIMED_OUT"].includes(
-          workflowStatus.status!
+          workflowStatus.status
         )
       ) {
         console.debug(

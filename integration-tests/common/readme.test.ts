@@ -96,11 +96,17 @@ describe("TaskManager", () => {
     const workflowStatus = await executor.getWorkflow(executionId, true);
 
     const [firstTask] = workflowStatus.tasks || [];
+
+    expect(firstTask?.referenceTaskName).toBeDefined();
     expect(firstTask?.referenceTaskName).toEqual(waitTaskReference);
+    if (!firstTask?.referenceTaskName) {
+      throw new Error("firstTask.referenceTaskName is undefined");
+    }
+
     const changedValue = { greet: "changed value" };
     await executor.updateTaskByRefName(
-      firstTask!.referenceTaskName!,
-      executionId!,
+      firstTask.referenceTaskName,
+      executionId,
       "IN_PROGRESS",
       changedValue
     );
@@ -109,9 +115,14 @@ describe("TaskManager", () => {
     expect(taskDetails.outputData).toEqual(changedValue);
     const newChange = { greet: "bye" };
 
+    expect(firstTask?.taskId).toBeDefined();
+    if (!firstTask?.taskId) {
+      throw new Error("firstTask.taskId is undefined");
+    }
+
     await executor.updateTask(
-      firstTask!.taskId!,
-      executionId!,
+      firstTask.taskId,
+      executionId,
       "COMPLETED",
       newChange
     );
@@ -170,9 +181,14 @@ describe("TaskManager", () => {
       `workflow${sumTwoNumbers.name}`
     );
 
+    expect(executionId).toBeDefined();
+    if (!executionId) {
+      throw new Error("Execution ID is undefined");
+    }
+    
     const workflowStatus = await waitForWorkflowStatus(
       executor,
-      executionId!,
+      executionId,
       "COMPLETED"
     );
 
