@@ -651,7 +651,7 @@ const status = await executor.getWorkflowStatus(
   true    // includeVariables
 );
 
-// The `getWorkflowStatus()` method returns a `Workflow` object with the following properties:
+// The `getWorkflowStatus()` method returns a `WorkflowStatus` object with the following properties:
 interface WorkflowStatus {
   workflowId?: string;
   correlationId?: string;
