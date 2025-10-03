@@ -14,7 +14,7 @@ const DEFAULT_ERROR_MESSAGE = "An unknown error occurred";
 export const MAX_RETRIES = 3;
 
 export const noopErrorHandler: TaskErrorHandler = (error: Error) => {
-  console.log(error);
+  console.error(error);
 };
 
 const defaultRunnerOptions: Required<TaskRunnerOptions> = {
