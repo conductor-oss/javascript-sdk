@@ -13,7 +13,9 @@ import { optionEquals } from "./helpers";
 const DEFAULT_ERROR_MESSAGE = "An unknown error occurred";
 export const MAX_RETRIES = 3;
 
-export const noopErrorHandler: TaskErrorHandler = (__error: Error) => {};
+export const noopErrorHandler: TaskErrorHandler = (error: Error) => {
+  console.log(error);
+};
 
 const defaultRunnerOptions: Required<TaskRunnerOptions> = {
   workerID: "",
@@ -146,18 +148,25 @@ export class TaskRunner {
   };
 
   private executeTask = async (task: Task) => {
+    if (!task.workflowInstanceId || !task.taskId) {
+      this.logger.error(
+        `Task missing required fields: workflowInstanceId=${task.workflowInstanceId}, taskId=${task.taskId}`
+      );
+      return;
+    }
+
     try {
       const result = await this.worker.execute(task);
       await this.updateTaskWithRetry(task, {
         ...result,
-        workflowInstanceId: task.workflowInstanceId!,
-        taskId: task.taskId!,
+        workflowInstanceId: task.workflowInstanceId,
+        taskId: task.taskId,
       });
       this.logger.debug(`Task has executed successfully ${task.taskId}`);
     } catch (error: unknown) {
       await this.updateTaskWithRetry(task, {
-        workflowInstanceId: task.workflowInstanceId!,
-        taskId: task.taskId!,
+        workflowInstanceId: task.workflowInstanceId,
+        taskId: task.taskId,
         reasonForIncompletion:
           (error as Record<string, string>)?.message ?? DEFAULT_ERROR_MESSAGE,
         status: "FAILED",

@@ -1,6 +1,4 @@
 /* istanbul ignore file */
-/* tslint:disable */
-/* eslint-disable */
 
 import type {
   OnCancel,
@@ -17,11 +15,11 @@ const isDefined = <T>(
   return value !== undefined && value !== null;
 };
 
-const isString = (value: any): value is string => {
+const isString = (value: unknown): value is string => {
   return typeof value === "string";
 };
 
-const isStringWithValue = (value: any): value is string => {
+const isStringWithValue = (value: unknown): value is string => {
   return isString(value) && value !== "";
 };
 
