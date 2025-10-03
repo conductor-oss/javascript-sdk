@@ -37,7 +37,6 @@ describe("TaskManager", () => {
     });
     taskRunner.startPolling();
 
-    
     await executor.registerWorkflow(true, {
       name: workflowName,
       version: 1,
@@ -54,7 +53,11 @@ describe("TaskManager", () => {
       version: 1,
     });
 
-    const workflowStatus = await waitForWorkflowStatus(executor, executionId, "COMPLETED");
+    const workflowStatus = await waitForWorkflowStatus(
+      executor,
+      executionId,
+      "COMPLETED"
+    );
 
     const [firstTask] = workflowStatus.tasks || [];
     expect(firstTask?.taskType).toEqual(taskName);
@@ -85,7 +88,12 @@ describe("TaskManager", () => {
       1,
       `${workflowWithWaitTask.name}-id`
     );
-    const workflowStatus = await executor.getWorkflow(executionId!, true);
+
+    expect(executionId).toBeDefined();
+    if (!executionId) {
+      throw new Error("Execution ID is undefined");
+    }
+    const workflowStatus = await executor.getWorkflow(executionId, true);
 
     const [firstTask] = workflowStatus.tasks || [];
     expect(firstTask?.referenceTaskName).toEqual(waitTaskReference);
@@ -162,7 +170,11 @@ describe("TaskManager", () => {
       `workflow${sumTwoNumbers.name}`
     );
 
-    const workflowStatus = await waitForWorkflowStatus(executor, executionId!, "COMPLETED");
+    const workflowStatus = await waitForWorkflowStatus(
+      executor,
+      executionId!,
+      "COMPLETED"
+    );
 
     expect(workflowStatus.status).toEqual("COMPLETED");
     expect(workflowStatus.output?.result).toEqual(3);

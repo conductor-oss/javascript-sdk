@@ -61,7 +61,16 @@ describe("TaskManager", () => {
 
     taskRunner.updateOptions({ concurrency: 1, pollInterval: 100 });
 
-    const workflowStatus = await waitForWorkflowStatus(executor, executionId!, "COMPLETED");
+    expect(executionId).toBeDefined();
+    if (!executionId) {
+      throw new Error("Execution ID is undefined");
+    }
+
+    const workflowStatus = await waitForWorkflowStatus(
+      executor,
+      executionId,
+      "COMPLETED"
+    );
 
     const [firstTask] = workflowStatus.tasks || [];
     expect(firstTask?.taskType).toEqual(taskName);
