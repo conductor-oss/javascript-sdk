@@ -24,16 +24,7 @@ const isStringWithValue = (value: unknown): value is string => {
 };
 
 const isBlob = (value: unknown): value is Blob => {
-  return (
-    typeof value === "object" && value !== null &&
-    typeof (value as Blob).type === "string" &&
-    typeof (value as Blob).stream === "function" &&
-    typeof (value as Blob).arrayBuffer === "function" &&
-    typeof value.constructor === "function" &&
-    typeof value.constructor.name === "string" &&
-    /^(Blob|File)$/.test(value.constructor.name) &&
-    /^(Blob|File)$/.test((value as { [Symbol.toStringTag]: string })[Symbol.toStringTag])
-  );
+  return typeof Blob !== "undefined" && value instanceof Blob;
 };
 
 const isFormData = (value: unknown): value is FormData => {
