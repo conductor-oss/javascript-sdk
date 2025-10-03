@@ -1,5 +1,6 @@
 import {ConductorClient, Consistency, ReturnStrategy, WorkflowDef} from "../common";
 import {
+    ApiError,
     RerunWorkflowRequest,
     ScrollableSearchResultWorkflowSummary,
     SkipTaskRequest,
@@ -9,7 +10,7 @@ import {
     WorkflowRun,
     WorkflowStatus,
 } from "../common/open-api";
-import {TaskResultStatus} from "./types";
+import {TaskResultOutputData, TaskResultStatus} from "./types";
 import {errorMapper, reverseFind, tryCatchReThrow} from "./helpers";
 import {TaskResultStatusEnum} from "../common/open-api/models/TaskResultStatusEnum";
 import {SignalResponse} from "../common/open-api/models/SignalResponse";
@@ -163,8 +164,10 @@ export class WorkflowExecutor {
                     includeTasks
                 );
             return workflowStatus;
-        } catch (error: any) {
-            if (![500, 404, 403].includes(error.status) || retry === 0) {
+        } catch (error: unknown) {
+            const isApiError = error instanceof ApiError;
+            const isRetryableError = isApiError && [500, 404, 403].includes(error?.status);
+            if (!isRetryableError || retry === 0) {
                 throw errorMapper(error);
             }
         }
@@ -377,7 +380,7 @@ export class WorkflowExecutor {
         taskId: string,
         workflowInstanceId: string,
         taskStatus: TaskResultStatus,
-        outputData: Record<string, any> // TODO this can be typed.
+        outputData: TaskResultOutputData
     ): Promise<string> {
         const taskUpdates = {
             status: taskStatus,
@@ -404,7 +407,7 @@ export class WorkflowExecutor {
         taskReferenceName: string,
         workflowInstanceId: string,
         status: TaskResultStatus,
-        taskOutput: Record<string, any>
+        taskOutput: TaskResultOutputData
     ): Promise<string> {
         return tryCatchReThrow(() =>
             this._client.taskResource.updateTask(
@@ -438,7 +441,7 @@ export class WorkflowExecutor {
         taskReferenceName: string,
         workflowInstanceId: string,
         status: TaskResultStatusEnum,
-        taskOutput: Record<string, any>,
+        taskOutput: TaskResultOutputData,
         workerId?: string
     ): Promise<Workflow> {
         return tryCatchReThrow(() =>
@@ -463,7 +466,7 @@ export class WorkflowExecutor {
     public signal(
         workflowInstanceId: string,
         status: TaskResultStatusEnum,
-        taskOutput: Record<string, any>,
+        taskOutput: TaskResultOutputData,
         returnStrategy: ReturnStrategy = ReturnStrategy.TARGET_WORKFLOW
     ): Promise<SignalResponse> {
         return tryCatchReThrow(() =>
@@ -486,7 +489,7 @@ export class WorkflowExecutor {
     public signalAsync(
         workflowInstanceId: string,
         status: TaskResultStatusEnum,
-        taskOutput: Record<string, any>
+        taskOutput: TaskResultOutputData
     ): Promise<void> {
         return tryCatchReThrow(() =>
             this._client.taskResource.signalAsync(

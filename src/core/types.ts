@@ -16,3 +16,4 @@ export class ConductorError extends Error {
   }
 }
 export type TaskResultStatus = NonNullable<TaskResult['status']>;
+export type TaskResultOutputData = NonNullable<TaskResult['outputData']>;
