@@ -22,6 +22,6 @@ export const resolveFetchFn = async (
     return ((input: UndiciRequestInfo, init?: UndiciRequestInit) =>
       undiciFetch(input, { ...init, dispatcher: undiciAgent })) as FetchFn;
   } catch {
-    throw new Error("Undici is not supported");
+    return fetch;
   }
 };
