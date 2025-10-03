@@ -93,8 +93,8 @@ export interface JoinTaskDef extends CommonTaskDef {
 
 export interface ForkJoinDynamicDef extends CommonTaskDef {
   inputParameters: {
-    dynamicTasks: any;
-    dynamicTasksInput: any;
+    dynamicTasks: TaskDefTypes[] | string;
+    dynamicTasksInput: Record<string, unknown> | string;
   };
   type: TaskType.FORK_JOIN_DYNAMIC;
   dynamicForkTasksParam: string; // not string "dynamicTasks",
