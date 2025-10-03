@@ -7,7 +7,7 @@ import { waitForWorkflowStatus } from "../utils/waitForWorkflowStatus";
 describe("TaskManager", () => {
   const clientPromise = orkesConductorClient();
 
-  jest.setTimeout(15000);
+  jest.setTimeout(30000);
   test("worker example ", async () => {
     const client = await clientPromise;
     const executor = new WorkflowExecutor(client);

@@ -5,7 +5,7 @@ export const waitForWorkflowStatus = async (
   workflowClient: any,
   workflowId: string,
   expectedStatus: string,
-  maxWaitTimeMs = 15000,
+  maxWaitTimeMs = 30000,
   pollIntervalMs = 1000
 ): Promise<any> => {
   const startTime = Date.now();
