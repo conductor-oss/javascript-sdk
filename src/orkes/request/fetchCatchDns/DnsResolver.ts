@@ -1,10 +1,10 @@
 import { promises } from "dns";
 import { ConductorLogger, noopLogger } from "../../../common/ConductorLogger";
 
-type Options = {
+interface Options {
   logger: ConductorLogger;
   resolver: (hostname: string) => Promise<string[]>;
-};
+}
 
 const DEFAULT_OPTIONS: Options = {
   logger: noopLogger,

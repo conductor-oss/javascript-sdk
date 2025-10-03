@@ -41,7 +41,7 @@ export interface WorkflowDefGen extends Omit<WorkflowDef, "tasks"> {
 }
 
 export type ForkJoinTaskDefGen = Omit<ForkJoinTaskDef, "forkTasks"> & {
-  forkTasks: Array<Array<Partial<TaskDefTypesGen>>>;
+  forkTasks: Partial<TaskDefTypesGen>[][];
 };
 
 export type SwitchTaskDefGen = Omit<
@@ -66,6 +66,4 @@ export interface InlineTaskDefGen
   inputParameters: InlineTaskInputParametersGen;
 }
 
-export type NestedTaskMapper = {
-  (tasks: Partial<TaskDefTypesGen>[]): TaskDefTypes[];
-};
+export type NestedTaskMapper = (tasks: Partial<TaskDefTypesGen>[]) => TaskDefTypes[];

@@ -4,8 +4,8 @@ import type { WorkflowExecutor } from "../../src/core/executor";
 export const waitForWorkflowCompletion = async (
   executor: WorkflowExecutor,
   workflowId: string,
-  maxWaitMs: number = 300000, // 5 minutes default
-  pollIntervalMs: number = 100 // 100ms default
+  maxWaitMs = 300000, // 5 minutes default
+  pollIntervalMs = 100 // 100ms default
 ) => {
   const startTime = Date.now();
 

@@ -178,7 +178,7 @@ export class ServiceRegistryClient {
      * @param create Whether to create the discovered methods (defaults to false)
      * @returns The discovered service methods
      */
-    public discover(name: string, create: boolean = false): Promise<ServiceMethod[]> {
+    public discover(name: string, create = false): Promise<ServiceMethod[]> {
         return tryCatchReThrow(() =>
             this._client.serviceRegistryResource.discover(name, create)
         );

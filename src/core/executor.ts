@@ -88,7 +88,7 @@ export class WorkflowExecutor {
         name: string,
         version: number,
         requestId: string,
-        waitUntilTaskRef: string = "",
+        waitUntilTaskRef = "",
         waitForSeconds?: number,
         consistency?: Consistency,
         returnStrategy?: ReturnStrategy
@@ -154,7 +154,7 @@ export class WorkflowExecutor {
     public async getWorkflow(
         workflowInstanceId: string,
         includeTasks: boolean,
-        retry: number = 0
+        retry = 0
     ): Promise<Workflow> {
         try {
             const workflowStatus =
@@ -208,7 +208,7 @@ export class WorkflowExecutor {
      */
     public getExecution(
         workflowInstanceId: string,
-        includeTasks: boolean = true
+        includeTasks = true
     ): Promise<Workflow> {
         return tryCatchReThrow(() =>
             this._client.workflowResource.getExecutionStatus(
@@ -314,8 +314,8 @@ export class WorkflowExecutor {
         size: number,
         query: string,
         freeText: string,
-        sort: string = "",
-        skipCache: boolean = false
+        sort = "",
+        skipCache = false
     ): Promise<ScrollableSearchResultWorkflowSummary> {
         const queryId = undefined;
         return tryCatchReThrow(() =>

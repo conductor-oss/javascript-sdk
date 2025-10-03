@@ -26,10 +26,10 @@ const EMPTY_SEARCH: HumanTaskSearch = {
 
 const DEFAULT_POLL_INTERVAL = { pollInterval: 100, maxPollTimes: 20 };
 
-type PollIntervalOptions = {
+interface PollIntervalOptions {
   pollInterval: number;
   maxPollTimes: number;
-};
+}
 export class HumanExecutor {
   public readonly _client: ConductorClient;
 

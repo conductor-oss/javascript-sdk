@@ -80,7 +80,7 @@ export interface EventTaskDef extends CommonTaskDef {
 export interface ForkJoinTaskDef extends CommonTaskDef {
   type: TaskType.FORK_JOIN;
   inputParameters?: Record<string, string>;
-  forkTasks: Array<Array<TaskDefTypes>>;
+  forkTasks: TaskDefTypes[][];
 }
 
 export interface JoinTaskDef extends CommonTaskDef {

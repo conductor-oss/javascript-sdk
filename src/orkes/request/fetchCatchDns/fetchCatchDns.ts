@@ -2,12 +2,12 @@ import { isIP } from "net";
 import { DnsCacheResolver } from "./DnsCache";
 import { FetchFn } from "../../types";
 
-type ModifiedUrlParameters = {
+interface ModifiedUrlParameters {
   host: string;
   port: string;
   protocol: string;
   hostname: string;
-};
+}
 
 const isEmpty = (value?: string): boolean => {
   return value === undefined || value.trim().length === 0;
@@ -25,10 +25,10 @@ export const toMaybeUrl = (
   return urlToHit;
 };
 
-type CatcherOptions = {
+interface CatcherOptions {
   dnsCache?: DnsCacheResolver;
   headerFactory?: (headers?: HeadersInit) => Headers;
-};
+}
 
 const DEFAULT_OPTIONS: CatcherOptions = {
   dnsCache: new DnsCacheResolver(),

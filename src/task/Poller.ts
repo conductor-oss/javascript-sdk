@@ -18,7 +18,7 @@ export class Poller<T> {
   private polling = false;
   private _tasksInProcess = 0;
   private _counterAtO = 0;
-  private _pollerId: string = "";
+  private _pollerId = "";
   options: PollerOptions = {
     pollInterval: DEFAULT_POLL_INTERVAL,
     concurrency: DEFAULT_CONCURRENCY,

@@ -35,7 +35,7 @@ function workerId(options: Partial<TaskManagerOptions>) {
  * Responsible for initializing and managing the runners that poll and work different task queues.
  */
 export class TaskManager {
-  private workerRunners: Map<string, TaskRunner> = new Map();
+  private workerRunners = new Map<string, TaskRunner>();
   private readonly client: ConductorClient;
   private readonly logger: ConductorLogger;
   private readonly errorHandler: TaskErrorHandler;

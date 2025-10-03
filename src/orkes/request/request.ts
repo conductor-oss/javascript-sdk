@@ -209,8 +209,8 @@ const fetchWithRetry = async (
   url: string,
   request: RequestInit,
   fetchFn: FetchFn<RequestInit, Response>,
-  retries: number = 5,
-  delay: number = 1000
+  retries = 5,
+  delay = 1000
 ): Promise<Response> => {
   const response = await fetchFn(url, request);
   if (response.status == 429 && retries > 0) {

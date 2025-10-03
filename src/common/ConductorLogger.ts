@@ -7,7 +7,7 @@ export interface ConductorLogger {
 export type ConductorLogLevel = keyof typeof LOG_LEVELS
 export interface DefaultLoggerConfig {
   level?: ConductorLogLevel,
-  tags?: Object[]
+  tags?: object[]
 }
 
 const LOG_LEVELS = {
@@ -22,7 +22,7 @@ This provides an easy way to get up and running without worrying about configuri
 Ideally, users that care can easily override with any compatible logger (e.g. pino, etc)
  */
 export class DefaultLogger implements ConductorLogger {
-  private readonly tags: Object[]
+  private readonly tags: object[]
   private readonly level: number
 
   constructor(config: DefaultLoggerConfig = {}) {
