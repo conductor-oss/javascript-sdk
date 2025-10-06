@@ -430,175 +430,61 @@ For a complete list of methods, see the [WorkflowExecutor API Reference](./docs/
 
 ## Workers
 
-### Overview
+Workers are background processes that execute your custom code as part of a workflow. Think of them as specialized functions that:
 
-Workers are background processes that execute tasks in your workflows. Think of them as specialized functions that:
-
-1. **Poll** the Conductor server asking "Do you have any work for me?"
-2. **Execute** the task logic when work is assigned
-3. **Report** the results back to Conductor
+1.  **Poll** the Conductor server for tasks.
+2.  **Execute** your business logic when a task is assigned.
+3.  **Report** the results back to the Conductor server.
 
 **How Workers Fit In:**
 ```
 Workflow → Creates Tasks → Workers Poll for Tasks → Execute Logic → Return Results → Workflow Continues
 ```
 
-The SDK provides the **TaskManager** class - an easy-to-use interface for managing workers efficiently. For a complete method reference, see the [TaskManager API Reference](./docs/api-reference/task-manager.md).
+The `TaskManager` class in this SDK simplifies the process of creating and managing workers.
 
-### Quick Start: Your First Worker
+### Quick Start: Building a Worker
 
-Here's a simple example to get you started:
+Building a robust worker involves defining its logic, handling outcomes, and managing its execution.
 
-```typescript
-import { 
-  orkesConductorClient, 
-  TaskManager, 
-  ConductorWorker 
-} from "@io-orkes/conductor-javascript";
+#### Step 1: Define the Worker's Logic
 
-// Step 1: Create your client
-const client = await orkesConductorClient({
-  serverUrl: "https://play.orkes.io/api",
-  keyId: "your-key-id",
-  keySecret: "your-key-secret"
-});
+A worker is an object that defines a `taskDefName` (which must match the task name in your workflow) and an `execute` function containing your business logic. When designing workers, it's best to follow these principles:
 
-// Step 2: Define your worker(s)
-const workers: ConductorWorker[] = [
-  {
-    // This must match the task name in your workflow
-    taskDefName: "send_email",
-    
-    // This function executes when a task is assigned
-    execute: async (task) => {
-      // Get input data from the workflow
-      const { to, subject, body } = task.inputData;
-      
-      // Do your work (send email, call API, process data, etc.)
-      console.log(`Sending email to ${to}: ${subject}`);
-      await sendEmailViaAPI(to, subject, body);
-      
-      // Return the result
-      return {
-        outputData: { 
-          sent: true, 
-          timestamp: new Date().toISOString() 
-        },
-        status: "COMPLETED"
-      };
-    }
-  }
-];
-
-// Step 3: Create TaskManager and start polling
-const manager = new TaskManager(client, workers);
-await manager.startPolling();
-
-console.log("✅ Worker is now running and waiting for tasks!");
-
-// When you're done (e.g., on shutdown):
-// await manager.stopPolling();
-```
-
-**That's it!** Your worker is now running and will automatically:
-- Poll for tasks named `send_email`
-- Execute the task logic
-- Report results back to Conductor
-- Handle errors and retries
-
-### Understanding Worker Execution Flow
-
-Here's what happens when a workflow creates a task:
-
-1. **Workflow runs** and creates a task (e.g., `send_email`)
-2. **Worker polls** Conductor: "Any `send_email` tasks for me?"
-3. **Conductor responds** with the task and its input data
-4. **Worker executes** your `execute` function with the task data
-5. **Worker returns** the result (`COMPLETED`, `FAILED`, etc.)
-6. **Workflow continues** to the next task based on the result
-
-### Worker Design Principles
-
-When creating workers, follow these principles:
-
-#### 1. Stateless Workers
-Workers should be stateless and not rely on external state:
+- **Stateless**: Workers should not rely on local state.
+- **Idempotent**: The same task input should always produce the same result.
+- **Single Responsibility**: Each worker should be responsible for one specific task type.
 
 ```typescript
-// ✅ Good - Stateless
-const worker: ConductorWorker = {
-  taskDefName: "process_data",
-  execute: async (task) => {
-    const result = await processData(task.inputData);
-    return { outputData: result, status: "COMPLETED" };
-  }
-};
+import { ConductorWorker } from "@io-orkes/conductor-javascript";
 
-// ❌ Bad - Stateful
-let processedCount = 0;
-const worker: ConductorWorker = {
-  taskDefName: "process_data",
-  execute: async (task) => {
-    processedCount++; // This creates state dependency
-    return { outputData: { count: processedCount }, status: "COMPLETED" };
-  }
-};
-```
-
-#### 2. Idempotent Operations
-Workers should produce the same result when executed multiple times:
-
-```typescript
-// ✅ Good - Idempotent
-const worker: ConductorWorker = {
-  taskDefName: "update_user",
-  execute: async (task) => {
-    const { userId, data } = task.inputData;
-    await updateUser(userId, data); // Safe to retry
-    return { outputData: { updated: true }, status: "COMPLETED" };
-  }
-};
-```
-
-#### 3. Specific Task Types
-Each worker should handle one specific task type:
-
-```typescript
-// ✅ Good - Specific
 const emailWorker: ConductorWorker = {
+  // 1. Specify the task name
   taskDefName: "send_email",
+  
+  // 2. Implement the execution logic
   execute: async (task) => {
-    await sendEmail(task.inputData);
-    return { outputData: { sent: true }, status: "COMPLETED" };
-  }
-};
-
-// ❌ Bad - Generic
-const genericWorker: ConductorWorker = {
-  taskDefName: "do_anything",
-  execute: async (task) => {
-    // Handles multiple different operations - hard to maintain
-    if (task.inputData.type === "email") { /* ... */ }
-    else if (task.inputData.type === "sms") { /* ... */ }
-    // ...
+    const { to, subject, body } = task.inputData;
+    
+    console.log(`Sending email to ${to}: ${subject}`);
+    await emailService.send(to, subject, body); // Your business logic
+    
+    // 3. Return a result (covered in the next step)
+    return {
+      status: "COMPLETED",
+      outputData: { sent: true, timestamp: new Date().toISOString() }
+    };
   }
 };
 ```
 
-### Handling Task Results
+#### Step 2: Handle Task Outcomes and Errors
 
-Your worker's `execute` function must return an object with at least these two properties:
+The `execute` function must return an object indicating the task's outcome.
 
-```typescript
-{
-  status: "COMPLETED" | "FAILED" | "FAILED_WITH_TERMINAL_ERROR" | "IN_PROGRESS",
-  outputData: { /* your result data */ }
-}
-```
+**✅ On Success:**
+Return a `COMPLETED` status and any relevant output data.
 
-#### Common Return Patterns
-
-**✅ Success:**
 ```typescript
 return {
   status: "COMPLETED",
@@ -606,188 +492,44 @@ return {
 };
 ```
 
-**❌ Failure (will retry based on task configuration):**
+**❌ On Failure:**
+You can control the retry behavior. `FAILED` allows for retries, while `FAILED_WITH_TERMINAL_ERROR` stops the workflow immediately.
+
 ```typescript
-return {
-  status: "FAILED",
-  outputData: {},
-  logs: [{ log: "Error details for debugging" }]
-};
+try {
+  // Risky operation
+} catch (error) {
+  return {
+    status: "FAILED", // Allows for retries
+    logs: [{ log: `Error executing task: ${error.message}` }]
+  };
+}
 ```
 
-**❌ Terminal Failure (no retry, workflow fails immediately):**
-```typescript
-return {
-  status: "FAILED_WITH_TERMINAL_ERROR",
-  outputData: { error: "Invalid input - cannot proceed" }
-};
-```
+#### Step 3: Run the Worker with TaskManager
 
-**⏳ In Progress (for long-running tasks):**
-```typescript
-return {
-  status: "IN_PROGRESS",
-  outputData: { progress: 50, message: "Processing..." },
-  callbackAfterSeconds: 30  // Conductor will check back after 30 seconds
-};
-```
-
-#### Error Handling in Workers
-
-Always wrap your worker logic in try-catch to handle errors gracefully:
+The `TaskManager` is responsible for polling Conductor, managing task execution, and reporting back results. You can run a single worker or multiple workers with one manager.
 
 ```typescript
-const worker: ConductorWorker = {
-  taskDefName: "risky_operation",
-  execute: async (task) => {
-    try {
-      const result = await performRiskyOperation(task.inputData);
-      return {
-        status: "COMPLETED",
-        outputData: { result }
-      };
-    } catch (error) {
-      console.error("Worker error:", error);
-      
-      // Decide: retry or fail permanently?
-      const shouldRetry = error.code !== 'INVALID_INPUT';
-      
-      return {
-        status: shouldRetry ? "FAILED" : "FAILED_WITH_TERMINAL_ERROR",
-        outputData: { error: error.message },
-        logs: [{ 
-          log: `Error: ${error.message}`,
-          createdTime: Date.now()
-        }]
-      };
-    }
-  }
-};
-```
+import { TaskManager } from "@io-orkes/conductor-javascript";
 
-### Working with Multiple Workers
+// You can pass a single worker or an array of workers
+const workers = [emailWorker, anotherWorker, ...];
 
-In real applications, you'll typically have multiple workers for different tasks:
-
-```typescript
-import { TaskManager, ConductorWorker } from "@io-orkes/conductor-javascript";
-
-const workers: ConductorWorker[] = [
-  // Worker 1: Send emails
-  {
-    taskDefName: "send_email",
-    execute: async (task) => {
-      const { to, subject, body } = task.inputData;
-      await emailService.send(to, subject, body);
-      return {
-        status: "COMPLETED",
-        outputData: { sent: true, messageId: "msg_123" }
-      };
-    }
-  },
-  
-  // Worker 2: Process payments
-  {
-    taskDefName: "process_payment",
-    execute: async (task) => {
-      const { amount, currency, cardToken } = task.inputData;
-      const charge = await paymentGateway.charge(amount, currency, cardToken);
-      return {
-        status: "COMPLETED",
-        outputData: { 
-          transactionId: charge.id,
-          status: charge.status 
-        }
-      };
-    }
-  },
-  
-  // Worker 3: Generate reports
-  {
-    taskDefName: "generate_report",
-    execute: async (task) => {
-      const { reportType, startDate, endDate } = task.inputData;
-      const reportUrl = await reportService.generate(reportType, startDate, endDate);
-      return {
-        status: "COMPLETED",
-        outputData: { reportUrl, generatedAt: new Date().toISOString() }
-      };
-    }
-  }
-];
-
-// Start all workers with a single TaskManager
-const manager = new TaskManager(client, workers);
-await manager.startPolling();
-
-console.log("✅ All 3 workers are now running!");
-```
-
-**Key Points:**
-- Each worker handles a specific task type (identified by `taskDefName`)
-- All workers run concurrently and independently
-- A single `TaskManager` manages all workers together
-- Workers only pick up tasks that match their `taskDefName`
-
-### TaskManager Advanced Configuration
-
-The `TaskManager` accepts configuration options to control worker behavior, polling, and error handling.
-
-```typescript
-import { TaskManager, ConductorWorker, DefaultLogger } from "@io-orkes/conductor-javascript";
-
+// Create the TaskManager
 const manager = new TaskManager(client, workers, {
-  // Custom logger for debugging and monitoring (optional)
-  logger: new DefaultLogger(),
-  
-  // Polling and execution options (optional)
   options: {
-    pollInterval: 1000,           // How often to poll for tasks in ms (default: 100)
-    concurrency: 5,               // Max concurrent task executions per worker (default: 1)
-    workerID: "worker-group-1",   // Unique identifier for this worker group (default: hostname)
-    domain: undefined,            // Task domain for isolation (default: undefined)
-    batchPollingTimeout: 100      // Batch polling timeout in ms (default: 100)
-  },
-  
-  // Global error handler called when workers fail (optional)
-  onError: (error, task) => {
-    console.error(`Error in task ${task?.taskType}:`, error);
-    // Send to error tracking service
-    errorTracker.log(error, { taskId: task?.taskId });
-  },
-  
-  // Maximum retry attempts before giving up (optional, default: 3)
-  maxRetries: 5
+    concurrency: 5, // Process up to 5 tasks concurrently
+    pollInterval: 100, // Poll every 100ms
+  }
 });
 
+// Start polling for tasks
 await manager.startPolling();
+console.log("Worker is running!");
 ```
 
-#### Dynamic Configuration Updates
-
-You can update polling options at runtime without stopping workers:
-
-```typescript
-// Adjust polling interval based on load
-manager.updatePollingOptions({ 
-  pollInterval: 2000,  // Slow down during high load
-  concurrency: 10      // Increase parallelism
-});
-```
-
-#### Graceful Shutdown
-
-Properly stop workers when your application shuts down:
-
-```typescript
-// Graceful shutdown handler
-process.on('SIGTERM', async () => {
-  console.log('Shutting down workers...');
-  await manager.stopPolling();
-  console.log('Workers stopped gracefully');
-  process.exit(0);
-});
-```
+For a complete method reference, see the [TaskManager API Reference](./docs/api-reference/task-manager.md).
 
 ## Scheduling
 
