@@ -36,26 +36,31 @@ Show support for the Conductor OSS.  Please help spread the awareness by starrin
   - [Step 3: Register and Start Your Workflow](#step-3-register-and-start-your-workflow)
   - [Step 4: Manage and Monitor Execution](#step-4-manage-and-monitor-execution)
 - [Workers](#workers)
+  - [The TaskManager](#the-taskmanager)
   - [Quick Start: Building a Worker](#quick-start-building-a-worker)
     - [Step 1: Define the Worker's Logic](#step-1-define-the-workers-logic)
     - [Step 2: Handle Task Outcomes and Errors](#step-2-handle-task-outcomes-and-errors)
     - [Step 3: Run the Worker with TaskManager](#step-3-run-the-worker-with-taskmanager)
 - [Scheduling](#scheduling)
+  - [The SchedulerClient](#the-schedulerclient)
   - [Quick Start: Scheduling a Workflow](#quick-start-scheduling-a-workflow)
     - [Step 1: Create a SchedulerClient](#step-1-create-a-schedulerclient)
     - [Step 2: Define the Schedule](#step-2-define-the-schedule)
     - [Step 3: Manage the Schedule](#step-3-manage-the-schedule)
 - [Service Registry](#service-registry)
+  - [The ServiceRegistryClient](#the-serviceregistryclient)
   - [Quick Start: Using the Service Registry](#quick-start-using-the-service-registry)
     - [Step 1: Create a ServiceRegistryClient](#step-1-create-a-serviceregistryclient)
     - [Step 2: Register a Service](#step-2-register-a-service)
     - [Step 3: Manage Services](#step-3-manage-services)
 - [Metadata](#metadata)
+  - [The MetadataClient](#the-metadataclient)
   - [Quick Start: Managing Metadata](#quick-start-managing-metadata)
     - [Step 1: Create a MetadataClient](#step-1-create-a-metadataclient)
     - [Step 2: Define and Register a Task](#step-2-define-and-register-a-task)
     - [Step 3: Define and Register a Workflow](#step-3-define-and-register-a-workflow)
 - [Human Tasks](#human-tasks)
+  - [The HumanExecutor and TemplateClient](#the-humanexecutor-and-templateclient)
   - [Quick Start: Creating and Managing a Human Task](#quick-start-creating-and-managing-a-human-task)
     - [Step 1: Create API Clients](#step-1-create-api-clients)
     - [Step 2: Register a Form Template](#step-2-register-a-form-template)
@@ -422,6 +427,21 @@ Workflow → Creates Tasks → Workers Poll for Tasks → Execute Logic → Retu
 
 The `TaskManager` class in this SDK simplifies the process of creating and managing workers.
 
+### The TaskManager
+
+The `TaskManager` is the primary tool for managing workers. It handles polling, task execution, and result reporting, allowing you to run multiple workers concurrently.
+
+```typescript
+import { TaskManager } from "@io-orkes/conductor-javascript";
+
+const manager = new TaskManager(client, workers, {
+  options: {
+    concurrency: 5,
+    pollInterval: 100,
+  }
+});
+```
+
 ### Quick Start: Building a Worker
 
 Building a robust worker involves defining its logic, handling outcomes, and managing its execution.
@@ -514,6 +534,16 @@ For a complete method reference, see the [TaskManager API Reference](./docs/api-
 
 The Conductor Scheduler allows you to run workflows at specific times or intervals, defined by a CRON expression. This is useful for tasks like nightly data processing, weekly reports, or any time-based automation.
 
+### The SchedulerClient
+
+The `SchedulerClient` is used to create, manage, and delete workflow schedules.
+
+```typescript
+import { SchedulerClient } from "@io-orkes/conductor-javascript";
+
+const scheduler = new SchedulerClient(client);
+```
+
 ### Quick Start: Scheduling a Workflow
 
 Here’s how to schedule a workflow in three steps:
@@ -577,6 +607,16 @@ For a complete method reference, see the [SchedulerClient API Reference](./docs/
 
 The Service Registry in Conductor allows you to manage and discover microservices. It also provides built-in circuit breaker functionality to improve the resilience of your distributed system.
 
+### The ServiceRegistryClient
+
+The `ServiceRegistryClient` is used to register, manage, and discover services.
+
+```typescript
+import { ServiceRegistryClient } from "@io-orkes/conductor-javascript";
+
+const serviceRegistry = new ServiceRegistryClient(client);
+```
+
 ### Quick Start: Using the Service Registry
 
 Here’s how to get started with the `ServiceRegistryClient`:
@@ -630,6 +670,16 @@ For a complete method reference, see the [ServiceRegistryClient API Reference](.
 ## Metadata
 
 In Conductor, "metadata" refers to the definitions of your tasks and workflows. Before you can execute a workflow, you must register its definition with Conductor. The `MetadataClient` provides the tools to manage these definitions.
+
+### The MetadataClient
+
+The `MetadataClient` is used to register and manage task and workflow definitions.
+
+```typescript
+import { MetadataClient, taskDefinition, workflowDef } from "@io-orkes/conductor-javascript";
+
+const metadataClient = new MetadataClient(client);
+```
 
 ### Quick Start: Managing Metadata
 
@@ -692,6 +742,18 @@ For a complete method reference, see the [MetadataClient API Reference](./docs/a
 Human tasks integrate human interaction into your automated workflows. They pause a workflow until a person provides input, such as an approval, a correction, or additional information.
 
 Unlike other tasks, human tasks are managed through a dedicated API (`HumanExecutor`) and often involve UI forms (`TemplateClient`). Because they are a type of **system task**, you don't need to create a custom worker to handle them.
+
+### The HumanExecutor and TemplateClient
+
+-   **`HumanExecutor`**: Manages the lifecycle of human tasks—searching, claiming, and completing them.
+-   **`TemplateClient`**: Manages the UI forms and templates that are presented to users.
+
+```typescript
+import { HumanExecutor, TemplateClient } from "@io-orkes/conductor-javascript";
+
+const humanExecutor = new HumanExecutor(client);
+const templateClient = new TemplateClient(client);
+```
 
 ### Quick Start: Creating and Managing a Human Task
 
