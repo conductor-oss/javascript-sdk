@@ -986,16 +986,28 @@ For a complete method reference, see the [SchedulerClient API Reference](./docs/
 
 ## Service Registry
 
-### ServiceRegistryClient
+The Service Registry in Conductor allows you to manage and discover microservices. It also provides built-in circuit breaker functionality to improve the resilience of your distributed system.
 
-The `ServiceRegistryClient` manages service registrations and circuit breakers. For a complete method reference, see the [ServiceRegistryClient API Reference](./docs/api-reference/service-registry-client.md).
+### Quick Start: Using the Service Registry
+
+Here’s how to get started with the `ServiceRegistryClient`:
+
+#### Step 1: Create a ServiceRegistryClient
+
+First, create an instance of the `ServiceRegistryClient`:
 
 ```typescript
 import { ServiceRegistryClient } from "@io-orkes/conductor-javascript";
 
 const serviceRegistry = new ServiceRegistryClient(client);
+```
 
-// Register a service
+#### Step 2: Register a Service
+
+Next, register your service with Conductor. This example registers an HTTP service with a circuit breaker configuration.
+
+```typescript
+// Register a service with circuit breaker config
 await serviceRegistry.addOrUpdateService({
   name: "user-service",
   type: "HTTP",
@@ -1004,50 +1016,27 @@ await serviceRegistry.addOrUpdateService({
     failureRateThreshold: 50.0,
     slidingWindowSize: 10,
     minimumNumberOfCalls: 5,
-    waitDurationInOpenState: 60000
-  }
+    waitDurationInOpenState: 60000, // 1 minute
+  },
 });
+```
 
-// Get all registered services
+#### Step 3: Manage Services
+
+You can easily manage your registered services:
+
+```typescript
+// Get a list of all registered services
 const services = await serviceRegistry.getRegisteredServices();
 
-// Get specific service
+// Get details for a specific service
 const service = await serviceRegistry.getService("user-service");
 
-// Add service method
-await serviceRegistry.addOrUpdateServiceMethod("user-service", {
-  operationName: "getUser",
-  methodName: "getUser",
-  methodType: "GET",
-  inputType: "string",
-  outputType: "User",
-  requestParams: [
-    {
-      name: "id",
-      type: "Path",
-      required: true,
-      schema: { type: "string" }
-    }
-  ]
-});
-
-// Circuit breaker management
-await serviceRegistry.openCircuitBreaker("user-service");
-await serviceRegistry.closeCircuitBreaker("user-service");
-const status = await serviceRegistry.getCircuitBreakerStatus("user-service");
-
-// Proto file management (for gRPC services)
-await serviceRegistry.setProtoData("grpc-service", "user.proto", protoBlob);
-const protoData = await serviceRegistry.getProtoData("grpc-service", "user.proto");
-const allProtos = await serviceRegistry.getAllProtos("grpc-service");
-await serviceRegistry.deleteProto("grpc-service", "user.proto");
-
-// Service discovery
-const methods = await serviceRegistry.discover("user-service", true);
-
-// Remove service
+// Remove a service
 await serviceRegistry.removeService("user-service");
 ```
+
+For a complete method reference, see the [ServiceRegistryClient API Reference](./docs/api-reference/service-registry-client.md).
 
 ## Metadata
 
