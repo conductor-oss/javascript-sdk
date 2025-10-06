@@ -244,131 +244,104 @@ See the [Workers](#workers) section for implementation details.
 
 ## Workflows
 
-Workflows orchestrate the execution of multiple tasks in a coordinated sequence. This section explains:
-- **What workflows are** and how they work
-- **How to create workflows** step-by-step using task generators
-- **Task generators** for different task types
-- **How to manage workflow lifecycle** (register, start, pause, resume, terminate, search)
+Workflows are the heart of Conductor, orchestrating tasks to perform complex processes. This guide walks you through the entire lifecycle of a workflow, from creation to monitoring.
 
-### WorkflowExecutor
+### The WorkflowExecutor
 
-The `WorkflowExecutor` class is your main interface for managing workflows. It provides methods to register, start, monitor, and control workflow execution.
+The `WorkflowExecutor` is your primary tool for interacting with workflows. It allows you to register, start, and manage their execution.
 
 ```typescript
 import { WorkflowExecutor } from "@io-orkes/conductor-javascript";
 
-// Create executor instance
+// Create an executor instance
 const executor = new WorkflowExecutor(client);
 ```
 
-### Creating Workflows
+### Step 1: Define Your Workflow Structure
 
-Creating a workflow in Conductor involves three main steps:
-
-#### Step 1: Define Your Workflow Structure
-
-A workflow definition is a JavaScript object that describes your workflow:
+A workflow definition is a blueprint for your process. It outlines the workflow's properties and the sequence of tasks.
 
 ```typescript
-const workflowDef = {
-  name: "order_fulfillment",           // Unique workflow name
-  version: 1,                           // Version number
-  description: "Process and fulfill customer orders",
-  ownerEmail: "team@example.com",       // Optional: owner email
-  tasks: [
-    // Tasks will be added here (Step 2)
-  ],
-  inputParameters: [],                  // Expected input parameter names
-  outputParameters: {},                 // Output mapping from task results
-  timeoutSeconds: 3600,                 // Workflow timeout (0 = no timeout)
-  timeoutPolicy: "ALERT_ONLY"           // What to do on timeout
-};
-```
-
-#### Step 2: Build Your Task List
-
-Use **task generators** to create the task list for your workflow. Task generators are helper functions that create properly formatted task definitions:
-
-```typescript
-import { 
-  simpleTask, 
-  httpTask, 
-  switchTask 
-} from "@io-orkes/conductor-javascript";
-
 const workflowDef = {
   name: "order_fulfillment",
   version: 1,
   description: "Process and fulfill customer orders",
+  ownerEmail: "team@example.com",
   tasks: [
-    // Task 1: Validate order (custom worker)
-    simpleTask(
-      "validate_order_ref",              // taskReferenceName: unique within workflow
-      "validate_order",                  // taskName: matches worker's taskDefName
-      {                                   // inputParameters: data for this task
-        orderId: "${workflow.input.orderId}",
-        customerId: "${workflow.input.customerId}"
-      }
-    ),
-    
-    // Task 2: Check inventory via HTTP API
-    httpTask(
-      "check_inventory_ref",
-      {
-        uri: "https://api.inventory.com/check",
-        method: "POST",
-        body: {
-          productId: "${workflow.input.productId}",
-          quantity: "${workflow.input.quantity}"
-        },
-        headers: {
-          "Content-Type": "application/json"
-        }
-      }
-    ),
-    
-    // Task 3: Conditional routing based on inventory
-    switchTask(
-      "route_order_ref",
-      "${check_inventory_ref.output.inStock}",
-      {
-        "true": [
-          simpleTask("fulfill_order_ref", "fulfill_order", {
-            orderId: "${workflow.input.orderId}"
-          })
-        ],
-        "false": [
-          simpleTask("backorder_ref", "create_backorder", {
-            orderId: "${workflow.input.orderId}"
-          })
-        ]
-      }
-    )
+    // Tasks will be added in the next step
   ],
   inputParameters: ["orderId", "customerId", "productId", "quantity"],
   outputParameters: {
     status: "${route_order_ref.output.status}",
     fulfillmentId: "${fulfill_order_ref.output.fulfillmentId}"
-  }
+  },
+  timeoutSeconds: 3600,
+  timeoutPolicy: "ALERT_ONLY"
 };
 ```
 
-**Key Concepts:**
+### Step 2: Build Your Task List
 
-- **taskReferenceName**: A unique identifier for the task within this workflow. Used to reference task outputs (e.g., `${task_ref.output.fieldName}`)
-- **inputParameters**: Use `${workflow.input.fieldName}` to access workflow inputs and `${other_task_ref.output.fieldName}` to access previous task outputs
-- **Task Generators**: Each task type has a generator function (e.g., `simpleTask`, `httpTask`, `switchTask`). See [Task Generators Reference](./docs/api-reference/task-generators.md) for all available types.
-
-#### Step 3: Register and Start Your Workflow
-
-Once your workflow definition is ready, register it with Conductor and start executing it:
+Use **Task Generators** to populate the `tasks` array. These helper functions simplify the creation of different task types.
 
 ```typescript
-// Register the workflow definition
-await executor.registerWorkflow(
-  true,          // overwrite: replace existing definition if it exists
-  workflowDef
-);
+import { simpleTask, httpTask, switchTask } from "@io-orkes/conductor-javascript";
+
+const tasks = [
+  // Task 1: A custom task to validate the order
+  simpleTask(
+    "validate_order_ref",
+    "validate_order",
+    {
+      orderId: "${workflow.input.orderId}",
+      customerId: "${workflow.input.customerId}"
+    }
+  ),
+  
+  // Task 2: An HTTP task to check inventory
+  httpTask(
+    "check_inventory_ref",
+    {
+      uri: "https://api.inventory.com/check",
+      method: "POST",
+      body: {
+        productId: "${workflow.input.productId}",
+        quantity: "${workflow.input.quantity}"
+      }
+    }
+  ),
+  
+  // Task 3: A switch task for conditional logic
+  switchTask(
+    "route_order_ref",
+    "${check_inventory_ref.output.inStock}",
+    {
+      "true": [
+        simpleTask("fulfill_order_ref", "fulfill_order", {})
+      ],
+      "false": [
+        simpleTask("backorder_ref", "create_backorder", {})
+      ]
+    }
+  )
+];
+
+// Add the tasks to your workflow definition
+workflowDef.tasks = tasks;
+```
+
+**Key Concepts:**
+- **`taskReferenceName`**: A unique identifier for a task instance within a workflow. Used for data flow (e.g., `${check_inventory_ref.output.inStock}`).
+- **Input Parameters**: Use `${workflow.input.fieldName}` to access initial workflow inputs and `${task_ref.output.fieldName}` to access outputs from previous tasks.
+- **Task Generators**: Helper functions like `simpleTask`, `httpTask`, etc., that create task definitions. For a complete list, see the [Task Generators Reference](./docs/api-reference/task-generators.md).
+
+### Step 3: Register and Start Your Workflow
+
+With the definition complete, register it with Conductor and start an execution.
+
+```typescript
+// Register the workflow definition (overwrite if it exists)
+await executor.registerWorkflow(true, workflowDef);
 
 // Start a workflow execution
 const executionId = await executor.startWorkflow({
@@ -385,31 +358,26 @@ const executionId = await executor.startWorkflow({
 console.log(`Workflow started with ID: ${executionId}`);
 ```
 
-### Managing Workflow Execution
+### Step 4: Manage and Monitor Execution
 
-Once your workflow is running, you can monitor and control its execution using these operations:
+Once a workflow is running, you can monitor its status, control its execution, and debug individual tasks.
 
-#### Monitor Workflow Status
+#### Check Workflow Status
+
+Retrieve the current status and output of a running workflow.
 
 ```typescript
-// Get workflow status summary
 const status = await executor.getWorkflowStatus(
   executionId,
-  true,   // includeOutput
-  true    // includeVariables
+  true, // includeOutput
+  true  // includeVariables
 );
-
-// The `getWorkflowStatus()` method returns a `WorkflowStatus` object with the following properties:
-interface WorkflowStatus {
-  workflowId?: string;
-  correlationId?: string;
-  output?: Record<string, any>;
-  variables?: Record<string, any>;
-  status?: "RUNNING" | "COMPLETED" | "FAILED" | "TIMED_OUT" | "TERMINATED" | "PAUSED";
-}
+console.log(`Workflow status is: ${status.status}`);
 ```
 
 #### Control Workflow Execution
+
+You can pause, resume, or terminate workflows as needed.
 
 ```typescript
 // Pause a running workflow
@@ -418,147 +386,47 @@ await executor.pause(executionId);
 // Resume a paused workflow
 await executor.resume(executionId);
 
-// Terminate a workflow with a reason
-await executor.terminate(executionId, "Terminating due to error");
-
-// Restart a completed/failed workflow
-await executor.restart(executionId, true);  // useLatestDefinitions
-
-// Retry a failed workflow from the last failed task
-await executor.retry(executionId, false);  // resumeSubworkflowTasks
-
-// Rerun a workflow with potentially modified parameters
-const newWorkflowId = await executor.reRun(executionId);
+// Terminate a workflow
+await executor.terminate(executionId, "Aborted due to customer cancellation");
 ```
 
-#### Search Workflows
+#### Search for Workflows
+
+Search for workflow executions based on various criteria.
 
 ```typescript
-// Search for workflows with filters
 const searchResults = await executor.search(
-  0,                 // start: starting index
-  10,                // size: number of results
-  "status:RUNNING",  // query: e.g., "workflowType:my_workflow AND status:FAILED"
-  "*",               // freeText: use "*" for all
-  "startTime:DESC",  // sort (optional)
-  false              // skipCache (optional)
+  0,
+  10,
+  "status:RUNNING AND workflowType:order_fulfillment",
+  "*",
+  "startTime:DESC"
 );
-
-// Common search patterns:
-// - By status: "status:RUNNING"
-// - By name: "workflowType:order_fulfillment"
-// - By date: "startTime:[2025-01-01 TO 2025-12-31]"
-// - Combined: "workflowType:my_workflow AND status:FAILED"
 ```
 
-### WorkflowExecutor API Reference
+#### Monitor and Debug Tasks
 
-For a complete method reference for the `WorkflowExecutor` class, see the [WorkflowExecutor API Reference](./docs/api-reference/workflow-executor.md).
-
-Here is a quick example of how to interact with a running workflow:
-
-```typescript
-import { WorkflowExecutor } from "@io-orkes/conductor-javascript";
-
-const executor = new WorkflowExecutor(client);
-const executionId = "your-workflow-execution-id";
-
-// Get workflow status summary
-const status = await executor.getWorkflowStatus(
-  executionId,
-  true,   // includeOutput
-  true    // includeVariables
-);
-console.log(`Workflow status: ${status.status}`);
-
-// Terminate a workflow with a reason
-await executor.terminate(executionId, "Terminating due to error");
-```
-
-### Monitoring & Debugging Tasks
-
-The `TaskClient` provides capabilities for monitoring and debugging tasks within your workflow executions. For a complete method reference, see the [TaskClient API Reference](./docs/api-reference/task-client.md).
+For a deeper look into the tasks within a workflow, use the `TaskClient`.
 
 ```typescript
 import { TaskClient } from "@io-orkes/conductor-javascript";
 
 const taskClient = new TaskClient(client);
 
-// Search tasks
-const searchResults = await taskClient.search(0, 10, "", "*", "status:COMPLETED");
-
-// Get task by ID
-const task = await taskClient.getTask(taskId);
-
-// Update task result (advanced use case)
-await taskClient.updateTaskResult(
-  workflowId,
-  taskReferenceName,
-  "COMPLETED",
-  { result: "success" }
+// Find all failed tasks for a specific workflow run
+const failedTasks = await taskClient.search(
+  0,
+  100,
+  "startTime:DESC",
+  "*",
+  `status:FAILED AND workflowId:${executionId}`
 );
+
+// Get details of a specific task by its ID
+const taskDetails = await taskClient.getTask(failedTasks.results[0].taskId);
 ```
 
-#### Task Statuses
-
-Tasks in Conductor have various statuses that indicate their current state:
-
-- **SCHEDULED**: Task is scheduled for execution
-- **IN_PROGRESS**: Task is currently being executed
-- **COMPLETED**: Task completed successfully
-- **COMPLETED_WITH_ERRORS**: Task completed but with errors
-- **FAILED**: Task execution failed
-- **FAILED_WITH_TERMINAL_ERROR**: Task failed with a terminal error (no retries)
-- **TIMED_OUT**: Task execution timed out
-- **CANCELED**: Task was canceled
-- **SKIPPED**: Task was skipped
-
-#### Searching & Filtering Tasks
-
-You can search for tasks using various criteria:
-
-```typescript
-// Search by status
-const completedTasks = await taskClient.search(0, 10, "", "*", "status:COMPLETED");
-
-// Search by workflow
-const workflowTasks = await taskClient.search(0, 10, "", "*", "workflowId:workflow-123");
-
-// Search by task type
-const simpleTasks = await taskClient.search(0, 10, "", "*", "taskType:SIMPLE");
-
-// Search by free text
-const textSearch = await taskClient.search(0, 10, "", "error", "");
-
-// Search with sorting
-const sortedTasks = await taskClient.search(0, 10, "startTime:DESC", "*", "status:FAILED");
-```
-
-**Search Parameters:**
-- `start`: Starting index for pagination (default: 0)
-- `size`: Number of results to return (default: 100)
-- `sort`: Sort field and direction (e.g., "startTime:DESC", "status:ASC")
-- `freeText`: Free text search term (use "*" for all)
-- `query`: Structured query string (e.g., "status:FAILED", "workflowId:workflow-123")
-
-#### Common Search Queries
-
-```typescript
-// Find all failed tasks
-const failedTasks = await taskClient.search(0, 100, "startTime:DESC", "*", "status:FAILED");
-
-// Find tasks for a specific workflow
-const workflowTasks = await taskClient.search(0, 100, "", "*", "workflowId:my-workflow-123");
-
-// Find tasks by worker ID
-const workerTasks = await taskClient.search(0, 100, "", "*", "workerId:worker-123");
-
-// Find tasks with specific input data
-const inputTasks = await taskClient.search(0, 100, "", "*", "inputData.orderId:order-123");
-
-// Find tasks that timed out
-const timeoutTasks = await taskClient.search(0, 100, "endTime:DESC", "*", "status:TIMED_OUT");
-```
+For a complete list of methods, see the [WorkflowExecutor API Reference](./docs/api-reference/workflow-executor.md) and the [TaskClient API Reference](./docs/api-reference/task-client.md).
 
 ## Workers
 
