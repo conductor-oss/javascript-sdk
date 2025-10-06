@@ -117,4 +117,3 @@ Unregisters a workflow definition.
 | `ownerEmail` | `string` | The owner email of the task. |
 | `pollTimeoutSeconds` | `number` | The poll timeout in seconds. |
 | `backoffScaleFactor` | `number` | The backoff scale factor. |
-

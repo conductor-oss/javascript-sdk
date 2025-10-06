@@ -291,4 +291,3 @@ Discovers service methods.
 | --- | --- | --- |
 | `filename` | `string` | The name of the proto file. |
 | `lastUpdated` | `number` | The last update time of the proto file. |
-
