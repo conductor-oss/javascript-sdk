@@ -30,7 +30,7 @@ Show support for the Conductor OSS.  Please help spread the awareness by starrin
   - [System Tasks - Managed by Conductor Server](#system-tasks---managed-by-conductor-server)
   - [SIMPLE Tasks - Require Custom Workers](#simple-tasks---require-custom-workers)
 - [Workflows](#workflows)
-  - [The WorkflowExecutor](#the-workflowexecutor)
+  - [The WorkflowExecutor and TaskClient](#the-workflowexecutor-and-taskclient)
   - [Quick Start: Creating a Workflow](#quick-start-creating-a-workflow)
     - [Step 1: Define Your Workflow Structure](#step-1-define-your-workflow-structure)
     - [Step 2: Build Your Task List](#step-2-build-your-task-list)
@@ -232,15 +232,17 @@ See the [Workers](#workers) section for implementation details.
 
 Workflows are the heart of Conductor, orchestrating tasks to perform complex processes. This guide walks you through the entire lifecycle of a workflow, from creation to monitoring.
 
-### The WorkflowExecutor
+### The WorkflowExecutor and TaskClient
 
-The `WorkflowExecutor` is your primary tool for interacting with workflows. It allows you to register, start, and manage their execution.
+-   **`WorkflowExecutor`**: The primary tool for managing the workflow lifecycle (e.g., registering, starting, and stopping).
+-   **`TaskClient`**: Used for searching and retrieving details of individual tasks within a workflow execution.
 
 ```typescript
-import { WorkflowExecutor } from "@io-orkes/conductor-javascript";
+import { WorkflowExecutor, TaskClient } from "@io-orkes/conductor-javascript";
 
 // Create an executor instance
 const executor = new WorkflowExecutor(client);
+const taskClient = new TaskClient(client);
 ```
 
 ### Quick Start: Creating a Workflow
