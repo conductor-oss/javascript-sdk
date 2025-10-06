@@ -705,6 +705,8 @@ const searchResults = await executor.search(
 
 ### WorkflowExecutor API Reference
 
+For a complete method reference for the `WorkflowExecutor` class, see the [WorkflowExecutor API Reference](./docs/workflow-executor-api-reference.md).
+
 Complete method reference for the `WorkflowExecutor` class:
 
 ```typescript
@@ -849,7 +851,7 @@ const workflowIds = executor.startWorkflows(
 
 ### Monitoring & Debugging Tasks
 
-The `TaskClient` provides capabilities for monitoring and debugging tasks within your workflow executions:
+The `TaskClient` provides capabilities for monitoring and debugging tasks within your workflow executions. For a complete method reference, see the [TaskClient API Reference](./docs/task-client-api-reference.md).
 
 ```typescript
 import { TaskClient } from "@io-orkes/conductor-javascript";
@@ -947,7 +949,7 @@ Workers are background processes that execute tasks in your workflows. Think of 
 Workflow → Creates Tasks → Workers Poll for Tasks → Execute Logic → Return Results → Workflow Continues
 ```
 
-The SDK provides the **TaskManager** class - an easy-to-use interface for managing workers efficiently.
+The SDK provides the **TaskManager** class - an easy-to-use interface for managing workers efficiently. For a complete method reference, see the [TaskManager API Reference](./docs/task-manager-api-reference.md).
 
 ### Quick Start: Your First Worker
 
@@ -1297,7 +1299,7 @@ process.on('SIGTERM', async () => {
 
 ### SchedulerClient
 
-The `SchedulerClient` manages workflow scheduling and provides methods for creating, managing, and monitoring scheduled workflows.
+The `SchedulerClient` manages workflow scheduling and provides methods for creating, managing, and monitoring scheduled workflows. For a complete method reference, see the [SchedulerClient API Reference](./docs/scheduler-client-api-reference.md).
 
 ```typescript
 import { SchedulerClient } from "@io-orkes/conductor-javascript";
@@ -1405,7 +1407,7 @@ const results = await scheduler.search(0, 10, "startTime:DESC", "*", "status:RUN
 
 ### ServiceRegistryClient
 
-The `ServiceRegistryClient` manages service registrations and circuit breakers:
+The `ServiceRegistryClient` manages service registrations and circuit breakers. For a complete method reference, see the [ServiceRegistryClient API Reference](./docs/service-registry-client-api-reference.md).
 
 ```typescript
 import { ServiceRegistryClient } from "@io-orkes/conductor-javascript";
@@ -1470,7 +1472,7 @@ await serviceRegistry.removeService("user-service");
 
 ### MetadataClient
 
-The `MetadataClient` class provides methods for managing task and workflow definitions in Conductor.
+The `MetadataClient` class provides methods for managing task and workflow definitions in Conductor. For a complete method reference, see the [MetadataClient API Reference](./docs/metadata-client-api-reference.md).
 
 ```typescript
 import { MetadataClient } from "@io-orkes/conductor-javascript";
@@ -1674,7 +1676,7 @@ HUMAN tasks are a **type of system task** that enable human interaction within w
 
 ### HumanExecutor
 
-The `HumanExecutor` class provides comprehensive human task management:
+The `HumanExecutor` class provides comprehensive human task management. For a complete method reference, see the [HumanExecutor API Reference](./docs/human-executor-api-reference.md).
 
 ```typescript
 import { HumanExecutor } from "@io-orkes/conductor-javascript";
@@ -1744,7 +1746,7 @@ const templateById = await humanExecutor.getTemplateById("approval_template");
 
 ### TemplateClient
 
-The `TemplateClient` class provides methods for managing human task templates (forms and UI):
+The `TemplateClient` class provides methods for managing human task templates (forms and UI). For a complete method reference, see the [TemplateClient API Reference](./docs/template-client-api-reference.md).
 
 ```typescript
 import { TemplateClient } from "@io-orkes/conductor-javascript";
