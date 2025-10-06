@@ -923,9 +923,15 @@ process.on('SIGTERM', async () => {
 
 ## Scheduling
 
-### SchedulerClient
+The Conductor Scheduler allows you to run workflows at specific times or intervals, defined by a CRON expression. This is useful for tasks like nightly data processing, weekly reports, or any time-based automation.
 
-The `SchedulerClient` manages workflow scheduling and provides methods for creating, managing, and monitoring scheduled workflows. For a complete method reference, see the [SchedulerClient API Reference](./docs/api-reference/scheduler-client.md).
+### Quick Start: Scheduling a Workflow
+
+Here’s how to schedule a workflow in three steps:
+
+#### Step 1: Create a SchedulerClient
+
+First, create an instance of the `SchedulerClient`:
 
 ```typescript
 import { SchedulerClient } from "@io-orkes/conductor-javascript";
@@ -933,92 +939,24 @@ import { SchedulerClient } from "@io-orkes/conductor-javascript";
 const scheduler = new SchedulerClient(client);
 ```
 
-#### Schedule Management
+#### Step 2: Define the Schedule
+
+Next, define the schedule, specifying the workflow to run and the CRON expression for its timing.
 
 ```typescript
-// Create or update a schedule
+// Schedule a workflow to run every day at 9 AM
 await scheduler.saveSchedule({
-  name: string,
-  cronExpression: string,  // e.g., "0 0 9 * * ?"
+  name: "daily_report_schedule",
+  cronExpression: "0 0 9 * * ?", // Everyday at 9am
   startWorkflowRequest: {
-    name: string,
-    version?: number,
-    input?: Record<string, any>,
-    correlationId?: string,
-    priority?: number,
-    taskToDomain?: Record<string, string>
+    name: "generate_daily_report",
+    version: 1,
+    input: {
+      reportType: "SALES",
+      period: "DAILY"
+    },
   },
-  paused?: boolean,                   // (optional, default: false)
-  runCatchupScheduleInstances?: boolean,  // (optional, default: false)
-  scheduleStartTime?: number,         // (optional) epoch ms
-  scheduleEndTime?: number            // (optional) epoch ms
-}): Promise<void>
-
-// Get a specific schedule
-const schedule = await scheduler.getSchedule(name: string): Promise<WorkflowSchedule>
-
-// Get all schedules
-const schedules = await scheduler.getAllSchedules(
-  workflowName?: string  // (optional) filter by workflow name
-): Promise<WorkflowSchedule[]>
-
-// Delete a schedule
-await scheduler.deleteSchedule(name: string): Promise<void>
-
-// Pause a schedule
-await scheduler.pauseSchedule(name: string): Promise<void>
-
-// Resume a paused schedule
-await scheduler.resumeSchedule(name: string): Promise<void>
-```
-
-#### Bulk Schedule Operations
-
-```typescript
-// Pause all schedules (use with caution)
-await scheduler.pauseAllSchedules(): Promise<void>
-
-// Resume all schedules
-await scheduler.resumeAllSchedules(): Promise<void>
-
-// Requeue all execution records
-await scheduler.requeueAllExecutionRecords(): Promise<void>
-```
-
-#### Schedule Execution Preview
-
-```typescript
-// Get next few execution times for a cron expression
-const nextExecutions = await scheduler.getNextFewSchedules(
-  cronExpression: string,
-  scheduleTime: number,      // epoch ms
-  scheduleEndTime: number,   // epoch ms
-  limit: number
-): Promise<number[]>  // array of timestamps
-
-// Example: Get next 5 executions over the next 7 days
-const nextTimes = await scheduler.getNextFewSchedules(
-  "0 0 9 * * ?",
-  Date.now(),
-  Date.now() + 7 * 24 * 60 * 60 * 1000,
-  5
-);
-```
-
-#### Search Schedule Executions
-
-```typescript
-// Search schedule execution history
-const executions = await scheduler.search(
-  start: number,
-  size: number,
-  sort: string,       // (optional, default: "")
-  freeText: string,   // (default: "*")
-  query: string       // e.g., "status:RUNNING"
-): Promise<SearchResultWorkflowScheduleExecutionModel>
-
-// Example
-const results = await scheduler.search(0, 10, "startTime:DESC", "*", "status:RUNNING");
+});
 ```
 
 **Cron Expression Format:**
@@ -1028,6 +966,23 @@ const results = await scheduler.search(0, 10, "startTime:DESC", "*", "status:RUN
   - `"0 */30 * * * ?"` - Every 30 minutes
   - `"0 0 0 1 * ?"` - First day of every month at midnight
   - `"0 0 12 ? * MON-FRI"` - Weekdays at noon
+
+#### Step 3: Manage the Schedule
+
+You can easily manage your schedules:
+
+```typescript
+// Pause a schedule
+await scheduler.pauseSchedule("daily_report_schedule");
+
+// Resume a paused schedule
+await scheduler.resumeSchedule("daily_report_schedule");
+
+// Delete a schedule
+await scheduler.deleteSchedule("daily_report_schedule");
+```
+
+For a complete method reference, see the [SchedulerClient API Reference](./docs/api-reference/scheduler-client.md).
 
 ## Service Registry
 
