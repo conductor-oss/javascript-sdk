@@ -33,9 +33,10 @@ Show support for the Conductor OSS.  Please help spread the awareness by starrin
   - [The WorkflowExecutor and TaskClient](#the-workflowexecutor-and-taskclient)
   - [Quick Start: Creating a Workflow](#quick-start-creating-a-workflow)
     - [Step 1: Define Your Workflow Structure](#step-1-define-your-workflow-structure)
-    - [Step 2: Build Your Task List](#step-2-build-your-task-list)
+    - [Step 2: Use Task Generators to Build Your Task List](#step-2-use-task-generators-to-build-your-task-list)
     - [Step 3: Register and Start Your Workflow](#step-3-register-and-start-your-workflow)
     - [Step 4: Manage and Monitor Execution](#step-4-manage-and-monitor-execution)
+      - [Use TaskClient to Monitor and Debug Tasks](#use-taskclient-to-monitor-and-debug-tasks)
 - [Workers](#workers)
   - [The TaskManager](#the-taskmanager)
   - [Quick Start: Building a Worker](#quick-start-building-a-worker)
@@ -239,17 +240,6 @@ Workflows are the heart of Conductor, orchestrating tasks to perform complex pro
 
 ### Quick Start: Creating a Workflow
 
-First, create instances of the `WorkflowExecutor` and `TaskClient`:
-
-```typescript
-import { WorkflowExecutor, TaskClient } from "@io-orkes/conductor-javascript";
-
-const executor = new WorkflowExecutor(client);
-const taskClient = new TaskClient(client);
-```
-
-Now, you can create and manage a workflow in four steps:
-
 #### Step 1: Define Your Workflow Structure
 
 A workflow definition is a blueprint for your process. It outlines the workflow's properties and the sequence of tasks.
@@ -273,7 +263,7 @@ const workflowDef = {
 };
 ```
 
-#### Step 2: Build Your Task List Using Task Generators
+#### Step 2: Use Task Generators to Build Your Task List
 
 Use **Task Generators** to populate the `tasks` array. These helper functions simplify the creation of different task types.
 
@@ -333,6 +323,11 @@ workflowDef.tasks = tasks;
 With the definition complete, register it with Conductor and start an execution.
 
 ```typescript
+import { WorkflowExecutor } from "@io-orkes/conductor-javascript";
+
+// Create WorkflowExecutor instance
+const executor = new WorkflowExecutor(client);
+
 // Register the workflow definition (overwrite if it exists)
 await executor.registerWorkflow(true, workflowDef);
 
@@ -397,7 +392,7 @@ const searchResults = await executor.search(
 );
 ```
 
-##### Monitor and Debug Tasks
+##### Use TaskClient to Monitor and Debug Tasks
 
 For a deeper look into the tasks within a workflow, use the `TaskClient`.
 
