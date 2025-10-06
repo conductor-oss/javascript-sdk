@@ -1040,163 +1040,63 @@ For a complete method reference, see the [ServiceRegistryClient API Reference](.
 
 ## Metadata
 
-### MetadataClient
+In Conductor, "metadata" refers to the definitions of your tasks and workflows. Before you can execute a workflow, you must register its definition with Conductor. The `MetadataClient` provides the tools to manage these definitions.
 
-The `MetadataClient` class provides methods for managing task and workflow definitions in Conductor. For a complete method reference, see the [MetadataClient API Reference](./docs/api-reference/metadata-client.md).
+### Quick Start: Managing Metadata
+
+Here’s how to manage your task and workflow definitions:
+
+#### Step 1: Create a MetadataClient
+
+First, create an instance of the `MetadataClient`:
 
 ```typescript
-import { MetadataClient } from "@io-orkes/conductor-javascript";
+import { MetadataClient, taskDefinition, workflowDef } from "@io-orkes/conductor-javascript";
 
 const metadataClient = new MetadataClient(client);
 ```
 
-### Task Definition Factory
+#### Step 2: Define and Register a Task
 
-The `taskDefinition` function provides a convenient way to create task definitions with default values:
+Create a task definition and register it. The `taskDefinition` factory provides sensible defaults for optional fields.
 
 ```typescript
-import { taskDefinition } from "@io-orkes/conductor-javascript";
-
+// Define a task
 const taskDef = taskDefinition({
-  // Required fields
-  name: "task_name",                      // Task name (required)
-  
-  // Optional fields with defaults
-  ownerApp: "",                           // Optional: owner application (default: "")
-  description: "",                        // Optional: task description (default: "")
-  retryCount: 3,                          // Optional: number of retries (default: 3)
-  timeoutSeconds: 3600,                   // Optional: task timeout in seconds (default: 3600 = 1 hour)
-  inputKeys: [],                          // Optional: list of input keys (default: [])
-  outputKeys: [],                         // Optional: list of output keys (default: [])
-  timeoutPolicy: "TIME_OUT_WF",           // Optional: "RETRY" | "TIME_OUT_WF" | "ALERT_ONLY" (default: "TIME_OUT_WF")
-  retryLogic: "FIXED",                    // Optional: "FIXED" | "EXPONENTIAL_BACKOFF" | "LINEAR_BACKOFF" (default: "FIXED")
-  retryDelaySeconds: 60,                  // Optional: delay between retries in seconds (default: 60)
-  responseTimeoutSeconds: 600,            // Optional: response timeout in seconds (default: 600)
-  concurrentExecLimit: 0,                 // Optional: max concurrent executions (0 = unlimited) (default: 0)
-  inputTemplate: {},                      // Optional: default input template (default: {})
-  rateLimitPerFrequency: 0,               // Optional: rate limit count (0 = no limit) (default: 0)
-  rateLimitFrequencyInSeconds: 1,         // Optional: rate limit window in seconds (default: 1)
-  ownerEmail: "",                         // Optional: owner email (default: "")
-  pollTimeoutSeconds: 3600,               // Optional: poll timeout in seconds (default: 3600)
-  backoffScaleFactor: 1                   // Optional: backoff multiplier for retry (default: 1)
-});
-```
-
-### Register Task Definition
-
-```typescript
-const taskDef = {
-  name: "process_order",
-  description: "Process customer order",
-  timeoutSeconds: 300,
+  name: "my_sdk_task",
+  description: "A task created via the SDK",
+  ownerEmail: "dev@example.com",
   retryCount: 3,
-  retryDelaySeconds: 60,
-  responseTimeoutSeconds: 300,
-  pollTimeoutSeconds: 300,
-  pollIntervalSeconds: 30,
-  concurrentExecLimit: 10,
-  rateLimitPerFrequency: 100,
-  rateLimitFrequencyInSeconds: 60,
-  ownerEmail: "owner@example.com",
-  inputTemplate: {
-    orderId: "string",
-    customerId: "string"
-  },
-  outputTemplate: {
-    processedOrderId: "string",
-    status: "string"
-  },
-  inputKeys: ["orderId", "customerId"],
-  outputKeys: ["processedOrderId", "status"],
-  tags: ["order", "processing"],
-  executionNameSpace: "orders",
-  isolationGroupId: "order_processing",
-  maxConcurrentExecutions: 5
-};
+});
 
+// Register the task definition
 await metadataClient.registerTask(taskDef);
 ```
 
-### Update Task Definition
+#### Step 3: Define and Register a Workflow
+
+Define your workflow using the task you just registered, and then register the workflow definition.
 
 ```typescript
-const updatedTaskDef = {
-  ...taskDef,
-  timeoutSeconds: 600, // Increased timeout
-  retryCount: 5 // Increased retry count
+// Define a workflow that uses the task
+const wf = {
+    name: "my_sdk_workflow",
+    version: 1,
+    ownerEmail: "dev@example.com",
+    tasks: [{
+        name: "my_sdk_task",
+        taskReferenceName: "my_sdk_task_ref",
+        type: "SIMPLE",
+    }],
+    inputParameters: [],
+    timeoutSeconds: 0,
 };
 
-await metadataClient.updateTask(updatedTaskDef);
+// Register the workflow definition
+await metadataClient.registerWorkflowDef(wf);
 ```
 
-### Unregister Task Definition
-
-```typescript
-await metadataClient.unregisterTask("process_order");
-```
-
-### Register Workflow Definition
-
-```typescript
-const workflowDef = {
-  name: "order_processing_workflow",
-  version: 1,
-  description: "Complete order processing workflow",
-  tasks: [
-    {
-      name: "validate_order",
-      taskReferenceName: "validate_order_ref",
-      type: "SIMPLE",
-      inputParameters: {
-        orderId: "${workflow.input.orderId}"
-      }
-    },
-    {
-      name: "process_payment",
-      taskReferenceName: "process_payment_ref",
-      type: "SIMPLE",
-      inputParameters: {
-        orderId: "${workflow.input.orderId}",
-        amount: "${workflow.input.amount}"
-      }
-    },
-    {
-      name: "send_confirmation",
-      taskReferenceName: "send_confirmation_ref",
-      type: "SIMPLE",
-      inputParameters: {
-        orderId: "${workflow.input.orderId}",
-        customerEmail: "${workflow.input.customerEmail}"
-      }
-    }
-  ],
-  inputParameters: ["orderId", "amount", "customerEmail"],
-  outputParameters: {
-    processedOrderId: "${validate_order_ref.output.processedOrderId}",
-    paymentStatus: "${process_payment_ref.output.status}",
-    confirmationSent: "${send_confirmation_ref.output.sent}"
-  },
-  failureWorkflow: "order_failure_workflow",
-  restartable: true,
-  workflowStatusListenerEnabled: true,
-  schemaVersion: 2,
-  ownerEmail: "workflow-owner@example.com",
-  timeoutPolicy: "ALERT_ONLY",
-  timeoutSeconds: 3600,
-  variables: {
-    maxRetries: 3,
-    retryDelay: 60
-  }
-};
-
-await metadataClient.registerWorkflowDef(workflowDef);
-```
-
-### Unregister Workflow Definition
-
-```typescript
-await metadataClient.unregisterWorkflow("order_processing_workflow", 1);
-```
+For a complete method reference, see the [MetadataClient API Reference](./docs/api-reference/metadata-client.md).
 
 ## Human Tasks
 
