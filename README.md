@@ -968,369 +968,106 @@ For a complete method reference, see the [MetadataClient API Reference](./docs/a
 
 ## Human Tasks
 
-HUMAN tasks are a **type of system task** that enable human interaction within workflows. They pause execution until a person completes an action like approving a request, filling out a form, or reviewing data.
+Human tasks integrate human interaction into your automated workflows. They pause a workflow until a person provides input, such as an approval, a correction, or additional information.
 
-**As System Tasks:**
-- **No custom workers needed** - Managed by Conductor, not by your code
-- **Configured, not coded** - Use the `HumanExecutor` API to manage task lifecycle
-- **Form-based** - Users interact through forms you define with TemplateClient
-- **Assignment-based** - Tasks are assigned to users or groups  
-- **State management** - Tasks can be claimed, released, updated, and completed via API
+Unlike other tasks, human tasks are managed through a dedicated API (`HumanExecutor`) and often involve UI forms (`TemplateClient`). Because they are a type of **system task**, you don't need to create a custom worker to handle them.
 
-**Unlike other system tasks** (which execute automatically), HUMAN tasks wait for user action via the HumanExecutor API.
+### Quick Start: Creating and Managing a Human Task
 
-### HumanExecutor
+This guide walks through creating a simple approval workflow.
 
-The `HumanExecutor` class provides comprehensive human task management. For a complete method reference, see the [HumanExecutor API Reference](./docs/api-reference/human-executor.md).
+#### Step 1: Create API Clients
+
+You'll need a `TemplateClient` to manage UI forms and a `HumanExecutor` to interact with the tasks themselves.
 
 ```typescript
-import { HumanExecutor } from "@io-orkes/conductor-javascript";
-
-const humanExecutor = new HumanExecutor(client);
-
-// Search human tasks
-const tasks = await humanExecutor.search({
-  states: ["PENDING", "ASSIGNED"],
-  assignees: [{ userType: "EXTERNAL_USER", user: "john@example.com" }],
-  taskRefNames: ["approval_task"],
-  taskInputQuery: "priority:high",
-  size: 10,
-  start: 0
-});
-
-// Poll for tasks until found
-const polledTasks = await humanExecutor.pollSearch({
-  states: ["PENDING"],
-  assignees: [{ userType: "EXTERNAL_USER", user: "john@example.com" }]
-}, {
-  pollInterval: 1000,
-  maxPollTimes: 30
-});
-
-// Get task by ID
-const task = await humanExecutor.getTaskById(taskId);
-
-// Claim task as external user
-const claimedTask = await humanExecutor.claimTaskAsExternalUser(
-  taskId, 
-  "john@example.com",
-  { overrideAssignment: false, withTemplate: true }
-);
-
-// Claim task as conductor user
-const conductorClaimedTask = await humanExecutor.claimTaskAsConductorUser(
-  taskId,
-  { overrideAssignment: false, withTemplate: true }
-);
-
-// Release task
-await humanExecutor.releaseTask(taskId);
-
-// Update task output
-await humanExecutor.updateTaskOutput(taskId, {
-  output: {
-    approved: true,
-    comments: "Approved with conditions"
-  }
-});
-
-// Complete task
-await humanExecutor.completeTask(taskId, {
-  output: {
-    approved: true,
-    comments: "Task completed"
-  }
-});
-
-// Get template by name and version
-const template = await humanExecutor.getTemplateByNameVersion("approval_template", 1);
-
-// Get template by ID (deprecated, use getTemplateByNameVersion)
-const templateById = await humanExecutor.getTemplateById("approval_template");
-```
-
-### TemplateClient
-
-The `TemplateClient` class provides methods for managing human task templates (forms and UI). For a complete method reference, see the [TemplateClient API Reference](./docs/api-reference/template-client.md).
-
-```typescript
-import { TemplateClient } from "@io-orkes/conductor-javascript";
+import { HumanExecutor, TemplateClient } from "@io-orkes/conductor-javascript";
 
 const templateClient = new TemplateClient(client);
+const humanExecutor = new HumanExecutor(client);
 ```
 
-#### Register Form Template
+#### Step 2: Register a Form Template
+
+Define and register a form that will be presented to the user.
 
 ```typescript
 const formTemplate = {
-  name: "approval_form",
+  name: "simple_approval_form",
   version: 1,
-  description: "Order approval form template",
+  description: "A simple form for approvals",
   formTemplate: {
-    name: "Order Approval Form",
-    fields: [
-      {
+    name: "Approval Form",
+    fields: [{
         name: "approved",
         type: "boolean",
         required: true,
-        label: "Approve Order",
-        description: "Check to approve the order"
-      },
-      {
-        name: "comments",
-        type: "text",
-        required: false,
-        label: "Comments",
-        description: "Additional comments about the approval decision",
-        maxLength: 500
-      },
-      {
-        name: "approver_name",
-        type: "text",
-        required: true,
-        label: "Approver Name",
-        description: "Name of the person approving the order"
-      },
-      {
-        name: "approval_date",
-        type: "date",
-        required: true,
-        label: "Approval Date",
-        description: "Date of approval"
-      }
-    ],
-    validationRules: [
-      {
-        field: "approved",
-        rule: "required",
-        message: "Approval decision is required"
-      },
-      {
-        field: "approver_name",
-        rule: "minLength:2",
-        message: "Approver name must be at least 2 characters"
-      }
-    ]
+        label: "Approve Request",
+    }],
   },
-  uiTemplate: {
-    name: "Order Approval UI",
-    template: `
-      <div class="approval-form">
-        <h2>Order Approval</h2>
-        <div class="form-group">
-          <label>
-            <input type="checkbox" name="approved" required>
-            Approve Order
-          </label>
-        </div>
-        <div class="form-group">
-          <label for="comments">Comments:</label>
-          <textarea name="comments" rows="4" cols="50" maxlength="500"></textarea>
-        </div>
-        <div class="form-group">
-          <label for="approver_name">Approver Name:</label>
-          <input type="text" name="approver_name" required minlength="2">
-        </div>
-        <div class="form-group">
-          <label for="approval_date">Approval Date:</label>
-          <input type="date" name="approval_date" required>
-        </div>
-      </div>
-    `,
-    styles: `
-      .approval-form {
-        max-width: 600px;
-        margin: 0 auto;
-        padding: 20px;
-        font-family: Arial, sans-serif;
-      }
-      .form-group {
-        margin-bottom: 15px;
-      }
-      .form-group label {
-        display: block;
-        margin-bottom: 5px;
-        font-weight: bold;
-      }
-      .form-group input,
-      .form-group textarea {
-        width: 100%;
-        padding: 8px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-      }
-      .form-group input[type="checkbox"] {
-        width: auto;
-        margin-right: 8px;
-      }
-    `
-  },
-  tags: ["approval", "order", "form"],
-  ownerEmail: "template-owner@example.com"
 };
 
 await templateClient.registerTemplate(formTemplate);
 ```
 
-#### Register UI Template
+#### Step 3: Create a Workflow with a Human Task
+
+Now, define a workflow that uses the `humanTask` generator. The `taskDefinition` for the human task should specify the template to use.
 
 ```typescript
-const uiTemplate = {
-  name: "custom_ui_template",
-  version: 1,
-  description: "Custom UI template for human tasks",
-  uiTemplate: {
-    name: "Custom Task UI",
-    template: `
-      <div class="custom-task-ui">
-        <h1>Custom Task Interface</h1>
-        <div class="task-content">
-          <p>Task: {{taskName}}</p>
-          <p>Description: {{taskDescription}}</p>
-          <div class="task-inputs">
-            <!-- Dynamic form fields based on task input -->
-            {{#each taskInputs}}
-            <div class="input-field">
-              <label for="{{name}}">{{label}}:</label>
-              <input type="{{type}}" name="{{name}}" value="{{value}}" {{#if required}}required{{/if}}>
-            </div>
-            {{/each}}
-          </div>
-          <div class="task-actions">
-            <button type="button" onclick="completeTask()">Complete Task</button>
-            <button type="button" onclick="failTask()">Fail Task</button>
-          </div>
-        </div>
-      </div>
-    `,
-    styles: `
-      .custom-task-ui {
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        max-width: 800px;
-        margin: 0 auto;
-        padding: 20px;
-        background-color: #f5f5f5;
-        border-radius: 8px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-      }
-      .custom-task-ui h1 {
-        color: #333;
-        text-align: center;
-        margin-bottom: 30px;
-      }
-      .task-content {
-        background-color: white;
-        padding: 20px;
-        border-radius: 6px;
-        margin-bottom: 20px;
-      }
-      .input-field {
-        margin-bottom: 15px;
-      }
-      .input-field label {
-        display: block;
-        margin-bottom: 5px;
-        font-weight: 600;
-        color: #555;
-      }
-      .input-field input {
-        width: 100%;
-        padding: 10px;
-        border: 2px solid #e1e1e1;
-        border-radius: 4px;
-        font-size: 14px;
-        transition: border-color 0.3s ease;
-      }
-      .input-field input:focus {
-        outline: none;
-        border-color: #007bff;
-      }
-      .task-actions {
-        text-align: center;
-        margin-top: 20px;
-      }
-      .task-actions button {
-        background-color: #007bff;
-        color: white;
-        border: none;
-        padding: 12px 24px;
-        margin: 0 10px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 14px;
-        transition: background-color 0.3s ease;
-      }
-      .task-actions button:hover {
-        background-color: #0056b3;
-      }
-      .task-actions button:last-child {
-        background-color: #dc3545;
-      }
-      .task-actions button:last-child:hover {
-        background-color: #c82333;
-      }
-    `,
-    scripts: `
-      function completeTask() {
-        const formData = new FormData(document.querySelector('.custom-task-ui'));
-        const outputData = {};
-        for (let [key, value] of formData.entries()) {
-          outputData[key] = value;
-        }
-        
-        // Send completion data to Conductor
-        fetch('/api/tasks/complete', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            taskId: '{{taskId}}',
-            outputData: outputData,
-            status: 'COMPLETED'
-          })
-        })
-        .then(response => response.json())
-        .then(data => {
-          alert('Task completed successfully!');
-          window.close();
-        })
-        .catch(error => {
-          console.error('Error completing task:', error);
-          alert('Error completing task. Please try again.');
-        });
-      }
-      
-      function failTask() {
-        const reason = prompt('Please provide a reason for failing the task:');
-        if (reason) {
-          fetch('/api/tasks/fail', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              taskId: '{{taskId}}',
-              reasonForIncompletion: reason,
-              status: 'FAILED'
-            })
-          })
-          .then(response => response.json())
-          .then(data => {
-            alert('Task marked as failed.');
-            window.close();
-          })
-          .catch(error => {
-            console.error('Error failing task:', error);
-            alert('Error failing task. Please try again.');
-          });
-        }
-      }
-    `
-  },
-  tags: ["ui", "custom", "template"],
-  ownerEmail: "ui-developer@example.com"
+import { humanTask } from "@io-orkes/conductor-javascript";
+
+// Define the human task
+const approvalTask = humanTask(
+    "human_approval_ref",
+    "human_approval_task",
+    { template: "simple_approval_form" }
+);
+
+// Define the workflow
+const approvalWorkflow = {
+    name: "human_approval_workflow",
+    version: 1,
+    tasks: [approvalTask],
+    inputParameters: [],
+    ownerEmail: "dev@example.com",
 };
 
-await templateClient.registerTemplate(uiTemplate);
+// Register and start the workflow
+await executor.registerWorkflow(true, approvalWorkflow);
+const executionId = await executor.startWorkflow({
+    name: "human_approval_workflow",
+    version: 1,
+});
 ```
+
+#### Step 4: Find and Complete the Task
+
+In a real application, your backend or UI would search for pending tasks and present them to the user.
+
+```typescript
+// Search for pending tasks for a user
+const pendingTasks = await humanExecutor.search({
+  states: ["PENDING"],
+  // assignees: [{ userType: "EXTERNAL_USER", user: "user@example.com" }],
+});
+
+if (pendingTasks.results.length > 0) {
+  const taskId = pendingTasks.results[0].taskId;
+
+  // Claim the task
+  await humanExecutor.claimTaskAsExternalUser(taskId, "user@example.com");
+
+  // Complete the task with output
+  await humanExecutor.completeTask(taskId, {
+    output: {
+      approved: true,
+      comments: "Looks good, approved."
+    }
+  });
+
+  console.log(`Task ${taskId} completed.`);
+}
+```
+
+For a complete list of methods, see the [HumanExecutor API Reference](./docs/api-reference/human-executor.md) and the [TemplateClient API Reference](./docs/api-reference/template-client.md).
