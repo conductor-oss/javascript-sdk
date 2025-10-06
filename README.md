@@ -707,146 +707,24 @@ const searchResults = await executor.search(
 
 For a complete method reference for the `WorkflowExecutor` class, see the [WorkflowExecutor API Reference](./docs/api-reference/workflow-executor.md).
 
-Complete method reference for the `WorkflowExecutor` class:
+Here is a quick example of how to interact with a running workflow:
 
 ```typescript
 import { WorkflowExecutor } from "@io-orkes/conductor-javascript";
 
 const executor = new WorkflowExecutor(client);
-
-// ============================================================
-// Workflow Lifecycle
-// ============================================================
-
-// Register or update a workflow definition
-await executor.registerWorkflow(override: boolean, workflow: WorkflowDef): Promise<void>
-
-// Start a new workflow execution
-const workflowId = await executor.startWorkflow(request: StartWorkflowRequest): Promise<string>
-
-// Execute workflow synchronously and wait for completion
-const result = await executor.executeWorkflow(...): Promise<WorkflowRun | SignalResponse>
-
-// Get workflow execution details with tasks
-const workflow = await executor.getWorkflow(id: string, includeTasks: boolean): Promise<Workflow>
+const executionId = "your-workflow-execution-id";
 
 // Get workflow status summary
 const status = await executor.getWorkflowStatus(
-  id: string, 
-  includeOutput: boolean, 
-  includeVariables: boolean
-): Promise<WorkflowStatus>
+  executionId,
+  true,   // includeOutput
+  true    // includeVariables
+);
+console.log(`Workflow status: ${status.status}`);
 
-// Search workflows with filters
-const results = await executor.search(
-  start: number, 
-  size: number, 
-  query: string, 
-  freeText: string, 
-  sort?: string, 
-  skipCache?: boolean
-): Promise<SearchResultWorkflow>
-
-// ============================================================
-// Workflow Control
-// ============================================================
-
-// Pause a running workflow
-await executor.pause(workflowId: string): Promise<void>
-
-// Resume a paused workflow
-await executor.resume(workflowId: string): Promise<void>
-
-// Terminate a workflow with reason
-await executor.terminate(workflowId: string, reason: string): Promise<void>
-
-// Restart a workflow
-await executor.restart(workflowId: string, useLatestDefinitions: boolean): Promise<void>
-
-// Retry a failed workflow from last failed task
-await executor.retry(workflowId: string, resumeSubworkflowTasks: boolean): Promise<void>
-
-// Rerun a workflow with new parameters
-const newId = await executor.reRun(
-  workflowId: string, 
-  request?: Partial<RerunWorkflowRequest>
-): Promise<string>
-
-// Skip a task in a running workflow
-await executor.skipTasksFromWorkflow(
-  workflowId: string, 
-  taskRefName: string, 
-  request: Partial<SkipTaskRequest>
-): Promise<void>
-
-// ============================================================
-// Task Operations
-// ============================================================
-
-// Get task by ID
-const task = await executor.getTask(taskId: string): Promise<Task>
-
-// Update task by ID
-await executor.updateTask(
-  taskId: string, 
-  workflowId: string, 
-  status: TaskResultStatus, 
-  output: Record<string, any>
-): Promise<string>
-
-// Update task by reference name
-await executor.updateTaskByRefName(
-  taskRefName: string, 
-  workflowId: string, 
-  status: TaskResultStatus, 
-  output: Record<string, any>
-): Promise<string>
-
-// Update task and return updated workflow
-const updatedWorkflow = await executor.updateTaskSync(
-  taskRefName: string, 
-  workflowId: string, 
-  status: TaskResultStatusEnum, 
-  output: Record<string, any>, 
-  workerId?: string
-): Promise<Workflow>
-
-// Send signal to workflow
-const response = await executor.signal(
-  workflowId: string, 
-  status: TaskResultStatusEnum, 
-  output: Record<string, any>, 
-  returnStrategy?: ReturnStrategy
-): Promise<SignalResponse>
-
-// Send signal asynchronously (fire-and-forget)
-await executor.signalAsync(
-  workflowId: string, 
-  status: TaskResultStatusEnum, 
-  output: Record<string, any>
-): Promise<void>
-
-// ============================================================
-// Advanced Operations
-// ============================================================
-
-// Rerun from a specific task found by predicate
-await executor.goBackToTask(
-  workflowId: string, 
-  predicate: (task: Task) => boolean, 
-  overrides?: Partial<RerunWorkflowRequest>
-): Promise<void>
-
-// Rerun from first task of specific type
-await executor.goBackToFirstTaskMatchingType(
-  workflowId: string, 
-  taskType: string
-): Promise<void>
-
-// Start multiple workflows at once
-const workflowIds = executor.startWorkflows(
-  requests: StartWorkflowRequest[]
-): Promise<string>[]
+// Terminate a workflow with a reason
+await executor.terminate(executionId, "Terminating due to error");
 ```
 
 ### Monitoring & Debugging Tasks
@@ -1478,39 +1356,6 @@ The `MetadataClient` class provides methods for managing task and workflow defin
 import { MetadataClient } from "@io-orkes/conductor-javascript";
 
 const metadataClient = new MetadataClient(client);
-```
-
-#### Complete MetadataClient API Reference
-
-```typescript
-// Task Definition Management
-await metadataClient.registerTask(taskDef: TaskDef): Promise<void>
-await metadataClient.updateTask(taskDef: TaskDef): Promise<void>
-const taskDef = await metadataClient.getTaskDef(taskName: string): Promise<TaskDef>
-const allTasks = await metadataClient.getAllTaskDefs(): Promise<TaskDef[]>
-await metadataClient.unregisterTask(taskName: string): Promise<void>
-
-// Workflow Definition Management
-await metadataClient.registerWorkflowDef(
-  workflowDef: WorkflowDef,
-  overwrite?: boolean  // (optional, default: false)
-): Promise<void>
-
-await metadataClient.updateWorkflowDef(workflowDef: WorkflowDef): Promise<void>
-
-const workflowDef = await metadataClient.getWorkflowDef(
-  workflowName: string,
-  version?: number  // (optional) uses latest if not specified
-): Promise<WorkflowDef>
-
-const allVersions = await metadataClient.getAllWorkflowDefs(
-  workflowName: string
-): Promise<WorkflowDef[]>
-
-await metadataClient.unregisterWorkflow(
-  workflowName: string,
-  version: number
-): Promise<void>
 ```
 
 ### Task Definition Factory
