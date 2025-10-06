@@ -234,18 +234,21 @@ Workflows are the heart of Conductor, orchestrating tasks to perform complex pro
 
 ### The WorkflowExecutor and TaskClient
 
--   **`WorkflowExecutor`**: The primary tool for managing the workflow lifecycle (e.g., registering, starting, and stopping).
--   **`TaskClient`**: Used for searching and retrieving details of individual tasks within a workflow execution.
+-   **`WorkflowExecutor`**: The primary tool for managing the workflow lifecycle (e.g., registering, starting, and stopping). For a complete method reference, see the [WorkflowExecutor API Reference](./docs/api-reference/workflow-executor.md).
+-   **`TaskClient`**: Used for searching and retrieving details of individual tasks within a workflow execution. For a complete method reference, see the [TaskClient API Reference](./docs/api-reference/task-client.md).
+
+### Quick Start: Creating a Workflow
+
+First, create instances of the `WorkflowExecutor` and `TaskClient`:
 
 ```typescript
 import { WorkflowExecutor, TaskClient } from "@io-orkes/conductor-javascript";
 
-// Create an executor instance
 const executor = new WorkflowExecutor(client);
 const taskClient = new TaskClient(client);
 ```
 
-### Quick Start: Creating a Workflow
+Now, you can create and manage a workflow in four steps:
 
 #### Step 1: Define Your Workflow Structure
 
@@ -270,7 +273,7 @@ const workflowDef = {
 };
 ```
 
-#### Step 2: Build Your Task List
+#### Step 2: Build Your Task List Using Task Generators
 
 Use **Task Generators** to populate the `tasks` array. These helper functions simplify the creation of different task types.
 
@@ -435,18 +438,7 @@ The `TaskManager` class in this SDK simplifies the process of creating and manag
 
 ### The TaskManager
 
-The `TaskManager` is the primary tool for managing workers. It handles polling, task execution, and result reporting, allowing you to run multiple workers concurrently.
-
-```typescript
-import { TaskManager } from "@io-orkes/conductor-javascript";
-
-const manager = new TaskManager(client, workers, {
-  options: {
-    concurrency: 5,
-    pollInterval: 100,
-  }
-});
-```
+The `TaskManager` is the primary tool for managing workers. It handles polling, task execution, and result reporting, allowing you to run multiple workers concurrently. For a complete method reference, see the [TaskManager API Reference](./docs/api-reference/task-manager.md).
 
 ### Quick Start: Building a Worker
 
@@ -546,13 +538,7 @@ The Conductor Scheduler allows you to run workflows at specific times or interva
 
 ### The SchedulerClient
 
-The `SchedulerClient` is used to create, manage, and delete workflow schedules.
-
-```typescript
-import { SchedulerClient } from "@io-orkes/conductor-javascript";
-
-const scheduler = new SchedulerClient(client);
-```
+The `SchedulerClient` is used to create, manage, and delete workflow schedules. For a complete method reference, see the [SchedulerClient API Reference](./docs/api-reference/scheduler-client.md).
 
 ### Quick Start: Scheduling a Workflow
 
@@ -619,13 +605,7 @@ The Service Registry in Conductor allows you to manage and discover microservice
 
 ### The ServiceRegistryClient
 
-The `ServiceRegistryClient` is used to register, manage, and discover services.
-
-```typescript
-import { ServiceRegistryClient } from "@io-orkes/conductor-javascript";
-
-const serviceRegistry = new ServiceRegistryClient(client);
-```
+The `ServiceRegistryClient` is used to register, manage, and discover services. For a complete method reference, see the [ServiceRegistryClient API Reference](./docs/api-reference/service-registry-client.md).
 
 ### Quick Start: Using the Service Registry
 
@@ -683,13 +663,7 @@ In Conductor, "metadata" refers to the definitions of your tasks and workflows. 
 
 ### The MetadataClient
 
-The `MetadataClient` is used to register and manage task and workflow definitions.
-
-```typescript
-import { MetadataClient, taskDefinition, workflowDef } from "@io-orkes/conductor-javascript";
-
-const metadataClient = new MetadataClient(client);
-```
+The `MetadataClient` is used to register and manage task and workflow definitions. For a complete method reference, see the [MetadataClient API Reference](./docs/api-reference/metadata-client.md).
 
 ### Quick Start: Managing Metadata
 
@@ -755,15 +729,8 @@ Unlike other tasks, human tasks are managed through a dedicated API (`HumanExecu
 
 ### The HumanExecutor and TemplateClient
 
--   **`HumanExecutor`**: Manages the lifecycle of human tasks—searching, claiming, and completing them.
--   **`TemplateClient`**: Manages the UI forms and templates that are presented to users.
-
-```typescript
-import { HumanExecutor, TemplateClient } from "@io-orkes/conductor-javascript";
-
-const humanExecutor = new HumanExecutor(client);
-const templateClient = new TemplateClient(client);
-```
+-   **`HumanExecutor`**: Manages the lifecycle of human tasks—searching, claiming, and completing them. For a complete method reference, see the [HumanExecutor API Reference](./docs/api-reference/human-executor.md).
+-   **`TemplateClient`**: Manages the UI forms and templates that are presented to users. For a complete method reference, see the [TemplateClient API Reference](./docs/api-reference/template-client.md).
 
 ### Quick Start: Creating and Managing a Human Task
 
