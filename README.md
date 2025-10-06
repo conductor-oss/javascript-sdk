@@ -235,8 +235,8 @@ Workflows are the heart of Conductor, orchestrating tasks to perform complex pro
 
 ### The WorkflowExecutor and TaskClient
 
--   **`WorkflowExecutor`**: The primary tool for managing the workflow lifecycle (e.g., registering, starting, and stopping). For a complete method reference, see the [WorkflowExecutor API Reference](./docs/api-reference/workflow-executor.md).
--   **`TaskClient`**: Used for searching and retrieving details of individual tasks within a workflow execution. For a complete method reference, see the [TaskClient API Reference](./docs/api-reference/task-client.md).
+-   **`WorkflowExecutor`**: The primary tool for managing the workflow lifecycle (e.g., registering, starting, and stopping). For a complete method reference, see the [WorkflowExecutor API Reference](docs/api-reference/workflow-executor.md).
+-   **`TaskClient`**: Used for searching and retrieving details of individual tasks within a workflow execution. For a complete method reference, see the [TaskClient API Reference](docs/api-reference/task-client.md).
 
 ### Quick Start: Creating a Workflow
 
@@ -316,7 +316,7 @@ workflowDef.tasks = tasks;
 **Key Concepts:**
 - **`taskReferenceName`**: A unique identifier for a task instance within a workflow. Used for data flow (e.g., `${check_inventory_ref.output.inStock}`).
 - **Input Parameters**: Use `${workflow.input.fieldName}` to access initial workflow inputs and `${task_ref.output.fieldName}` to access outputs from previous tasks.
-- **Task Generators**: Helper functions like `simpleTask`, `httpTask`, etc., that create task definitions. For a complete list, see the [Task Generators Reference](./docs/api-reference/task-generators.md).
+- **Task Generators**: Helper functions like `simpleTask`, `httpTask`, etc., that create task definitions. For a complete list, see the [Task Generators Reference](docs/api-reference/task-generators.md).
 
 #### Step 3: Register and Start Your Workflow
 
@@ -414,7 +414,7 @@ const failedTasks = await taskClient.search(
 const taskDetails = await taskClient.getTask(failedTasks.results[0].taskId);
 ```
 
-For a complete list of methods, see the [WorkflowExecutor API Reference](./docs/api-reference/workflow-executor.md) and the [TaskClient API Reference](./docs/api-reference/task-client.md).
+For a complete list of methods, see the [WorkflowExecutor API Reference](docs/api-reference/workflow-executor.md) and the [TaskClient API Reference](docs/api-reference/task-client.md).
 
 ## Workers
 
@@ -433,7 +433,7 @@ The `TaskManager` class in this SDK simplifies the process of creating and manag
 
 ### The TaskManager
 
-The `TaskManager` is the primary tool for managing workers. It handles polling, task execution, and result reporting, allowing you to run multiple workers concurrently. For a complete method reference, see the [TaskManager API Reference](./docs/api-reference/task-manager.md).
+The `TaskManager` is the primary tool for managing workers. It handles polling, task execution, and result reporting, allowing you to run multiple workers concurrently. For a complete method reference, see the [TaskManager API Reference](docs/api-reference/task-manager.md).
 
 ### Quick Start: Building a Worker
 
@@ -517,7 +517,7 @@ await manager.startPolling();
 console.log("Worker is running!");
 ```
 
-For a complete method reference, see the [TaskManager API Reference](./docs/api-reference/task-manager.md).
+For a complete method reference, see the [TaskManager API Reference](docs/api-reference/task-manager.md).
 
 ### Worker Design Principles
 
@@ -533,7 +533,7 @@ The Conductor Scheduler allows you to run workflows at specific times or interva
 
 ### The SchedulerClient
 
-The `SchedulerClient` is used to create, manage, and delete workflow schedules. For a complete method reference, see the [SchedulerClient API Reference](./docs/api-reference/scheduler-client.md).
+The `SchedulerClient` is used to create, manage, and delete workflow schedules. For a complete method reference, see the [SchedulerClient API Reference](docs/api-reference/scheduler-client.md).
 
 ### Quick Start: Scheduling a Workflow
 
@@ -592,7 +592,7 @@ await scheduler.resumeSchedule("daily_report_schedule");
 await scheduler.deleteSchedule("daily_report_schedule");
 ```
 
-For a complete method reference, see the [SchedulerClient API Reference](./docs/api-reference/scheduler-client.md).
+For a complete method reference, see the [SchedulerClient API Reference](docs/api-reference/scheduler-client.md).
 
 ## Service Registry
 
@@ -600,7 +600,7 @@ The Service Registry in Conductor allows you to manage and discover microservice
 
 ### The ServiceRegistryClient
 
-The `ServiceRegistryClient` is used to register, manage, and discover services. For a complete method reference, see the [ServiceRegistryClient API Reference](./docs/api-reference/service-registry-client.md).
+The `ServiceRegistryClient` is used to register, manage, and discover services. For a complete method reference, see the [ServiceRegistryClient API Reference](docs/api-reference/service-registry-client.md).
 
 ### Quick Start: Using the Service Registry
 
@@ -650,7 +650,7 @@ const service = await serviceRegistry.getService("user-service");
 await serviceRegistry.removeService("user-service");
 ```
 
-For a complete method reference, see the [ServiceRegistryClient API Reference](./docs/api-reference/service-registry-client.md).
+For a complete method reference, see the [ServiceRegistryClient API Reference](docs/api-reference/service-registry-client.md).
 
 ## Metadata
 
@@ -658,7 +658,7 @@ In Conductor, "metadata" refers to the definitions of your tasks and workflows. 
 
 ### The MetadataClient
 
-The `MetadataClient` is used to register and manage task and workflow definitions. For a complete method reference, see the [MetadataClient API Reference](./docs/api-reference/metadata-client.md).
+The `MetadataClient` is used to register and manage task and workflow definitions. For a complete method reference, see the [MetadataClient API Reference](docs/api-reference/metadata-client.md).
 
 ### Quick Start: Managing Metadata
 
@@ -714,7 +714,7 @@ const wf = {
 await metadataClient.registerWorkflowDef(wf);
 ```
 
-For a complete method reference, see the [MetadataClient API Reference](./docs/api-reference/metadata-client.md).
+For a complete method reference, see the [MetadataClient API Reference](docs/api-reference/metadata-client.md).
 
 ## Human Tasks
 
@@ -724,8 +724,8 @@ Unlike other tasks, human tasks are managed through a dedicated API (`HumanExecu
 
 ### The HumanExecutor and TemplateClient
 
--   **`HumanExecutor`**: Manages the lifecycle of human tasks—searching, claiming, and completing them. For a complete method reference, see the [HumanExecutor API Reference](./docs/api-reference/human-executor.md).
--   **`TemplateClient`**: Manages the UI forms and templates that are presented to users. For a complete method reference, see the [TemplateClient API Reference](./docs/api-reference/template-client.md).
+-   **`HumanExecutor`**: Manages the lifecycle of human tasks—searching, claiming, and completing them. For a complete method reference, see the [HumanExecutor API Reference](docs/api-reference/human-executor.md).
+-   **`TemplateClient`**: Manages the UI forms and templates that are presented to users. For a complete method reference, see the [TemplateClient API Reference](docs/api-reference/template-client.md).
 
 ### Quick Start: Creating and Managing a Human Task
 
@@ -825,4 +825,4 @@ if (pendingTasks.results.length > 0) {
 }
 ```
 
-For a complete list of methods, see the [HumanExecutor API Reference](./docs/api-reference/human-executor.md) and the [TemplateClient API Reference](./docs/api-reference/template-client.md).
+For a complete list of methods, see the [HumanExecutor API Reference](docs/api-reference/human-executor.md) and the [TemplateClient API Reference](docs/api-reference/template-client.md).
