@@ -31,16 +31,18 @@ Show support for the Conductor OSS.  Please help spread the awareness by starrin
   - [SIMPLE Tasks - Require Custom Workers](#simple-tasks---require-custom-workers)
 - [Workflows](#workflows)
   - [The WorkflowExecutor](#the-workflowexecutor)
-  - [Step 1: Define Your Workflow Structure](#step-1-define-your-workflow-structure)
-  - [Step 2: Build Your Task List](#step-2-build-your-task-list)
-  - [Step 3: Register and Start Your Workflow](#step-3-register-and-start-your-workflow)
-  - [Step 4: Manage and Monitor Execution](#step-4-manage-and-monitor-execution)
+  - [Quick Start: Creating a Workflow](#quick-start-creating-a-workflow)
+    - [Step 1: Define Your Workflow Structure](#step-1-define-your-workflow-structure)
+    - [Step 2: Build Your Task List](#step-2-build-your-task-list)
+    - [Step 3: Register and Start Your Workflow](#step-3-register-and-start-your-workflow)
+    - [Step 4: Manage and Monitor Execution](#step-4-manage-and-monitor-execution)
 - [Workers](#workers)
   - [The TaskManager](#the-taskmanager)
   - [Quick Start: Building a Worker](#quick-start-building-a-worker)
     - [Step 1: Define the Worker's Logic](#step-1-define-the-workers-logic)
     - [Step 2: Handle Task Outcomes and Errors](#step-2-handle-task-outcomes-and-errors)
     - [Step 3: Run the Worker with TaskManager](#step-3-run-the-worker-with-taskmanager)
+  - [Worker Design Principles](#worker-design-principles)
 - [Scheduling](#scheduling)
   - [The SchedulerClient](#the-schedulerclient)
   - [Quick Start: Scheduling a Workflow](#quick-start-scheduling-a-workflow)
@@ -241,7 +243,9 @@ import { WorkflowExecutor } from "@io-orkes/conductor-javascript";
 const executor = new WorkflowExecutor(client);
 ```
 
-### Step 1: Define Your Workflow Structure
+### Quick Start: Creating a Workflow
+
+#### Step 1: Define Your Workflow Structure
 
 A workflow definition is a blueprint for your process. It outlines the workflow's properties and the sequence of tasks.
 
@@ -264,7 +268,7 @@ const workflowDef = {
 };
 ```
 
-### Step 2: Build Your Task List
+#### Step 2: Build Your Task List
 
 Use **Task Generators** to populate the `tasks` array. These helper functions simplify the creation of different task types.
 
@@ -273,37 +277,37 @@ import { simpleTask, httpTask, switchTask } from "@io-orkes/conductor-javascript
 
 const tasks = [
   // Task 1: A custom task to validate the order
-  simpleTask(
+    simpleTask(
     "validate_order_ref",
     "validate_order",
     {
-      orderId: "${workflow.input.orderId}",
-      customerId: "${workflow.input.customerId}"
-    }
-  ),
-  
-  // Task 2: An HTTP task to check inventory
-  httpTask(
-    "check_inventory_ref",
-    {
-      uri: "https://api.inventory.com/check",
-      method: "POST",
-      body: {
-        productId: "${workflow.input.productId}",
-        quantity: "${workflow.input.quantity}"
+        orderId: "${workflow.input.orderId}",
+        customerId: "${workflow.input.customerId}"
       }
-    }
-  ),
-  
+    ),
+    
+  // Task 2: An HTTP task to check inventory
+    httpTask(
+      "check_inventory_ref",
+      {
+        uri: "https://api.inventory.com/check",
+        method: "POST",
+        body: {
+          productId: "${workflow.input.productId}",
+          quantity: "${workflow.input.quantity}"
+        }
+      }
+    ),
+    
   // Task 3: A switch task for conditional logic
-  switchTask(
-    "route_order_ref",
-    "${check_inventory_ref.output.inStock}",
-    {
-      "true": [
+    switchTask(
+      "route_order_ref",
+      "${check_inventory_ref.output.inStock}",
+      {
+        "true": [
         simpleTask("fulfill_order_ref", "fulfill_order", {})
-      ],
-      "false": [
+        ],
+        "false": [
         simpleTask("backorder_ref", "create_backorder", {})
       ]
     }
@@ -319,7 +323,7 @@ workflowDef.tasks = tasks;
 - **Input Parameters**: Use `${workflow.input.fieldName}` to access initial workflow inputs and `${task_ref.output.fieldName}` to access outputs from previous tasks.
 - **Task Generators**: Helper functions like `simpleTask`, `httpTask`, etc., that create task definitions. For a complete list, see the [Task Generators Reference](./docs/api-reference/task-generators.md).
 
-### Step 3: Register and Start Your Workflow
+#### Step 3: Register and Start Your Workflow
 
 With the definition complete, register it with Conductor and start an execution.
 
@@ -342,11 +346,11 @@ const executionId = await executor.startWorkflow({
 console.log(`Workflow started with ID: ${executionId}`);
 ```
 
-### Step 4: Manage and Monitor Execution
+#### Step 4: Manage and Monitor Execution
 
 Once a workflow is running, you can monitor its status, control its execution, and debug individual tasks.
 
-#### Check Workflow Status
+##### Check Workflow Status
 
 Retrieve the current status and output of a running workflow.
 
@@ -359,7 +363,7 @@ const status = await executor.getWorkflowStatus(
 console.log(`Workflow status is: ${status.status}`);
 ```
 
-#### Control Workflow Execution
+##### Control Workflow Execution
 
 You can pause, resume, or terminate workflows as needed.
 
@@ -374,7 +378,7 @@ await executor.resume(executionId);
 await executor.terminate(executionId, "Aborted due to customer cancellation");
 ```
 
-#### Search for Workflows
+##### Search for Workflows
 
 Search for workflow executions based on various criteria.
 
@@ -388,7 +392,7 @@ const searchResults = await executor.search(
 );
 ```
 
-#### Monitor and Debug Tasks
+##### Monitor and Debug Tasks
 
 For a deeper look into the tasks within a workflow, use the `TaskClient`.
 
@@ -448,11 +452,7 @@ Building a robust worker involves defining its logic, handling outcomes, and man
 
 #### Step 1: Define the Worker's Logic
 
-A worker is an object that defines a `taskDefName` (which must match the task name in your workflow) and an `execute` function containing your business logic. When designing workers, it's best to follow these principles:
-
-- **Stateless**: Workers should not rely on local state.
-- **Idempotent**: The same task input should always produce the same result.
-- **Single Responsibility**: Each worker should be responsible for one specific task type.
+A worker is an object that defines a `taskDefName` (which must match the task name in your workflow) and an `execute` function containing your business logic. 
 
 ```typescript
 import { ConductorWorker } from "@io-orkes/conductor-javascript";
@@ -529,6 +529,14 @@ console.log("Worker is running!");
 ```
 
 For a complete method reference, see the [TaskManager API Reference](./docs/api-reference/task-manager.md).
+
+### Worker Design Principles
+
+When designing workers, it's best to follow these principles:
+
+-   **Stateless**: Workers should not rely on local state.
+-   **Idempotent**: The same task input should always produce the same result.
+-   **Single Responsibility**: Each worker should be responsible for one specific task type.
 
 ## Scheduling
 
