@@ -62,3 +62,34 @@ Updates the result of a task.
 **Returns:**
 
 -   `Promise<TaskResult>`: The result of the task update.
+
+---
+
+## Type Definitions
+
+### `SearchResultTask`
+| Property | Type | Description |
+| --- | --- | --- |
+| `totalHits` | `number` | The total number of hits. |
+| `results` | `Task[]` | The search results. |
+
+### `TaskResult`
+| Property | Type | Description |
+| --- | --- | --- |
+| `workflowInstanceId` | `string` | The ID of the workflow instance. |
+| `taskId` | `string` | The ID of the task. |
+| `reasonForIncompletion` | `string` | The reason for incompletion. |
+| `callbackAfterSeconds` | `number` | The callback after seconds. |
+| `workerId` | `string` | The ID of the worker. |
+| `status` | `'IN_PROGRESS' \| 'FAILED' \| 'FAILED_WITH_TERMINAL_ERROR' \| 'COMPLETED'` | The status of the task. |
+| `outputData` | `Record<string, any>` | The output data of the task. |
+| `logs` | `TaskExecLog[]` | The execution logs of the task. |
+| `externalOutputPayloadStoragePath`| `string` | The path to the external output payload storage. |
+| `subWorkflowId` | `string` | The ID of the sub-workflow. |
+
+### `TaskExecLog`
+| Property | Type | Description |
+| --- | --- | --- |
+| `log` | `string` | The log message. |
+| `taskId` | `string` | The ID of the task. |
+| `createdTime` | `number` | The creation time of the log. |

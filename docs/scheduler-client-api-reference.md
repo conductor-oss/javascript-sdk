@@ -162,3 +162,55 @@ Resumes all scheduling in the Conductor server instance.
 **Returns:**
 
 -   `Promise<void>`
+
+---
+
+## Type Definitions
+
+### `SaveScheduleRequest`
+| Property | Type | Description |
+| --- | --- | --- |
+| `name` | `string` | The name of the schedule. |
+| `cronExpression` | `string` | The cron expression for the schedule. |
+| `runCatchupScheduleInstances` | `boolean` | Whether to run catch-up schedule instances. |
+| `paused` | `boolean` | Whether the schedule is paused. |
+| `startWorkflowRequest` | `StartWorkflowRequest` | The request to start a workflow. |
+| `createdBy` | `string` | The user who created the schedule. |
+| `updatedBy` | `string` | The user who last updated the schedule. |
+| `scheduleStartTime` | `number` | The start time for the schedule. |
+| `scheduleEndTime` | `number` | The end time for the schedule. |
+
+### `SearchResultWorkflowScheduleExecutionModel`
+| Property | Type | Description |
+| --- | --- | --- |
+| `totalHits` | `number` | The total number of hits. |
+| `results` | `WorkflowScheduleExecutionModel[]` | The search results. |
+
+### `WorkflowSchedule`
+| Property | Type | Description |
+| --- | --- | --- |
+| `name` | `string` | The name of the schedule. |
+| `cronExpression` | `string` | The cron expression for the schedule. |
+| `runCatchupScheduleInstances` | `boolean` | Whether to run catch-up schedule instances. |
+| `paused` | `boolean` | Whether the schedule is paused. |
+| `startWorkflowRequest` | `StartWorkflowRequest` | The request to start a workflow. |
+| `scheduleStartTime` | `number` | The start time for the schedule. |
+| `scheduleEndTime` | `number` | The end time for the schedule. |
+| `createTime` | `number` | The creation time of the schedule. |
+| `updatedTime` | `number` | The last update time of the schedule. |
+| `createdBy` | `string` | The user who created the schedule. |
+| `updatedBy` | `string` | The user who last updated the schedule. |
+
+### `WorkflowScheduleExecutionModel`
+| Property | Type | Description |
+| --- | --- | --- |
+| `executionId` | `string` | The ID of the execution. |
+| `scheduleName` | `string` | The name of the schedule. |
+| `scheduledTime` | `number` | The scheduled time of the execution. |
+| `executionTime` | `number` | The execution time. |
+| `workflowName` | `string` | The name of the workflow. |
+| `workflowId` | `string` | The ID of the workflow instance. |
+| `reason` | `string` | The reason for the execution status. |
+| `stackTrace` | `string` | The stack trace for a failed execution. |
+| `startWorkflowRequest` | `StartWorkflowRequest` | The request to start a workflow. |
+| `state` | `'POLLED' \| 'FAILED' \| 'EXECUTED'` | The state of the execution. |

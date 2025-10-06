@@ -86,3 +86,35 @@ Unregisters a workflow definition.
 
 -   `Promise<void>`
 
+---
+
+## Type Definitions
+
+### `TaskDef`
+| Property | Type | Description |
+| --- | --- | --- |
+| `ownerApp` | `string` | The owner app of the task. |
+| `createTime` | `number` | The creation time of the task. |
+| `updateTime` | `number` | The last update time of the task. |
+| `createdBy` | `string` | The user who created the task. |
+| `updatedBy` | `string` | The user who last updated the task. |
+| `name` | `string` | The name of the task. |
+| `description` | `string` | The description of the task. |
+| `retryCount` | `number` | The retry count. |
+| `timeoutSeconds` | `number` | The timeout in seconds. |
+| `inputKeys` | `string[]` | The input keys of the task. |
+| `outputKeys` | `string[]` | The output keys of the task. |
+| `timeoutPolicy` | `'RETRY' \| 'TIME_OUT_WF' \| 'ALERT_ONLY'` | The timeout policy of the task. |
+| `retryLogic` | `'FIXED' \| 'EXPONENTIAL_BACKOFF' \| 'LINEAR_BACKOFF'` | The retry logic of the task. |
+| `retryDelaySeconds` | `number` | The retry delay in seconds. |
+| `responseTimeoutSeconds` | `number` | The response timeout in seconds. |
+| `concurrentExecLimit` | `number` | The concurrent execution limit. |
+| `inputTemplate` | `Record<string, any>` | The input template of the task. |
+| `rateLimitPerFrequency` | `number` | The rate limit per frequency. |
+| `rateLimitFrequencyInSeconds` | `number` | The rate limit frequency in seconds. |
+| `isolationGroupId` | `string` | The isolation group ID. |
+| `executionNameSpace` | `string` | The execution namespace. |
+| `ownerEmail` | `string` | The owner email of the task. |
+| `pollTimeoutSeconds` | `number` | The poll timeout in seconds. |
+| `backoffScaleFactor` | `number` | The backoff scale factor. |
+

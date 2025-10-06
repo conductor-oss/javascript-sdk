@@ -180,3 +180,93 @@ Completes a task.
 **Returns:**
 
 -   `Promise<void>`
+
+---
+
+## Type Definitions
+
+### `HumanTaskEntry`
+| Property | Type | Description |
+| --- | --- | --- |
+| `assignee` | `HumanTaskUser` | The user assigned to the task. |
+| `claimant`| `HumanTaskUser` | The user who has claimed the task. |
+| `createdBy` | `string` | The user who created the task. |
+| `createdOn` | `number` | The time the task was created. |
+| `definitionName`| `string` | The name of the task definition. |
+| `displayName` | `string` | The display name of the task. |
+| `humanTaskDef`| `HumanTaskDefinition` | The task definition. |
+| `input` | `Record<string, any>` | The input data for the task. |
+| `output`| `Record<string, any>` | The output data for the task. |
+| `state` | `'PENDING' \| 'ASSIGNED' \| 'IN_PROGRESS' \| 'COMPLETED' \| 'TIMED_OUT' \| 'DELETED'` | The state of the task. |
+| `taskId`| `string` | The ID of the task. |
+| `taskRefName` | `string` | The reference name of the task. |
+| `updatedBy` | `string` | The user who last updated the task. |
+| `updatedOn` | `number` | The time the task was last updated. |
+| `workflowId`| `string` | The ID of the workflow instance. |
+| `workflowName`| `string` | The name of the workflow. |
+
+### `HumanTaskUser`
+| Property | Type | Description |
+| --- | --- | --- |
+| `user` | `string` | The user or group ID. |
+| `userType`| `'EXTERNAL_USER' \| 'EXTERNAL_GROUP' \| 'CONDUCTOR_USER' \| 'CONDUCTOR_GROUP'` | The type of the user. |
+
+### `HumanTaskDefinition`
+| Property | Type | Description |
+| --- | --- | --- |
+| `assignmentCompletionStrategy` | `'LEAVE_OPEN' \| 'TERMINATE'` | The strategy for completing the assignment. |
+| `assignments` | `HumanTaskAssignment[]` | A list of assignments for the task. |
+| `taskTriggers` | `HumanTaskTrigger[]` | A list of triggers for the task. |
+| `userFormTemplate` | `UserFormTemplate` | The user form template for the task. |
+
+### `HumanTaskAssignment`
+| Property | Type | Description |
+| --- | --- | --- |
+| `assignee` | `HumanTaskUser` | The user or group assigned to the task. |
+| `slaMinutes` | `number` | The service level agreement in minutes. |
+
+### `HumanTaskTrigger`
+| Property | Type | Description |
+| --- | --- | --- |
+| `startWorkflowRequest` | `StartWorkflowRequest` | The request to start a workflow. |
+| `triggerType` | `'ASSIGNEE_CHANGED' \| 'PENDING' \| 'IN_PROGRESS' \| 'ASSIGNED' \| 'COMPLETED' \| 'TIMED_OUT'` | The type of the trigger. |
+
+### `UserFormTemplate`
+| Property | Type | Description |
+| --- | --- | --- |
+| `name` | `string` | The name of the template. |
+| `version` | `number` | The version of the template. |
+
+### `StartWorkflowRequest`
+| Property | Type | Description |
+| --- | --- | --- |
+| `name` | `string` | The name of the workflow. |
+| `version` | `number` | The version of the workflow. |
+| `correlationId` | `string` | The correlation ID of the workflow. |
+| `input` | `Record<string, any>` | The input data for the workflow. |
+| `taskToDomain` | `Record<string, string>` | A map of task reference names to domains. |
+| `workflowDef` | `WorkflowDef` | The workflow definition. |
+| `externalInputPayloadStoragePath`| `string` | The path to the external input payload storage. |
+| `idempotencyKey` | `string` | The idempotency key for the workflow. |
+| `idempotencyStrategy` | `'FAIL' \| 'RETURN_EXISTING'` | The idempotency strategy for the workflow. |
+| `priority` | `number` | The priority of the workflow. |
+| `createdBy` | `string` | The user who created the workflow. |
+
+### `HumanTaskSearch`
+| Property | Type | Description |
+| --- | --- | --- |
+| `size` | `number` | The number of results to return. |
+| `states` | `string[]` | A list of states to filter by. |
+| `taskInputQuery` | `string` | A query to filter tasks by their input data. |
+| `taskOutputQuery` | `string` | A query to filter tasks by their output data. |
+| `definitionNames` | `string[]` | A list of task definition names to filter by. |
+| `taskRefNames` | `string[]` | A list of task reference names to filter by. |
+| `claimants` | `HumanTaskUser[]` | A list of claimants to filter by. |
+| `assignees` | `HumanTaskUser[]` | A list of assignees to filter by. |
+| `start` | `number` | The starting offset. |
+
+### `PollIntervalOptions`
+| Property | Type | Description |
+| --- | --- | --- |
+| `pollInterval` | `number` | The interval in milliseconds to poll for tasks. |
+| `maxPollTimes` | `number` | The maximum number of times to poll for tasks. |

@@ -28,3 +28,19 @@ Registers a new human task template.
 **Returns:**
 
 -   `Promise<HumanTaskTemplate>`: The registered template.
+
+---
+
+## Type Definitions
+
+### `HumanTaskTemplate`
+| Property | Type | Description |
+| --- | --- | --- |
+| `createdBy` | `string` | The user who created the template. |
+| `createdOn` | `number` | The creation time of the template. |
+| `jsonSchema` | `Record<string, any>` | The JSON schema of the template. |
+| `name` | `string` | The name of the template. |
+| `templateUI` | `Record<string, any>` | The UI of the template. |
+| `updatedBy` | `string` | The user who last updated the template. |
+| `updatedOn` | `number` | The last update time of the template. |
+| `version` | `number` | The version of the template. |
