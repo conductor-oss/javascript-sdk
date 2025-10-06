@@ -430,7 +430,7 @@ For a complete list of methods, see the [WorkflowExecutor API Reference](./docs/
 
 ## Workers
 
-Workers are background processes that execute your custom code as part of a workflow. Think of them as specialized functions that:
+Workers are background processes that execute tasks in your workflows. Think of them as specialized functions that:
 
 1.  **Poll** the Conductor server for tasks.
 2.  **Execute** your business logic when a task is assigned.
