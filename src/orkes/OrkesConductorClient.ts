@@ -13,7 +13,7 @@ import { REFRESH_TOKEN_IN_MILLISECONDS } from "./constants";
  * @returns
  */
 export const orkesConductorClient = async (
-  config?: Partial<OrkesApiConfig>,
+  config?: OrkesApiConfig,
   customFetch?: FetchFn
 ) => {
   const { serverUrl, keyId, keySecret, maxHttp2Connections } =
