@@ -1,26 +1,17 @@
-import eslint from '@eslint/js';
-import tseslint from 'typescript-eslint';
+import eslint from "@eslint/js";
+import tseslint from "typescript-eslint";
 import { defineConfig } from "eslint/config";
 
 export default defineConfig(
-    eslint.configs.recommended,
-    tseslint.configs.recommended, // to remove
-    //tseslint.configs.strict, // to add
-    //tseslint.configs.stylistic, // to add
-    {
-        rules: {
-            '@typescript-eslint/no-unused-vars': ['error', {
-                argsIgnorePattern: '^_',
-                varsIgnorePattern: '^_'
-            }], //to remove
-            '@typescript-eslint/explicit-function-return-type': 'off', // to remove
-            '@typescript-eslint/explicit-module-boundary-types': 'off', // to remove
-            '@typescript-eslint/no-explicit-any': 'off', // to remove
-            '@typescript-eslint/no-wrapper-object-types': 'off', // to remove
-            '@typescript-eslint/no-unsafe-function-type': 'off', // to remove
-        },
-    },
-    {
-        ignores: ['dist/**', 'src/common/open-api/**', 'docs/**', 'node_modules/**'],
-    },
+  eslint.configs.recommended,
+  tseslint.configs.strict,
+  tseslint.configs.stylistic,
+  {
+    ignores: [
+      "dist/**",
+      "src/common/open-api/**", // OpenAPI auto-generated code
+      "docs/**",
+      "node_modules/**",
+    ],
+  }
 );

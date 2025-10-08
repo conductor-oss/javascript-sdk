@@ -70,7 +70,7 @@ describe("Generate", () => {
         const generatedInputParameters = generateEvaluationCode({
           value: "${workflow.input.someNumber}",
           evaluatorType: "graaljs",
-          expression: function ($: any) {
+          expression: function ($: { value: number }) {
             return function () {
               if ($.value === 1) {
                 return { result: true };

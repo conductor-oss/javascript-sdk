@@ -1,6 +1,7 @@
 {
   "extends": "@tsconfig/node18/tsconfig.json",
   "compilerOptions": {
+    "strict": true,
     "lib": [
       "es2022",
       "dom"

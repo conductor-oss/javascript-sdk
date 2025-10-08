@@ -3,7 +3,7 @@ import { TaskType, ForkJoinDynamicDef, TaskDefTypes } from "../../common/types";
 export const dynamicForkTask = (
   taskReferenceName: string,
   preForkTasks: TaskDefTypes[] = [],
-  dynamicTasksInput: string = "",
+  dynamicTasksInput = "",
   optional?: boolean
 ): ForkJoinDynamicDef => ({
   name: taskReferenceName,

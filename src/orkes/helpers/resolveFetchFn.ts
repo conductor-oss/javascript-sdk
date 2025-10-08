@@ -8,7 +8,7 @@ import type {
 
 export const resolveFetchFn = async (
   customFetch?: FetchFn,
-  maxHttpConnections: number = 1
+  maxHttpConnections = 1
 ): Promise<FetchFn> => {
   if (customFetch) return customFetch;
   if (process?.release?.name !== "node") return fetch;

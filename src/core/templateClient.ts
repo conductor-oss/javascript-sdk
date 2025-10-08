@@ -20,7 +20,7 @@ export class TemplateClient {
    */
   public async registerTemplate(
     template: HumanTaskTemplate,
-    asNewVersion: boolean = false
+    asNewVersion = false
   ): Promise<HumanTaskTemplate> {
     return tryCatchReThrow(() =>
       this._client.humanTask.saveTemplate(template, asNewVersion)

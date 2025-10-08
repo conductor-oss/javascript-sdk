@@ -8,7 +8,7 @@ import { waitForWorkflowStatus } from "../utils/waitForWorkflowStatus";
 describe("TaskManager", () => {
   const clientPromise = orkesConductorClient();
 
-  jest.setTimeout(20000);
+  jest.setTimeout(30000);
   test("worker example ", async () => {
     const client = await clientPromise;
     const executor = new WorkflowExecutor(client);
@@ -37,7 +37,6 @@ describe("TaskManager", () => {
     });
     taskRunner.startPolling();
 
-    
     await executor.registerWorkflow(true, {
       name: workflowName,
       version: 1,
@@ -54,7 +53,11 @@ describe("TaskManager", () => {
       version: 1,
     });
 
-    const workflowStatus = await waitForWorkflowStatus(executor, executionId, "COMPLETED");
+    const workflowStatus = await waitForWorkflowStatus(
+      executor,
+      executionId,
+      "COMPLETED"
+    );
 
     const [firstTask] = workflowStatus.tasks || [];
     expect(firstTask?.taskType).toEqual(taskName);
@@ -85,14 +88,25 @@ describe("TaskManager", () => {
       1,
       `${workflowWithWaitTask.name}-id`
     );
-    const workflowStatus = await executor.getWorkflow(executionId!, true);
+
+    expect(executionId).toBeDefined();
+    if (!executionId) {
+      throw new Error("Execution ID is undefined");
+    }
+    const workflowStatus = await executor.getWorkflow(executionId, true);
 
     const [firstTask] = workflowStatus.tasks || [];
+
+    expect(firstTask?.referenceTaskName).toBeDefined();
     expect(firstTask?.referenceTaskName).toEqual(waitTaskReference);
+    if (!firstTask?.referenceTaskName) {
+      throw new Error("firstTask.referenceTaskName is undefined");
+    }
+
     const changedValue = { greet: "changed value" };
     await executor.updateTaskByRefName(
-      firstTask!.referenceTaskName!,
-      executionId!,
+      firstTask.referenceTaskName,
+      executionId,
       "IN_PROGRESS",
       changedValue
     );
@@ -101,9 +115,14 @@ describe("TaskManager", () => {
     expect(taskDetails.outputData).toEqual(changedValue);
     const newChange = { greet: "bye" };
 
+    expect(firstTask?.taskId).toBeDefined();
+    if (!firstTask?.taskId) {
+      throw new Error("firstTask.taskId is undefined");
+    }
+
     await executor.updateTask(
-      firstTask!.taskId!,
-      executionId!,
+      firstTask.taskId,
+      executionId,
       "COMPLETED",
       newChange
     );
@@ -162,7 +181,16 @@ describe("TaskManager", () => {
       `workflow${sumTwoNumbers.name}`
     );
 
-    const workflowStatus = await waitForWorkflowStatus(executor, executionId!, "COMPLETED");
+    expect(executionId).toBeDefined();
+    if (!executionId) {
+      throw new Error("Execution ID is undefined");
+    }
+    
+    const workflowStatus = await waitForWorkflowStatus(
+      executor,
+      executionId,
+      "COMPLETED"
+    );
 
     expect(workflowStatus.status).toEqual("COMPLETED");
     expect(workflowStatus.output?.result).toEqual(3);

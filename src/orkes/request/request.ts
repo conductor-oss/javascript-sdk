@@ -1,6 +1,4 @@
 /* istanbul ignore file */
-/* tslint:disable */
-/* eslint-disable */
 
 import type {
   OnCancel,
@@ -17,54 +15,44 @@ const isDefined = <T>(
   return value !== undefined && value !== null;
 };
 
-const isString = (value: any): value is string => {
+const isString = (value: unknown): value is string => {
   return typeof value === "string";
 };
 
-const isStringWithValue = (value: any): value is string => {
+const isStringWithValue = (value: unknown): value is string => {
   return isString(value) && value !== "";
 };
 
-const isBlob = (value: any): value is Blob => {
-  return (
-    typeof value === "object" &&
-    typeof value.type === "string" &&
-    typeof value.stream === "function" &&
-    typeof value.arrayBuffer === "function" &&
-    typeof value.constructor === "function" &&
-    typeof value.constructor.name === "string" &&
-    /^(Blob|File)$/.test(value.constructor.name) &&
-    /^(Blob|File)$/.test(value[Symbol.toStringTag])
-  );
+const isBlob = (value: unknown): value is Blob => {
+  return typeof Blob !== "undefined" && value instanceof Blob;
 };
 
-const isFormData = (value: any): value is FormData => {
+const isFormData = (value: unknown): value is FormData => {
   return value instanceof FormData;
 };
 
 const base64 = (str: string): string => {
   try {
     return btoa(str);
-  } catch (err) {
-    // @ts-ignore
+  } catch {
     return Buffer.from(str).toString("base64");
   }
 };
 
-const getQueryString = (params: Record<string, any>): string => {
+const getQueryString = (params: Record<string, unknown>): string => {
   const qs: string[] = [];
 
-  const append = (key: string, value: any) => {
+  const append = (key: string, value: unknown) => {
     qs.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
   };
 
-  const process = (key: string, value: any) => {
+  const process = (key: string, value: unknown) => {
     if (isDefined(value)) {
       if (Array.isArray(value)) {
         value.forEach((v) => {
           process(key, v);
         });
-      } else if (typeof value === "object") {
+      } else if (typeof value === "object" && value !== null) {
         Object.entries(value).forEach(([k, v]) => {
           process(`${key}[${k}]`, v);
         });
@@ -91,7 +79,10 @@ const getUrl = (config: OpenAPIConfig, options: ApiRequestOptions): string => {
   const path = options.url
     .replace("{api-version}", config.VERSION)
     .replace(/{(.*?)}/g, (substring: string, group: string) => {
-      if (options.path?.hasOwnProperty(group)) {
+      if (
+        options.path &&
+        Object.prototype.hasOwnProperty.call(options.path, group)
+      ) {
         return encoder(String(options.path[group]));
       }
       return substring;
@@ -108,7 +99,7 @@ const getFormData = (options: ApiRequestOptions): FormData | undefined => {
   if (options.formData) {
     const formData = new FormData();
 
-    const process = (key: string, value: any) => {
+    const process = (key: string, value: unknown) => {
       if (isString(value) || isBlob(value)) {
         formData.append(key, value);
       } else {
@@ -117,7 +108,7 @@ const getFormData = (options: ApiRequestOptions): FormData | undefined => {
     };
 
     Object.entries(options.formData)
-      .filter(([_, value]) => isDefined(value))
+      .filter(([, value]) => isDefined(value))
       .forEach(([key, value]) => {
         if (Array.isArray(value)) {
           value.forEach((v) => process(key, v));
@@ -157,7 +148,7 @@ const getHeaders = async (
     ...additionalHeaders,
     ...options.headers,
   })
-    .filter(([_, value]) => isDefined(value))
+    .filter(([, value]) => isDefined(value))
     .reduce(
       (headers, [key, value]) => ({
         ...headers,
@@ -190,7 +181,7 @@ const getHeaders = async (
   return new Headers(headers);
 };
 
-const getRequestBody = (options: ApiRequestOptions): any => {
+const getRequestBody = (options: ApiRequestOptions): BodyInit | undefined => {
   if (options.body) {
     if (options.mediaType?.includes("/json")) {
       return JSON.stringify(options.body);
@@ -199,7 +190,7 @@ const getRequestBody = (options: ApiRequestOptions): any => {
       isBlob(options.body) ||
       isFormData(options.body)
     ) {
-      return options.body as any;
+      return options.body;
     } else {
       return JSON.stringify(options.body);
     }
@@ -211,8 +202,8 @@ const fetchWithRetry = async (
   url: string,
   request: RequestInit,
   fetchFn: FetchFn<RequestInit, Response>,
-  retries: number = 5,
-  delay: number = 1000
+  retries = 5,
+  delay = 1000
 ): Promise<Response> => {
   const response = await fetchFn(url, request);
   if (response.status == 429 && retries > 0) {
@@ -225,7 +216,7 @@ const fetchWithRetry = async (
 const sendRequest = async (
   options: ApiRequestOptions,
   url: string,
-  body: any,
+  body: BodyInit | undefined,
   formData: FormData | undefined,
   headers: Headers,
   onCancel: OnCancel,
@@ -258,7 +249,9 @@ const getResponseHeader = (
   return undefined;
 };
 
-const getResponseBody = async (response: Response): Promise<any> => {
+const getResponseBody = async (
+  response: Response
+): Promise<Response | string | undefined> => {
   if (response.status !== 204) {
     try {
       const contentType = response.headers.get("Content-Type");
@@ -298,7 +291,7 @@ const catchErrorCodes = (
   }
 
   if (!result.ok) {
-    throw new ApiError(options, result, "Generic Error");
+    throw new ApiError(options, result, `Generic Error:\n${result}`);
   }
 };
 
