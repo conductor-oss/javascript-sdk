@@ -1,5 +1,4 @@
 export * from "./ConductorLogger";
-export * from "./RequestCustomizer";
 export * from "./types";
 export type * from "./open-api";
 export type {
