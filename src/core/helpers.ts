@@ -1,7 +1,7 @@
 import { ConductorError } from "./types";
 
 export const errorMapper = (error: unknown): ConductorError => {
-  //todo: add error.message, mb error.status
+  // todo: add error.message, mb error.status
   const message =
     error &&
     typeof error === "object" &&

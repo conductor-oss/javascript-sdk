@@ -210,7 +210,7 @@ export class ServiceRegistryClient {
         path: { registryName, filename },
       });
 
-      return data as unknown as Blob; //todo: remove casting after OpenApi spec is fixed
+      return data as unknown as Blob; // todo: remove casting after OpenApi spec is fixed
     } catch (error: unknown) {
       throw errorMapper(error);
     }

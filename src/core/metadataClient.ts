@@ -89,7 +89,7 @@ export class MetadataClient {
         client: this._client,
       });
 
-      return data as TaskDef; //todo: remove casting after OpenApi spec is fixed
+      return data as TaskDef; // todo: remove casting after OpenApi spec is fixed
     } catch (error: unknown) {
       throw errorMapper(error);
     }

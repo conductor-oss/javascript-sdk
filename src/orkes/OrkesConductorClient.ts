@@ -24,7 +24,6 @@ export const orkesConductorClient = async (
 
   if (!serverUrl) throw new Error("Conductor server URL is not set");
   // todo: retry on 429
-  // todo: resolve types
   // todo: decide if should return undefined from client methods
   // todo: logging
 
