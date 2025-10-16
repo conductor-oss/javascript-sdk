@@ -1,6 +1,6 @@
 import { MetadataResource } from "../common/open-api/sdk.gen";
 import { Client } from "../common/open-api/client";
-import { tryCatchReThrow } from "./helpers";
+import { errorMapper } from "./helpers";
 import {
   ExtendedWorkflowDef,
   TaskDef,
@@ -21,13 +21,15 @@ export class MetadataClient {
    * @param name
    * @returns
    */
-  public unregisterTask(name: string): Promise<void> {
-    return tryCatchReThrow(async () => {
+  public async unregisterTask(name: string): Promise<void> {
+    try {
       await MetadataResource.unregisterTaskDef({
         path: { tasktype: name },
         client: this._client,
       });
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 
   /**
@@ -36,7 +38,7 @@ export class MetadataClient {
    * @param taskDef
    * @returns
    */
-  public registerTask(taskDef: ExtendedTaskDef): Promise<void> {
+  public async registerTask(taskDef: ExtendedTaskDef): Promise<void> {
     return this.registerTasks([taskDef]);
   }
 
@@ -46,13 +48,15 @@ export class MetadataClient {
    * @param taskDefs
    * @returns
    */
-  public registerTasks(taskDefs: ExtendedTaskDef[]): Promise<void> {
-    return tryCatchReThrow(async () => {
+  public async registerTasks(taskDefs: ExtendedTaskDef[]): Promise<void> {
+    try {
       await MetadataResource.registerTaskDef({
         body: [...(taskDefs as OpenApiExtendedTaskDef[])],
         client: this._client,
       });
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 
   /**
@@ -61,13 +65,15 @@ export class MetadataClient {
    * @param taskDef
    * @returns
    */
-  public updateTask(taskDef: ExtendedTaskDef): Promise<void> {
-    return tryCatchReThrow(async () => {
+  public async updateTask(taskDef: ExtendedTaskDef): Promise<void> {
+    try {
       await MetadataResource.updateTaskDef({
         body: taskDef as OpenApiExtendedTaskDef,
         client: this._client,
       });
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 
   /**
@@ -77,14 +83,16 @@ export class MetadataClient {
    * @returns
    */
   public async getTask(taskName: string): Promise<TaskDef | undefined> {
-    return tryCatchReThrow(async () => {
+    try {
       const { data } = await MetadataResource.getTaskDef({
         path: { tasktype: taskName },
         client: this._client,
       });
 
       return data as TaskDef; //todo: remove casting after OpenApi spec is fixed
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 
   /**
@@ -94,11 +102,11 @@ export class MetadataClient {
    * @param overwrite
    * @returns
    */
-  public registerWorkflowDef(
+  public async registerWorkflowDef(
     workflowDef: ExtendedWorkflowDef,
     overwrite = false
   ): Promise<void> {
-    return tryCatchReThrow(async () => {
+    try {
       await MetadataResource.create({
         body: workflowDef,
         query: {
@@ -106,7 +114,9 @@ export class MetadataClient {
         },
         client: this._client,
       });
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 
   /**
@@ -116,12 +126,12 @@ export class MetadataClient {
    * @param overwrite
    * @returns
    */
-  public getWorkflowDef(
+  public async getWorkflowDef(
     name: string,
     version?: number,
     metadata = false
   ): Promise<WorkflowDef | undefined> {
-    return tryCatchReThrow(async () => {
+    try {
       const { data } = await MetadataResource.get1({
         path: { name },
         query: { metadata, version },
@@ -129,7 +139,9 @@ export class MetadataClient {
       });
 
       return data;
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 
   /**
@@ -139,12 +151,14 @@ export class MetadataClient {
    * @param overwrite
    * @returns
    */
-  public unregisterWorkflow(workflowName: string, version = 1): Promise<void> {
-    return tryCatchReThrow(async () => {
+  public async unregisterWorkflow(workflowName: string, version = 1): Promise<void> {
+    try {
       await MetadataResource.unregisterWorkflowDef({
         path: { name: workflowName, version },
         client: this._client,
       });
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 }

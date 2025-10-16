@@ -1,7 +1,7 @@
 import { HumanTaskTemplate } from "../common";
 import { HumanTask } from "../common/open-api/sdk.gen";
 import { Client } from "../common/open-api/client/types.gen";
-import { tryCatchReThrow } from "./helpers";
+import { errorMapper } from "./helpers";
 
 export class TemplateClient {
   public readonly _client: Client;
@@ -20,7 +20,7 @@ export class TemplateClient {
     template: HumanTaskTemplate,
     asNewVersion = false
   ): Promise<HumanTaskTemplate | undefined> {
-    return tryCatchReThrow(async () => {
+    try {
       const { data } = await HumanTask.saveTemplate({
         body: template,
         query: {
@@ -30,6 +30,8 @@ export class TemplateClient {
       });
 
       return data;
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 }

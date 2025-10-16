@@ -7,7 +7,7 @@ import {
   ServiceMethod,
   ServiceRegistry,
 } from "../common/open-api/types.gen";
-import { tryCatchReThrow } from "./helpers";
+import { errorMapper } from "./helpers";
 
 /**
  * Client for interacting with the Service Registry API
@@ -23,14 +23,16 @@ export class ServiceRegistryClient {
    * Retrieve all registered services
    * @returns Array of all registered services
    */
-  public getRegisteredServices(): Promise<ServiceRegistry[] | undefined> {
-    return tryCatchReThrow(async () => {
+  public async getRegisteredServices(): Promise<ServiceRegistry[] | undefined> {
+    try {
       const response = await ServiceRegistryResource.getRegisteredServices({
         client: this._client,
       });
 
       return response.data;
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 
   /**
@@ -38,13 +40,15 @@ export class ServiceRegistryClient {
    * @param name The name of the service to remove
    * @returns Promise that resolves when service is removed
    */
-  public removeService(name: string): Promise<void> {
-    return tryCatchReThrow(async () => {
+  public async removeService(name: string): Promise<void> {
+    try {
       await ServiceRegistryResource.removeService({
         client: this._client,
         path: { name },
       });
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 
   /**
@@ -52,8 +56,8 @@ export class ServiceRegistryClient {
    * @param name The name of the service to retrieve
    * @returns The requested service registry
    */
-  public getService(name: string): Promise<ServiceRegistry | undefined> {
-    return tryCatchReThrow(async () => {
+  public async getService(name: string): Promise<ServiceRegistry | undefined> {
+    try {
       const { data } = await ServiceRegistryResource.getService({
         client: this._client,
         path: { name },
@@ -63,7 +67,9 @@ export class ServiceRegistryClient {
         return Object.keys(data).length ? data : undefined;
       }
       return undefined;
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 
   /**
@@ -71,17 +77,19 @@ export class ServiceRegistryClient {
    * @param name The name of the service
    * @returns Response with circuit breaker status
    */
-  public openCircuitBreaker(
+  public async openCircuitBreaker(
     name: string
   ): Promise<CircuitBreakerTransitionResponse | undefined> {
-    return tryCatchReThrow(async () => {
+    try {
       const { data } = await ServiceRegistryResource.openCircuitBreaker({
         client: this._client,
         path: { name },
       });
 
       return data;
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 
   /**
@@ -89,17 +97,19 @@ export class ServiceRegistryClient {
    * @param name The name of the service
    * @returns Response with circuit breaker status
    */
-  public closeCircuitBreaker(
+  public async closeCircuitBreaker(
     name: string
   ): Promise<CircuitBreakerTransitionResponse | undefined> {
-    return tryCatchReThrow(async () => {
+    try {
       const { data } = await ServiceRegistryResource.closeCircuitBreaker({
         client: this._client,
         path: { name },
       });
 
       return data;
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 
   /**
@@ -107,17 +117,19 @@ export class ServiceRegistryClient {
    * @param name The name of the service
    * @returns Response with circuit breaker status
    */
-  public getCircuitBreakerStatus(
+  public async getCircuitBreakerStatus(
     name: string
   ): Promise<CircuitBreakerTransitionResponse | undefined> {
-    return tryCatchReThrow(async () => {
+    try {
       const { data } = await ServiceRegistryResource.getCircuitBreakerStatus({
         client: this._client,
         path: { name },
       });
 
       return data;
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 
   /**
@@ -125,13 +137,15 @@ export class ServiceRegistryClient {
    * @param serviceRegistry The service registry to add or update
    * @returns Promise that resolves when service is added or updated
    */
-  public addOrUpdateService(serviceRegistry: ServiceRegistry): Promise<void> {
-    return tryCatchReThrow(async () => {
+  public async addOrUpdateService(serviceRegistry: ServiceRegistry): Promise<void> {
+    try {
       await ServiceRegistryResource.addOrUpdateService({
         client: this._client,
         body: serviceRegistry,
       });
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 
   /**
@@ -140,17 +154,19 @@ export class ServiceRegistryClient {
    * @param method The service method to add or update
    * @returns Promise that resolves when method is added or updated
    */
-  public addOrUpdateServiceMethod(
+  public async addOrUpdateServiceMethod(
     registryName: string,
     method: ServiceMethod
   ): Promise<void> {
-    return tryCatchReThrow(async () => {
+    try {
       await ServiceRegistryResource.addOrUpdateMethod({
         client: this._client,
         path: { registryName },
         body: method,
       });
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 
   /**
@@ -161,19 +177,21 @@ export class ServiceRegistryClient {
    * @param methodType The type of the method
    * @returns Promise that resolves when method is removed
    */
-  public removeMethod(
+  public async removeMethod(
     registryName: string,
     serviceName: string,
     method: string,
     methodType: string
   ): Promise<void> {
-    return tryCatchReThrow(async () => {
+    try {
       await ServiceRegistryResource.removeMethod({
         client: this._client,
         path: { registryName },
         query: { serviceName, method, methodType },
       });
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 
   /**
@@ -182,18 +200,20 @@ export class ServiceRegistryClient {
    * @param filename The name of the proto file
    * @returns The proto file data as a Blob
    */
-  public getProtoData(
+  public async getProtoData(
     registryName: string,
     filename: string
   ): Promise<Blob | undefined> {
-    return tryCatchReThrow(async () => {
+    try {
       const { data } = await ServiceRegistryResource.getProtoData({
         client: this._client,
         path: { registryName, filename },
       });
 
       return data as unknown as Blob; //todo: remove casting after OpenApi spec is fixed
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 
   /**
@@ -203,19 +223,21 @@ export class ServiceRegistryClient {
    * @param data The proto file data
    * @returns Promise that resolves when proto data is set
    */
-  public setProtoData(
+  public async setProtoData(
     registryName: string,
     filename: string,
     data: Blob
   ): Promise<void> {
-    return tryCatchReThrow(async () => {
+    try {
       await ServiceRegistryResource.setProtoData({
         client: this._client,
         path: { registryName, filename },
         body: data as unknown as string, // todo: remove casting after OpenApi spec is fixed (byte -> binary)
         bodySerializer: (body: Blob) => body,
       });
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 
   /**
@@ -224,13 +246,15 @@ export class ServiceRegistryClient {
    * @param filename The name of the proto file
    * @returns Promise that resolves when proto file is deleted
    */
-  public deleteProto(registryName: string, filename: string): Promise<void> {
-    return tryCatchReThrow(async () => {
+  public async deleteProto(registryName: string, filename: string): Promise<void> {
+    try {
       await ServiceRegistryResource.deleteProto({
         client: this._client,
         path: { registryName, filename },
       });
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 
   /**
@@ -238,16 +262,18 @@ export class ServiceRegistryClient {
    * @param registryName The name of the registry
    * @returns List of proto registry entries
    */
-  public getAllProtos(
+  public async getAllProtos(
     registryName: string
   ): Promise<ProtoRegistryEntry[] | undefined> {
-    return tryCatchReThrow(async () => {
+    try {
       const { data } = await ServiceRegistryResource.getAllProtos({
         client: this._client,
         path: { registryName },
       });
       return data;
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 
   /**
@@ -256,11 +282,11 @@ export class ServiceRegistryClient {
    * @param create Whether to create the discovered methods (defaults to false)
    * @returns The discovered service methods
    */
-  public discover(
+  public async discover(
     name: string,
     create = false
   ): Promise<ServiceMethod[] | undefined> {
-    return tryCatchReThrow(async () => {
+    try {
       const { data } = await ServiceRegistryResource.discover({
         client: this._client,
         path: { name },
@@ -268,6 +294,8 @@ export class ServiceRegistryClient {
       });
 
       return data;
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 }

@@ -18,14 +18,6 @@ export const errorMapper = (error: unknown): ConductorError => {
   return new ConductorError(message, innerError);
 };
 
-export const tryCatchReThrow = async <T>(fn: () => Promise<T>): Promise<T> => {
-  try {
-    return await fn();
-  } catch (error) {
-    throw errorMapper(error);
-  }
-};
-
 export function reverseFind<T>(
   array: T[],
   predicate: (a: T, idx?: number, arr?: T[]) => boolean

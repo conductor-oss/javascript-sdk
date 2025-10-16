@@ -6,7 +6,7 @@ import {
 } from "../common";
 import { SchedulerResource } from "../common/open-api/sdk.gen";
 import { Client } from "../common/open-api/client/types.gen";
-import { tryCatchReThrow } from "./helpers";
+import { errorMapper } from "./helpers";
 
 export class SchedulerClient {
   public readonly _client: Client;
@@ -20,13 +20,15 @@ export class SchedulerClient {
    * @param requestBody
    * @returns
    */
-  public saveSchedule(param: SaveScheduleRequest): Promise<void> {
-    return tryCatchReThrow(async () => {
+  public async saveSchedule(param: SaveScheduleRequest): Promise<void> {
+    try {
       await SchedulerResource.saveSchedule({
         body: param,
         client: this._client,
       });
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 
   /**
@@ -39,21 +41,23 @@ export class SchedulerClient {
    * @param query
    * @returns SearchResultWorkflowScheduleExecutionModel
    */
-  public search(
+  public async search(
     start: number,
     size = 100,
     sort = "",
     freeText = "*",
     query?: string
   ): Promise<SearchResultWorkflowScheduleExecutionModel | undefined> {
-    return tryCatchReThrow(async () => {
+    try {
       const { data } = await SchedulerResource.searchV2({
         query: { start, size, sort, freeText, query },
         client: this._client,
       });
 
       return data;
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 
   /**
@@ -61,15 +65,17 @@ export class SchedulerClient {
    * @param name
    * @returns WorkflowSchedule
    */
-  public getSchedule(name: string): Promise<WorkflowSchedule | undefined> {
-    return tryCatchReThrow(async () => {
+  public async getSchedule(name: string): Promise<WorkflowSchedule | undefined> {
+    try {
       const { data } = await SchedulerResource.getSchedule({
         path: { name },
         client: this._client,
       });
 
       return data;
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 
   /**
@@ -77,13 +83,15 @@ export class SchedulerClient {
    * @param name
    * @returns
    */
-  public pauseSchedule(name: string): Promise<void> {
-    return tryCatchReThrow(async () => {
+  public async pauseSchedule(name: string): Promise<void> {
+    try {
       await SchedulerResource.pauseSchedule({
         path: { name },
         client: this._client,
       });
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 
   /**
@@ -92,13 +100,15 @@ export class SchedulerClient {
    * @param name
    * @returns
    */
-  public resumeSchedule(name: string): Promise<void> {
-    return tryCatchReThrow(async () => {
+  public async resumeSchedule(name: string): Promise<void> {
+    try {
       await SchedulerResource.resumeSchedule({
         path: { name },
         client: this._client,
       });
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 
   /**
@@ -107,13 +117,15 @@ export class SchedulerClient {
    * @param name
    * @returns
    */
-  public deleteSchedule(name: string): Promise<void> {
-    return tryCatchReThrow(async () => {
+  public async deleteSchedule(name: string): Promise<void> {
+    try {
       await SchedulerResource.deleteSchedule({
         path: { name },
         client: this._client,
       });
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 
   /**
@@ -121,17 +133,19 @@ export class SchedulerClient {
    * @param workflowName
    * @returns Array<WorkflowScheduleModel>
    */
-  public getAllSchedules(
+  public async getAllSchedules(
     workflowName?: string
   ): Promise<WorkflowScheduleModel[] | undefined> {
-    return tryCatchReThrow(async () => {
+    try {
       const { data } = await SchedulerResource.getAllSchedules({
         query: { workflowName },
         client: this._client,
       });
 
       return data;
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 
   /**
@@ -143,20 +157,22 @@ export class SchedulerClient {
    * @returns number OK
    * @throws ApiError
    */
-  public getNextFewSchedules(
+  public async getNextFewSchedules(
     cronExpression: string,
     scheduleStartTime?: number,
     scheduleEndTime?: number,
     limit = 3
   ): Promise<number[] | undefined> {
-    return tryCatchReThrow(async () => {
+    try {
       const { data } = await SchedulerResource.getNextFewSchedules({
         query: { cronExpression, scheduleStartTime, scheduleEndTime, limit },
         client: this._client,
       });
 
       return data;
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 
   /**
@@ -164,12 +180,14 @@ export class SchedulerClient {
    * @returns any OK
    * @throws ApiError
    */
-  public pauseAllSchedules(): Promise<void> {
-    return tryCatchReThrow(async () => {
+  public async pauseAllSchedules(): Promise<void> {
+    try {
       await SchedulerResource.pauseAllSchedules({
         client: this._client,
       });
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 
   /**
@@ -177,12 +195,14 @@ export class SchedulerClient {
    * @returns any OK
    * @throws ApiError
    */
-  public requeueAllExecutionRecords(): Promise<void> {
-    return tryCatchReThrow(async () => {
+  public async requeueAllExecutionRecords(): Promise<void> {
+    try {
       await SchedulerResource.requeueAllExecutionRecords({
         client: this._client,
       });
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 
   /**
@@ -190,11 +210,13 @@ export class SchedulerClient {
    * @returns any OK
    * @throws ApiError
    */
-  public resumeAllSchedules(): Promise<void> {
-    return tryCatchReThrow(async () => {
+  public async resumeAllSchedules(): Promise<void> {
+    try {
       await SchedulerResource.resumeAllSchedules({
         client: this._client,
       });
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 }

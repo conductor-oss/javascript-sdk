@@ -1,7 +1,7 @@
 import { HumanTaskSearch, HumanTaskEntry, HumanTaskTemplate } from "../common";
 import { HumanTask } from "../common/open-api/sdk.gen";
 import { Client } from "../common/open-api/client/types.gen";
-import { errorMapper, tryCatchReThrow } from "./helpers";
+import { errorMapper } from "./helpers";
 
 type UserType =
   | "EXTERNAL_USER"
@@ -94,7 +94,7 @@ export class HumanExecutor {
     searchParams: Partial<HumanTaskSearch>
   ): Promise<HumanTaskEntry[]> {
     const search = { ...EMPTY_SEARCH, ...searchParams };
-    return tryCatchReThrow(async () => {
+    try {
       const { data } = await HumanTask.search({
         client: this._client,
         body: search,
@@ -104,7 +104,9 @@ export class HumanExecutor {
         return data.results;
       }
       return [];
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 
   /**
@@ -125,16 +127,20 @@ export class HumanExecutor {
       maxPollTimes = 20,
     }: PollIntervalOptions = DEFAULT_POLL_INTERVAL
   ): Promise<HumanTaskEntry[]> {
-    let pollCount = 0;
-    while (pollCount < maxPollTimes) {
-      const response = await this.search(searchParams);
-      if (response.length > 0) {
-        return response;
+    try {
+      let pollCount = 0;
+      while (pollCount < maxPollTimes) {
+        const response = await this.search(searchParams);
+        if (response.length > 0) {
+          return response;
+        }
+        await new Promise((resolve) => setTimeout(resolve, pollInterval));
+        pollCount++;
       }
-      await new Promise((resolve) => setTimeout(resolve, pollInterval));
-      pollCount++;
+      return [];
+    } catch (error: unknown) {
+      throw errorMapper(error);
     }
-    return [];
   }
 
   /**
@@ -142,15 +148,17 @@ export class HumanExecutor {
    * @param taskId
    * @returns
    */
-  public getTaskById(taskId: string): Promise<HumanTaskEntry | undefined> {
-    return tryCatchReThrow(async () => {
+  public async getTaskById(taskId: string): Promise<HumanTaskEntry | undefined> {
+    try {
       const { data } = await HumanTask.getTask1({
         client: this._client,
         path: { taskId },
       });
 
       return data;
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 
   /**
@@ -164,7 +172,7 @@ export class HumanExecutor {
     assignee: string,
     options?: Record<string, boolean>
   ): Promise<HumanTaskEntry | undefined> {
-    return tryCatchReThrow(async () => {
+    try {
       const { data } = await HumanTask.assignAndClaim({
         client: this._client,
         path: { taskId, userId: assignee },
@@ -175,7 +183,9 @@ export class HumanExecutor {
       });
 
       return data;
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 
   /**
@@ -187,7 +197,7 @@ export class HumanExecutor {
     taskId: string,
     options?: Record<string, boolean>
   ): Promise<HumanTaskEntry | undefined> {
-    return tryCatchReThrow(async () => {
+    try {
       const { data } = await HumanTask.claimTask({
         client: this._client,
         path: { taskId },
@@ -197,7 +207,9 @@ export class HumanExecutor {
         },
       });
       return data;
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 
   /**
@@ -226,14 +238,16 @@ export class HumanExecutor {
     name: string,
     version: number
   ): Promise<HumanTaskTemplate | undefined> {
-    return tryCatchReThrow(async () => {
+    try {
       const { data } = await HumanTask.getTemplateByNameAndVersion({
         client: this._client,
         path: { name, version },
       });
 
       return data;
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 
   /**

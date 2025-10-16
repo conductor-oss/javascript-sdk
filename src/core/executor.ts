@@ -22,7 +22,7 @@ import {
   TaskResultOutputData,
   TaskResultStatus,
 } from "./types";
-import { errorMapper, reverseFind, tryCatchReThrow } from "./helpers";
+import { errorMapper, reverseFind } from "./helpers";
 import { Client } from "../common/open-api/client/types.gen";
 import { enhanceSignalResponse } from "./helpers/enchanceSignalResponse";
 
@@ -49,19 +49,19 @@ export class WorkflowExecutor {
    * @returns null
    */
 
-  public registerWorkflow(
+  public async registerWorkflow(
     override: boolean,
     workflow: WorkflowDef
   ): Promise<void> {
-    return tryCatchReThrow(async () => {
+    try {
       await MetadataResource.create({
         body: workflow,
-        query: {
-          overwrite: override,
-        },
+        query: { overwrite: override },
         client: this._client,
       });
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 
   /**
@@ -69,23 +69,25 @@ export class WorkflowExecutor {
    * @param workflowRequest
    * @returns
    */
-  public startWorkflow(
+  public async startWorkflow(
     workflowRequest: StartWorkflowRequest
   ): Promise<string | undefined> {
-    return tryCatchReThrow(async () => {
+    try {
       const { data } = await WorkflowResource.startWorkflow({
         body: workflowRequest,
         client: this._client,
       });
 
       return data;
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 
   /**
    * Execute a workflow synchronously (original method - backward compatible)
    */
-  public executeWorkflow(
+  public async executeWorkflow(
     workflowRequest: StartWorkflowRequest,
     name: string,
     version: number,
@@ -96,7 +98,7 @@ export class WorkflowExecutor {
   /**
    * Execute a workflow with return strategy support (new method)
    */
-  public executeWorkflow(
+  public async executeWorkflow(
     workflowRequest: StartWorkflowRequest,
     name: string,
     version: number,
@@ -108,7 +110,7 @@ export class WorkflowExecutor {
   ): Promise<EnhancedSignalResponse>;
 
   // Implementation
-  public executeWorkflow(
+  public async executeWorkflow(
     workflowRequest: StartWorkflowRequest,
     name: string,
     version: number,
@@ -118,7 +120,7 @@ export class WorkflowExecutor {
     consistency?: Consistency,
     returnStrategy?: ReturnStrategy
   ): Promise<WorkflowRun | EnhancedSignalResponse | undefined> {
-    return tryCatchReThrow(async () => {
+    try {
       const { data } = await WorkflowResource.executeWorkflow({
         body: workflowRequest,
         path: {
@@ -136,7 +138,9 @@ export class WorkflowExecutor {
       });
 
       return data ? enhanceSignalResponse(data) : undefined;
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 
   public startWorkflows(
@@ -229,19 +233,21 @@ export class WorkflowExecutor {
    * @param includeVariables flag to include variable
    * @returns Promise<WorkflowStatus>
    */
-  public getWorkflowStatus(
+  public async getWorkflowStatus(
     workflowInstanceId: string,
     includeOutput: boolean,
     includeVariables: boolean
   ): Promise<WorkflowStatus | undefined> {
-    return tryCatchReThrow(async () => {
+    try {
       const { data } = await WorkflowResource.getWorkflowStatusSummary({
         path: { workflowId: workflowInstanceId },
         query: { includeOutput, includeVariables },
         client: this._client,
       });
       return data;
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 
   /**
@@ -252,18 +258,20 @@ export class WorkflowExecutor {
    * @param includeVariables flag to include variable
    * @returns Promise<WorkflowStatus>
    */
-  public getExecution(
+  public async getExecution(
     workflowInstanceId: string,
     includeTasks = true
   ): Promise<Workflow | undefined> {
-    return tryCatchReThrow(async () => {
+    try {
       const { data } = await WorkflowResource.getExecutionStatus({
         path: { workflowId: workflowInstanceId },
         query: { includeTasks },
         client: this._client,
       });
       return data;
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 
   /**
@@ -271,13 +279,15 @@ export class WorkflowExecutor {
    * @param workflowInstanceId current workflow execution
    * @returns
    */
-  public pause(workflowInstanceId: string): Promise<void> {
-    return tryCatchReThrow(async () => {
+  public async pause(workflowInstanceId: string): Promise<void> {
+    try {
       await WorkflowResource.pauseWorkflow({
         path: { workflowId: workflowInstanceId },
         client: this._client,
       });
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 
   /**
@@ -287,18 +297,20 @@ export class WorkflowExecutor {
    * @param rerunWorkflowRequest Rerun Workflow Execution Request
    * @returns
    */
-  public reRun(
+  public async reRun(
     workflowInstanceId: string,
     rerunWorkflowRequest: Partial<RerunWorkflowRequest> = {}
   ): Promise<string | undefined> {
-    return tryCatchReThrow(async () => {
+    try {
       const { data } = await WorkflowResource.rerun({
         path: { workflowId: workflowInstanceId },
         body: rerunWorkflowRequest,
         client: this._client,
       });
       return data;
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 
   /**
@@ -307,18 +319,20 @@ export class WorkflowExecutor {
    * @param useLatestDefinitions
    * @returns
    */
-  public restart(
+  public async restart(
     workflowInstanceId: string,
     useLatestDefinitions: boolean
   ): Promise<void> {
-    return tryCatchReThrow(async () => {
+    try {
       const { data } = await WorkflowResource.restart({
         path: { workflowId: workflowInstanceId },
         query: { useLatestDefinitions },
         client: this._client,
       });
       return data;
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 
   /**
@@ -327,13 +341,15 @@ export class WorkflowExecutor {
    * @param workflowInstanceId Running workflow workflowInstanceId
    * @returns
    */
-  public resume(workflowInstanceId: string): Promise<void> {
-    return tryCatchReThrow(async () => {
+  public async resume(workflowInstanceId: string): Promise<void> {
+    try {
       await WorkflowResource.resumeWorkflow({
         path: { workflowId: workflowInstanceId },
         client: this._client,
       });
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 
   /**
@@ -344,17 +360,19 @@ export class WorkflowExecutor {
    * @param resumeSubworkflowTasks
    * @returns
    */
-  public retry(
+  public async retry(
     workflowInstanceId: string,
     resumeSubworkflowTasks: boolean
   ): Promise<void> {
-    return tryCatchReThrow(async () => {
+    try {
       await WorkflowResource.retry({
         path: { workflowId: workflowInstanceId },
         query: { resumeSubworkflowTasks },
         client: this._client,
       });
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 
   /**
@@ -368,7 +386,7 @@ export class WorkflowExecutor {
    * @param skipCache
    * @returns
    */
-  public search(
+  public async search(
     start: number,
     size: number,
     query: string,
@@ -376,14 +394,16 @@ export class WorkflowExecutor {
     sort = "",
     skipCache = false
   ): Promise<ScrollableSearchResultWorkflowSummary | undefined> {
-    return tryCatchReThrow(async () => {
+    try {
       const { data } = await WorkflowResource.search1({
         query: { start, size, sort, freeText, query, skipCache },
         client: this._client,
       });
 
       return data;
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 
   /**
@@ -394,18 +414,20 @@ export class WorkflowExecutor {
    * @param skipTaskRequest
    * @returns
    */
-  public skipTasksFromWorkflow(
+  public async skipTasksFromWorkflow(
     workflowInstanceId: string,
     taskReferenceName: string,
     skipTaskRequest: Partial<SkipTaskRequest>
   ): Promise<void> {
-    return tryCatchReThrow(async () => {
+    try {
       await WorkflowResource.skipTaskFromWorkflow({
         path: { workflowId: workflowInstanceId, taskReferenceName },
         body: skipTaskRequest,
         client: this._client,
       });
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 
   /**
@@ -414,14 +436,19 @@ export class WorkflowExecutor {
    * @param reason
    * @returns
    */
-  public terminate(workflowInstanceId: string, reason: string): Promise<void> {
-    return tryCatchReThrow(async () => {
+  public async terminate(
+    workflowInstanceId: string,
+    reason: string
+  ): Promise<void> {
+    try {
       await WorkflowResource.terminate1({
         path: { workflowId: workflowInstanceId },
         query: { reason },
         client: this._client,
       });
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 
   /**
@@ -432,21 +459,23 @@ export class WorkflowExecutor {
    * @param taskOutput
    * @returns
    */
-  public updateTask(
+  public async updateTask(
     taskId: string,
     workflowInstanceId: string,
     taskStatus: TaskResultStatus,
     outputData: TaskResultOutputData
   ): Promise<string | undefined> {
     const taskUpdates = { status: taskStatus, taskId, workflowInstanceId };
-    return tryCatchReThrow(async () => {
+    try {
       const { data } = await TaskResource.updateTask({
         body: { outputData, ...taskUpdates },
         client: this._client,
       });
 
       return data;
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 
   /**
@@ -457,13 +486,13 @@ export class WorkflowExecutor {
    * @param taskOutput
    * @returns
    */
-  public updateTaskByRefName(
+  public async updateTaskByRefName(
     taskReferenceName: string,
     workflowInstanceId: string,
     status: TaskResultStatus,
     taskOutput: TaskResultOutputData
   ): Promise<string | undefined> {
-    return tryCatchReThrow(async () => {
+    try {
       const { data } = await TaskResource.updateTask1({
         path: {
           workflowId: workflowInstanceId,
@@ -475,7 +504,9 @@ export class WorkflowExecutor {
       });
 
       return data;
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 
   /**
@@ -483,14 +514,16 @@ export class WorkflowExecutor {
    * @param taskId
    * @returns
    */
-  public getTask(taskId: string): Promise<Task | undefined> {
-    return tryCatchReThrow(async () => {
+  public async getTask(taskId: string): Promise<Task | undefined> {
+    try {
       const { data } = await TaskResource.getTask({
         path: { taskId },
         client: this._client,
       });
       return data;
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 
   /**
@@ -502,14 +535,14 @@ export class WorkflowExecutor {
    * @param workerId - Optional
    * @returns Promise<Workflow>
    */
-  public updateTaskSync(
+  public async updateTaskSync(
     taskReferenceName: string,
     workflowInstanceId: string,
     status: TaskResultStatusEnum,
     taskOutput: TaskResultOutputData,
     workerId?: string
   ): Promise<Workflow | undefined> {
-    return tryCatchReThrow(async () => {
+    try {
       const { data } = await TaskResource.updateTaskSync({
         path: {
           workflowId: workflowInstanceId,
@@ -522,7 +555,9 @@ export class WorkflowExecutor {
       });
 
       return data;
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 
   /**
@@ -533,13 +568,13 @@ export class WorkflowExecutor {
    * @param returnStrategy - Optional strategy for what data to return (defaults to TARGET_WORKFLOW)
    * @returns Promise<SignalResponse> with data based on the return strategy
    */
-  public signal(
+  public async signal(
     workflowInstanceId: string,
     status: TaskResultStatusEnum,
     taskOutput: TaskResultOutputData,
     returnStrategy: ReturnStrategy = ReturnStrategy.TARGET_WORKFLOW
   ): Promise<EnhancedSignalResponse | undefined> {
-    return tryCatchReThrow(async () => {
+    try {
       const { data } = await TaskResource.signalWorkflowTaskSync({
         path: { workflowId: workflowInstanceId, status },
         body: { taskOutput },
@@ -548,7 +583,9 @@ export class WorkflowExecutor {
       });
 
       return data ? enhanceSignalResponse(data) : undefined;
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 
   /**
@@ -558,17 +595,19 @@ export class WorkflowExecutor {
    * @param taskOutput - Output data for the task
    * @returns Promise<void>
    */
-  public signalAsync(
+  public async signalAsync(
     workflowInstanceId: string,
     status: TaskResultStatusEnum,
     taskOutput: TaskResultOutputData
   ): Promise<void> {
-    return tryCatchReThrow(async () => {
+    try {
       await TaskResource.signalWorkflowTaskASync({
         path: { workflowId: workflowInstanceId, status },
         body: { taskOutput },
         client: this._client,
       });
-    });
+    } catch (error: unknown) {
+      throw errorMapper(error);
+    }
   }
 }
