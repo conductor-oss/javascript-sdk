@@ -6,9 +6,11 @@ describe("resolveFetchFn", () => {
     const majorNodeVersion = parseInt(process.version.slice(1).split(".")[0]);
     const fetchFn = await resolveFetchFn();
 
-    majorNodeVersion >= 20
-      ? expect(fetchFn.toString().includes("undiciFetch")).toBe(true)
-      : expect(fetchFn).toBe(fetch);
+    if (majorNodeVersion >= 20) {
+      expect(fetchFn.toString().includes("undiciFetch")).toBe(true);
+    } else {
+      expect(fetchFn).toBe(fetch);
+    }
   });
 
   it("should return custom fetch if provided", async () => {
