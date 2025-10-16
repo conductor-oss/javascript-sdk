@@ -17,13 +17,13 @@ export const waitForWorkflowStatus = async (
     try {
       const workflow = await workflowClient.getWorkflow(workflowId, true);
 
-      if (workflow.status === expectedStatus) {
+      if (workflow?.status === expectedStatus) {
         return workflow;
       }
 
-      if (workflow.status === "FAILED" || workflow.status === "TERMINATED") {
+      if (workflow?.status === "FAILED" || workflow?.status === "TERMINATED") {
         throw new Error(
-          `Workflow ended in unexpected state: ${workflow.status}`
+          `Workflow ended in unexpected state: ${workflow?.status}`
         );
       }
 

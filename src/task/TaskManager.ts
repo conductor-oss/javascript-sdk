@@ -2,7 +2,7 @@ import os from "os";
 import { TaskRunner, noopErrorHandler, MAX_RETRIES } from "./TaskRunner";
 import { ConductorLogger, DefaultLogger } from "../common";
 import { ConductorWorker } from "./Worker";
-import { ConductorClient } from "../common/open-api";
+import { Client } from "../common/open-api/client/types.gen";
 import {
   DEFAULT_POLL_INTERVAL,
   DEFAULT_BATCH_POLLING_TIMEOUT,
@@ -36,7 +36,7 @@ function workerId(options: Partial<TaskManagerOptions>) {
  */
 export class TaskManager {
   private workerRunners = new Map<string, TaskRunner>();
-  private readonly client: ConductorClient;
+  private readonly client: Client;
   private readonly logger: ConductorLogger;
   private readonly errorHandler: TaskErrorHandler;
   private workers: ConductorWorker[];
@@ -45,7 +45,7 @@ export class TaskManager {
   private maxRetries: number = MAX_RETRIES;
 
   constructor(
-    client: ConductorClient,
+    client: Client,
     workers: ConductorWorker[],
     config: TaskManagerConfig = {}
   ) {
@@ -137,7 +137,7 @@ export class TaskManager {
       const runner = new TaskRunner({
         worker,
         options,
-        taskResource: this.client.taskResource,
+        client: this.client,
         logger: this.logger,
         onError: this.errorHandler,
         maxRetries: this.maxRetries,

@@ -13,7 +13,7 @@ interface PollerOptions {
 
 export class Poller<T> {
   private timeoutHandler?: NodeJS.Timeout;
-  private pollFunction: (count: number) => Promise<T[]>;
+  private pollFunction: (count: number) => Promise<T[] | undefined>;
   private performWorkFunction: (work: T) => Promise<void>;
   private polling = false;
   private _tasksInProcess = 0;
@@ -28,7 +28,7 @@ export class Poller<T> {
 
   constructor(
     pollerId: string,
-    pollFunction: (count: number) => Promise<T[]>,
+    pollFunction: (count: number) => Promise<T[] | undefined>,
     performWorkFunction: (work: T) => Promise<void>,
     pollerOptions?: Partial<PollerOptions>,
     logger?: ConductorLogger
@@ -99,12 +99,12 @@ export class Poller<T> {
           }
         } else {
           this._counterAtO = 0;
-          const tasksResult: T[] = await this.pollFunction(count);
+          const tasksResult: T[] | undefined = await this.pollFunction(count);
           this._tasksInProcess =
             this._tasksInProcess + (tasksResult ?? []).length;
 
           // Don't wait for the tasks to finish only 'listen' to the number of tasks being processes
-          tasksResult.forEach(this.performWork);
+          tasksResult?.forEach(this.performWork);
         }
       } catch (error: unknown) {
         this.logger.error(

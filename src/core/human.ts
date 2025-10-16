@@ -1,9 +1,6 @@
-import {
-  ConductorClient,
-  HumanTaskSearch,
-  HumanTaskEntry,
-  HumanTaskTemplate,
-} from "../common";
+import { HumanTaskSearch, HumanTaskEntry, HumanTaskTemplate } from "../common";
+import { HumanTask } from "../common/open-api/sdk.gen";
+import { Client } from "../common/open-api/client/types.gen";
 import { errorMapper, tryCatchReThrow } from "./helpers";
 
 type UserType =
@@ -31,9 +28,9 @@ interface PollIntervalOptions {
   maxPollTimes: number;
 }
 export class HumanExecutor {
-  public readonly _client: ConductorClient;
+  public readonly _client: Client;
 
-  constructor(client: ConductorClient) {
+  constructor(client: Client) {
     this._client = client;
   }
 
@@ -60,7 +57,7 @@ export class HumanExecutor {
     claimedBy?: string,
     taskName?: string,
     taskInputQuery?: string,
-    taskOutputQuery?: string,
+    taskOutputQuery?: string
   ): Promise<HumanTaskEntry[]> {
     const [claimedUserType, claimedUser] = claimedBy?.split(":") ?? [];
 
@@ -76,7 +73,7 @@ export class HumanExecutor {
         : [],
       taskRefNames: taskName ? [taskName] : [],
       taskInputQuery,
-      taskOutputQuery
+      taskOutputQuery,
     });
 
     return response;
@@ -97,13 +94,17 @@ export class HumanExecutor {
     searchParams: Partial<HumanTaskSearch>
   ): Promise<HumanTaskEntry[]> {
     const search = { ...EMPTY_SEARCH, ...searchParams };
-    const response = await tryCatchReThrow(() =>
-      this._client.humanTask.search(search)
-    );
-    if (response.results != undefined) {
-      return response.results;
-    }
-    return [];
+    return tryCatchReThrow(async () => {
+      const { data } = await HumanTask.search({
+        client: this._client,
+        body: search,
+      });
+
+      if (data?.results != undefined) {
+        return data.results;
+      }
+      return [];
+    });
   }
 
   /**
@@ -141,8 +142,15 @@ export class HumanExecutor {
    * @param taskId
    * @returns
    */
-  public getTaskById(taskId: string): Promise<HumanTaskEntry> {
-    return tryCatchReThrow(() => this._client.humanTask.getTask1(taskId));
+  public getTaskById(taskId: string): Promise<HumanTaskEntry | undefined> {
+    return tryCatchReThrow(async () => {
+      const { data } = await HumanTask.getTask1({
+        client: this._client,
+        path: { taskId },
+      });
+
+      return data;
+    });
   }
 
   /**
@@ -154,11 +162,20 @@ export class HumanExecutor {
   public async claimTaskAsExternalUser(
     taskId: string,
     assignee: string,
-    options?:Record<string,boolean>
-  ): Promise<HumanTaskEntry> {
-    return tryCatchReThrow(() =>
-      this._client.humanTask.assignAndClaim(taskId, assignee,options?.overrideAssignment,options?.withTemplate)
-    );
+    options?: Record<string, boolean>
+  ): Promise<HumanTaskEntry | undefined> {
+    return tryCatchReThrow(async () => {
+      const { data } = await HumanTask.assignAndClaim({
+        client: this._client,
+        path: { taskId, userId: assignee },
+        query: {
+          overrideAssignment: options?.overrideAssignment,
+          withTemplate: options?.withTemplate,
+        },
+      });
+
+      return data;
+    });
   }
 
   /**
@@ -168,9 +185,19 @@ export class HumanExecutor {
    */
   public async claimTaskAsConductorUser(
     taskId: string,
-    options?:Record<string,boolean>
-  ): Promise<HumanTaskEntry> {
-    return tryCatchReThrow(() => this._client.humanTask.claimTask(taskId,options?.overrideAssignment,options?.withTemplate));
+    options?: Record<string, boolean>
+  ): Promise<HumanTaskEntry | undefined> {
+    return tryCatchReThrow(async () => {
+      const { data } = await HumanTask.claimTask({
+        client: this._client,
+        path: { taskId },
+        query: {
+          overrideAssignment: options?.overrideAssignment,
+          withTemplate: options?.withTemplate,
+        },
+      });
+      return data;
+    });
   }
 
   /**
@@ -181,7 +208,10 @@ export class HumanExecutor {
    */
   public async releaseTask(taskId: string) {
     try {
-      await this._client.humanTask.releaseTask(taskId);
+      await HumanTask.releaseTask({
+        client: this._client,
+        path: { taskId },
+      });
     } catch (error: unknown) {
       throw errorMapper(error);
     }
@@ -195,10 +225,15 @@ export class HumanExecutor {
   public async getTemplateByNameVersion(
     name: string,
     version: number
-  ): Promise<HumanTaskTemplate> {
-    return tryCatchReThrow(() =>
-      this._client.humanTask.getTemplateByNameAndVersion(name, version)
-    );
+  ): Promise<HumanTaskTemplate | undefined> {
+    return tryCatchReThrow(async () => {
+      const { data } = await HumanTask.getTemplateByNameAndVersion({
+        client: this._client,
+        path: { name, version },
+      });
+
+      return data;
+    });
   }
 
   /**
@@ -209,7 +244,7 @@ export class HumanExecutor {
    */
   public async getTemplateById(
     templateNameVersionOne: string
-  ): Promise<HumanTaskTemplate> {
+  ): Promise<HumanTaskTemplate | undefined> {
     return this.getTemplateByNameVersion(templateNameVersionOne, 1);
   }
 
@@ -223,7 +258,12 @@ export class HumanExecutor {
     requestBody: Record<string, Record<string, unknown>>
   ): Promise<void> {
     try {
-      await this._client.humanTask.updateTaskOutput(taskId, requestBody, false);
+      await HumanTask.updateTaskOutput({
+        client: this._client,
+        path: { taskId },
+        body: requestBody,
+        query: { complete: false },
+      });
     } catch (error: unknown) {
       throw errorMapper(error);
     }
@@ -239,7 +279,12 @@ export class HumanExecutor {
     requestBody: Record<string, Record<string, unknown>> = {}
   ) {
     try {
-      await this._client.humanTask.updateTaskOutput(taskId, requestBody, true);
+      await HumanTask.updateTaskOutput({
+        client: this._client,
+        path: { taskId },
+        body: requestBody,
+        query: { complete: true },
+      });
     } catch (error: unknown) {
       throw errorMapper(error);
     }

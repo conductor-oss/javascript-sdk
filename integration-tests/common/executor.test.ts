@@ -6,16 +6,18 @@ import { v4 as uuidv4 } from "uuid";
 import { waitForWorkflowStatus } from "../utils/waitForWorkflowStatus";
 import { httpTask } from "../../src/core/sdk";
 import { TaskClient } from "../../src/core/taskClient";
+import { MetadataClient } from "../../src/core";
 
 describe("Executor", () => {
   const clientPromise = orkesConductorClient();
 
-  jest.setTimeout(15000);
+  jest.setTimeout(30000);
   const name = `jsSdkTest-Workflow-${Date.now()}`;
   const version = 1;
   test("Should be able to register a workflow", async () => {
     const client = await clientPromise;
     const executor = new WorkflowExecutor(client);
+    const metadataClient = new MetadataClient(client);
 
     const workflowDefinition: WorkflowDef = {
       name,
@@ -37,19 +39,21 @@ describe("Executor", () => {
     await expect(
       executor.registerWorkflow(true, workflowDefinition)
     ).resolves.not.toThrow();
-    const workflowDefinitionFromApi = await client.metadataResource.get(
+
+    const workflowDefinitionFromApi = await metadataClient.getWorkflowDef(
       name,
       version
     );
-    expect(workflowDefinitionFromApi.name).toEqual(name);
-    expect(workflowDefinitionFromApi.version).toEqual(version);
-    expect(workflowDefinitionFromApi.tasks[0].name).toEqual(
+
+    expect(workflowDefinitionFromApi?.name).toEqual(name);
+    expect(workflowDefinitionFromApi?.version).toEqual(version);
+    expect(workflowDefinitionFromApi?.tasks[0].name).toEqual(
       workflowDefinition.tasks[0].name
     );
-    expect(workflowDefinitionFromApi.tasks[0].taskReferenceName).toEqual(
+    expect(workflowDefinitionFromApi?.tasks[0].taskReferenceName).toEqual(
       workflowDefinition.tasks[0].taskReferenceName
     );
-    expect(workflowDefinitionFromApi.tasks[0].inputParameters).toEqual(
+    expect(workflowDefinitionFromApi?.tasks[0].inputParameters).toEqual(
       (workflowDefinition.tasks[0] as SetVariableTaskDef).inputParameters
     );
   });
@@ -89,7 +93,7 @@ describe("Executor", () => {
       true,
       true
     );
-    expect(workflowStatus.status).toBeTruthy();
+    expect(workflowStatus?.status).toBeTruthy();
   });
 
   test("Should return workflow status detail", async () => {
@@ -101,8 +105,8 @@ describe("Executor", () => {
     }
     const workflowStatus = await executor.getWorkflow(executionId, true);
 
-    expect(workflowStatus.status).toBeTruthy();
-    expect(workflowStatus.tasks?.length).toBe(1);
+    expect(workflowStatus?.status).toBeTruthy();
+    expect(workflowStatus?.tasks?.length).toBe(1);
   });
   test("Should execute a workflow with indempotency key", async () => {
     const client = await clientPromise;
@@ -115,8 +119,11 @@ describe("Executor", () => {
       idempotencyStrategy: "RETURN_EXISTING",
     });
 
+    if (!executionId) {
+      throw new Error("Execution ID is undefined");
+    }
     const executionDetails = await executor.getWorkflow(executionId, true);
-    expect(executionDetails.idempotencyKey).toEqual(idempotencyKey);
+    expect(executionDetails?.idempotencyKey).toEqual(idempotencyKey);
   });
 
   test("Should run workflow with http task with asyncComplete true", async () => {
@@ -147,6 +154,10 @@ describe("Executor", () => {
       version: 1,
     });
 
+    if (!executionId) {
+      throw new Error("Execution ID is undefined");
+    }
+
     const workflowStatusBefore = await waitForWorkflowStatus(
       executor,
       executionId,
@@ -158,7 +169,7 @@ describe("Executor", () => {
     );
 
     const taskClient = new TaskClient(client);
-    taskClient.updateTaskResult(executionId, taskName, "COMPLETED", {
+    await taskClient.updateTaskResult(executionId, taskName, "COMPLETED", {
       hello: "From manuall api call updating task result",
     });
 
@@ -198,6 +209,10 @@ describe("Executor", () => {
       input: {},
       version: 1,
     });
+
+    if (!executionId) {
+      throw new Error("Execution ID is undefined");
+    }
 
     const workflowStatus = await waitForWorkflowStatus(
       executor,

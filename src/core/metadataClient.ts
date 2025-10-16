@@ -1,11 +1,17 @@
-import { ConductorClient, TaskDef } from "../common";
-import { WorkflowDef } from "../common/open-api";
+import { MetadataResource } from "../common/open-api/sdk.gen";
+import { Client } from "../common/open-api/client";
 import { tryCatchReThrow } from "./helpers";
+import {
+  ExtendedWorkflowDef,
+  TaskDef,
+  WorkflowDef,
+} from "../common/open-api/types.gen";
+import type { ExtendedTaskDef, OpenApiExtendedTaskDef } from "../common";
 
 export class MetadataClient {
-  public readonly _client: ConductorClient;
+  public readonly _client: Client;
 
-  constructor(client: ConductorClient) {
+  constructor(client: Client) {
     this._client = client;
   }
 
@@ -16,9 +22,12 @@ export class MetadataClient {
    * @returns
    */
   public unregisterTask(name: string): Promise<void> {
-    return tryCatchReThrow(() =>
-      this._client.metadataResource.unregisterTaskDef(name)
-    );
+    return tryCatchReThrow(async () => {
+      await MetadataResource.unregisterTaskDef({
+        path: { tasktype: name },
+        client: this._client,
+      });
+    });
   }
 
   /**
@@ -27,10 +36,23 @@ export class MetadataClient {
    * @param taskDef
    * @returns
    */
-  public registerTask(taskDef: TaskDef): Promise<void> {
-    return tryCatchReThrow(() =>
-      this._client.metadataResource.registerTaskDef([taskDef])
-    );
+  public registerTask(taskDef: ExtendedTaskDef): Promise<void> {
+    return this.registerTasks([taskDef]);
+  }
+
+  /**
+   * Registers multiple task definitions (array)
+   *
+   * @param taskDefs
+   * @returns
+   */
+  public registerTasks(taskDefs: ExtendedTaskDef[]): Promise<void> {
+    return tryCatchReThrow(async () => {
+      await MetadataResource.registerTaskDef({
+        body: [...(taskDefs as OpenApiExtendedTaskDef[])],
+        client: this._client,
+      });
+    });
   }
 
   /**
@@ -39,10 +61,30 @@ export class MetadataClient {
    * @param taskDef
    * @returns
    */
-  public updateTask(taskDef: TaskDef): Promise<void> {
-    return tryCatchReThrow(() =>
-      this._client.metadataResource.updateTaskDef(taskDef)
-    );
+  public updateTask(taskDef: ExtendedTaskDef): Promise<void> {
+    return tryCatchReThrow(async () => {
+      await MetadataResource.updateTaskDef({
+        body: taskDef as OpenApiExtendedTaskDef,
+        client: this._client,
+      });
+    });
+  }
+
+  /**
+   * Get an existing task definition
+   *
+   * @param taskName
+   * @returns
+   */
+  public async getTask(taskName: string): Promise<TaskDef | undefined> {
+    return tryCatchReThrow(async () => {
+      const { data } = await MetadataResource.getTaskDef({
+        path: { tasktype: taskName },
+        client: this._client,
+      });
+
+      return data as TaskDef; //todo: remove casting after OpenApi spec is fixed
+    });
   }
 
   /**
@@ -53,12 +95,41 @@ export class MetadataClient {
    * @returns
    */
   public registerWorkflowDef(
-    workflowDef: WorkflowDef,
+    workflowDef: ExtendedWorkflowDef,
     overwrite = false
-  ) {
-    return tryCatchReThrow(() =>
-      this._client.metadataResource.create(workflowDef, overwrite)
-    );
+  ): Promise<void> {
+    return tryCatchReThrow(async () => {
+      await MetadataResource.create({
+        body: workflowDef,
+        query: {
+          overwrite,
+        },
+        client: this._client,
+      });
+    });
+  }
+
+  /**
+   * Creates or updates (overwrite: true) a workflow definition
+   *
+   * @param workflowDef
+   * @param overwrite
+   * @returns
+   */
+  public getWorkflowDef(
+    name: string,
+    version?: number,
+    metadata = false
+  ): Promise<WorkflowDef | undefined> {
+    return tryCatchReThrow(async () => {
+      const { data } = await MetadataResource.get1({
+        path: { name },
+        query: { metadata, version },
+        client: this._client,
+      });
+
+      return data;
+    });
   }
 
   /**
@@ -68,12 +139,12 @@ export class MetadataClient {
    * @param overwrite
    * @returns
    */
-  public unregisterWorkflow(
-      workflowName: string,
-      version = 1,
-  ) {
-    return tryCatchReThrow(() =>
-        this._client.metadataResource.unregisterWorkflowDef(workflowName, version)
-    );
+  public unregisterWorkflow(workflowName: string, version = 1): Promise<void> {
+    return tryCatchReThrow(async () => {
+      await MetadataResource.unregisterWorkflowDef({
+        path: { name: workflowName, version },
+        client: this._client,
+      });
+    });
   }
 }

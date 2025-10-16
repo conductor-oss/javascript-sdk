@@ -1,6 +1,7 @@
 import { ConductorError } from "./types";
 
 export const errorMapper = (error: unknown): ConductorError => {
+  //todo: add error.message, mb error.status
   const message =
     error &&
     typeof error === "object" &&
@@ -17,9 +18,9 @@ export const errorMapper = (error: unknown): ConductorError => {
   return new ConductorError(message, innerError);
 };
 
-export const tryCatchReThrow = <T>(fn: () => T): T => {
+export const tryCatchReThrow = async <T>(fn: () => Promise<T>): Promise<T> => {
   try {
-    return fn();
+    return await fn();
   } catch (error) {
     throw errorMapper(error);
   }

@@ -1,16 +1,14 @@
 import { TaskResultStatus } from "../core/types";
-import {
-  ConductorClient,
-  SearchResultTask,
-  Task,
-  TaskResult,
-} from "../common";
+
 import { tryCatchReThrow } from "./helpers";
+import { Client } from "../common/open-api/client/types.gen";
+import { SearchResultTaskSummary, Task } from "../common/open-api/types.gen";
+import { TaskResource } from "../common/open-api/sdk.gen";
 
 export class TaskClient {
-  public readonly _client: ConductorClient;
+  public readonly _client: Client;
 
-  constructor(client: ConductorClient) {
+  constructor(client: Client) {
     this._client = client;
   }
 
@@ -30,16 +28,15 @@ export class TaskClient {
     sort = "",
     freeText: string,
     query: string
-  ): Promise<SearchResultTask> {
-    return tryCatchReThrow(() =>
-      this._client.taskResource.search(
-        start,
-        size,
-        sort,
-        freeText,
-        query
-      )
-    );
+  ): Promise<SearchResultTaskSummary | undefined> {
+    return tryCatchReThrow(async () => {
+      const { data } = await TaskResource.search2({
+        query: { start, size, sort, freeText, query },
+        client: this._client,
+      });
+
+      return data;
+    });
   }
 
   /**
@@ -47,10 +44,15 @@ export class TaskClient {
    * @param taskId
    * @returns Task
    */
-  public getTask(taskId: string): Promise<Task> {
-    return tryCatchReThrow(() =>
-      this._client.taskResource.getTask(taskId)
-    );
+  public getTask(taskId: string): Promise<Task | undefined> {
+    return tryCatchReThrow(async () => {
+      const { data } = await TaskResource.getTask({
+        path: { taskId },
+        client: this._client,
+      });
+
+      return data;
+    });
   }
 
   /**
@@ -65,17 +67,24 @@ export class TaskClient {
    */
   public updateTaskResult(
     workflowId: string,
-    taskReferenceName: string,
+    taskRefName: string,
     status: TaskResultStatus,
-    outputData: Record<string, unknown>,
-  ): Promise<TaskResult> {
-    return tryCatchReThrow(() =>
-      this._client.taskResource.updateTask(
-        workflowId,
-        taskReferenceName,
-        status,
-        outputData
-      )
-    );
+    outputData: Record<string, unknown>
+  ): Promise<string | undefined> {
+    return tryCatchReThrow(async () => {
+      const { data } = await TaskResource.updateTask1({
+        body: {
+          outputData,
+        },
+        path: {
+          workflowId,
+          taskRefName,
+          status
+        },
+        client: this._client,
+      });
+
+      return data;
+    });
   }
 }
