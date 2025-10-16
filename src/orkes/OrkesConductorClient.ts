@@ -24,8 +24,10 @@ export const orkesConductorClient = async (
 
   if (!serverUrl) throw new Error("Conductor server URL is not set");
   // todo: retry on 429
-  // todo: decide if should return undefined from client methods
-  // todo: logging
+  // todo: remove undefined from client methods + throw error instead, replace all default errors with sdk error
+  // todo: decide if to keep FetchFn type
+  // todo: add logging for silent operations (auth refresh, etc?) using sdk logger
+  // todo: build a list of OpenApi spec mistakes
 
   const openApiClient = createClient({
     baseUrl: serverUrl,
