@@ -3,6 +3,7 @@ import { MetadataClient } from "../../src/core";
 import { simpleTask, workflow } from "../../src/core/sdk";
 import { orkesConductorClient } from "../../src/orkes";
 import { TaskDefTypes } from "../../src/common/types";
+import { WorkflowResource } from "../../src/common/open-api/sdk.gen";
 
 describe("WorkflowResourceService", () => {
   jest.setTimeout(120000);
@@ -16,17 +17,24 @@ describe("WorkflowResourceService", () => {
 
     const wfDef = workflow(`jsSdkTest-test_wf-${Date.now()}`, tasks);
     wfDef.outputParameters = { message: "${simple_ref.output.message}" };
-    metadataClient.registerWorkflowDef(wfDef, true);
+    await metadataClient.registerWorkflowDef(wfDef, true);
 
     const status = "COMPLETED";
     const output = { message: "Mocked message" };
 
-    const wf = await client.workflowResource.testWorkflow({
-      name: wfDef.name,
-      taskRefToMockOutput: {
-        simple_ref: [{ status, output }],
+    const { data: wf } = await WorkflowResource.testWorkflow({
+      client: client,
+      body: {
+        name: wfDef.name,
+        taskRefToMockOutput: {
+          simple_ref: [{ status, output }],
+        },
       },
     });
+
+    if (!wf) {
+      throw new Error("Workflow not found");
+    }
 
     expect(wf.status).toEqual(status);
     expect(wf.output).toEqual(output);

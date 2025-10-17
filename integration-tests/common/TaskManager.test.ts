@@ -1,5 +1,10 @@
 import { expect, describe, test, jest } from "@jest/globals";
-import { simpleTask, taskDefinition, WorkflowExecutor } from "../../src/core";
+import {
+  MetadataClient,
+  simpleTask,
+  taskDefinition,
+  WorkflowExecutor,
+} from "../../src/core";
 import { orkesConductorClient } from "../../src/orkes";
 import { TaskManager, ConductorWorker } from "../../src/task/index";
 import { mockLogger } from "../utils/mockLogger";
@@ -50,6 +55,10 @@ describe("TaskManager", () => {
       version: 1,
     });
 
+    if (!executionId) {
+      throw new Error("Execution ID is undefined");
+    }
+
     const workflowStatus = await waitForWorkflowCompletion(
       executor,
       executionId,
@@ -64,6 +73,7 @@ describe("TaskManager", () => {
   test("On error it should call the errorHandler provided", async () => {
     const client = await clientPromise;
     const executor = new WorkflowExecutor(client);
+    const metadataClient = new MetadataClient(client);
     const taskName = `jsSdkTest-taskmanager-error-handler-test-${Date.now()}`;
     const workflowName = `jsSdkTest-taskmanager-error-handler-test-wf-${Date.now()}`;
 
@@ -76,13 +86,13 @@ describe("TaskManager", () => {
       },
     };
 
-    await client.metadataResource.registerTaskDef([
+    await metadataClient.registerTask(
       taskDefinition({
         name: taskName,
         timeoutSeconds: 0,
         retryCount: 0,
-      }),
-    ]);
+      })
+    );
 
     const manager = new TaskManager(client, [worker], {
       options: { pollInterval: BASE_TIME },
@@ -108,6 +118,10 @@ describe("TaskManager", () => {
       correlationId: `${workflowName}-id`,
     });
 
+    if (!status) {
+      throw new Error("Status is undefined");
+    }
+
     const workflowStatus = await waitForWorkflowCompletion(
       executor,
       status,
@@ -122,6 +136,7 @@ describe("TaskManager", () => {
   test("If no error handler provided. it should just update the task", async () => {
     const client = await clientPromise;
     const executor = new WorkflowExecutor(client);
+    const metadataClient = new MetadataClient(client);
     const taskName = `jsSdkTest-taskmanager-error-test-${Date.now()}`;
     const workflowName = `jsSdkTest-taskmanager-error-test-wf-${Date.now()}`;
 
@@ -132,13 +147,13 @@ describe("TaskManager", () => {
       },
     };
 
-    await client.metadataResource.registerTaskDef([
+    await metadataClient.registerTask(
       taskDefinition({
         name: taskName,
         timeoutSeconds: 0,
         retryCount: 0,
-      }),
-    ]);
+      })
+    );
 
     const manager = new TaskManager(client, [worker], {
       options: { pollInterval: BASE_TIME },
@@ -162,6 +177,10 @@ describe("TaskManager", () => {
       version: 1,
       correlationId: `${workflowName}-id`,
     });
+
+    if (!executionId) {
+      throw new Error("Execution ID is undefined");
+    }
 
     const workflowStatus = await waitForWorkflowCompletion(
       executor,
@@ -228,6 +247,9 @@ describe("TaskManager", () => {
     });
 
     expect(executionId).toBeDefined();
+    if (!executionId) {
+      throw new Error("Execution ID is undefined");
+    }
 
     // decrease speed again
     manager.updatePollingOptions({ pollInterval: BASE_TIME, concurrency: 1 });
@@ -358,6 +380,9 @@ describe("TaskManager", () => {
       correlationId: `${workflowName}-id`,
     });
     expect(executionId).toBeDefined();
+    if (!executionId) {
+      throw new Error("Execution ID is undefined");
+    }
 
     // decrease speed again
     manager.updatePollingOptions({ pollInterval: BASE_TIME, concurrency: 1 });

@@ -16,7 +16,7 @@ describe("TaskManager", () => {
     const taskName = `jsSdkTest-taskmanager-test-${Date.now()}`;
 
     const taskRunner = new TaskRunner({
-      taskResource: client.taskResource,
+      client: client,
       worker: {
         taskDefName: taskName,
         execute: async () => {
@@ -53,6 +53,10 @@ describe("TaskManager", () => {
       version: 1,
     });
 
+    if (!executionId) {
+      throw new Error("Execution ID is undefined");
+    }
+
     const workflowStatus = await waitForWorkflowStatus(
       executor,
       executionId,
@@ -65,7 +69,7 @@ describe("TaskManager", () => {
 
     taskRunner.stopPolling();
     const taskDetails = await executor.getTask(firstTask?.taskId || "");
-    expect(taskDetails.status).toEqual("COMPLETED");
+    expect(taskDetails?.status).toEqual("COMPLETED");
   });
 
   test("update task example ", async () => {
@@ -95,7 +99,7 @@ describe("TaskManager", () => {
     }
     const workflowStatus = await executor.getWorkflow(executionId, true);
 
-    const [firstTask] = workflowStatus.tasks || [];
+    const [firstTask] = workflowStatus?.tasks || [];
 
     expect(firstTask?.referenceTaskName).toBeDefined();
     expect(firstTask?.referenceTaskName).toEqual(waitTaskReference);
@@ -112,7 +116,7 @@ describe("TaskManager", () => {
     );
 
     const taskDetails = await executor.getTask(firstTask?.taskId || "");
-    expect(taskDetails.outputData).toEqual(changedValue);
+    expect(taskDetails?.outputData).toEqual(changedValue);
     const newChange = { greet: "bye" };
 
     expect(firstTask?.taskId).toBeDefined();
@@ -128,7 +132,7 @@ describe("TaskManager", () => {
     );
 
     const taskAfterUpdate = await executor.getTask(firstTask?.taskId || "");
-    expect(taskAfterUpdate.outputData).toEqual(newChange);
+    expect(taskAfterUpdate?.outputData).toEqual(newChange);
   });
 
   test("Should create and run a workflow that sums two numbers", async () => {
@@ -185,7 +189,7 @@ describe("TaskManager", () => {
     if (!executionId) {
       throw new Error("Execution ID is undefined");
     }
-    
+
     const workflowStatus = await waitForWorkflowStatus(
       executor,
       executionId,

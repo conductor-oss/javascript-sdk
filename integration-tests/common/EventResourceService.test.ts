@@ -1,10 +1,11 @@
 import { expect, describe, test } from "@jest/globals";
 import { orkesConductorClient } from "../../src/orkes";
+import { EventResource } from "../../src/common/open-api/sdk.gen";
 
 describe("EventResourceService", () => {
   test("Should create an event handler with description and tags and then delete it", async () => {
-    const orkesClient = await orkesConductorClient();
-    const eventApi = orkesClient.eventResource;
+    const client = await orkesConductorClient();
+    const eventApi = EventResource;
 
     const now = Date.now();
     const [eventName, event, eventDescription, eventTagKey, eventTagValue] = [
@@ -24,8 +25,14 @@ describe("EventResourceService", () => {
       tags: [{ key: eventTagKey, value: eventTagValue }],
     };
 
-    await eventApi.addEventHandler(eventHandler);
-    const eventHandlers = await eventApi.getEventHandlersForEvent(event);
+    await eventApi.addEventHandler({ body: [eventHandler], client });
+    const { data: eventHandlers } = await eventApi.getEventHandlersForEvent({
+      path: { event },
+      client,
+    });
+    if (!eventHandlers) {
+      throw new Error("Event handlers not found");
+    }
 
     expect(eventHandlers.length).toEqual(1);
     expect(eventHandlers[0].description).toEqual(eventDescription);
@@ -33,10 +40,15 @@ describe("EventResourceService", () => {
       { key: eventTagKey, value: eventTagValue },
     ]);
 
-    await eventApi.removeEventHandlerStatus(eventName);
-    const eventHandlersAfterRemove = await eventApi.getEventHandlersForEvent(
-      event
-    );
+    await eventApi.removeEventHandlerStatus({
+      path: { name: eventName },
+      client,
+    });
+    const { data: eventHandlersAfterRemove } =
+      await eventApi.getEventHandlersForEvent({ path: { event }, client });
+    if (!eventHandlersAfterRemove) {
+      throw new Error("Event handlers not found");
+    }
 
     expect(eventHandlersAfterRemove.length).toEqual(0);
   });

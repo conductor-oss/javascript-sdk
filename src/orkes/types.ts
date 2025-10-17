@@ -1,12 +1,13 @@
-import type { OpenAPIConfig } from "../common";
+// export type FetchFn<
+//   T = RequestInit,
+//   R extends { json: () => Promise<unknown> } = Response
+// > = (input: RequestInfo, init?: T) => Promise<R>;
 
-export type FetchFn<
-  T = RequestInit,
-  R extends { json: () => Promise<unknown> } = Response
-> = (input: RequestInfo, init?: T) => Promise<R>;
+// todo: decide if to keep
+export type FetchFn = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 
-export interface OrkesApiConfig extends Partial<OpenAPIConfig> {
-  serverUrl: string;
+export interface OrkesApiConfig {
+  serverUrl?: string;
   keyId?: string;
   keySecret?: string;
   refreshTokenInterval?: number;

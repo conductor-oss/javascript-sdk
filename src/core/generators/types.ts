@@ -1,5 +1,4 @@
 import {
-  WorkflowDef,
   ForkJoinTaskDef,
   SwitchTaskDef,
   DoWhileTaskDef,
@@ -18,6 +17,7 @@ import {
   TaskDefTypes,
   InlineTaskInputParameters,
 } from "../../common/types";
+import { WorkflowDef } from "../../common";
 
 export type TaskDefTypesGen =
   | SimpleTaskDef

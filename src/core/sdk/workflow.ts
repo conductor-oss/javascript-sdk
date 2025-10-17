@@ -1,4 +1,5 @@
-import { WorkflowDef, TaskDefTypes } from "../../common/types";
+import { TaskDefTypes } from "../../common/types";
+import { WorkflowDef } from "../../common";
 
 export const workflow = (name: string, tasks: TaskDefTypes[]): WorkflowDef => ({
   name,

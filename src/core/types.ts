@@ -1,4 +1,4 @@
-import { TaskResult }  from "../common/open-api";
+import { SignalResponse, Task, TaskResult, Workflow } from "../common/";
 export class ConductorError extends Error {
   private _trace;
   private __proto__: unknown;
@@ -15,5 +15,26 @@ export class ConductorError extends Error {
     }
   }
 }
-export type TaskResultStatus = NonNullable<TaskResult['status']>;
-export type TaskResultOutputData = NonNullable<TaskResult['outputData']>;
+export type TaskResultStatus = NonNullable<TaskResult["status"]>;
+export type TaskResultOutputData = NonNullable<TaskResult["outputData"]>;
+
+export interface EnhancedSignalResponse extends SignalResponse {
+  isTargetWorkflow(): boolean;
+  isBlockingWorkflow(): boolean;
+  isBlockingTask(): boolean;
+  isBlockingTaskInput(): boolean;
+  getWorkflow(): Workflow;
+  getBlockingTask(): Task;
+  getTaskInput(): Record<string, unknown>;
+  getWorkflowId(): string;
+  getTargetWorkflowId(): string;
+  hasWorkflowData(): boolean;
+  hasTaskData(): boolean;
+  getResponseType(): string;
+  isTerminal(): boolean;
+  isRunning(): boolean;
+  isPaused(): boolean;
+  getSummary(): string;
+  toDebugJSON(): Record<string, unknown>;
+  toString(): string;
+}

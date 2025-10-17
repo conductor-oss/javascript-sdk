@@ -36,10 +36,13 @@ describe("MetadataClient", () => {
     await expect(
       metadataClient.registerTask(newTaskDefinition)
     ).resolves.not.toThrow();
-    const taskDefinitionFromApi = await client.metadataResource.getTaskDef(
+    const taskDefinitionFromApi = await metadataClient.getTask(
       newTaskDefinition.name
     );
 
+    if (!taskDefinitionFromApi) {
+      throw new Error("Task definition not found");
+    }
     expect(taskDefinitionFromApi.name).toEqual(newTaskDefinition.name);
     expect(taskDefinitionFromApi.description).toEqual(newTaskDefinition.description);
     expect(taskDefinitionFromApi.retryCount).toEqual(newTaskDefinition.retryCount);
@@ -86,10 +89,13 @@ describe("MetadataClient", () => {
     await expect(
       metadataClient.updateTask(newTaskDefinition)
     ).resolves.not.toThrow();
-    const taskDefinitionFromApi = await client.metadataResource.getTaskDef(
+    const taskDefinitionFromApi = await metadataClient.getTask(
       newTaskDefinition.name
     );
 
+    if (!taskDefinitionFromApi) {
+      throw new Error("Task definition not found");
+    }
     expect(taskDefinitionFromApi.description).toEqual(newTaskDefinition.description);
     expect(taskDefinitionFromApi.retryCount).toEqual(newTaskDefinition.retryCount);
     expect(taskDefinitionFromApi.timeoutSeconds).toEqual(newTaskDefinition.timeoutSeconds);
@@ -116,7 +122,7 @@ describe("MetadataClient", () => {
       metadataClient.unregisterTask(taskName)
     ).resolves.not.toThrow();
 
-    await expect(client.metadataResource.getTaskDef(
+    await expect(metadataClient.getTask(
       taskName
     )).rejects.toThrow();
   })

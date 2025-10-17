@@ -1,6 +1,7 @@
 import { ConductorError } from "./types";
 
 export const errorMapper = (error: unknown): ConductorError => {
+  // todo: add error.message, mb error.status
   const message =
     error &&
     typeof error === "object" &&
@@ -15,14 +16,6 @@ export const errorMapper = (error: unknown): ConductorError => {
   const innerError = error instanceof Error ? error : undefined;
 
   return new ConductorError(message, innerError);
-};
-
-export const tryCatchReThrow = <T>(fn: () => T): T => {
-  try {
-    return fn();
-  } catch (error) {
-    throw errorMapper(error);
-  }
 };
 
 export function reverseFind<T>(

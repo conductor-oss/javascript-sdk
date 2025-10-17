@@ -1,20 +1,21 @@
 import { jest, test, expect } from "@jest/globals";
-import type { Mocked } from "jest-mock";
-
 import { TaskRunner } from "../TaskRunner";
 import { RunnerArgs } from "../types";
 import { mockLogger } from "../../../integration-tests/utils/mockLogger";
-import { TaskResourceService } from "../../common/open-api";
-import { TaskResultStatusEnum } from "../../common/open-api/models/TaskResultStatusEnum";
+import { TaskResource } from "../../common/open-api";
+import { TaskResultStatusEnum } from "../../common";
+import { Client } from "../../common/open-api/client/types.gen";
+import { Task } from "../../common/open-api";
+
+jest.mock("../../common/open-api", () => ({
+  TaskResource: {
+    batchPoll: jest.fn(),
+    updateTask: jest.fn(),
+  },
+}));
 
 test("polls tasks", async () => {
-  const taskClientStub: Mocked<
-    Pick<TaskResourceService, "batchPoll" | "updateTask1">
-  > = {
-    batchPoll: jest.fn(),
-    updateTask1: jest.fn(),
-  };
-  const mockTaskClient = taskClientStub as unknown as TaskResourceService;
+  const mockClient = {} as Client;
   const workerID = "worker-id";
   const args: RunnerArgs = {
     worker: {
@@ -36,26 +37,33 @@ test("polls tasks", async () => {
       workerID,
     },
     logger: mockLogger,
-    taskResource: mockTaskClient,
+    client: mockClient,
   };
   const workflowInstanceId = "fake-workflow-id";
   const taskId = "fake-task-id";
-  taskClientStub.batchPoll.mockResolvedValue([
-    {
-      taskId,
-      workflowInstanceId,
-      status: "IN_PROGRESS",
-      reasonForIncompletion: undefined,
-      inputData: {
-        input: "from workflow",
-      },
+
+  const mockTask: Task = {
+    taskId,
+    workflowInstanceId,
+    status: "IN_PROGRESS",
+    reasonForIncompletion: undefined,
+    inputData: {
+      input: "from workflow",
     },
-  ]);
+  };
+
+  const mockBatchPoll = TaskResource.batchPoll as jest.MockedFunction<
+    typeof TaskResource.batchPoll
+  >;
+  mockBatchPoll.mockResolvedValue({
+    data: [mockTask],
+  } as Awaited<ReturnType<typeof TaskResource.batchPoll>>);
 
   const runner = new TaskRunner(args);
   runner.startPolling();
   await new Promise((r) => setTimeout(() => r(true), 10));
   runner.stopPolling();
+
   const expected = {
     taskId,
     workflowInstanceId,
@@ -66,18 +74,14 @@ test("polls tasks", async () => {
       input: "from workflow",
     },
   };
-  expect(taskClientStub.updateTask1).toHaveBeenCalledWith(expected);
+  expect(TaskResource.updateTask).toHaveBeenCalledWith({
+    client: mockClient,
+    body: expected,
+  });
 });
 
 test("Should set the task as failed if the task has an error", async () => {
-  const taskClientStub: Mocked<
-    Pick<TaskResourceService, "batchPoll" | "updateTask1">
-  > = {
-    batchPoll: jest.fn(),
-    updateTask1: jest.fn(),
-  };
-  const mockTaskClient = taskClientStub as unknown as TaskResourceService;
-
+  const mockClient = {} as Client;
   const workerID = "worker-id";
   const args: RunnerArgs = {
     worker: {
@@ -93,26 +97,33 @@ test("Should set the task as failed if the task has an error", async () => {
       workerID,
     },
     logger: mockLogger,
-    taskResource: mockTaskClient,
+    client: mockClient,
   };
   const workflowInstanceId = "fake-workflow-id";
   const taskId = "fake-task-id";
-  taskClientStub.batchPoll.mockResolvedValue([
-    {
-      taskId,
-      workflowInstanceId,
-      status: "IN_PROGRESS",
-      reasonForIncompletion: undefined,
-      inputData: {
-        input: "from workflow",
-      },
+
+  const mockTask: Task = {
+    taskId,
+    workflowInstanceId,
+    status: "IN_PROGRESS",
+    reasonForIncompletion: undefined,
+    inputData: {
+      input: "from workflow",
     },
-  ]);
+  };
+
+  const mockBatchPoll = TaskResource.batchPoll as jest.MockedFunction<
+    typeof TaskResource.batchPoll
+  >;
+  mockBatchPoll.mockResolvedValue({
+    data: [mockTask],
+  } as Awaited<ReturnType<typeof TaskResource.batchPoll>>);
 
   const runner = new TaskRunner(args);
   runner.startPolling();
   await new Promise((r) => setTimeout(() => r(true), 10));
   runner.stopPolling();
+
   const expected = {
     taskId,
     workflowInstanceId,
@@ -121,5 +132,8 @@ test("Should set the task as failed if the task has an error", async () => {
     outputData: {},
     reasonForIncompletion: "Expected error from worker",
   };
-  expect(taskClientStub.updateTask1).toHaveBeenCalledWith(expected);
+  expect(TaskResource.updateTask).toHaveBeenCalledWith({
+    client: mockClient,
+    body: expected,
+  });
 });

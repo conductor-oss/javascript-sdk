@@ -1,36 +1,17 @@
-The client is generated using [this library](https://github.com/ferdikoomen/openapi-typescript-codegen).
+The client is generated using [this library](https://github.com/hey-api/openapi-ts). Generated code must not be modified directly.
 
-## Overrides
+## Updating generated code
 
-To enable TLS, we have overriden some of the types and options in the generated `core` files.
-
-Changes are commented with `conductor-client-modification`
-
-## Updating definitions
-
-To update `service` and `model` definitions:
-
-1. Run the latest conductor OSS server locally 
-2. Run the npm commands
+1. Copy OpenApi spec data from up to date cluster `({cluster_url}/api-docs)`
+2. Paste to `open-api-spec/spec.json`
+3. Prettify `spec.json`, run command: (todo: should be removed after OpenApi spec fix)
 
 ```text
-npm run generateClient:models
+node open-api-spec/fix-additional-properties.ts
 ```
 
-You may need to restore `open-api/ConductorClient` if there is a diff after this command.
+4. run command:
 
-## Updating the core
-
-```
-npm run generateClient:core
-```
-
-NOTE: There will be a diff on generation and you will manually need to restore those changes. Typically, this mean restoring the client and the core. Typically that will involve something like this:
-
-```
-# review diff and see if there are any meaningful changes you want to keep
-# If there are no changes then check out
-git checkout src/common/open-api/ConductorClient.ts
-git checkout src/common/open-api/core
-# Otherwise, selectively check out the old parts
+```text
+npm run generate-openapi-layer
 ```

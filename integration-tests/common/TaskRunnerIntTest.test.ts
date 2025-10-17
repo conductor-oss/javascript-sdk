@@ -15,7 +15,7 @@ describe("TaskManager", () => {
     const workflowName = `jsSdkTest-task-manager-int-test-wf-${Date.now()}`;
 
     const taskRunner = new TaskRunner({
-      taskResource: client.taskResource,
+      client: client,
       worker: {
         taskDefName: taskName,
         execute: async () => {
@@ -80,6 +80,6 @@ describe("TaskManager", () => {
 
     expect(taskRunner.isPolling).toEqual(false);
     const taskDetails = await executor.getTask(firstTask?.taskId || "");
-    expect(taskDetails.status).toEqual("COMPLETED");
+    expect(taskDetails?.status).toEqual("COMPLETED");
   });
 });
