@@ -3,8 +3,8 @@ import * as fs from "fs";
 // Read the api-docs.json file
 const filePath = "open-api-spec/spec.json";
 let content = fs.readFileSync(filePath, "utf8");
-// fullPayload EventMessage | defaultValue FieldDescriptor 
-// Pattern to find and replace:
+
+// Pattern 1: Handle nested object case
 // "type": "object",
 // "additionalProperties": {
 //      "type": "object"
@@ -14,24 +14,66 @@ let content = fs.readFileSync(filePath, "utf8");
 // "type": "object",
 // "additionalProperties": {}
 
-// Using regex to match the pattern with flexible whitespace
-const pattern =
+const pattern1 =
   /("type"\s*:\s*"object"\s*,\s*"additionalProperties"\s*:\s*{\s*"type"\s*:\s*"object"\s*})/g;
-const replacement =
+const replacement1 =
   '"type": "object",\n              "additionalProperties": {}';
 
-// Count matches before replacement
-const matches = content.match(pattern);
-const matchCount = matches ? matches.length : 0;
+const matches1 = content.match(pattern1);
+const matchCount1 = matches1 ? matches1.length : 0;
+console.log(`Found ${matchCount1} nested object patterns to replace`);
+content = content.replace(pattern1, replacement1);
 
-console.log(`Found ${matchCount} occurrences to replace`);
+// Pattern 2: Handle all bare "type": "object" properties within component schemas
+// Fix ALL properties with "type": "object" that lack additionalProperties
+// But EXCLUDE:
+// - "schema" properties (used in responses/requests)
+// - Properties that already have additionalProperties
 
-// Perform the replacement
-content = content.replace(pattern, replacement);
+// First, let's find all bare "type": "object" within property definitions
+// Match pattern: "propertyName": { "type": "object" } (followed by closing brace)
+// But NOT "schema": { "type": "object" }
+
+const pattern2 =
+  /("(?!schema)[^"]+"\s*:\s*{\s*)"type"\s*:\s*"object"(\s*\n\s*})/g;
+
+// Find matches within the components/schemas section only
+const componentsStart = content.indexOf('"components"');
+const componentsEnd = content.lastIndexOf("}"); // End of file
+
+let matchCount2 = 0;
+const fixedProperties = new Set();
+
+if (componentsStart !== -1) {
+  // Work only within the components section
+  const beforeComponents = content.substring(0, componentsStart);
+  let componentsSection = content.substring(componentsStart, componentsEnd);
+  const afterComponents = content.substring(componentsEnd);
+
+  // Replace in components section only
+  componentsSection = componentsSection.replace(
+    pattern2,
+    (match, g1, g2) => {
+      // Extract property name for logging
+      const propNameMatch = g1.match(/"([^"]+)"\s*:\s*{\s*$/);
+      const propName = propNameMatch ? propNameMatch[1] : "unknown";
+
+      matchCount2++;
+      fixedProperties.add(propName);
+
+      return `${g1}"type": "object",\n              "additionalProperties": {}${g2}`;
+    }
+  );
+
+  content = beforeComponents + componentsSection + afterComponents;
+}
+
+console.log(`Found ${matchCount2} bare object patterns to fix`);
 
 // Write back to file
 fs.writeFileSync(filePath, content, "utf8");
 
+const totalCount = matchCount1 + matchCount2;
 console.log(
-  `✓ Successfully replaced ${matchCount} occurrences in api-docs.json`
+  `✓ Successfully fixed ${totalCount} total occurrences (${matchCount1} nested object + ${matchCount2} bare object)`
 );

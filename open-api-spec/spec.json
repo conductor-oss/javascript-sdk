@@ -10264,7 +10264,8 @@
             "bulkSuccessfulResults": {
               "type": "array",
               "items": {
-                "type": "object"
+                "type": "object",
+              "additionalProperties": {}
               }
             }
           }
@@ -11801,7 +11802,8 @@
               ]
             },
             "fullPayload": {
-              "type": "object"
+              "type": "object",
+              "additionalProperties": {}
             },
             "id": {
               "type": "string"
@@ -12605,7 +12607,8 @@
               "$ref": "#/components/schemas/Descriptor"
             },
             "defaultValue": {
-              "type": "object"
+              "type": "object",
+              "additionalProperties": {}
             },
             "enumType": {
               "$ref": "#/components/schemas/EnumDescriptor"
@@ -15622,97 +15625,128 @@
           }
         },
         "Parser": {
-          "type": "object"
+          "type": "object",
+              "additionalProperties": {}
         },
         "ParserAny": {
-          "type": "object"
+          "type": "object",
+              "additionalProperties": {}
         },
         "ParserDeclaration": {
-          "type": "object"
+          "type": "object",
+              "additionalProperties": {}
         },
         "ParserDescriptorProto": {
-          "type": "object"
+          "type": "object",
+              "additionalProperties": {}
         },
         "ParserEditionDefault": {
-          "type": "object"
+          "type": "object",
+              "additionalProperties": {}
         },
         "ParserEnumDescriptorProto": {
-          "type": "object"
+          "type": "object",
+              "additionalProperties": {}
         },
         "ParserEnumOptions": {
-          "type": "object"
+          "type": "object",
+              "additionalProperties": {}
         },
         "ParserEnumReservedRange": {
-          "type": "object"
+          "type": "object",
+              "additionalProperties": {}
         },
         "ParserEnumValueDescriptorProto": {
-          "type": "object"
+          "type": "object",
+              "additionalProperties": {}
         },
         "ParserEnumValueOptions": {
-          "type": "object"
+          "type": "object",
+              "additionalProperties": {}
         },
         "ParserExtensionRange": {
-          "type": "object"
+          "type": "object",
+              "additionalProperties": {}
         },
         "ParserExtensionRangeOptions": {
-          "type": "object"
+          "type": "object",
+              "additionalProperties": {}
         },
         "ParserFeatureSet": {
-          "type": "object"
+          "type": "object",
+              "additionalProperties": {}
         },
         "ParserFieldDescriptorProto": {
-          "type": "object"
+          "type": "object",
+              "additionalProperties": {}
         },
         "ParserFieldOptions": {
-          "type": "object"
+          "type": "object",
+              "additionalProperties": {}
         },
         "ParserFileDescriptorProto": {
-          "type": "object"
+          "type": "object",
+              "additionalProperties": {}
         },
         "ParserFileOptions": {
-          "type": "object"
+          "type": "object",
+              "additionalProperties": {}
         },
         "ParserLocation": {
-          "type": "object"
+          "type": "object",
+              "additionalProperties": {}
         },
         "ParserMessage": {
-          "type": "object"
+          "type": "object",
+              "additionalProperties": {}
         },
         "ParserMessageLite": {
-          "type": "object"
+          "type": "object",
+              "additionalProperties": {}
         },
         "ParserMessageOptions": {
-          "type": "object"
+          "type": "object",
+              "additionalProperties": {}
         },
         "ParserMethodDescriptorProto": {
-          "type": "object"
+          "type": "object",
+              "additionalProperties": {}
         },
         "ParserMethodOptions": {
-          "type": "object"
+          "type": "object",
+              "additionalProperties": {}
         },
         "ParserNamePart": {
-          "type": "object"
+          "type": "object",
+              "additionalProperties": {}
         },
         "ParserOneofDescriptorProto": {
-          "type": "object"
+          "type": "object",
+              "additionalProperties": {}
         },
         "ParserOneofOptions": {
-          "type": "object"
+          "type": "object",
+              "additionalProperties": {}
         },
         "ParserReservedRange": {
-          "type": "object"
+          "type": "object",
+              "additionalProperties": {}
         },
         "ParserServiceDescriptorProto": {
-          "type": "object"
+          "type": "object",
+              "additionalProperties": {}
         },
         "ParserServiceOptions": {
-          "type": "object"
+          "type": "object",
+              "additionalProperties": {}
         },
         "ParserSourceCodeInfo": {
-          "type": "object"
+          "type": "object",
+              "additionalProperties": {}
         },
         "ParserUninterpretedOption": {
-          "type": "object"
+          "type": "object",
+              "additionalProperties": {}
         },
         "Permission": {
           "type": "object",
@@ -15915,7 +15949,8 @@
           }
         },
         "Response": {
-          "type": "object"
+          "type": "object",
+              "additionalProperties": {}
         },
         "Role": {
           "type": "object",
@@ -15981,7 +16016,8 @@
           "type": "object",
           "properties": {
             "defaultValue": {
-              "type": "object"
+              "type": "object",
+              "additionalProperties": {}
             },
             "format": {
               "type": "string"
@@ -16661,7 +16697,8 @@
               "type": "string"
             },
             "priority": {
-              "type": "object"
+              "type": "object",
+              "additionalProperties": {}
             },
             "taskToDomain": {
               "type": "object",
@@ -16674,7 +16711,8 @@
               "format": "int32"
             },
             "workflowDefinition": {
-              "type": "object"
+              "type": "object",
+              "additionalProperties": {}
             }
           }
         },

@@ -526,6 +526,9 @@ export type EventMessage = {
     eventExecutions?: Array<ExtendedEventExecution>;
     eventTarget?: string;
     eventType?: 'WEBHOOK' | 'MESSAGE';
+    fullPayload?: {
+        [key: string]: unknown;
+    };
     id?: string;
     orgId?: string;
     payload?: string;
@@ -766,6 +769,9 @@ export type FeatureSetOrBuilder = {
 export type FieldDescriptor = {
     containingOneof?: OneofDescriptor;
     containingType?: Descriptor;
+    defaultValue?: {
+        [key: string]: unknown;
+    };
     enumType?: EnumDescriptor;
     extension?: boolean;
     extensionScope?: Descriptor;
@@ -2974,18 +2980,6 @@ export type EnumValueOptionsWritable = {
     unknownFields?: UnknownFieldSet;
 };
 
-export type EventMessageWritable = {
-    createdAt?: number;
-    eventExecutions?: Array<ExtendedEventExecution>;
-    eventTarget?: string;
-    eventType?: 'WEBHOOK' | 'MESSAGE';
-    id?: string;
-    orgId?: string;
-    payload?: string;
-    status?: 'RECEIVED' | 'HANDLED' | 'REJECTED';
-    statusDescription?: string;
-};
-
 export type ExtensionRangeWritable = {
     allFields?: {
         [key: string]: unknown;
@@ -3051,34 +3045,6 @@ export type FeatureSetWritable = {
     serializedSize?: number;
     unknownFields?: UnknownFieldSet;
     utf8Validation?: 'UTF8_VALIDATION_UNKNOWN' | 'NONE' | 'VERIFY';
-};
-
-export type FieldDescriptorWritable = {
-    containingOneof?: OneofDescriptor;
-    containingType?: Descriptor;
-    enumType?: EnumDescriptor;
-    extension?: boolean;
-    extensionScope?: Descriptor;
-    file?: FileDescriptor;
-    fullName?: string;
-    index?: number;
-    javaType?: 'INT' | 'LONG' | 'FLOAT' | 'DOUBLE' | 'BOOLEAN' | 'STRING' | 'BYTE_STRING' | 'ENUM' | 'MESSAGE';
-    jsonName?: string;
-    liteJavaType?: 'INT' | 'LONG' | 'FLOAT' | 'DOUBLE' | 'BOOLEAN' | 'STRING' | 'BYTE_STRING' | 'ENUM' | 'MESSAGE';
-    liteType?: 'DOUBLE' | 'FLOAT' | 'INT64' | 'UINT64' | 'INT32' | 'FIXED64' | 'FIXED32' | 'BOOL' | 'STRING' | 'GROUP' | 'MESSAGE' | 'BYTES' | 'UINT32' | 'ENUM' | 'SFIXED32' | 'SFIXED64' | 'SINT32' | 'SINT64';
-    mapField?: boolean;
-    messageType?: Descriptor;
-    name?: string;
-    number?: number;
-    optional?: boolean;
-    options?: FieldOptionsWritable;
-    packable?: boolean;
-    packed?: boolean;
-    proto?: FieldDescriptorProtoWritable;
-    realContainingOneof?: OneofDescriptor;
-    repeated?: boolean;
-    required?: boolean;
-    type?: 'DOUBLE' | 'FLOAT' | 'INT64' | 'UINT64' | 'INT32' | 'FIXED64' | 'FIXED32' | 'BOOL' | 'STRING' | 'GROUP' | 'MESSAGE' | 'BYTES' | 'UINT32' | 'ENUM' | 'SFIXED32' | 'SFIXED64' | 'SINT32' | 'SINT64';
 };
 
 export type FieldDescriptorProtoWritable = {
