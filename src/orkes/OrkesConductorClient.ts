@@ -28,6 +28,7 @@ export const orkesConductorClient = async (
   // todo: decide if to keep FetchFn type
   // todo: add logging for silent operations (auth refresh, etc?) using sdk logger
   // todo: build a list of OpenApi spec mistakes
+  // todo: check generated file updates on v0.85.2
 
   const openApiClient = createClient({
     baseUrl: serverUrl,

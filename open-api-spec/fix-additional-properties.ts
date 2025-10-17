@@ -3,7 +3,7 @@ import * as fs from "fs";
 // Read the api-docs.json file
 const filePath = "open-api-spec/spec.json";
 let content = fs.readFileSync(filePath, "utf8");
-
+// fullPayload EventMessage | defaultValue FieldDescriptor 
 // Pattern to find and replace:
 // "type": "object",
 // "additionalProperties": {
