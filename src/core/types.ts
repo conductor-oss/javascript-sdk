@@ -1,10 +1,11 @@
 import { SignalResponse, Task, TaskResult, Workflow } from "../common/";
-export class ConductorError extends Error {
+export class ConductorSdkError extends Error {
   private _trace;
   private __proto__: unknown;
 
   constructor(message?: string, innerError?: Error) {
     super(message);
+    this.name = "[Conductor SDK Error]";
     this._trace = innerError;
     const actualProto = new.target.prototype;
 

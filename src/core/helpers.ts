@@ -1,7 +1,6 @@
-import { ConductorError } from "./types";
+import { ConductorSdkError } from "./types";
 
-export const errorMapper = (error: unknown): ConductorError => {
-  // todo: add error.message, mb error.status
+export const errorMapper = (error: unknown): ConductorSdkError => {
   const message =
     error &&
     typeof error === "object" &&
@@ -15,7 +14,31 @@ export const errorMapper = (error: unknown): ConductorError => {
 
   const innerError = error instanceof Error ? error : undefined;
 
-  return new ConductorError(message, innerError);
+  return new ConductorSdkError(message, innerError);
+};
+
+export const handleSdkError = (
+  error?: unknown,
+  customMessage?: string,
+  strategy: "throw" | "log" = "throw"
+) => {
+  const innerError = error instanceof Error ? error : undefined;
+
+  const messageFromError =
+    error && typeof error === "object" && "message" in error
+      ? String(error.message)
+      : undefined;
+
+  const fullMessage =
+    customMessage && messageFromError
+      ? `${customMessage}: ${messageFromError}`
+      : customMessage || messageFromError || "Unknown error";
+
+  if (strategy === "throw") {
+    throw new ConductorSdkError(fullMessage, innerError);
+  } else {
+    console.error(`[Conductor SDK Error]: ${fullMessage}\n`, innerError);
+  }
 };
 
 export function reverseFind<T>(

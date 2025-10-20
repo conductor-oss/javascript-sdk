@@ -1,6 +1,6 @@
 import { Client } from "../../common/open-api/client/types.gen";
 import { TokenResource } from "../../common/open-api/sdk.gen";
-import { errorMapper } from "../../core/helpers";
+import { handleSdkError } from "../../core/helpers";
 
 export const handleAuth = async (
   openApiClient: Client,
@@ -14,7 +14,11 @@ export const handleAuth = async (
       try {
         await authorize(openApiClient, keyId, keySecret);
       } catch (error) {
-        console.error("Token refresh failed, SDK will stop working when current token expires:", error); // replace with sdk logger
+        handleSdkError(
+          error,
+          "Token refresh failed, SDK will stop working when current token expires",
+          "log"
+        );
         clearInterval(intervalId);
       }
     }, refreshTokenInterval);
@@ -24,14 +28,15 @@ export const handleAuth = async (
 const authorize = async (
   openApiClient: Client,
   keyId: string,
-  keySecret: string,
+  keySecret: string
 ) => {
-  const { data } = await TokenResource.generateToken({
-    body: { keyId, keySecret },
+  const { data, error } = await TokenResource.generateToken({
+    body: { keyId: keyId, keySecret },
     client: openApiClient,
+    throwOnError: false,
   });
-  if (!data?.token) {
-    throw errorMapper("Failed to generate authorization token");
+  if (error || !data?.token) {
+    handleSdkError(error, "Failed to generate authorization token");
   }
   openApiClient.setConfig({ auth: `${data?.token}` });
 };

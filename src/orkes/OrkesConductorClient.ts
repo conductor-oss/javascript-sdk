@@ -37,7 +37,7 @@ export const orkesConductorClient = async (
   2. Bare "type": "object" properties without additionalProperties (FieldDescriptor, EventMessage, etc)
   3. SignalResponse optional fields are missing
   4. ExtendedTaskDef totalTimeoutSeconds and timeoutSeconds are marked both as required (in fact they are optional)
-  5. GET /api/metadata/taskdefs/{tasktype} should return TaskDef
+  5. GET /api/metadata/taskdefs/{tasktype} should return TaskDef (currently no return type described)
   6. POST & GET /api/registry/service/protos/{registryName}/{filename} should accept Blob ("format": "binary"). Probably same for other endpoints accepting binary data.
   */
 
