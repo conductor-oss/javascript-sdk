@@ -4,8 +4,8 @@ export const retryFetch = async (
   input: RequestInfo | URL,
   init: RequestInit | undefined,
   fetchFn: FetchFn,
-  retries: number = 5,
-  delay: number = 1000
+  retries = 5,
+  delay = 1000
 ): Promise<Response> => {
   const response = await fetchFn(input, init);
   if (response.status == 429 && retries > 0) {
