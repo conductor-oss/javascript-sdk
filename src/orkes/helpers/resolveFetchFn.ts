@@ -1,10 +1,9 @@
-import { FetchFn } from "../types";
 import { getUndiciHttp2FetchFn } from "./getUndiciHttp2FetchFn";
 
 export const resolveFetchFn = async (
-  customFetch?: FetchFn,
+  customFetch?: typeof fetch,
   maxHttpConnections?: number
-): Promise<FetchFn> => {
+): Promise<typeof fetch> => {
   if (customFetch) return customFetch;
   if (process?.release?.name !== "node") return fetch;
 

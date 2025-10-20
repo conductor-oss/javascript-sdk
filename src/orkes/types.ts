@@ -1,5 +1,3 @@
-export type FetchFn = typeof fetch;
-
 export interface OrkesApiConfig {
   serverUrl?: string;
   keyId?: string;

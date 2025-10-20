@@ -4,7 +4,7 @@ import {
   resolveOrkesConfig,
   wrapFetchWithRetry,
 } from "./helpers";
-import type { FetchFn, OrkesApiConfig } from "./types";
+import type { OrkesApiConfig } from "./types";
 import { createClient } from "../common/open-api/client";
 
 /**
@@ -17,7 +17,7 @@ import { createClient } from "../common/open-api/client";
  */
 export const orkesConductorClient = async (
   config?: OrkesApiConfig,
-  customFetch?: FetchFn
+  customFetch?: typeof fetch
 ) => {
   const {
     serverUrl,

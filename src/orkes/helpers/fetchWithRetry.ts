@@ -1,9 +1,10 @@
-import { FetchFn } from "../types";
+type Input = Parameters<typeof fetch>[0];
+type Init = Parameters<typeof fetch>[1];
 
 export const retryFetch = async (
-  input: RequestInfo | URL,
-  init: RequestInit | undefined,
-  fetchFn: FetchFn,
+  input: Input,
+  init: Init,
+  fetchFn: typeof fetch,
   retries = 5,
   delay = 1000
 ): Promise<Response> => {
@@ -15,8 +16,8 @@ export const retryFetch = async (
   return response;
 };
 
-export const wrapFetchWithRetry = (fetchFn: FetchFn): FetchFn => {
-  return (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+export const wrapFetchWithRetry = (fetchFn: typeof fetch): typeof fetch => {
+  return (input: Input, init?: Init): Promise<Response> => {
     return retryFetch(input, init, fetchFn);
   };
 };

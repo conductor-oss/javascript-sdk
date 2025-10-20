@@ -7,7 +7,6 @@ import type {
   BodyInit as UndiciBodyInit,
   HeadersInit as UndiciHeadersInit,
 } from "undici";
-import { FetchFn } from "../types";
 
 export const getUndiciHttp2FetchFn = async (
   maxHttpConnections = MAX_HTTP2_CONNECTIONS
@@ -36,5 +35,5 @@ export const getUndiciHttp2FetchFn = async (
     }
 
     return undiciFetch(input, { ...init, dispatcher: undiciAgent });
-  }) as FetchFn;
+  }) as typeof fetch;
 };
