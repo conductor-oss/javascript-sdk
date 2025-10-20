@@ -1,7 +1,7 @@
 import { HumanTaskSearch, HumanTaskEntry, HumanTaskTemplate } from "../common";
 import { HumanTask } from "../common/open-api/sdk.gen";
 import { Client } from "../common/open-api/client/types.gen";
-import { errorMapper } from "./helpers";
+import { handleSdkError } from "./helpers";
 
 type UserType =
   | "EXTERNAL_USER"
@@ -98,6 +98,7 @@ export class HumanExecutor {
       const { data } = await HumanTask.search({
         client: this._client,
         body: search,
+        throwOnError: true,
       });
 
       if (data?.results != undefined) {
@@ -105,7 +106,7 @@ export class HumanExecutor {
       }
       return [];
     } catch (error: unknown) {
-      throw errorMapper(error);
+      handleSdkError(error, "Failed to search human tasks");
     }
   }
 
@@ -139,7 +140,7 @@ export class HumanExecutor {
       }
       return [];
     } catch (error: unknown) {
-      throw errorMapper(error);
+      handleSdkError(error, "Failed to poll search human tasks");
     }
   }
 
@@ -148,16 +149,17 @@ export class HumanExecutor {
    * @param taskId
    * @returns
    */
-  public async getTaskById(taskId: string): Promise<HumanTaskEntry | undefined> {
+  public async getTaskById(taskId: string): Promise<HumanTaskEntry> {
     try {
       const { data } = await HumanTask.getTask1({
         client: this._client,
         path: { taskId },
+        throwOnError: true,
       });
 
       return data;
     } catch (error: unknown) {
-      throw errorMapper(error);
+      handleSdkError(error, `Failed to get human task '${taskId}'`);
     }
   }
 
@@ -171,7 +173,7 @@ export class HumanExecutor {
     taskId: string,
     assignee: string,
     options?: Record<string, boolean>
-  ): Promise<HumanTaskEntry | undefined> {
+  ): Promise<HumanTaskEntry> {
     try {
       const { data } = await HumanTask.assignAndClaim({
         client: this._client,
@@ -180,11 +182,12 @@ export class HumanExecutor {
           overrideAssignment: options?.overrideAssignment,
           withTemplate: options?.withTemplate,
         },
+        throwOnError: true,
       });
 
       return data;
     } catch (error: unknown) {
-      throw errorMapper(error);
+      handleSdkError(error, `Failed to claim human task '${taskId}' as external user '${assignee}'`);
     }
   }
 
@@ -196,7 +199,7 @@ export class HumanExecutor {
   public async claimTaskAsConductorUser(
     taskId: string,
     options?: Record<string, boolean>
-  ): Promise<HumanTaskEntry | undefined> {
+  ): Promise<HumanTaskEntry> {
     try {
       const { data } = await HumanTask.claimTask({
         client: this._client,
@@ -205,10 +208,11 @@ export class HumanExecutor {
           overrideAssignment: options?.overrideAssignment,
           withTemplate: options?.withTemplate,
         },
+        throwOnError: true,
       });
       return data;
     } catch (error: unknown) {
-      throw errorMapper(error);
+      handleSdkError(error, `Failed to claim human task '${taskId}' as conductor user`);
     }
   }
 
@@ -223,9 +227,10 @@ export class HumanExecutor {
       await HumanTask.releaseTask({
         client: this._client,
         path: { taskId },
+        throwOnError: true,
       });
     } catch (error: unknown) {
-      throw errorMapper(error);
+      handleSdkError(error, `Failed to release human task '${taskId}'`);
     }
   }
 
@@ -237,16 +242,17 @@ export class HumanExecutor {
   public async getTemplateByNameVersion(
     name: string,
     version: number
-  ): Promise<HumanTaskTemplate | undefined> {
+  ): Promise<HumanTaskTemplate> {
     try {
       const { data } = await HumanTask.getTemplateByNameAndVersion({
         client: this._client,
         path: { name, version },
+        throwOnError: true,
       });
 
       return data;
     } catch (error: unknown) {
-      throw errorMapper(error);
+      handleSdkError(error, `Failed to get template '${name}' version ${version}`);
     }
   }
 
@@ -258,7 +264,7 @@ export class HumanExecutor {
    */
   public async getTemplateById(
     templateNameVersionOne: string
-  ): Promise<HumanTaskTemplate | undefined> {
+  ): Promise<HumanTaskTemplate> {
     return this.getTemplateByNameVersion(templateNameVersionOne, 1);
   }
 
@@ -277,9 +283,10 @@ export class HumanExecutor {
         path: { taskId },
         body: requestBody,
         query: { complete: false },
+        throwOnError: true,
       });
     } catch (error: unknown) {
-      throw errorMapper(error);
+      handleSdkError(error, `Failed update human task '${taskId}' output`);
     }
   }
 
@@ -298,9 +305,10 @@ export class HumanExecutor {
         path: { taskId },
         body: requestBody,
         query: { complete: true },
+        throwOnError: true,
       });
     } catch (error: unknown) {
-      throw errorMapper(error);
+      handleSdkError(error, `Failed to complete human task '${taskId}'`);
     }
   }
 }

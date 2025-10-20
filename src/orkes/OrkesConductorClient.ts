@@ -29,18 +29,6 @@ export const orkesConductorClient = async (
 
   if (!serverUrl) throw new Error("Conductor server URL is not set");
 
-  // todo: remove undefined from client methods + throw error instead, replace all default errors with sdk error
-  // todo: add logging for silent operations (auth refresh, etc?) using sdk logger
-
-  /*
-  1. AdditionalProperties nested objects instead of AdditionalProperties: {} or AdditionalProperties true
-  2. Bare "type": "object" properties without additionalProperties (FieldDescriptor, EventMessage, etc)
-  3. SignalResponse optional fields are missing
-  4. ExtendedTaskDef totalTimeoutSeconds and timeoutSeconds are marked both as required (in fact they are optional)
-  5. GET /api/metadata/taskdefs/{tasktype} should return TaskDef (currently no return type described)
-  6. POST & GET /api/registry/service/protos/{registryName}/{filename} should accept Blob ("format": "binary"). Probably same for other endpoints accepting binary data.
-  */
-
   const openApiClient = createClient({
     baseUrl: serverUrl,
     fetch: wrapFetchWithRetry(

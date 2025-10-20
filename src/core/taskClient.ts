@@ -1,6 +1,6 @@
 import { TaskResultStatus } from "../core/types";
 
-import { errorMapper } from "./helpers";
+import { handleSdkError } from "./helpers";
 import { Client } from "../common/open-api/client/types.gen";
 import { SearchResultTaskSummary, Task } from "../common/open-api/types.gen";
 import { TaskResource } from "../common/open-api/sdk.gen";
@@ -28,16 +28,17 @@ export class TaskClient {
     sort = "",
     freeText: string,
     query: string
-  ): Promise<SearchResultTaskSummary | undefined> {
+  ): Promise<SearchResultTaskSummary> {
     try {
       const { data } = await TaskResource.search2({
         query: { start, size, sort, freeText, query },
         client: this._client,
+        throwOnError: true,
       });
 
       return data;
     } catch (error: unknown) {
-      throw errorMapper(error);
+      handleSdkError(error, "Failed to search tasks");
     }
   }
 
@@ -46,16 +47,17 @@ export class TaskClient {
    * @param taskId
    * @returns Task
    */
-  public async getTask(taskId: string): Promise<Task | undefined> {
+  public async getTask(taskId: string): Promise<Task> {
     try {
       const { data } = await TaskResource.getTask({
         path: { taskId },
         client: this._client,
+        throwOnError: true,
       });
 
       return data;
     } catch (error: unknown) {
-      throw errorMapper(error);
+      handleSdkError(error, `Failed to get task '${taskId}'`);
     }
   }
 
@@ -74,7 +76,7 @@ export class TaskClient {
     taskRefName: string,
     status: TaskResultStatus,
     outputData: Record<string, unknown>
-  ): Promise<string | undefined> {
+  ): Promise<string> {
     try {
       const { data } = await TaskResource.updateTask1({
         body: {
@@ -86,11 +88,12 @@ export class TaskClient {
           status
         },
         client: this._client,
+        throwOnError: true,
       });
 
       return data;
     } catch (error: unknown) {
-      throw errorMapper(error);
+      handleSdkError(error, `Failed to update task '${taskRefName}' result for workflow '${workflowId}'`);
     }
   }
 }

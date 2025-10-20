@@ -1,6 +1,6 @@
 import { MetadataResource } from "../common/open-api/sdk.gen";
 import { Client } from "../common/open-api/client";
-import { errorMapper } from "./helpers";
+import { handleSdkError } from "./helpers";
 import {
   ExtendedWorkflowDef,
   TaskDef,
@@ -26,9 +26,10 @@ export class MetadataClient {
       await MetadataResource.unregisterTaskDef({
         path: { tasktype: name },
         client: this._client,
+        throwOnError: true,
       });
     } catch (error: unknown) {
-      throw errorMapper(error);
+      handleSdkError(error, `Failed to unregister task '${name}'`);
     }
   }
 
@@ -53,9 +54,10 @@ export class MetadataClient {
       await MetadataResource.registerTaskDef({
         body: [...(taskDefs as OpenApiExtendedTaskDef[])],
         client: this._client,
+        throwOnError: true,
       });
     } catch (error: unknown) {
-      throw errorMapper(error);
+      handleSdkError(error, "Failed to register task definitions");
     }
   }
 
@@ -70,9 +72,10 @@ export class MetadataClient {
       await MetadataResource.updateTaskDef({
         body: taskDef as OpenApiExtendedTaskDef,
         client: this._client,
+        throwOnError: true,
       });
     } catch (error: unknown) {
-      throw errorMapper(error);
+      handleSdkError(error, "Failed to update task definition");
     }
   }
 
@@ -82,16 +85,17 @@ export class MetadataClient {
    * @param taskName
    * @returns
    */
-  public async getTask(taskName: string): Promise<TaskDef | undefined> {
+  public async getTask(taskName: string): Promise<TaskDef> {
     try {
       const { data } = await MetadataResource.getTaskDef({
         path: { tasktype: taskName },
         client: this._client,
+        throwOnError: true,
       });
 
       return data as TaskDef; // todo: remove casting after OpenApi spec is fixed
     } catch (error: unknown) {
-      throw errorMapper(error);
+      handleSdkError(error, `Failed to get task '${taskName}'`);
     }
   }
 
@@ -113,9 +117,10 @@ export class MetadataClient {
           overwrite,
         },
         client: this._client,
+        throwOnError: true,
       });
     } catch (error: unknown) {
-      throw errorMapper(error);
+      handleSdkError(error, "Failed to register workflow definition");
     }
   }
 
@@ -130,17 +135,18 @@ export class MetadataClient {
     name: string,
     version?: number,
     metadata = false
-  ): Promise<WorkflowDef | undefined> {
+  ): Promise<WorkflowDef> {
     try {
       const { data } = await MetadataResource.get1({
         path: { name },
         query: { metadata, version },
         client: this._client,
+        throwOnError: true,
       });
 
       return data;
     } catch (error: unknown) {
-      throw errorMapper(error);
+      handleSdkError(error, `Failed to get workflow definition '${name}'`);
     }
   }
 
@@ -156,9 +162,10 @@ export class MetadataClient {
       await MetadataResource.unregisterWorkflowDef({
         path: { name: workflowName, version },
         client: this._client,
+        throwOnError: true,
       });
     } catch (error: unknown) {
-      throw errorMapper(error);
+      handleSdkError(error, `Failed to unregister workflow '${workflowName}'`);
     }
   }
 }

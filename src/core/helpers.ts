@@ -1,27 +1,20 @@
 import { ConductorSdkError } from "./types";
 
-export const errorMapper = (error: unknown): ConductorSdkError => {
-  const message =
-    error &&
-    typeof error === "object" &&
-    "body" in error &&
-    error.body &&
-    typeof error.body === "object" &&
-    "message" in error.body &&
-    typeof error.body.message === "string"
-      ? error.body.message
-      : undefined;
-
-  const innerError = error instanceof Error ? error : undefined;
-
-  return new ConductorSdkError(message, innerError);
-};
-
-export const handleSdkError = (
+export function handleSdkError(
+  error?: unknown,
+  customMessage?: string,
+  strategy?: "throw"
+): never;
+export function handleSdkError(
+  error?: unknown,
+  customMessage?: string,
+  strategy?: "log"
+): void;
+export function handleSdkError(
   error?: unknown,
   customMessage?: string,
   strategy: "throw" | "log" = "throw"
-) => {
+): void | never {
   const innerError = error instanceof Error ? error : undefined;
 
   const messageFromError =
@@ -34,12 +27,12 @@ export const handleSdkError = (
       ? `${customMessage}: ${messageFromError}`
       : customMessage || messageFromError || "Unknown error";
 
-  if (strategy === "throw") {
-    throw new ConductorSdkError(fullMessage, innerError);
-  } else {
+  if (strategy === "log") {
     console.error(`[Conductor SDK Error]: ${fullMessage}\n`, innerError);
+  } else {
+    throw new ConductorSdkError(fullMessage, innerError);
   }
-};
+}
 
 export function reverseFind<T>(
   array: T[],

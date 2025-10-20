@@ -1,7 +1,7 @@
 import { HumanTaskTemplate } from "../common";
 import { HumanTask } from "../common/open-api/sdk.gen";
 import { Client } from "../common/open-api/client/types.gen";
-import { errorMapper } from "./helpers";
+import { handleSdkError } from "./helpers";
 
 export class TemplateClient {
   public readonly _client: Client;
@@ -19,7 +19,7 @@ export class TemplateClient {
   public async registerTemplate(
     template: HumanTaskTemplate,
     asNewVersion = false
-  ): Promise<HumanTaskTemplate | undefined> {
+  ): Promise<HumanTaskTemplate> {
     try {
       const { data } = await HumanTask.saveTemplate({
         body: template,
@@ -27,11 +27,12 @@ export class TemplateClient {
           newVersion: asNewVersion,
         },
         client: this._client,
+        throwOnError: true,
       });
 
       return data;
     } catch (error: unknown) {
-      throw errorMapper(error);
+      handleSdkError(error, "Failed to register template");
     }
   }
 }

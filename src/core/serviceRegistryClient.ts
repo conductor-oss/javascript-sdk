@@ -7,7 +7,7 @@ import {
   ServiceMethod,
   ServiceRegistry,
 } from "../common/open-api/types.gen";
-import { errorMapper } from "./helpers";
+import { handleSdkError } from "./helpers";
 
 /**
  * Client for interacting with the Service Registry API
@@ -23,15 +23,16 @@ export class ServiceRegistryClient {
    * Retrieve all registered services
    * @returns Array of all registered services
    */
-  public async getRegisteredServices(): Promise<ServiceRegistry[] | undefined> {
+  public async getRegisteredServices(): Promise<ServiceRegistry[]> {
     try {
-      const response = await ServiceRegistryResource.getRegisteredServices({
+      const { data } = await ServiceRegistryResource.getRegisteredServices({
         client: this._client,
+        throwOnError: true,
       });
 
-      return response.data;
+      return data;
     } catch (error: unknown) {
-      throw errorMapper(error);
+      handleSdkError(error, "Failed to get registered services");
     }
   }
 
@@ -45,9 +46,10 @@ export class ServiceRegistryClient {
       await ServiceRegistryResource.removeService({
         client: this._client,
         path: { name },
+        throwOnError: true,
       });
     } catch (error: unknown) {
-      throw errorMapper(error);
+      handleSdkError(error, `Failed to remove service '${name}'`);
     }
   }
 
@@ -61,6 +63,7 @@ export class ServiceRegistryClient {
       const { data } = await ServiceRegistryResource.getService({
         client: this._client,
         path: { name },
+        throwOnError: true,
       });
 
       if (typeof data === "object") {
@@ -68,7 +71,7 @@ export class ServiceRegistryClient {
       }
       return undefined;
     } catch (error: unknown) {
-      throw errorMapper(error);
+      handleSdkError(error, `Failed to get service '${name}'`);
     }
   }
 
@@ -79,16 +82,20 @@ export class ServiceRegistryClient {
    */
   public async openCircuitBreaker(
     name: string
-  ): Promise<CircuitBreakerTransitionResponse | undefined> {
+  ): Promise<CircuitBreakerTransitionResponse> {
     try {
       const { data } = await ServiceRegistryResource.openCircuitBreaker({
         client: this._client,
         path: { name },
+        throwOnError: true,
       });
 
       return data;
     } catch (error: unknown) {
-      throw errorMapper(error);
+      handleSdkError(
+        error,
+        `Failed to open circuit breaker for service '${name}'`
+      );
     }
   }
 
@@ -99,16 +106,20 @@ export class ServiceRegistryClient {
    */
   public async closeCircuitBreaker(
     name: string
-  ): Promise<CircuitBreakerTransitionResponse | undefined> {
+  ): Promise<CircuitBreakerTransitionResponse> {
     try {
       const { data } = await ServiceRegistryResource.closeCircuitBreaker({
         client: this._client,
         path: { name },
+        throwOnError: true,
       });
 
       return data;
     } catch (error: unknown) {
-      throw errorMapper(error);
+      handleSdkError(
+        error,
+        `Failed to close circuit breaker for service '${name}'`
+      );
     }
   }
 
@@ -119,16 +130,20 @@ export class ServiceRegistryClient {
    */
   public async getCircuitBreakerStatus(
     name: string
-  ): Promise<CircuitBreakerTransitionResponse | undefined> {
+  ): Promise<CircuitBreakerTransitionResponse> {
     try {
       const { data } = await ServiceRegistryResource.getCircuitBreakerStatus({
         client: this._client,
         path: { name },
+        throwOnError: true,
       });
 
       return data;
     } catch (error: unknown) {
-      throw errorMapper(error);
+      handleSdkError(
+        error,
+        `Failed to get circuit breaker status for service '${name}'`
+      );
     }
   }
 
@@ -137,14 +152,17 @@ export class ServiceRegistryClient {
    * @param serviceRegistry The service registry to add or update
    * @returns Promise that resolves when service is added or updated
    */
-  public async addOrUpdateService(serviceRegistry: ServiceRegistry): Promise<void> {
+  public async addOrUpdateService(
+    serviceRegistry: ServiceRegistry
+  ): Promise<void> {
     try {
       await ServiceRegistryResource.addOrUpdateService({
         client: this._client,
         body: serviceRegistry,
+        throwOnError: true,
       });
     } catch (error: unknown) {
-      throw errorMapper(error);
+      handleSdkError(error, "Failed to add or update service");
     }
   }
 
@@ -163,9 +181,13 @@ export class ServiceRegistryClient {
         client: this._client,
         path: { registryName },
         body: method,
+        throwOnError: true,
       });
     } catch (error: unknown) {
-      throw errorMapper(error);
+      handleSdkError(
+        error,
+        `Failed to add or update service method for registry '${registryName}'`
+      );
     }
   }
 
@@ -188,9 +210,13 @@ export class ServiceRegistryClient {
         client: this._client,
         path: { registryName },
         query: { serviceName, method, methodType },
+        throwOnError: true,
       });
     } catch (error: unknown) {
-      throw errorMapper(error);
+      handleSdkError(
+        error,
+        `Failed to remove method '${method}' from service '${serviceName}'`
+      );
     }
   }
 
@@ -203,16 +229,20 @@ export class ServiceRegistryClient {
   public async getProtoData(
     registryName: string,
     filename: string
-  ): Promise<Blob | undefined> {
+  ): Promise<Blob> {
     try {
       const { data } = await ServiceRegistryResource.getProtoData({
         client: this._client,
         path: { registryName, filename },
+        throwOnError: true,
       });
 
       return data as unknown as Blob; // todo: remove casting after OpenApi spec is fixed
     } catch (error: unknown) {
-      throw errorMapper(error);
+      handleSdkError(
+        error,
+        `Failed to get proto data '${filename}' from registry '${registryName}'`
+      );
     }
   }
 
@@ -234,9 +264,13 @@ export class ServiceRegistryClient {
         path: { registryName, filename },
         body: data as unknown as string, // todo: remove casting after OpenApi spec is fixed (byte -> binary)
         bodySerializer: (body: Blob) => body,
+        throwOnError: true,
       });
     } catch (error: unknown) {
-      throw errorMapper(error);
+      handleSdkError(
+        error,
+        `Failed to set proto data '${filename}' for registry '${registryName}'`
+      );
     }
   }
 
@@ -246,14 +280,21 @@ export class ServiceRegistryClient {
    * @param filename The name of the proto file
    * @returns Promise that resolves when proto file is deleted
    */
-  public async deleteProto(registryName: string, filename: string): Promise<void> {
+  public async deleteProto(
+    registryName: string,
+    filename: string
+  ): Promise<void> {
     try {
       await ServiceRegistryResource.deleteProto({
         client: this._client,
         path: { registryName, filename },
+        throwOnError: true,
       });
     } catch (error: unknown) {
-      throw errorMapper(error);
+      handleSdkError(
+        error,
+        `Failed to delete proto '${filename}' from registry '${registryName}'`
+      );
     }
   }
 
@@ -264,15 +305,19 @@ export class ServiceRegistryClient {
    */
   public async getAllProtos(
     registryName: string
-  ): Promise<ProtoRegistryEntry[] | undefined> {
+  ): Promise<ProtoRegistryEntry[]> {
     try {
       const { data } = await ServiceRegistryResource.getAllProtos({
         client: this._client,
         path: { registryName },
+        throwOnError: true,
       });
       return data;
     } catch (error: unknown) {
-      throw errorMapper(error);
+      handleSdkError(
+        error,
+        `Failed to get all protos for registry '${registryName}'`
+      );
     }
   }
 
@@ -285,17 +330,18 @@ export class ServiceRegistryClient {
   public async discover(
     name: string,
     create = false
-  ): Promise<ServiceMethod[] | undefined> {
+  ): Promise<ServiceMethod[]> {
     try {
       const { data } = await ServiceRegistryResource.discover({
         client: this._client,
         path: { name },
         query: { create },
+        throwOnError: true,
       });
 
       return data;
     } catch (error: unknown) {
-      throw errorMapper(error);
+      handleSdkError(error, `Failed to discover service methods for '${name}'`);
     }
   }
 }

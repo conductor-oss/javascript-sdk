@@ -22,7 +22,7 @@ import {
   TaskResultOutputData,
   TaskResultStatus,
 } from "./types";
-import { errorMapper, reverseFind } from "./helpers";
+import { handleSdkError, reverseFind } from "./helpers";
 import { Client } from "../common/open-api/client/types.gen";
 import { enhanceSignalResponse } from "./helpers/enchanceSignalResponse";
 
@@ -58,9 +58,10 @@ export class WorkflowExecutor {
         body: workflow,
         query: { overwrite: override },
         client: this._client,
+        throwOnError: true,
       });
     } catch (error: unknown) {
-      throw errorMapper(error);
+      handleSdkError(error, "Failed to register workflow");
     }
   }
 
@@ -71,16 +72,17 @@ export class WorkflowExecutor {
    */
   public async startWorkflow(
     workflowRequest: StartWorkflowRequest
-  ): Promise<string | undefined> {
+  ): Promise<string> {
     try {
       const { data } = await WorkflowResource.startWorkflow({
         body: workflowRequest,
         client: this._client,
+        throwOnError: true,
       });
 
       return data;
     } catch (error: unknown) {
-      throw errorMapper(error);
+      handleSdkError(error, "Failed to start workflow");
     }
   }
 
@@ -119,7 +121,7 @@ export class WorkflowExecutor {
     waitForSeconds?: number,
     consistency?: Consistency,
     returnStrategy?: ReturnStrategy
-  ): Promise<WorkflowRun | EnhancedSignalResponse | undefined> {
+  ): Promise<WorkflowRun | EnhancedSignalResponse> {
     try {
       const { data } = await WorkflowResource.executeWorkflow({
         body: workflowRequest,
@@ -135,18 +137,23 @@ export class WorkflowExecutor {
           returnStrategy,
         },
         client: this._client,
+        throwOnError: true,
       });
 
-      return data ? enhanceSignalResponse(data) : undefined;
+      return enhanceSignalResponse(data);
     } catch (error: unknown) {
-      throw errorMapper(error);
+      handleSdkError(error, "Failed to execute workflow");
     }
   }
 
   public startWorkflows(
     workflowsRequest: StartWorkflowRequest[]
-  ): Promise<string | undefined>[] {
-    return workflowsRequest.map((req) => this.startWorkflow(req));
+  ): Promise<string>[] {
+    try {
+      return workflowsRequest.map((req) => this.startWorkflow(req));
+    } catch (error: unknown) {
+      handleSdkError(error, "Failed to start workflows");
+    }
   }
 
   public async goBackToTask(
@@ -154,32 +161,40 @@ export class WorkflowExecutor {
     taskFinderPredicate: TaskFinderPredicate,
     rerunWorkflowRequestOverrides: Partial<RerunWorkflowRequest> = {}
   ): Promise<void> {
-    const executedTasks =
-      (await this.getExecution(workflowInstanceId))?.tasks ?? [];
-    const maybePreviousTask = reverseFind<Task>(
-      executedTasks,
-      taskFinderPredicate
-    );
+    try {
+      const executedTasks =
+        (await this.getExecution(workflowInstanceId))?.tasks ?? [];
+      const maybePreviousTask = reverseFind<Task>(
+        executedTasks,
+        taskFinderPredicate
+      );
 
-    if (!maybePreviousTask) {
-      throw new Error("Task not found");
+      if (!maybePreviousTask) {
+        throw new Error("Task not found");
+      }
+
+      await this.reRun(workflowInstanceId, {
+        //taskInput: previousTask.inputData,
+        ...rerunWorkflowRequestOverrides,
+        reRunFromTaskId: maybePreviousTask.taskId,
+      });
+    } catch (error: unknown) {
+      handleSdkError(error, "Failed to go back to task");
     }
-
-    await this.reRun(workflowInstanceId, {
-      //taskInput: previousTask.inputData,
-      ...rerunWorkflowRequestOverrides,
-      reRunFromTaskId: maybePreviousTask.taskId,
-    });
   }
 
   public async goBackToFirstTaskMatchingType(
     workflowInstanceId: string,
     taskType: string
   ): Promise<void> {
-    return this.goBackToTask(
-      workflowInstanceId,
-      completedTaskMatchingType(taskType)
-    );
+    try {
+      return this.goBackToTask(
+        workflowInstanceId,
+        completedTaskMatchingType(taskType)
+      );
+    } catch (error: unknown) {
+      handleSdkError(error, "Failed to go back to first task matching type");
+    }
   }
 
   /**
@@ -196,13 +211,14 @@ export class WorkflowExecutor {
     workflowInstanceId: string,
     includeTasks: boolean,
     retry = 0
-  ): Promise<Workflow | undefined> {
+  ): Promise<Workflow> {
     try {
       const { data: workflowStatus } =
         await WorkflowResource.getExecutionStatus({
           path: { workflowId: workflowInstanceId },
           query: { includeTasks },
           client: this._client,
+          throwOnError: true,
         });
 
       return workflowStatus;
@@ -214,7 +230,7 @@ export class WorkflowExecutor {
       const isRetryableError =
         status !== undefined && [500, 404, 403].includes(status);
       if (!isRetryableError || retry === 0) {
-        throw errorMapper(error);
+        handleSdkError(error, "Failed to get workflow");
       }
     }
 
@@ -237,16 +253,20 @@ export class WorkflowExecutor {
     workflowInstanceId: string,
     includeOutput: boolean,
     includeVariables: boolean
-  ): Promise<WorkflowStatus | undefined> {
+  ): Promise<WorkflowStatus> {
     try {
       const { data } = await WorkflowResource.getWorkflowStatusSummary({
         path: { workflowId: workflowInstanceId },
         query: { includeOutput, includeVariables },
         client: this._client,
+        throwOnError: true,
       });
       return data;
     } catch (error: unknown) {
-      throw errorMapper(error);
+      handleSdkError(
+        error,
+        `Failed to get workflow '${workflowInstanceId}' status`
+      );
     }
   }
 
@@ -261,16 +281,21 @@ export class WorkflowExecutor {
   public async getExecution(
     workflowInstanceId: string,
     includeTasks = true
-  ): Promise<Workflow | undefined> {
+  ): Promise<Workflow> {
     try {
       const { data } = await WorkflowResource.getExecutionStatus({
         path: { workflowId: workflowInstanceId },
         query: { includeTasks },
         client: this._client,
+        throwOnError: true,
       });
+
       return data;
     } catch (error: unknown) {
-      throw errorMapper(error);
+      handleSdkError(
+        error,
+        `Failed to get execution for '${workflowInstanceId}'`
+      );
     }
   }
 
@@ -286,7 +311,7 @@ export class WorkflowExecutor {
         client: this._client,
       });
     } catch (error: unknown) {
-      throw errorMapper(error);
+      handleSdkError(error, `Failed to pause workflow '${workflowInstanceId}'`);
     }
   }
 
@@ -300,16 +325,17 @@ export class WorkflowExecutor {
   public async reRun(
     workflowInstanceId: string,
     rerunWorkflowRequest: Partial<RerunWorkflowRequest> = {}
-  ): Promise<string | undefined> {
+  ): Promise<string> {
     try {
       const { data } = await WorkflowResource.rerun({
         path: { workflowId: workflowInstanceId },
         body: rerunWorkflowRequest,
         client: this._client,
+        throwOnError: true,
       });
       return data;
     } catch (error: unknown) {
-      throw errorMapper(error);
+      handleSdkError(error, `Failed to rerun workflow '${workflowInstanceId}'`);
     }
   }
 
@@ -328,10 +354,14 @@ export class WorkflowExecutor {
         path: { workflowId: workflowInstanceId },
         query: { useLatestDefinitions },
         client: this._client,
+        throwOnError: true,
       });
       return data;
     } catch (error: unknown) {
-      throw errorMapper(error);
+      handleSdkError(
+        error,
+        `Failed to restart workflow '${workflowInstanceId}'`
+      );
     }
   }
 
@@ -346,9 +376,13 @@ export class WorkflowExecutor {
       await WorkflowResource.resumeWorkflow({
         path: { workflowId: workflowInstanceId },
         client: this._client,
+        throwOnError: true,
       });
     } catch (error: unknown) {
-      throw errorMapper(error);
+      handleSdkError(
+        error,
+        `Failed to resume workflow '${workflowInstanceId}'`
+      );
     }
   }
 
@@ -369,9 +403,10 @@ export class WorkflowExecutor {
         path: { workflowId: workflowInstanceId },
         query: { resumeSubworkflowTasks },
         client: this._client,
+        throwOnError: true,
       });
     } catch (error: unknown) {
-      throw errorMapper(error);
+      handleSdkError(error, `Failed to retry workflow '${workflowInstanceId}'`);
     }
   }
 
@@ -393,16 +428,17 @@ export class WorkflowExecutor {
     freeText: string,
     sort = "",
     skipCache = false
-  ): Promise<ScrollableSearchResultWorkflowSummary | undefined> {
+  ): Promise<ScrollableSearchResultWorkflowSummary> {
     try {
       const { data } = await WorkflowResource.search1({
         query: { start, size, sort, freeText, query, skipCache },
         client: this._client,
+        throwOnError: true,
       });
 
       return data;
     } catch (error: unknown) {
-      throw errorMapper(error);
+      handleSdkError(error, "Failed to search workflows");
     }
   }
 
@@ -424,9 +460,13 @@ export class WorkflowExecutor {
         path: { workflowId: workflowInstanceId, taskReferenceName },
         body: skipTaskRequest,
         client: this._client,
+        throwOnError: true,
       });
     } catch (error: unknown) {
-      throw errorMapper(error);
+      handleSdkError(
+        error,
+        `Failed to skip task '${taskReferenceName}' in workflow '${workflowInstanceId}'`
+      );
     }
   }
 
@@ -445,9 +485,13 @@ export class WorkflowExecutor {
         path: { workflowId: workflowInstanceId },
         query: { reason },
         client: this._client,
+        throwOnError: true,
       });
     } catch (error: unknown) {
-      throw errorMapper(error);
+      handleSdkError(
+        error,
+        `Failed to terminate workflow '${workflowInstanceId}'`
+      );
     }
   }
 
@@ -464,17 +508,18 @@ export class WorkflowExecutor {
     workflowInstanceId: string,
     taskStatus: TaskResultStatus,
     outputData: TaskResultOutputData
-  ): Promise<string | undefined> {
+  ): Promise<string> {
     const taskUpdates = { status: taskStatus, taskId, workflowInstanceId };
     try {
       const { data } = await TaskResource.updateTask({
         body: { outputData, ...taskUpdates },
         client: this._client,
+        throwOnError: true,
       });
 
       return data;
     } catch (error: unknown) {
-      throw errorMapper(error);
+      handleSdkError(error, "Failed to update task");
     }
   }
 
@@ -491,7 +536,7 @@ export class WorkflowExecutor {
     workflowInstanceId: string,
     status: TaskResultStatus,
     taskOutput: TaskResultOutputData
-  ): Promise<string | undefined> {
+  ): Promise<string> {
     try {
       const { data } = await TaskResource.updateTask1({
         path: {
@@ -501,11 +546,12 @@ export class WorkflowExecutor {
         },
         body: taskOutput,
         client: this._client,
+        throwOnError: true,
       });
 
       return data;
     } catch (error: unknown) {
-      throw errorMapper(error);
+      handleSdkError(error, "Failed to update task by reference name");
     }
   }
 
@@ -514,15 +560,16 @@ export class WorkflowExecutor {
    * @param taskId
    * @returns
    */
-  public async getTask(taskId: string): Promise<Task | undefined> {
+  public async getTask(taskId: string): Promise<Task> {
     try {
       const { data } = await TaskResource.getTask({
         path: { taskId },
         client: this._client,
+        throwOnError: true,
       });
       return data;
     } catch (error: unknown) {
-      throw errorMapper(error);
+      handleSdkError(error, `Failed to get task '${taskId}'`);
     }
   }
 
@@ -541,7 +588,7 @@ export class WorkflowExecutor {
     status: TaskResultStatusEnum,
     taskOutput: TaskResultOutputData,
     workerId?: string
-  ): Promise<Workflow | undefined> {
+  ): Promise<Workflow> {
     try {
       const { data } = await TaskResource.updateTaskSync({
         path: {
@@ -552,11 +599,12 @@ export class WorkflowExecutor {
         body: { taskOutput },
         query: { workerid: workerId },
         client: this._client,
+        throwOnError: true,
       });
 
       return data;
     } catch (error: unknown) {
-      throw errorMapper(error);
+      handleSdkError(error, "Failed to update task synchronously");
     }
   }
 
@@ -573,18 +621,19 @@ export class WorkflowExecutor {
     status: TaskResultStatusEnum,
     taskOutput: TaskResultOutputData,
     returnStrategy: ReturnStrategy = ReturnStrategy.TARGET_WORKFLOW
-  ): Promise<EnhancedSignalResponse | undefined> {
+  ): Promise<EnhancedSignalResponse> {
     try {
       const { data } = await TaskResource.signalWorkflowTaskSync({
         path: { workflowId: workflowInstanceId, status },
         body: { taskOutput },
         query: { returnStrategy },
         client: this._client,
+        throwOnError: true,
       });
 
-      return data ? enhanceSignalResponse(data) : undefined;
+      return enhanceSignalResponse(data);
     } catch (error: unknown) {
-      throw errorMapper(error);
+      handleSdkError(error, "Failed to signal workflow");
     }
   }
 
@@ -605,9 +654,13 @@ export class WorkflowExecutor {
         path: { workflowId: workflowInstanceId, status },
         body: { taskOutput },
         client: this._client,
+        throwOnError: true,
       });
     } catch (error: unknown) {
-      throw errorMapper(error);
+      handleSdkError(
+        error,
+        `Failed to signal workflow '${workflowInstanceId}' asynchronously`
+      );
     }
   }
 }

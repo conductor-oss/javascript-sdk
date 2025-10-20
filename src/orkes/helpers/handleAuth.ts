@@ -35,8 +35,10 @@ const authorize = async (
     client: openApiClient,
     throwOnError: false,
   });
+
   if (error || !data?.token) {
     handleSdkError(error, "Failed to generate authorization token");
   }
+
   openApiClient.setConfig({ auth: `${data?.token}` });
 };
