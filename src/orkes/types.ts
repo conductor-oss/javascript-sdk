@@ -1,10 +1,4 @@
-// export type FetchFn<
-//   T = RequestInit,
-//   R extends { json: () => Promise<unknown> } = Response
-// > = (input: RequestInfo, init?: T) => Promise<R>;
-
-// todo: decide if to keep
-export type FetchFn = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+export type FetchFn = typeof fetch;
 
 export interface OrkesApiConfig {
   serverUrl?: string;

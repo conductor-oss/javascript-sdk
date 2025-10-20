@@ -1,4 +1,9 @@
-import { handleAuth, resolveFetchFn, resolveOrkesConfig } from "./helpers";
+import {
+  handleAuth,
+  resolveFetchFn,
+  resolveOrkesConfig,
+  wrapFetchWithRetry,
+} from "./helpers";
 import type { FetchFn, OrkesApiConfig } from "./types";
 import { createClient } from "../common/open-api/client";
 
@@ -23,10 +28,10 @@ export const orkesConductorClient = async (
   } = resolveOrkesConfig(config);
 
   if (!serverUrl) throw new Error("Conductor server URL is not set");
-  // todo: retry on 429
+
   // todo: remove undefined from client methods + throw error instead, replace all default errors with sdk error
-  // todo: decide if to keep FetchFn type
   // todo: add logging for silent operations (auth refresh, etc?) using sdk logger
+
   /*
   1. AdditionalProperties nested objects instead of AdditionalProperties: {} or AdditionalProperties true
   2. Bare "type": "object" properties without additionalProperties (FieldDescriptor, EventMessage, etc)
@@ -38,7 +43,9 @@ export const orkesConductorClient = async (
 
   const openApiClient = createClient({
     baseUrl: serverUrl,
-    fetch: await resolveFetchFn(customFetch, maxHttp2Connections),
+    fetch: wrapFetchWithRetry(
+      await resolveFetchFn(customFetch, maxHttp2Connections)
+    ),
     throwOnError: true,
   });
 
