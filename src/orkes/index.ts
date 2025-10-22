@@ -1,3 +1,3 @@
 export * from "./OrkesConductorClient";
 
-export type { FetchFn, OrkesApiConfig } from "./types";
+export type { OrkesApiConfig } from "./types";
