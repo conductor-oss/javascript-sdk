@@ -1,6 +1,7 @@
 import { ConductorLogger, noopLogger } from "../common";
 import { ConductorWorker } from "./Worker";
-import { Task, TaskResource, TaskResult } from "../common/open-api";
+import { Task, TaskResult } from "../common";
+import { TaskResource } from "../common/open-api";
 import { Poller } from "./Poller";
 import {
   DEFAULT_POLL_INTERVAL,

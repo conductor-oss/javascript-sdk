@@ -5,18 +5,16 @@ import {
   WorkflowDef,
 } from "../common";
 import {
-  MetadataResource,
   RerunWorkflowRequest,
   ScrollableSearchResultWorkflowSummary,
   SkipTaskRequest,
   StartWorkflowRequest,
   Task,
-  TaskResource,
   Workflow,
-  WorkflowResource,
   WorkflowRun,
   WorkflowStatus,
-} from "../common/open-api";
+} from "../common";
+import { MetadataResource, TaskResource, WorkflowResource } from "../common/open-api";
 import {
   EnhancedSignalResponse,
   TaskResultOutputData,

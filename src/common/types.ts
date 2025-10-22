@@ -1,8 +1,8 @@
 import {
   ExtendedTaskDef as OpenApiExtendedTaskDef,
   SignalResponse as OpenApiSignalResponse,
-  Task,
-} from "./open-api/types.gen";
+} from "./open-api";
+import { Task } from "./";
 
 export interface CommonTaskDef {
   name: string;

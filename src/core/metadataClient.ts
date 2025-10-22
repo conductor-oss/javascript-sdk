@@ -1,12 +1,13 @@
 import { MetadataResource } from "../common/open-api/sdk.gen";
 import { Client } from "../common/open-api/client";
 import { handleSdkError } from "./helpers";
-import {
+import type {
+  ExtendedTaskDef,
   ExtendedWorkflowDef,
   TaskDef,
   WorkflowDef,
-} from "../common/open-api/types.gen";
-import type { ExtendedTaskDef, OpenApiExtendedTaskDef } from "../common";
+} from "../common";
+import type { ExtendedTaskDef as OpenApiExtendedTaskDef } from "../common/open-api/types.gen";
 
 export class MetadataClient {
   public readonly _client: Client;
@@ -52,7 +53,7 @@ export class MetadataClient {
   public async registerTasks(taskDefs: ExtendedTaskDef[]): Promise<void> {
     try {
       await MetadataResource.registerTaskDef({
-        body: [...(taskDefs as OpenApiExtendedTaskDef[])],
+        body: [...(taskDefs as OpenApiExtendedTaskDef[])], // todo: remove casting after OpenApi spec is fixed
         client: this._client,
         throwOnError: true,
       });
@@ -70,7 +71,7 @@ export class MetadataClient {
   public async updateTask(taskDef: ExtendedTaskDef): Promise<void> {
     try {
       await MetadataResource.updateTaskDef({
-        body: taskDef as OpenApiExtendedTaskDef,
+        body: taskDef as OpenApiExtendedTaskDef, // todo: remove casting after OpenApi spec is fixed
         client: this._client,
         throwOnError: true,
       });
@@ -157,7 +158,10 @@ export class MetadataClient {
    * @param overwrite
    * @returns
    */
-  public async unregisterWorkflow(workflowName: string, version = 1): Promise<void> {
+  public async unregisterWorkflow(
+    workflowName: string,
+    version = 1
+  ): Promise<void> {
     try {
       await MetadataResource.unregisterWorkflowDef({
         path: { name: workflowName, version },

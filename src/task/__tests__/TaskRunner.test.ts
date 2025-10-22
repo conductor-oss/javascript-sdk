@@ -5,7 +5,7 @@ import { mockLogger } from "../../../integration-tests/utils/mockLogger";
 import { TaskResource } from "../../common/open-api";
 import { TaskResultStatusEnum } from "../../common";
 import { Client } from "../../common/open-api/client/types.gen";
-import { Task } from "../../common/open-api";
+import { Task } from "../../common";
 
 jest.mock("../../common/open-api", () => ({
   TaskResource: {

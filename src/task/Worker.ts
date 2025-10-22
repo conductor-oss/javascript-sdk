@@ -1,4 +1,4 @@
-import { Task, TaskResult } from "../common/open-api";
+import { Task, TaskResult } from "../common";
 
 /**
  * Functional interface for defining a worker implementation that processes tasks from a conductor queue.

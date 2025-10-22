@@ -2,7 +2,7 @@ import { TaskResultStatus } from "../core/types";
 
 import { handleSdkError } from "./helpers";
 import { Client } from "../common/open-api/client/types.gen";
-import { SearchResultTaskSummary, Task } from "../common/open-api/types.gen";
+import { SearchResultTaskSummary, Task } from "../common";
 import { TaskResource } from "../common/open-api/sdk.gen";
 
 export class TaskClient {

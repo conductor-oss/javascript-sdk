@@ -1,6 +1,6 @@
 import type { ConductorLogger } from "../common";
 import type { ConductorWorker } from "./Worker";
-import type { Task } from "../common/open-api";
+import type { Task } from "../common";
 import { Client } from "../common/open-api/client/types.gen";
 
 export type TaskErrorHandler = (error: Error, task?: Task) => void;

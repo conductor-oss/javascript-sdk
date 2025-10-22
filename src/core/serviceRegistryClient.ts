@@ -6,7 +6,7 @@ import {
   ProtoRegistryEntry,
   ServiceMethod,
   ServiceRegistry,
-} from "../common/open-api/types.gen";
+} from "../common";
 import { handleSdkError } from "./helpers";
 
 /**
