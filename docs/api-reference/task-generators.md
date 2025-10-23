@@ -66,23 +66,16 @@ const task = switchTask(
 *System Task* - Executes multiple task branches in parallel and waits for all to complete.
 
 ```typescript
-import { forkJoinTask, forkTask, forkTaskJoin } from "@io-orkes/conductor-javascript";
+import { forkTask, forkTaskJoin } from "@io-orkes/conductor-javascript";
 
-// Method 1: Using forkJoinTask (creates fork-join pattern)
-const task1 = forkJoinTask("fork_ref", [
-  [simpleTask("task1", "process_1", {})],
-  [simpleTask("task2", "process_2", {})],
-  [simpleTask("task3", "process_3", {})]
-]);
-
-// Method 2: Using forkTask (creates only the fork)
-const task2 = forkTask("fork_ref", [
+// Method 1: Using forkTask (creates only the fork)
+const task1 = forkTask("fork_ref", [
   simpleTask("task1", "process_1", {}),
   simpleTask("task2", "process_2", {}),
   simpleTask("task3", "process_3", {})
 ]);
 
-// Method 3: Using forkTaskJoin (creates both fork and join)
+// Method 2: Using forkTaskJoin (creates both fork and join)
 const [fork, join] = forkTaskJoin("fork_ref", [
   simpleTask("task1", "process_1", {}),
   simpleTask("task2", "process_2", {}),

@@ -237,4 +237,42 @@ await metadataClient.unregisterWorkflow("email_workflow", 1);
 See the [WorkflowExecutor API Reference](workflow-executor.md) for complete `WorkflowDef`, `WorkflowTask`, and `TaskDef` type definitions.
 
 ### `ExtendedTaskDef`
-Extended task definition that extends the base `TaskDef` with additional fields including `totalTimeoutSeconds` and `tags`. See `TaskDef` in the [WorkflowExecutor API Reference](workflow-executor.md) for the complete base type definition.|
+Extended task definition with comprehensive configuration options for task registration and management.
+
+```typescript
+interface ExtendedTaskDef {
+  name: string;
+  description?: string;
+  ownerEmail?: string;
+  ownerApp?: string;
+  retryCount?: number;
+  timeoutSeconds?: number;
+  timeoutPolicy?: 'RETRY' | 'TIME_OUT_WF' | 'ALERT_ONLY';
+  retryLogic?: 'FIXED' | 'EXPONENTIAL_BACKOFF' | 'LINEAR_BACKOFF';
+  retryDelaySeconds?: number;
+  responseTimeoutSeconds?: number;
+  concurrentExecLimit?: number;
+  inputKeys?: string[];
+  outputKeys?: string[];
+  inputTemplate?: Record<string, unknown>;
+  rateLimitPerFrequency?: number;
+  rateLimitFrequencyInSeconds?: number;
+  pollTimeoutSeconds?: number;
+  backoffScaleFactor?: number;
+  executionNameSpace?: string;
+  isolationGroupId?: string;
+  tags?: Array<{ key: string; value: string }>;
+  inputSchema?: SchemaDef;
+  outputSchema?: SchemaDef;
+  baseType?: string;
+  enforceSchema?: boolean;
+  overwriteTags?: boolean;
+  createTime?: number;
+  updateTime?: number;
+  createdBy?: string;
+  updatedBy?: string;
+  totalTimeoutSeconds?: number;
+}
+```
+
+This type provides all the configuration options available when registering or updating task definitions with the metadata service.

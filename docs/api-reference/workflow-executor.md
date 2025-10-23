@@ -461,6 +461,42 @@ Signals a workflow task asynchronously (fire-and-forget).
 ## Type Definitions
 
 ### `WorkflowDef`
+Workflow definition with comprehensive configuration options for workflow registration and management.
+
+```typescript
+interface WorkflowDef {
+  name: string;
+  description?: string;
+  version?: number;
+  tasks: WorkflowTask[];
+  inputParameters?: string[];
+  outputParameters?: Record<string, any>;
+  failureWorkflow?: string;
+  schemaVersion?: number;
+  restartable?: boolean;
+  workflowStatusListenerEnabled?: boolean;
+  workflowStatusListenerSink?: string;
+  ownerEmail?: string;
+  ownerApp?: string;
+  timeoutPolicy?: 'TIME_OUT_WF' | 'ALERT_ONLY';
+  timeoutSeconds?: number;
+  variables?: Record<string, any>;
+  inputTemplate?: Record<string, any>;
+  inputSchema?: SchemaDef;
+  outputSchema?: SchemaDef;
+  enforceSchema?: boolean;
+  maskedFields?: string[];
+  rateLimitConfig?: RateLimitConfig;
+  cacheConfig?: CacheConfig;
+  metadata?: Record<string, any>;
+  createTime?: number;
+  updateTime?: number;
+  createdBy?: string;
+  updatedBy?: string;
+}
+```
+
+This type provides all the configuration options available when defining and registering workflows.
 | Property | Type | Description |
 | --- | --- | --- |
 | `cacheConfig` | `CacheConfig` | The cache configuration. |
@@ -493,6 +529,46 @@ Signals a workflow task asynchronously (fire-and-forget).
 | `workflowStatusListenerSink` | `string` | The workflow status listener sink. |
 
 ### `WorkflowTask`
+Workflow task definition with configuration options for individual workflow steps.
+
+```typescript
+interface WorkflowTask {
+  name: string;
+  taskReferenceName: string;
+  type: string;
+  description?: string;
+  optional?: boolean;
+  inputParameters?: Record<string, any>;
+  asyncComplete?: boolean;
+  startDelay?: number;
+  retryCount?: number;
+  evaluatorType?: string;
+  expression?: string;
+  decisionCases?: Record<string, WorkflowTask[]>;
+  defaultCase?: WorkflowTask[];
+  forkTasks?: WorkflowTask[][];
+  joinOn?: string[];
+  joinStatus?: string;
+  loopCondition?: string;
+  loopOver?: WorkflowTask[];
+  dynamicTaskNameParam?: string;
+  dynamicForkTasksParam?: string;
+  dynamicForkTasksInputParamName?: string;
+  defaultExclusiveJoinTask?: string[];
+  caseExpression?: string;
+  caseValueParam?: string;
+  sink?: string;
+  taskDefinition?: TaskDef;
+  rateLimited?: boolean;
+  permissive?: boolean;
+  cacheConfig?: CacheConfig;
+  onStateChange?: Record<string, StateChangeEvent[]>;
+  scriptExpression?: string;
+  subWorkflowParam?: SubWorkflowParams;
+}
+```
+
+This type defines the structure of individual tasks within a workflow definition.
 | Property | Type | Description |
 | --- | --- | --- |
 | `asyncComplete` | `boolean` | Whether the task is async complete. |
