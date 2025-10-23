@@ -219,82 +219,94 @@ Discovers service methods.
 
 ## Type Definitions
 
-### `ServiceRegistry`
-| Property | Type | Description |
-| --- | --- | --- |
-| `circuitBreakerEnabled` | `boolean` | Whether the circuit breaker is enabled. |
-| `config` | `Config` | The configuration of the service. |
-| `methods` | `ServiceMethod[]` | The methods of the service. |
-| `name` | `string` | The name of the service. |
-| `requestParams` | `RequestParam[]` | The request parameters of the service. |
-| `serviceURI` | `string` | The URI of the service. |
-| `type` | `'HTTP' \| 'gRPC' \| 'MCP_REMOTE'` | The type of the service. |
+```typescript
+export enum ServiceType {
+  HTTP = "HTTP",
+  MCP_REMOTE = "MCP_REMOTE",
+  gRPC = "gRPC",
+}
+```
 
-### `ServiceType`
-`ServiceType` can be one of the following values: `'HTTP'`, `'MCP_REMOTE'`, `'gRPC'`.
+```typescript
+export type ServiceRegistry = {
+  circuitBreakerEnabled?: boolean;
+  config?: Config;
+  methods?: ServiceMethod[];
+  name?: string;
+  requestParams?: RequestParam[];
+  serviceURI?: string;
+  type?: 'HTTP' | 'gRPC' | 'MCP_REMOTE';
+};
+```
 
-### `Config`
-| Property | Type | Description |
-| --- | --- | --- |
-| `circuitBreakerConfig` | `OrkesCircuitBreakerConfig` | The circuit breaker configuration. |
+```typescript
+export type ServiceMethod = {
+  exampleInput?: {
+    [key: string]: unknown;
+  };
+  id?: number;
+  inputType?: string;
+  methodName?: string;
+  methodType?: string;
+  operationName?: string;
+  outputType?: string;
+  requestParams?: RequestParam[];
+};
+```
 
-### `ServiceMethod`
-| Property | Type | Description |
-| --- | --- | --- |
-| `id` | `number` | The ID of the method. |
-| `operationName` | `string` | The name of the operation. |
-| `methodName` | `string` | The name of the method. |
-| `methodType` | `string` | The type of the method. |
-| `inputType` | `string` | The input type of the method. |
-| `outputType` | `string` | The output type of the method. |
-| `requestParams` | `RequestParam[]` | The request parameters of the method. |
-| `exampleInput` | `Record<string, any>` | An example input for the method. |
+```typescript
+export type CircuitBreakerTransitionResponse = {
+  currentState?: string;
+  message?: string;
+  previousState?: string;
+  service?: string;
+  transitionTimestamp?: number;
+};
+```
 
-### `RequestParam`
-| Property | Type | Description |
-| --- | --- | --- |
-| `name` | `string` | The name of the parameter. |
-| `type` | `string` | The type of the parameter. |
-| `required` | `boolean` | Whether the parameter is required. |
-| `schema` | `RequestParamSchema` | The schema of the parameter. |
+```typescript
+export type ProtoRegistryEntry = {
+  data?: string;
+  filename?: string;
+  serviceName?: string;
+};
+```
 
-### `RequestParamSchema`
-| Property | Type | Description |
-| --- | --- | --- |
-| `type` | `string` | The type of the schema. |
-| `format` | `string` | The format of the schema. |
-| `defaultValue` | `any` | The default value of the schema. |
+```typescript
+export type Config = {
+  circuitBreakerConfig?: OrkesCircuitBreakerConfig;
+};
+```
 
-### `ServiceRegistryConfig`
-| Property | Type | Description |
-| --- | --- | --- |
-| `circuitBreakerConfig` | `OrkesCircuitBreakerConfig` | The circuit breaker configuration. |
+```typescript
+export type OrkesCircuitBreakerConfig = {
+  automaticTransitionFromOpenToHalfOpenEnabled?: boolean;
+  failureRateThreshold?: number;
+  maxWaitDurationInHalfOpenState?: number;
+  minimumNumberOfCalls?: number;
+  permittedNumberOfCallsInHalfOpenState?: number;
+  slidingWindowSize?: number;
+  slowCallDurationThreshold?: number;
+  slowCallRateThreshold?: number;
+  waitDurationInOpenState?: number;
+};
+```
 
-### `OrkesCircuitBreakerConfig`
-| Property | Type | Description |
-| --- | --- | --- |
-| `failureRateThreshold` | `number` | The failure rate threshold. |
-| `slidingWindowSize` | `number` | The sliding window size. |
-| `minimumNumberOfCalls` | `number` | The minimum number of calls. |
-| `waitDurationInOpenState` | `number` | The wait duration in the open state. |
-| `permittedNumberOfCallsInHalfOpenState`| `number` | The permitted number of calls in the half-open state. |
-| `slowCallRateThreshold` | `number` | The slow call rate threshold. |
-| `slowCallDurationThreshold` | `number` | The slow call duration threshold. |
-| `automaticTransitionFromOpenToHalfOpenEnabled` | `boolean` | Whether automatic transition from open to half-open is enabled. |
-| `maxWaitDurationInHalfOpenState` | `number` | The maximum wait duration in the half-open state. |
+```typescript
+export type RequestParam = {
+  name?: string;
+  required?: boolean;
+  schema?: Schema;
+  type?: string;
+};
+```
 
-### `CircuitBreakerTransitionResponse`
-| Property | Type | Description |
-| --- | --- | --- |
-| `service` | `string` | The name of the service. |
-| `previousState` | `string` | The previous state of the circuit breaker. |
-| `currentState` | `string` | The current state of the circuit breaker. |
-| `transitionTimestamp` | `number` | The timestamp of the transition. |
-| `message` | `string` | The transition message. |
-
-### `ProtoRegistryEntry`
-| Property | Type | Description |
-| --- | --- | --- |
-| `filename` | `string` | The name of the proto file. |
-| `serviceName` | `string` | The name of the service. |
-| `data` | `string` | The proto file data. |
+```typescript
+export type Schema = {
+  defaultValue?: {
+    [key: string]: unknown;
+  };
+  format?: string;
+  type?: string;
+};
+```

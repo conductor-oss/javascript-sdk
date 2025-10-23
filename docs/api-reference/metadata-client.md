@@ -234,8 +234,6 @@ await metadataClient.unregisterWorkflow("email_workflow", 1);
 
 ## Type Definitions
 
-See the [WorkflowExecutor API Reference](workflow-executor.md) for complete `WorkflowDef`, `WorkflowTask`, and `TaskDef` type definitions.
-
 ### `ExtendedTaskDef`
 Extended task definition with comprehensive configuration options for task registration and management.
 
@@ -273,6 +271,246 @@ interface ExtendedTaskDef {
   updatedBy?: string;
   totalTimeoutSeconds?: number;
 }
+```
+
+## `TaskDef`
+Task definition containing the configuration for a task.
+
+```typescript
+export type TaskDef = {
+  backoffScaleFactor?: number;
+  baseType?: string;
+  concurrentExecLimit?: number;
+  createTime?: number;
+  createdBy?: string;
+  description?: string;
+  enforceSchema?: boolean;
+  executionNameSpace?: string;
+  inputKeys?: Array<string>;
+  inputSchema?: SchemaDef;
+  inputTemplate?: {
+    [key: string]: unknown;
+  };
+  isolationGroupId?: string;
+  name: string;
+  outputKeys?: Array<string>;
+  outputSchema?: SchemaDef;
+  ownerApp?: string;
+  ownerEmail?: string;
+  pollTimeoutSeconds?: number;
+  rateLimitFrequencyInSeconds?: number;
+  rateLimitPerFrequency?: number;
+  responseTimeoutSeconds?: number;
+  retryCount?: number;
+  retryDelaySeconds?: number;
+  retryLogic?: 'FIXED' | 'EXPONENTIAL_BACKOFF' | 'LINEAR_BACKOFF';
+  timeoutPolicy?: 'RETRY' | 'TIME_OUT_WF' | 'ALERT_ONLY';
+  timeoutSeconds: number;
+  totalTimeoutSeconds: number;
+  updateTime?: number;
+  updatedBy?: string;
+};
+```
+
+### `ExtendedWorkflowDef`
+Extended workflow definition with comprehensive configuration options for workflow registration and management.
+
+```typescript
+export type ExtendedWorkflowDef = {
+  cacheConfig?: CacheConfig;
+  createTime?: number;
+  createdBy?: string;
+  description?: string;
+  enforceSchema?: boolean;
+  failureWorkflow?: string;
+  inputParameters?: Array<string>;
+  inputSchema?: SchemaDef;
+  inputTemplate?: {
+    [key: string]: unknown;
+  };
+  maskedFields?: Array<string>;
+  metadata?: {
+    [key: string]: unknown;
+  };
+  name: string;
+  outputParameters?: {
+    [key: string]: unknown;
+  };
+  outputSchema?: SchemaDef;
+  overwriteTags?: boolean;
+  ownerApp?: string;
+  ownerEmail?: string;
+  rateLimitConfig?: RateLimitConfig;
+  restartable?: boolean;
+  schemaVersion?: number;
+  tags?: Array<Tag>;
+  tasks: Array<WorkflowTask>;
+  timeoutPolicy?: 'TIME_OUT_WF' | 'ALERT_ONLY';
+  timeoutSeconds: number;
+  updateTime?: number;
+  updatedBy?: string;
+  variables?: {
+    [key: string]: unknown;
+  };
+  version?: number;
+  workflowStatusListenerEnabled?: boolean;
+  workflowStatusListenerSink?: string;
+};
+```
+
+### `WorkflowDef`
+Workflow definition containing the configuration for a workflow.
+
+```typescript
+export type WorkflowDef = {
+  cacheConfig?: CacheConfig;
+  createTime?: number;
+  createdBy?: string;
+  description?: string;
+  enforceSchema?: boolean;
+  failureWorkflow?: string;
+  inputParameters?: Array<string>;
+  inputSchema?: SchemaDef;
+  inputTemplate?: {
+    [key: string]: unknown;
+  };
+  maskedFields?: Array<string>;
+  metadata?: {
+    [key: string]: unknown;
+  };
+  name: string;
+  outputParameters?: {
+    [key: string]: unknown;
+  };
+  outputSchema?: SchemaDef;
+  ownerApp?: string;
+  ownerEmail?: string;
+  rateLimitConfig?: RateLimitConfig;
+  restartable?: boolean;
+  schemaVersion?: number;
+  tasks: Array<WorkflowTask>;
+  timeoutPolicy?: 'TIME_OUT_WF' | 'ALERT_ONLY';
+  timeoutSeconds: number;
+  updateTime?: number;
+  updatedBy?: string;
+  variables?: {
+    [key: string]: unknown;
+  };
+  version?: number;
+  workflowStatusListenerEnabled?: boolean;
+  workflowStatusListenerSink?: string;
+};
+```
+
+### `WorkflowTask`
+Definition of a task within a workflow.
+
+```typescript
+export type WorkflowTask = {
+  asyncComplete?: boolean;
+  cacheConfig?: CacheConfig;
+  /**
+   * @deprecated
+   */
+  caseExpression?: string;
+  /**
+   * @deprecated
+   */
+  caseValueParam?: string;
+  decisionCases?: {
+    [key: string]: Array<WorkflowTask>;
+  };
+  defaultCase?: Array<WorkflowTask>;
+  defaultExclusiveJoinTask?: Array<string>;
+  description?: string;
+  /**
+   * @deprecated
+   */
+  dynamicForkJoinTasksParam?: string;
+  dynamicForkTasksInputParamName?: string;
+  dynamicForkTasksParam?: string;
+  dynamicTaskNameParam?: string;
+  evaluatorType?: string;
+  expression?: string;
+  forkTasks?: Array<Array<WorkflowTask>>;
+  inputParameters?: {
+    [key: string]: unknown;
+  };
+  joinOn?: Array<string>;
+  joinStatus?: string;
+  loopCondition?: string;
+  loopOver?: Array<WorkflowTask>;
+  name: string;
+  onStateChange?: {
+    [key: string]: Array<StateChangeEvent>;
+  };
+  optional?: boolean;
+  permissive?: boolean;
+  rateLimited?: boolean;
+  retryCount?: number;
+  scriptExpression?: string;
+  sink?: string;
+  startDelay?: number;
+  subWorkflowParam?: SubWorkflowParams;
+  taskDefinition?: TaskDef;
+  taskReferenceName: string;
+  type: string;
+  workflowTaskType?: string;
+};
+```
+
+### `SchemaDef`
+Schema definition for input/output validation.
+
+```typescript
+export type SchemaDef = {
+  createTime?: number;
+  createdBy?: string;
+  data?: {
+    [key: string]: unknown;
+  };
+  externalRef?: string;
+  name: string;
+  ownerApp?: string;
+  type: 'JSON' | 'AVRO' | 'PROTOBUF';
+  updateTime?: number;
+  updatedBy?: string;
+  version: number;
+};
+```
+
+### `CacheConfig`
+Configuration for workflow/task caching.
+
+```typescript
+export type CacheConfig = {
+  key?: string;
+  ttlInSecond?: number;
+};
+```
+
+### `Tag`
+Tag definition for categorizing workflows and tasks.
+
+```typescript
+export type Tag = {
+  key?: string;
+  /**
+   * @deprecated
+   */
+  type?: string;
+  value?: string;
+};
+```
+
+### `RateLimitConfig`
+Configuration for rate limiting workflows.
+
+```typescript
+export type RateLimitConfig = {
+  concurrentExecLimit?: number;
+  rateLimitKey?: string;
+};
 ```
 
 This type provides all the configuration options available when registering or updating task definitions with the metadata service.

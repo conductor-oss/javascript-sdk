@@ -328,96 +328,179 @@ console.log("Task completed");
 ## Type Definitions
 
 ### `HumanTaskEntry`
-| Property | Type | Description |
-| --- | --- | --- |
-| `assignee` | `HumanTaskUser` | The user assigned to the task. |
-| `claimant`| `HumanTaskUser` | The user who has claimed the task. |
-| `createdBy` | `string` | The user who created the task. |
-| `createdOn` | `number` | The time the task was created. |
-| `definitionName`| `string` | The name of the task definition. |
-| `displayName` | `string` | The display name of the task. |
-| `humanTaskDef`| `HumanTaskDefinition` | The task definition. |
-| `input` | `Record<string, any>` | The input data for the task. |
-| `output`| `Record<string, any>` | The output data for the task. |
-| `ownerApp` | `string` | The owner app of the task. |
-| `state` | `'PENDING' \| 'ASSIGNED' \| 'IN_PROGRESS' \| 'COMPLETED' \| 'TIMED_OUT' \| 'DELETED'` | The state of the task. |
-| `taskId`| `string` | The ID of the task. |
-| `taskRefName` | `string` | The reference name of the task. |
-| `updatedBy` | `string` | The user who last updated the task. |
-| `updatedOn` | `number` | The time the task was last updated. |
-| `workflowId`| `string` | The ID of the workflow instance. |
-| `workflowName`| `string` | The name of the workflow. |
+
+```typescript
+export type HumanTaskEntry = {
+  assignee?: HumanTaskUser;
+  claimant?: HumanTaskUser;
+  createdBy?: string;
+  createdOn?: number;
+  definitionName?: string;
+  displayName?: string;
+  humanTaskDef?: HumanTaskDefinition;
+  input?: {
+    [key: string]: unknown;
+  };
+  output?: {
+    [key: string]: unknown;
+  };
+  ownerApp?: string;
+  state?: 'PENDING' | 'ASSIGNED' | 'IN_PROGRESS' | 'COMPLETED' | 'TIMED_OUT' | 'DELETED';
+  taskId?: string;
+  taskRefName?: string;
+  updatedBy?: string;
+  updatedOn?: number;
+  workflowId?: string;
+  workflowName?: string;
+};
+```
 
 ### `HumanTaskUser`
-| Property | Type | Description |
-| --- | --- | --- |
-| `user` | `string` | The user or group ID. |
-| `userType`| `'EXTERNAL_USER' \| 'EXTERNAL_GROUP' \| 'CONDUCTOR_USER' \| 'CONDUCTOR_GROUP'` | The type of the user. |
+
+```typescript
+export type HumanTaskUser = {
+  user?: string;
+  userType?: 'EXTERNAL_USER' | 'EXTERNAL_GROUP' | 'CONDUCTOR_USER' | 'CONDUCTOR_GROUP';
+};
+```
 
 ### `HumanTaskDefinition`
-| Property | Type | Description |
-| --- | --- | --- |
-| `assignmentCompletionStrategy` | `'LEAVE_OPEN' \| 'TERMINATE'` | The strategy for completing the assignment. |
-| `assignments` | `HumanTaskAssignment[]` | A list of assignments for the task. |
-| `taskTriggers` | `HumanTaskTrigger[]` | A list of triggers for the task. |
-| `userFormTemplate` | `UserFormTemplate` | The user form template for the task. |
+
+```typescript
+export type HumanTaskDefinition = {
+  assignmentCompletionStrategy?: 'LEAVE_OPEN' | 'TERMINATE';
+  assignments?: Array<HumanTaskAssignment>;
+  displayName?: string;
+  fullTemplate?: HumanTaskTemplate;
+  taskTriggers?: Array<HumanTaskTrigger>;
+  userFormTemplate?: UserFormTemplate;
+};
+```
 
 ### `HumanTaskAssignment`
-| Property | Type | Description |
-| --- | --- | --- |
-| `assignee` | `HumanTaskUser` | The user or group assigned to the task. |
-| `slaMinutes` | `number` | The service level agreement in minutes. |
+
+```typescript
+export type HumanTaskAssignment = {
+  assignee?: HumanTaskUser;
+  slaMinutes?: number;
+};
+```
 
 ### `HumanTaskTrigger`
-| Property | Type | Description |
-| --- | --- | --- |
-| `startWorkflowRequest` | `StartWorkflowRequest` | The request to start a workflow. |
-| `triggerType` | `'ASSIGNEE_CHANGED' \| 'PENDING' \| 'IN_PROGRESS' \| 'ASSIGNED' \| 'COMPLETED' \| 'TIMED_OUT'` | The type of the trigger. |
+
+```typescript
+export type HumanTaskTrigger = {
+  startWorkflowRequest?: StartWorkflowRequest;
+  triggerType?: 'ASSIGNEE_CHANGED' | 'CLAIMANT_CHANGED' | 'PENDING' | 'IN_PROGRESS' | 'ASSIGNED' | 'COMPLETED' | 'TIMED_OUT';
+};
+```
+
+### `HumanTaskTemplate`
+
+```typescript
+export type HumanTaskTemplate = {
+  createTime?: number;
+  createdBy?: string;
+  jsonSchema: {
+    [key: string]: unknown;
+  };
+  name: string;
+  ownerApp?: string;
+  tags?: Array<Tag>;
+  templateUI: {
+    [key: string]: unknown;
+  };
+  updateTime?: number;
+  updatedBy?: string;
+  version: number;
+};
+```
 
 ### `UserFormTemplate`
-| Property | Type | Description |
-| --- | --- | --- |
-| `name` | `string` | The name of the template. |
-| `version` | `number` | The version of the template. |
+
+```typescript
+export type UserFormTemplate = {
+  name?: string;
+  version?: number;
+};
+```
 
 ### `StartWorkflowRequest`
-| Property | Type | Description |
-| --- | --- | --- |
-| `name` | `string` | The name of the workflow. |
-| `version` | `number` | The version of the workflow. |
-| `correlationId` | `string` | The correlation ID of the workflow. |
-| `input` | `Record<string, any>` | The input data for the workflow. |
-| `taskToDomain` | `Record<string, string>` | A map of task reference names to domains. |
-| `workflowDef` | `WorkflowDef` | The workflow definition. |
-| `externalInputPayloadStoragePath`| `string` | The path to the external input payload storage. |
-| `idempotencyKey` | `string` | The idempotency key for the workflow. |
-| `idempotencyStrategy` | `'FAIL' \| 'RETURN_EXISTING'` | The idempotency strategy for the workflow. |
-| `priority` | `number` | The priority of the workflow. |
-| `createdBy` | `string` | The user who created the workflow. |
+
+```typescript
+export type StartWorkflowRequest = {
+  correlationId?: string;
+  createdBy?: string;
+  externalInputPayloadStoragePath?: string;
+  idempotencyKey?: string;
+  idempotencyStrategy?: 'FAIL' | 'RETURN_EXISTING' | 'FAIL_ON_RUNNING';
+  input?: {
+    [key: string]: unknown;
+  };
+  name: string;
+  priority?: number;
+  taskToDomain?: {
+    [key: string]: string;
+  };
+  version?: number;
+  workflowDef?: WorkflowDef;
+};
+```
 
 ### `HumanTaskSearch`
-| Property | Type | Description |
-| --- | --- | --- |
-| `assignees` | `HumanTaskUser[]` | A list of assignees to filter by. |
-| `claimants` | `HumanTaskUser[]` | A list of claimants to filter by. |
-| `definitionNames` | `string[]` | A list of task definition names to filter by. |
-| `displayNames` | `string[]` | A list of display names to filter by. |
-| `fullTextQuery` | `string` | A full text query to search across all fields. |
-| `searchType` | `'ADMIN' \| 'INBOX'` | The type of search to perform. |
-| `size` | `number` | The number of results to return. |
-| `start` | `number` | The starting offset. |
-| `states` | `('PENDING' \| 'ASSIGNED' \| 'IN_PROGRESS' \| 'COMPLETED' \| 'TIMED_OUT' \| 'DELETED')[]` | A list of states to filter by. |
-| `taskInputQuery` | `string` | A query to filter tasks by their input data. |
-| `taskOutputQuery` | `string` | A query to filter tasks by their output data. |
-| `taskRefNames` | `string[]` | A list of task reference names to filter by. |
-| `updateEndTime` | `number` | The end time for filtering by update time. |
-| `updateStartTime` | `number` | The start time for filtering by update time. |
-| `workflowIds` | `string[]` | A list of workflow IDs to filter by. |
-| `workflowNames` | `string[]` | A list of workflow names to filter by. |
+
+```typescript
+export type HumanTaskSearch = {
+  assignees?: Array<HumanTaskUser>;
+  claimants?: Array<HumanTaskUser>;
+  definitionNames?: Array<string>;
+  displayNames?: Array<string>;
+  fullTextQuery?: string;
+  searchType?: 'ADMIN' | 'INBOX';
+  size?: number;
+  start?: number;
+  states?: Array<'PENDING' | 'ASSIGNED' | 'IN_PROGRESS' | 'COMPLETED' | 'TIMED_OUT' | 'DELETED'>;
+  taskInputQuery?: string;
+  taskOutputQuery?: string;
+  taskRefNames?: Array<string>;
+  updateEndTime?: number;
+  updateStartTime?: number;
+  workflowIds?: Array<string>;
+  workflowNames?: Array<string>;
+};
+```
 
 ### `PollIntervalOptions`
-| Property | Type | Description |
-| --- | --- | --- |
-| `pollInterval` | `number` | The interval in milliseconds to poll for tasks. |
-| `maxPollTimes` | `number` | The maximum number of times to poll for tasks. |
+
+```typescript
+export interface PollIntervalOptions {
+  pollInterval: number;
+  maxPollTimes: number;
+}
+```
+
+### `HumanTaskSearchResult`
+
+```typescript
+export type HumanTaskSearchResult = {
+  hits?: number;
+  pageSizeLimit?: number;
+  results?: Array<HumanTaskEntry>;
+  start?: number;
+  totalHits?: number;
+};
+```
+
+### `Tag`
+
+```typescript
+export type Tag = {
+  key?: string;
+  /**
+   * @deprecated
+   */
+  type?: string;
+  value?: string;
+};
+```
 

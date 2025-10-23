@@ -329,111 +329,317 @@ console.log("All schedules resumed");
 
 ### `SaveScheduleRequest`
 
-Request object for creating or updating a schedule.
-
-| Property | Type | Description |
-| --- | --- | --- |
-| `createdBy` | `string` | The user who created the schedule. |
-| `cronExpression` | `string` | The cron expression for the schedule. |
-| `description` | `string` | The description of the schedule. |
-| `name` | `string` | The name of the schedule. |
-| `paused` | `boolean` | Whether the schedule is paused. |
-| `runCatchupScheduleInstances` | `boolean` | Whether to run catch-up schedule instances. |
-| `scheduleEndTime` | `number` | The end time for the schedule. |
-| `scheduleStartTime` | `number` | The start time for the schedule. |
-| `startWorkflowRequest` | `StartWorkflowRequest` | The request to start a workflow. |
-| `updatedBy` | `string` | The user who last updated the schedule. |
-| `zoneId` | `string` | The zone ID for the schedule. |
+```typescript
+export type SaveScheduleRequest = {
+  createdBy?: string;
+  cronExpression: string;
+  description?: string;
+  name: string;
+  paused?: boolean;
+  runCatchupScheduleInstances?: boolean;
+  scheduleEndTime?: number;
+  scheduleStartTime?: number;
+  startWorkflowRequest: StartWorkflowRequest;
+  updatedBy?: string;
+  zoneId?: string;
+};
+```
 
 ### `WorkflowSchedule`
 
-Schedule object returned by the API.
-
-| Property | Type | Description |
-| --- | --- | --- |
-| `createTime` | `number` | The creation time of the schedule. |
-| `createdBy` | `string` | The user who created the schedule. |
-| `cronExpression` | `string` | The cron expression for the schedule. |
-| `description` | `string` | The description of the schedule. |
-| `name` | `string` | The name of the schedule. |
-| `paused` | `boolean` | Whether the schedule is paused. |
-| `pausedReason` | `string` | The reason the schedule is paused. |
-| `runCatchupScheduleInstances` | `boolean` | Whether to run catch-up schedule instances. |
-| `scheduleEndTime` | `number` | The end time for the schedule. |
-| `scheduleStartTime` | `number` | The start time for the schedule. |
-| `startWorkflowRequest` | `StartWorkflowRequest` | The request to start a workflow. |
-| `tags` | `Tag[]` | The tags associated with the schedule. |
-| `updatedBy` | `string` | The user who last updated the schedule. |
-| `updatedTime` | `number` | The last update time of the schedule. |
-| `zoneId` | `string` | The zone ID for the schedule. |
+```typescript
+export type WorkflowSchedule = {
+  createTime?: number;
+  createdBy?: string;
+  cronExpression?: string;
+  description?: string;
+  name?: string;
+  paused?: boolean;
+  pausedReason?: string;
+  runCatchupScheduleInstances?: boolean;
+  scheduleEndTime?: number;
+  scheduleStartTime?: number;
+  startWorkflowRequest?: StartWorkflowRequest;
+  tags?: Tag[];
+  updatedBy?: string;
+  updatedTime?: number;
+  zoneId?: string;
+};
+```
 
 ### `WorkflowScheduleModel`
 
-Simplified schedule model returned by `getAllSchedules()`.
-
-| Property | Type | Description |
-| --- | --- | --- |
-| `createTime` | `number` | The creation time of the schedule. |
-| `createdBy` | `string` | The user who created the schedule. |
-| `cronExpression` | `string` | The cron expression for the schedule. |
-| `description` | `string` | The description of the schedule. |
-| `name` | `string` | The name of the schedule. |
-| `orgId` | `string` | The organization ID. |
-| `paused` | `boolean` | Whether the schedule is paused. |
-| `pausedReason` | `string` | The reason the schedule is paused. |
-| `queueMsgId` | `string` | The queue message ID. |
-| `runCatchupScheduleInstances` | `boolean` | Whether to run catch-up schedule instances. |
-| `scheduleEndTime` | `number` | The end time for the schedule. |
-| `scheduleStartTime` | `number` | The start time for the schedule. |
-| `startWorkflowRequest` | `StartWorkflowRequest` | The request to start a workflow. |
-| `tags` | `Tag[]` | The tags associated with the schedule. |
-| `updatedBy` | `string` | The user who last updated the schedule. |
-| `updatedTime` | `number` | The last update time of the schedule. |
-| `zoneId` | `string` | The zone ID for the schedule. |
+```typescript
+export type WorkflowScheduleModel = {
+  createTime?: number;
+  createdBy?: string;
+  cronExpression?: string;
+  description?: string;
+  name?: string;
+  orgId?: string;
+  paused?: boolean;
+  pausedReason?: string;
+  queueMsgId?: string;
+  runCatchupScheduleInstances?: boolean;
+  scheduleEndTime?: number;
+  scheduleStartTime?: number;
+  startWorkflowRequest?: StartWorkflowRequest;
+  tags?: Tag[];
+  updatedBy?: string;
+  updatedTime?: number;
+  zoneId?: string;
+};
+```
 
 ### `SearchResultWorkflowScheduleExecutionModel`
 
-Search results for schedule executions.
-
-| Property | Type | Description |
-| --- | --- | --- |
-| `totalHits` | `number` | The total number of hits. |
-| `results` | `WorkflowScheduleExecutionModel[]` | The search results. |
+```typescript
+export type SearchResultWorkflowScheduleExecutionModel = {
+  results?: WorkflowScheduleExecutionModel[];
+  totalHits?: number;
+};
+```
 
 ### `WorkflowScheduleExecutionModel`
 
-Individual schedule execution record.
-
-| Property | Type | Description |
-| --- | --- | --- |
-| `executionId` | `string` | The ID of the execution. |
-| `executionTime` | `number` | The execution time. |
-| `orgId` | `string` | The organization ID. |
-| `queueMsgId` | `string` | The queue message ID. |
-| `reason` | `string` | The reason for the execution status. |
-| `scheduleName` | `string` | The name of the schedule. |
-| `scheduledTime` | `number` | The scheduled time of the execution. |
-| `stackTrace` | `string` | The stack trace for a failed execution. |
-| `startWorkflowRequest` | `StartWorkflowRequest` | The request to start a workflow. |
-| `state` | `'POLLED' \| 'FAILED' \| 'EXECUTED'` | The state of the execution. |
-| `workflowId` | `string` | The ID of the workflow instance. |
+```typescript
+export type WorkflowScheduleExecutionModel = {
+  executionId?: string;
+  executionTime?: number;
+  orgId?: string;
+  queueMsgId?: string;
+  reason?: string;
+  scheduleName?: string;
+  scheduledTime?: number;
+  stackTrace?: string;
+  startWorkflowRequest?: StartWorkflowRequest;
+  state?: 'POLLED' | 'FAILED' | 'EXECUTED';
+  workflowId?: string;
+  workflowName?: string;
+  zoneId?: string;
+};
+```
 
 ### `StartWorkflowRequest`
 
-Request object for starting a workflow.
+```typescript
+export type StartWorkflowRequest = {
+  correlationId?: string;
+  createdBy?: string;
+  externalInputPayloadStoragePath?: string;
+  idempotencyKey?: string;
+  idempotencyStrategy?: 'FAIL' | 'RETURN_EXISTING' | 'FAIL_ON_RUNNING';
+  input?: {
+    [key: string]: unknown;
+  };
+  name: string;
+  priority?: number;
+  taskToDomain?: {
+    [key: string]: string;
+  };
+  version?: number;
+  workflowDef?: WorkflowDef;
+};
+```
 
-| Property | Type | Description |
-| --- | --- | --- |
-| `name` | `string` | The name of the workflow. |
-| `version` | `number` | The version of the workflow. |
-| `correlationId` | `string` | The correlation ID of the workflow. |
-| `input` | `Record<string, any>` | The input data for the workflow. |
-| `taskToDomain` | `Record<string, string>` | A map of task reference names to domains. |
-| `workflowDef` | `WorkflowDef` | The workflow definition. |
-| `externalInputPayloadStoragePath` | `string` | The path to the external input payload storage. |
-| `idempotencyKey` | `string` | The idempotency key for the workflow. |
-| `idempotencyStrategy` | `'FAIL' \| 'RETURN_EXISTING'` | The idempotency strategy for the workflow. |
-| `priority` | `number` | The priority of the workflow. |
-| `createdBy` | `string` | The user who created the workflow. |
+### `Tag`
 
-See the [WorkflowExecutor API Reference](workflow-executor.md) for complete `WorkflowDef` and `WorkflowTask` type definitions.
+```typescript
+export type Tag = {
+  key?: string;
+  /**
+   * @deprecated
+   */
+  type?: string;
+};
+```
+
+### `WorkflowDef`
+
+```typescript
+export type WorkflowDef = {
+  cacheConfig?: CacheConfig;
+  createTime?: number;
+  createdBy?: string;
+  description?: string;
+  enforceSchema?: boolean;
+  failureWorkflow?: string;
+  inputParameters?: string[];
+  inputSchema?: SchemaDef;
+  inputTemplate?: {
+    [key: string]: unknown;
+  };
+  maskedFields?: string[];
+  metadata?: {
+    [key: string]: unknown;
+  };
+  name: string;
+  outputParameters?: {
+    [key: string]: unknown;
+  };
+  outputSchema?: SchemaDef;
+  ownerApp?: string;
+  ownerEmail?: string;
+  rateLimitConfig?: RateLimitConfig;
+  restartable?: boolean;
+  schemaVersion?: number;
+  tasks: WorkflowTask[];
+  timeoutPolicy?: 'TIME_OUT_WF' | 'ALERT_ONLY';
+  timeoutSeconds: number;
+  updateTime?: number;
+  updatedBy?: string;
+};
+```
+
+### `CacheConfig`
+
+```typescript
+export type CacheConfig = {
+  key?: string;
+  ttlInSecond?: number;
+};
+```
+
+### `SchemaDef`
+
+```typescript
+export type SchemaDef = {
+  createTime?: number;
+  createdBy?: string;
+  data?: {
+    [key: string]: unknown;
+  };
+  externalRef?: string;
+  name: string;
+  ownerApp?: string;
+  type: 'JSON' | 'AVRO' | 'PROTOBUF';
+  updateTime?: number;
+};
+```
+
+### `RateLimitConfig`
+
+```typescript
+export type RateLimitConfig = {
+  concurrentExecLimit?: number;
+  rateLimitKey?: string;
+};
+```
+
+### `WorkflowTask`
+
+```typescript
+export type WorkflowTask = {
+  asyncComplete?: boolean;
+  cacheConfig?: CacheConfig;
+  /**
+   * @deprecated
+   */
+  caseExpression?: string;
+  /**
+   * @deprecated
+   */
+  caseValueParam?: string;
+  decisionCases?: {
+    [key: string]: Array<WorkflowTask>;
+  };
+  defaultCase?: Array<WorkflowTask>;
+  defaultExclusiveJoinTask?: Array<string>;
+  description?: string;
+  /**
+   * @deprecated
+   */
+  dynamicForkJoinTasksParam?: string;
+  dynamicForkTasksInputParamName?: string;
+  dynamicForkTasksParam?: string;
+  dynamicTaskNameParam?: string;
+  evaluatorType?: string;
+  expression?: string;
+  forkTasks?: Array<Array<WorkflowTask>>;
+  inputParameters?: {
+    [key: string]: unknown;
+  };
+  joinOn?: Array<string>;
+  joinStatus?: string;
+  loopCondition?: string;
+  loopOver?: Array<WorkflowTask>;
+  name: string;
+  onStateChange?: {
+    [key: string]: Array<StateChangeEvent>;
+  };
+  optional?: boolean;
+  permissive?: boolean;
+  rateLimited?: boolean;
+  retryCount?: number;
+  scriptExpression?: string;
+  sink?: string;
+  startDelay?: number;
+  subWorkflowParam?: SubWorkflowParams;
+  taskDefinition?: TaskDef;
+  taskReferenceName: string;
+  type?: string;
+};
+```
+
+### `StateChangeEvent`
+
+```typescript
+export type StateChangeEvent = {
+  payload?: {
+    [key: string]: unknown;
+  };
+  type: string;
+};
+```
+
+### `SubWorkflowParams`
+
+```typescript
+export type SubWorkflowParams = {
+  idempotencyKey?: string;
+  idempotencyStrategy?: 'FAIL' | 'RETURN_EXISTING' | 'FAIL_ON_RUNNING';
+  name?: string;
+  taskToDomain?: {
+    [key: string]: string;
+  };
+  version?: number;
+  workflowDefinition?: WorkflowDef;
+};
+```
+
+### `TaskDef`
+
+```typescript
+export type TaskDef = {
+  backoffScaleFactor?: number;
+  baseType?: string;
+  concurrentExecLimit?: number;
+  createTime?: number;
+  createdBy?: string;
+  description?: string;
+  enforceSchema?: boolean;
+  executionNameSpace?: string;
+  inputKeys?: Array<string>;
+  inputSchema?: SchemaDef;
+  inputTemplate?: {
+    [key: string]: unknown;
+  };
+  isolationGroupId?: string;
+  name: string;
+  outputKeys?: Array<string>;
+  outputSchema?: SchemaDef;
+  ownerApp?: string;
+  ownerEmail?: string;
+  pollTimeoutSeconds?: number;
+  rateLimitFrequencyInSeconds?: number;
+  rateLimitPerFrequency?: number;
+  responseTimeoutSeconds?: number;
+  retryCount?: number;
+  retryDelaySeconds?: number;
+  retryLogic?: 'FIXED' | 'EXPONENTIAL_BACKOFF' | 'LINEAR_BACKOFF';
+  timeoutPolicy?: 'RETRY' | 'TIME_OUT_WF' | 'ALERT_ONLY';
+  timeoutSeconds: number;
+  totalTimeoutSeconds: number;
+  updateTime?: number;
+};
+```
