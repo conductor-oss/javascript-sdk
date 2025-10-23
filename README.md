@@ -127,8 +127,6 @@ console.log(`Workflow started with ID: ${executionId}`);
 
 ## Authentication & Configuration
 
-The SDK provides comprehensive authentication and configuration options through the `orkesConductorClient` function. For complete configuration details, see the [OrkesConductorClient API Reference](docs/api-reference/orkes-conductor-client.md).
-
 ### Access Control Setup
 
 The SDK supports authentication using API keys. See [Access Control](https://orkes.io/content/docs/getting-started/concepts/access-control) for more details on role-based access control with Conductor and generating API keys.
@@ -519,7 +517,7 @@ await manager.startPolling();
 console.log("Worker is running!");
 ```
 
-For complete configuration options and logging setup, see the [TaskManager API Reference](docs/api-reference/task-manager.md) and [ConductorLogger API Reference](docs/api-reference/conductor-logger.md).
+For a complete method reference, see the [TaskManager API Reference](docs/api-reference/task-manager.md).
 
 ### Worker Design Principles
 
