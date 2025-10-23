@@ -466,3 +466,46 @@ export type WorkflowTask = {
   };
 };
 ```
+
+### `WorkflowDef`
+
+```typescript
+export type WorkflowDef = {
+  cacheConfig?: CacheConfig;
+  createTime?: number;
+  createdBy?: string;
+  description?: string;
+  enforceSchema?: boolean;
+  failureWorkflow?: string;
+  inputParameters?: Array<string>;
+  inputSchema?: SchemaDef;
+  inputTemplate?: {
+    [key: string]: unknown;
+  };
+  maskedFields?: Array<string>;
+  metadata?: {
+    [key: string]: unknown;
+  };
+  name: string;
+  outputParameters?: {
+    [key: string]: unknown;
+  };
+  outputSchema?: SchemaDef;
+  ownerApp?: string;
+  ownerEmail?: string;
+  rateLimitConfig?: RateLimitConfig;
+  restartable?: boolean;
+  schemaVersion?: number;
+  tasks: Array<WorkflowTask>;
+  timeoutPolicy?: 'TIME_OUT_WF' | 'ALERT_ONLY';
+  timeoutSeconds: number;
+  updateTime?: number;
+  updatedBy?: string;
+  variables?: {
+    [key: string]: unknown;
+  };
+  version?: number;
+  workflowStatusListenerEnabled?: boolean;
+  workflowStatusListenerSink?: string;
+};
+```
