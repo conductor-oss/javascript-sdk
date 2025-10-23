@@ -116,132 +116,301 @@ console.log(`Updated task: ${taskId}`);
 
 ## Type Definitions
 
-### `SearchResultTaskSummary`
-| Property | Type | Description |
-| --- | --- | --- |
-| `totalHits` | `number` | The total number of hits. |
-| `results` | `TaskSummary[]` | The search results. |
+The following types can be imported when using the TaskClient. All types are displayed as full TypeScript definitions.
 
-### `TaskSummary`
-| Property | Type | Description |
-| --- | --- | --- |
-| `correlationId` | `string` | The correlation ID of the workflow. |
-| `endTime` | `string` | The end time of the task. |
-| `executionTime` | `number` | The execution time of the task. |
-| `externalInputPayloadStoragePath` | `string` | The path to external input payload storage. |
-| `externalOutputPayloadStoragePath` | `string` | The path to external output payload storage. |
-| `input` | `string` | The input data for the task (JSON string). |
-| `output` | `string` | The output data for the task (JSON string). |
-| `queueWaitTime` | `number` | The queue wait time. |
-| `reasonForIncompletion` | `string` | The reason for incompletion. |
-| `scheduledTime` | `string` | The scheduled time of the task. |
-| `startTime` | `string` | The start time of the task. |
-| `status` | `'IN_PROGRESS' \| 'CANCELED' \| 'FAILED' \| 'FAILED_WITH_TERMINAL_ERROR' \| 'COMPLETED' \| 'COMPLETED_WITH_ERRORS' \| 'SCHEDULED' \| 'TIMED_OUT' \| 'SKIPPED'` | The status of the task. |
-| `taskDefName` | `string` | The name of the task definition. |
-| `taskId` | `string` | The ID of the task. |
-| `taskReferenceName` | `string` | The reference name of the task. |
-| `taskType` | `string` | The type of the task. |
-| `updateTime` | `string` | The last update time of the task. |
-| `workflowId` | `string` | The ID of the workflow instance. |
-| `workflowPriority` | `number` | The priority of the workflow. |
-| `workflowType` | `string` | The type of the workflow. |
-
-### `TaskResultStatus`
-Task result status type derived from the TaskResult status field. Represents the possible status values for a task.
+### `TaskClient`
 
 ```typescript
-type TaskResultStatus = "IN_PROGRESS" | "FAILED" | "FAILED_WITH_TERMINAL_ERROR" | "COMPLETED"
+export class TaskClient {
+  public readonly _client: Client;
+
+  constructor(client: Client);
+
+  search(
+    start: number,
+    size: number,
+    sort?: string,
+    freeText: string,
+    query: string
+  ): Promise<SearchResultTaskSummary>;
+
+  getTask(taskId: string): Promise<Task>;
+
+  updateTaskResult(
+    workflowId: string,
+    taskRefName: string,
+    status: TaskResultStatus,
+    outputData: Record<string, unknown>
+  ): Promise<string>;
+}
 ```
 
-**Status Values:**
+### `Client`
+
+```typescript
+export type Client = CoreClient<
+  RequestFn,
+  Config,
+  MethodFn,
+  BuildUrlFn,
+  SseFn
+> & {
+  interceptors: Middleware<Request, Response, unknown, ResolvedRequestOptions>;
+};
+```
+
+### `TaskResultStatus`
+
+```typescript
+export type TaskResultStatus = NonNullable<TaskResult["status"]>;
+```
+
+Represents the possible status values for a task result:
 - `"IN_PROGRESS"` - Task is currently running
 - `"FAILED"` - Task failed but can be retried
 - `"FAILED_WITH_TERMINAL_ERROR"` - Task failed and cannot be retried
 - `"COMPLETED"` - Task completed successfully
 
-### `TaskExecLog`
-| Property | Type | Description |
-| --- | --- | --- |
-| `log` | `string` | The log message. |
-| `taskId` | `string` | The ID of the task. |
-| `createdTime` | `number` | The creation time of the log. |
+### `SearchResultTaskSummary`
 
-### `TaskDef`
-| Property | Type | Description |
-| --- | --- | --- |
-| `name` | `string` | The name of the task. |
-| `timeoutSeconds` | `number` | The timeout in seconds. |
-| `totalTimeoutSeconds` | `number` | The total timeout in seconds. |
-| `description` | `string` | The description of the task. |
-| `retryCount` | `number` | The retry count. |
-| `retryLogic` | `'FIXED' \| 'EXPONENTIAL_BACKOFF' \| 'LINEAR_BACKOFF'` | The retry logic of the task. |
-| `retryDelaySeconds` | `number` | The retry delay in seconds. |
-| `timeoutPolicy` | `'RETRY' \| 'TIME_OUT_WF' \| 'ALERT_ONLY'` | The timeout policy of the task. |
-| `responseTimeoutSeconds` | `number` | The response timeout in seconds. |
-| `inputKeys` | `string[]` | The input keys of the task. |
-| `outputKeys` | `string[]` | The output keys of the task. |
-| `inputTemplate` | `Record<string, any>` | The input template of the task. |
-| `concurrentExecLimit` | `number` | The concurrent execution limit. |
-| `rateLimitPerFrequency` | `number` | The rate limit per frequency. |
-| `rateLimitFrequencyInSeconds` | `number` | The rate limit frequency in seconds. |
-| `isolationGroupId` | `string` | The isolation group ID. |
-| `executionNameSpace` | `string` | The execution namespace. |
-| `ownerApp` | `string` | The owner app of the task. |
-| `ownerEmail` | `string` | The owner email of the task. |
-| `pollTimeoutSeconds` | `number` | The poll timeout in seconds. |
-| `backoffScaleFactor` | `number` | The backoff scale factor. |
-| `baseType` | `string` | The base type of the task. |
-| `enforceSchema` | `boolean` | Whether to enforce schema validation. |
-| `inputSchema` | `SchemaDef` | The input schema definition. |
-| `outputSchema` | `SchemaDef` | The output schema definition. |
-| `createTime` | `number` | The creation time of the task. |
-| `updateTime` | `number` | The last update time of the task. |
-| `createdBy` | `string` | The user who created the task. |
-| `updatedBy` | `string` | The user who last updated the task. |
+```typescript
+export type SearchResultTaskSummary = {
+  results?: Array<TaskSummary>;
+  totalHits?: number;
+};
+```
+
+### `TaskSummary`
+
+```typescript
+export type TaskSummary = {
+  correlationId?: string;
+  endTime?: string;
+  executionTime?: number;
+  externalInputPayloadStoragePath?: string;
+  externalOutputPayloadStoragePath?: string;
+  input?: string;
+  output?: string;
+  queueWaitTime?: number;
+  reasonForIncompletion?: string;
+  scheduledTime?: string;
+  startTime?: string;
+  status?: 'IN_PROGRESS' | 'CANCELED' | 'FAILED' | 'FAILED_WITH_TERMINAL_ERROR' | 'COMPLETED' | 'COMPLETED_WITH_ERRORS' | 'SCHEDULED' | 'TIMED_OUT' | 'SKIPPED';
+  taskDefName?: string;
+  taskId?: string;
+  taskReferenceName?: string;
+  taskType?: string;
+  updateTime?: string;
+  workflowId?: string;
+  workflowPriority?: number;
+  workflowType?: string;
+};
+```
 
 ### `Task`
-| Property | Type | Description |
-| --- | --- | --- |
-| `callbackAfterSeconds` | `number` | The callback after seconds. |
-| `callbackFromWorker` | `boolean` | Whether the callback is from a worker. |
-| `correlationId` | `string` | The correlation ID of the task. |
-| `domain` | `string` | The domain of the task. |
-| `endTime` | `number` | The end time of the task. |
-| `executed` | `boolean` | Whether the task was executed. |
-| `executionNameSpace` | `string` | The execution namespace. |
-| `externalInputPayloadStoragePath` | `string` | The path to the external input payload storage. |
-| `externalOutputPayloadStoragePath` | `string` | The path to the external output payload storage. |
-| `firstStartTime` | `number` | The first start time of the task. |
-| `inputData` | `Record<string, any>` | The input data for the task. |
-| `isolationGroupId` | `string` | The isolation group ID. |
-| `iteration` | `number` | The iteration number. |
-| `loopOverTask` | `boolean` | Whether the task is a loop over task. |
-| `outputData` | `Record<string, any>` | The output data of the task. |
-| `parentTaskId` | `string` | The ID of the parent task. |
-| `pollCount` | `number` | The poll count. |
-| `queueWaitTime` | `number` | The queue wait time. |
-| `rateLimitFrequencyInSeconds` | `number` | The rate limit frequency in seconds. |
-| `rateLimitPerFrequency` | `number` | The rate limit per frequency. |
-| `reasonForIncompletion` | `string` | The reason for incompletion. |
-| `referenceTaskName` | `string` | The reference name of the task. |
-| `responseTimeoutSeconds` | `number` | The response timeout in seconds. |
-| `retried` | `boolean` | Whether the task was retried. |
-| `retriedTaskId` | `string` | The ID of the retried task. |
-| `retryCount` | `number` | The retry count. |
-| `scheduledTime` | `number` | The scheduled time of the task. |
-| `seq` | `number` | The sequence number of the task. |
-| `startDelayInSeconds` | `number` | The start delay in seconds. |
-| `startTime` | `number` | The start time of the task. |
-| `status` | `'IN_PROGRESS' \| 'CANCELED' \| 'FAILED' \| 'FAILED_WITH_TERMINAL_ERROR' \| 'COMPLETED' \| 'COMPLETED_WITH_ERRORS' \| 'SCHEDULED' \| 'TIMED_OUT' \| 'SKIPPED'` | The status of the task. |
-| `subWorkflowId` | `string` | The ID of the sub-workflow. |
-| `subworkflowChanged` | `boolean` | Whether the sub-workflow was changed. |
-| `taskDefName` | `string` | The name of the task definition. |
-| `taskDefinition` | `TaskDef` | The task definition. |
-| `taskId` | `string` | The ID of the task. |
-| `taskType` | `string` | The type of the task. |
-| `updateTime` | `number` | The last update time of the task. |
-| `workflowInstanceId` | `string` | The ID of the workflow instance. |
-| `workflowPriority` | `number` | The priority of the workflow. |
-| `workflowTask` | `WorkflowTask` | The workflow task definition. |
-| `workflowType` | `string` | The type of the workflow. |
-| `workerId` | `string` | The ID of the worker. |
+
+```typescript
+export type Task = {
+  callbackAfterSeconds?: number;
+  callbackFromWorker?: boolean;
+  correlationId?: string;
+  domain?: string;
+  endTime?: number;
+  executed?: boolean;
+  executionNameSpace?: string;
+  externalInputPayloadStoragePath?: string;
+  externalOutputPayloadStoragePath?: string;
+  firstStartTime?: number;
+  inputData?: {
+    [key: string]: unknown;
+  };
+  isolationGroupId?: string;
+  iteration?: number;
+  loopOverTask?: boolean;
+  outputData?: {
+    [key: string]: unknown;
+  };
+  parentTaskId?: string;
+  pollCount?: number;
+  queueWaitTime?: number;
+  rateLimitFrequencyInSeconds?: number;
+  rateLimitPerFrequency?: number;
+  reasonForIncompletion?: string;
+  referenceTaskName?: string;
+  responseTimeoutSeconds?: number;
+  retried?: boolean;
+  retriedTaskId?: string;
+  retryCount?: number;
+  scheduledTime?: number;
+  seq?: number;
+  startDelayInSeconds?: number;
+  startTime?: number;
+  status?: 'IN_PROGRESS' | 'CANCELED' | 'FAILED' | 'FAILED_WITH_TERMINAL_ERROR' | 'COMPLETED' | 'COMPLETED_WITH_ERRORS' | 'SCHEDULED' | 'TIMED_OUT' | 'SKIPPED';
+  subWorkflowId?: string;
+  subworkflowChanged?: boolean;
+  taskDefName?: string;
+  taskDefinition?: TaskDef;
+  taskId?: string;
+  taskType?: string;
+  updateTime?: number;
+  workerId?: string;
+  workflowInstanceId?: string;
+  workflowPriority?: number;
+  workflowTask?: WorkflowTask;
+  workflowType?: string;
+};
+```
+
+### `TaskDef`
+
+```typescript
+export type TaskDef = {
+  backoffScaleFactor?: number;
+  baseType?: string;
+  concurrentExecLimit?: number;
+  createTime?: number;
+  createdBy?: string;
+  description?: string;
+  enforceSchema?: boolean;
+  executionNameSpace?: string;
+  inputKeys?: Array<string>;
+  inputSchema?: SchemaDef;
+  inputTemplate?: {
+    [key: string]: unknown;
+  };
+  isolationGroupId?: string;
+  name: string;
+  outputKeys?: Array<string>;
+  outputSchema?: SchemaDef;
+  ownerApp?: string;
+  ownerEmail?: string;
+  pollTimeoutSeconds?: number;
+  rateLimitFrequencyInSeconds?: number;
+  rateLimitPerFrequency?: number;
+  responseTimeoutSeconds?: number;
+  retryCount?: number;
+  retryDelaySeconds?: number;
+  retryLogic?: 'FIXED' | 'EXPONENTIAL_BACKOFF' | 'LINEAR_BACKOFF';
+  timeoutPolicy?: 'RETRY' | 'TIME_OUT_WF' | 'ALERT_ONLY';
+  timeoutSeconds: number;
+  totalTimeoutSeconds: number;
+  updateTime?: number;
+  updatedBy?: string;
+};
+```
+
+### `TaskResult`
+
+```typescript
+export type TaskResult = {
+  callbackAfterSeconds?: number;
+  extendLease?: boolean;
+  externalOutputPayloadStoragePath?: string;
+  logs?: Array<TaskExecLog>;
+  outputData?: {
+    [key: string]: unknown;
+  };
+  reasonForIncompletion?: string;
+  status?: 'IN_PROGRESS' | 'FAILED' | 'FAILED_WITH_TERMINAL_ERROR' | 'COMPLETED';
+  subWorkflowId?: string;
+  taskId: string;
+  workerId?: string;
+  workflowInstanceId: string;
+};
+```
+
+### `TaskExecLog`
+
+```typescript
+export type TaskExecLog = {
+  createdTime?: number;
+  log?: string;
+  taskId?: string;
+};
+```
+
+### `WorkflowTask`
+
+```typescript
+export type WorkflowTask = {
+  asyncComplete?: boolean;
+  cacheConfig?: CacheConfig;
+  /**
+   * @deprecated
+   */
+  caseExpression?: string;
+  /**
+   * @deprecated
+   */
+  caseValueParam?: string;
+  decisionCases?: {
+    [key: string]: Array<WorkflowTask>;
+  };
+  defaultCase?: Array<WorkflowTask>;
+  defaultExclusiveJoinTask?: Array<string>;
+  description?: string;
+  /**
+   * @deprecated
+   */
+  dynamicForkJoinTasksParam?: string;
+  dynamicForkTasksInputParamName?: string;
+  dynamicForkTasksParam?: string;
+  dynamicTaskNameParam?: string;
+  evaluatorType?: string;
+  expression?: string;
+  forkTasks?: Array<Array<WorkflowTask>>;
+  inputParameters?: {
+    [key: string]: unknown;
+  };
+  joinOn?: Array<string>;
+  joinStatus?: string;
+  loopCondition?: string;
+  loopOver?: Array<WorkflowTask>;
+  name: string;
+  onStateChange?: {
+    [key: string]: Array<StateChangeEvent>;
+  };
+  optional?: boolean;
+  permissive?: boolean;
+  rateLimited?: boolean;
+  retryCount?: number;
+  scriptExpression?: string;
+  sink?: string;
+  startDelay?: number;
+  subWorkflowParam?: SubWorkflowParams;
+  taskDefinition?: TaskDef;
+  taskReferenceName: string;
+  type?: string;
+};
+```
+
+### `SchemaDef`
+
+```typescript
+export type SchemaDef = {
+  createTime?: number;
+  createdBy?: string;
+  data?: {
+    [key: string]: unknown;
+  };
+  externalRef?: string;
+  name: string;
+  ownerApp?: string;
+  type: 'JSON' | 'AVRO' | 'PROTOBUF';
+  updateTime?: number;
+  updatedBy?: string;
+  version: number;
+};
+```
+
+### `TaskListSearchResultSummary`
+
+```typescript
+export type TaskListSearchResultSummary = {
+  results?: Array<Task>;
+  summary?: {
+    [key: string]: number;
+  };
+  totalHits?: number;
+};
+```
