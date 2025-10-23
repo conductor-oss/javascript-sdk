@@ -6,24 +6,25 @@ This section provides code examples for each task type generator. Use these to b
 
 ## Simple Task
 
-*Requires Custom Workers* - Executes custom business logic via workers you implement.
+_Requires Custom Workers_ - Executes custom business logic via workers you implement.
 
 ```typescript
 import { simpleTask } from "@io-orkes/conductor-javascript";
 
 const task = simpleTask(
-  "task_ref",          // taskReferenceName (required)
-  "task_name",         // name (required): must match worker's taskDefName
-  {                    // inputParameters (required)
-    inputParam: "value"
+  "task_ref", // taskReferenceName (required)
+  "task_name", // name (required): must match worker's taskDefName
+  {
+    // inputParameters (required)
+    inputParam: "value",
   },
-  false                // optional (optional): if true, workflow continues on failure
+  false // optional (optional): if true, workflow continues on failure
 );
 ```
 
 ## HTTP Task
 
-*System Task* - Makes HTTP/REST API calls.
+_System Task_ - Makes HTTP/REST API calls.
 
 ```typescript
 import { httpTask } from "@io-orkes/conductor-javascript";
@@ -33,37 +34,37 @@ const task = httpTask(
   {
     uri: "http://api.example.com/data",
     method: "GET",
-    headers: { "Authorization": "Bearer token" },
+    headers: { Authorization: "Bearer token" },
     connectionTimeOut: 5000,
-    readTimeOut: 10000
+    readTimeOut: 10000,
   },
-  false,  // asyncComplete (optional)
-  false   // optional (optional): workflow continues on failure
+  false, // asyncComplete (optional)
+  false // optional (optional): workflow continues on failure
 );
 ```
 
 ## Switch Task
 
-*System Task* - Provides conditional branching based on input values.
+_System Task_ - Provides conditional branching based on input values.
 
 ```typescript
 import { switchTask } from "@io-orkes/conductor-javascript";
 
 const task = switchTask(
   "switch_ref",
-  "input.status",      // expression to evaluate
+  "input.status", // expression to evaluate
   {
-    "active": [simpleTask("active_task", "process_active", {})],
-    "inactive": [simpleTask("inactive_task", "process_inactive", {})]
+    active: [simpleTask("active_task", "process_active", {})],
+    inactive: [simpleTask("inactive_task", "process_inactive", {})],
   },
-  [simpleTask("default_task", "process_default", {})],  // defaultCase (optional)
-  false  // optional (optional): workflow continues on failure
+  [simpleTask("default_task", "process_default", {})], // defaultCase (optional)
+  false // optional (optional): workflow continues on failure
 );
 ```
 
 ## Fork-Join Task
 
-*System Task* - Executes multiple task branches in parallel and waits for all to complete.
+_System Task_ - Executes multiple task branches in parallel and waits for all to complete.
 
 ```typescript
 import { forkTask, forkTaskJoin } from "@io-orkes/conductor-javascript";
@@ -72,47 +73,47 @@ import { forkTask, forkTaskJoin } from "@io-orkes/conductor-javascript";
 const task1 = forkTask("fork_ref", [
   simpleTask("task1", "process_1", {}),
   simpleTask("task2", "process_2", {}),
-  simpleTask("task3", "process_3", {})
+  simpleTask("task3", "process_3", {}),
 ]);
 
 // Method 2: Using forkTaskJoin (creates both fork and join)
 const [fork, join] = forkTaskJoin("fork_ref", [
   simpleTask("task1", "process_1", {}),
   simpleTask("task2", "process_2", {}),
-  simpleTask("task3", "process_3", {})
+  simpleTask("task3", "process_3", {}),
 ]);
 ```
 
 ## Do-While Task
 
-*System Task* - Executes a loop with a condition evaluated after each iteration.
+_System Task_ - Executes a loop with a condition evaluated after each iteration.
 
 ```typescript
 import { doWhileTask } from "@io-orkes/conductor-javascript";
 
 const task = doWhileTask("while_ref", "workflow.variables.counter < 10", [
   simpleTask("loop_task", "process_item", {
-    index: "${workflow.variables.counter}"
+    index: "${workflow.variables.counter}",
   }),
   setVariableTask("increment", {
     variableName: "counter",
-    value: "${workflow.variables.counter + 1}"
-  })
+    value: "${workflow.variables.counter + 1}",
+  }),
 ]);
 ```
 
 ## Sub-Workflow Task
 
-*System Task* - Executes another workflow as a task.
+_System Task_ - Executes another workflow as a task.
 
 ```typescript
 import { subWorkflowTask } from "@io-orkes/conductor-javascript";
 
 const task = subWorkflowTask(
   "sub_ref",
-  "child_workflow",  // workflowName
-  1,                 // version (optional): uses latest if not specified
-  false              // optional (optional)
+  "child_workflow", // workflowName
+  1, // version (optional): uses latest if not specified
+  false // optional (optional)
 );
 
 // Set input parameters
@@ -121,10 +122,14 @@ task.inputParameters = { inputParam: "value" };
 
 ## Event Task
 
-*System Task* - Publishes events to external eventing systems.
+_System Task_ - Publishes events to external eventing systems.
 
 ```typescript
-import { eventTask, sqsEventTask, conductorEventTask } from "@io-orkes/conductor-javascript";
+import {
+  eventTask,
+  sqsEventTask,
+  conductorEventTask,
+} from "@io-orkes/conductor-javascript";
 
 // Generic event task
 const task1 = eventTask("event_ref", "sqs", "my-queue");
@@ -138,95 +143,109 @@ const task3 = conductorEventTask("conductor_ref", "my-event");
 
 ## Wait Task
 
-*System Task* - Pauses workflow execution for a specified duration or until a specific time.
+_System Task_ - Pauses workflow execution for a specified duration or until a specific time.
 
 ```typescript
-import { waitTaskDuration, waitTaskUntil } from "@io-orkes/conductor-javascript";
+import {
+  waitTaskDuration,
+  waitTaskUntil,
+} from "@io-orkes/conductor-javascript";
 
 // Wait for a duration (e.g., "30s", "5m", "1h", "2d")
 const taskDuration = waitTaskDuration(
   "wait_ref",
-  "30s",      // duration string
-  false       // optional (optional)
+  "30s", // duration string
+  false // optional (optional)
 );
 
 // Wait until a specific time (ISO 8601 format)
 const taskUntil = waitTaskUntil(
   "wait_until_ref",
-  "2025-12-31T23:59:59Z",  // ISO 8601 timestamp
-  false                     // optional (optional)
+  "2025-12-31T23:59:59Z", // ISO 8601 timestamp
+  false // optional (optional)
 );
 ```
 
 ## Terminate Task
 
-*System Task* - Terminates workflow execution with a specified status.
+_System Task_ - Terminates workflow execution with a specified status.
 
 ```typescript
 import { terminateTask } from "@io-orkes/conductor-javascript";
 
 const task = terminateTask(
   "terminate_ref",
-  "FAILED",         // status: "COMPLETED" or "FAILED"
-  "Error message"   // terminationReason (optional)
+  "FAILED", // status: "COMPLETED" or "FAILED"
+  "Error message" // terminationReason (optional)
 );
 ```
 
 ## Set Variable Task
 
-*System Task* - Sets or updates workflow variables.
+_System Task_ - Sets or updates workflow variables.
 
 ```typescript
 import { setVariableTask } from "@io-orkes/conductor-javascript";
 
 const task = setVariableTask("var_ref", {
   variableName: "result",
-  value: "computed_value"
+  value: "computed_value",
 });
 ```
 
 ## JSON JQ Transform Task
 
-*System Task* - Transforms JSON data using JQ expressions.
+_System Task_ - Transforms JSON data using JQ expressions.
 
 ```typescript
 import { jsonJqTask } from "@io-orkes/conductor-javascript";
 
-const task = jsonJqTask("transform_ref", ".data.items[] | {id: .id, name: .name}");
+const task = jsonJqTask(
+  "transform_ref",
+  ".data.items[] | {id: .id, name: .name}"
+);
 ```
 
 ## Kafka Publish Task
 
-*System Task* - Publishes messages to Kafka topics.
+_System Task_ - Publishes messages to Kafka topics.
 
 ```typescript
 import { kafkaPublishTask } from "@io-orkes/conductor-javascript";
 
-const task = kafkaPublishTask("kafka_ref", "topic_name", {
-  message: "Hello Kafka!"
-}, {
-  key: "message_key",
-  partition: 0
-});
+const task = kafkaPublishTask(
+  "kafka_ref",
+  "topic_name",
+  {
+    message: "Hello Kafka!",
+  },
+  {
+    key: "message_key",
+    partition: 0,
+  }
+);
 ```
 
 ## Inline Task
 
-*System Task* - Executes JavaScript code inline within the workflow.
+_System Task_ - Executes JavaScript code inline within the workflow.
 
 ```typescript
 import { inlineTask } from "@io-orkes/conductor-javascript";
 
-const task = inlineTask("inline_ref", `
+const task = inlineTask(
+  "inline_ref",
+  `
   function execute(input) {
     return { result: input.value * 2 };
   }
-`);
+`
+);
 ```
 
 ## Dynamic Fork Task
 
-*System Task* - Dynamically creates parallel task executions based on input.
+_System Task_ - Dynamically creates parallel task executions based on input.
 
 ```typescript
 import { dynamicForkTask } from "@io-orkes/conductor-javascript";
@@ -236,7 +255,7 @@ const task = dynamicForkTask("dynamic_ref", "input.tasks", "task_name");
 
 ## Join Task
 
-*System Task* - Synchronization point for forked tasks.
+_System Task_ - Synchronization point for forked tasks.
 
 ```typescript
 import { joinTask } from "@io-orkes/conductor-javascript";
@@ -246,7 +265,7 @@ const task = joinTask("join_ref");
 
 ## Human Task
 
-*System Task* - Pauses workflow until a person completes an action (approval, form submission, etc.).
+_System Task_ - Pauses workflow until a person completes an action (approval, form submission, etc.).
 
 ```typescript
 import { humanTask } from "@io-orkes/conductor-javascript";
@@ -256,23 +275,23 @@ const task = humanTask("human_ref", "approval_task", {
   form: {
     fields: [
       { name: "approved", type: "boolean", required: true },
-      { name: "comments", type: "text", required: false }
-    ]
-  }
+      { name: "comments", type: "text", required: false },
+    ],
+  },
 });
 ```
 
 ## Loop Task
 
-*System Task* - Creates a loop that executes a fixed number of times.
+_System Task_ - Creates a loop that executes a fixed number of times.
 
 ```typescript
 import { newLoopTask } from "@io-orkes/conductor-javascript";
 
 const task = newLoopTask("loop_ref", 5, [
   simpleTask("loop_task", "process_item", {
-    iteration: "${loop_ref.iteration}"
-  })
+    iteration: "${loop_ref.iteration}",
+  }),
 ]);
 ```
 
@@ -287,8 +306,8 @@ const workflowDef = workflow("my_workflow", [
   simpleTask("task1", "process_data", { input: "value" }),
   httpTask("task2", {
     uri: "https://api.example.com/process",
-    method: "POST"
-  })
+    method: "POST",
+  }),
 ]);
 
 // The workflow generator creates a basic workflow definition

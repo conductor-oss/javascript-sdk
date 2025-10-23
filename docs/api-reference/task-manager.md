@@ -10,9 +10,9 @@ Creates a new TaskManager.
 
 **Parameters:**
 
--   `client` (`Client`): An instance of `Client`.
--   `workers` (`Array<ConductorWorker>`): An array of `ConductorWorker` instances.
--   `config` (`TaskManagerConfig`, optional): Configuration for the `TaskManager`.
+- `client` (`Client`): An instance of `Client`.
+- `workers` (`Array<ConductorWorker>`): An array of `ConductorWorker` instances.
+- `config` (`TaskManagerConfig`, optional): Configuration for the `TaskManager`.
 
 **Example:**
 
@@ -26,18 +26,18 @@ const workers = [
       // Task execution logic
       return {
         status: "COMPLETED",
-        outputData: { sent: true }
+        outputData: { sent: true },
       };
-    }
-  }
+    },
+  },
 ];
 
 const taskManager = new TaskManager(client, workers, {
   options: {
     concurrency: 5,
-    pollInterval: 100
+    pollInterval: 100,
   },
-  maxRetries: 3
+  maxRetries: 3,
 });
 ```
 
@@ -59,8 +59,8 @@ Updates the polling options for a specific worker.
 
 **Parameters:**
 
--   `workerTaskDefName` (`string`): The task definition name of the worker.
--   `options` (`Partial<TaskManagerOptions>`): The new polling options.
+- `workerTaskDefName` (`string`): The task definition name of the worker.
+- `options` (`Partial<TaskManagerOptions>`): The new polling options.
 
 **Example:**
 
@@ -72,7 +72,7 @@ const taskManager = new TaskManager(client, workers);
 // Update polling options for a specific worker
 taskManager.updatePollingOptionForWorker("email_task", {
   concurrency: 10,
-  pollInterval: 500
+  pollInterval: 500,
 });
 ```
 
@@ -84,7 +84,7 @@ Updates the polling options for all workers.
 
 **Parameters:**
 
--   `options` (`Partial<TaskManagerOptions>`): The new polling options.
+- `options` (`Partial<TaskManagerOptions>`): The new polling options.
 
 **Example:**
 
@@ -96,7 +96,7 @@ const taskManager = new TaskManager(client, workers);
 // Update polling options for all workers
 taskManager.updatePollingOptions({
   concurrency: 5,
-  pollInterval: 200
+  pollInterval: 200,
 });
 ```
 
@@ -261,13 +261,13 @@ export type Task = {
   externalOutputPayloadStoragePath?: string;
   firstStartTime?: number;
   inputData?: {
-      [key: string]: unknown;
+    [key: string]: unknown;
   };
   isolationGroupId?: string;
   iteration?: number;
   loopOverTask?: boolean;
   outputData?: {
-      [key: string]: unknown;
+    [key: string]: unknown;
   };
   parentTaskId?: string;
   pollCount?: number;
@@ -284,7 +284,16 @@ export type Task = {
   seq?: number;
   startDelayInSeconds?: number;
   startTime?: number;
-  status?: 'IN_PROGRESS' | 'CANCELED' | 'FAILED' | 'FAILED_WITH_TERMINAL_ERROR' | 'COMPLETED' | 'COMPLETED_WITH_ERRORS' | 'SCHEDULED' | 'TIMED_OUT' | 'SKIPPED';
+  status?:
+    | "IN_PROGRESS"
+    | "CANCELED"
+    | "FAILED"
+    | "FAILED_WITH_TERMINAL_ERROR"
+    | "COMPLETED"
+    | "COMPLETED_WITH_ERRORS"
+    | "SCHEDULED"
+    | "TIMED_OUT"
+    | "SKIPPED";
   subWorkflowId?: string;
   subworkflowChanged?: boolean;
   taskDefName?: string;
@@ -309,10 +318,14 @@ export type TaskResult = {
   externalOutputPayloadStoragePath?: string;
   logs?: Array<TaskExecLog>;
   outputData?: {
-      [key: string]: unknown;
+    [key: string]: unknown;
   };
   reasonForIncompletion?: string;
-  status?: 'IN_PROGRESS' | 'FAILED' | 'FAILED_WITH_TERMINAL_ERROR' | 'COMPLETED';
+  status?:
+    | "IN_PROGRESS"
+    | "FAILED"
+    | "FAILED_WITH_TERMINAL_ERROR"
+    | "COMPLETED";
   subWorkflowId?: string;
   taskId: string;
   workerId?: string;
@@ -327,7 +340,7 @@ export enum TaskResultStatusEnum {
   IN_PROGRESS = "IN_PROGRESS",
   FAILED = "FAILED",
   FAILED_WITH_TERMINAL_ERROR = "FAILED_WITH_TERMINAL_ERROR",
-  COMPLETED = "COMPLETED"
+  COMPLETED = "COMPLETED",
 }
 ```
 
@@ -497,7 +510,7 @@ export type WorkflowDef = {
   restartable?: boolean;
   schemaVersion?: number;
   tasks: Array<WorkflowTask>;
-  timeoutPolicy?: 'TIME_OUT_WF' | 'ALERT_ONLY';
+  timeoutPolicy?: "TIME_OUT_WF" | "ALERT_ONLY";
   timeoutSeconds: number;
   updateTime?: number;
   updatedBy?: string;
