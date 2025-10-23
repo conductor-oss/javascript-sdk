@@ -344,3 +344,125 @@ export interface RunnerArgs {
   maxRetries?: number;
 }
 ```
+
+### `TaskExecLog`
+
+```typescript
+export type TaskExecLog = {
+  createdTime?: number;
+  log?: string;
+  taskId?: string;
+};
+```
+
+### `TaskDef`
+
+```typescript
+export type TaskDef = {
+  name?: string;
+  description?: string;
+  retryCount?: number;
+  timeoutSeconds?: number;
+  inputKeys?: Array<string>;
+  outputKeys?: Array<string>;
+  timeoutPolicy?: "RETRY" | "TIME_OUT_WF" | "ALERT_ONLY";
+  retryLogic?: "FIXED" | "EXPONENTIAL_BACKOFF" | "LINEAR_BACKOFF";
+  retryDelaySeconds?: number;
+  responseTimeoutSeconds?: number;
+  concurrentExecLimit?: number;
+  inputTemplate?: {
+    [key: string]: unknown;
+  };
+  rateLimitPerFrequency?: number;
+  rateLimitFrequencyInSeconds?: number;
+  isolationGroupId?: string;
+  executionNameSpace?: string;
+  ownerEmail?: string;
+  pollTimeoutSeconds?: number;
+  backoffScaleFactor?: number;
+  createTime?: number;
+  updateTime?: number;
+  createdBy?: string;
+  updatedBy?: string;
+  accessPolicy?: {
+    [key: string]: Array<string>;
+  };
+  workflowTaskType?: string;
+  archivalConfig?: {
+    enabled?: boolean;
+    archiveAfterDays?: number;
+  };
+};
+```
+
+### `WorkflowTask`
+
+```typescript
+export type WorkflowTask = {
+  name?: string;
+  taskReferenceName?: string;
+  description?: string;
+  inputParameters?: {
+    [key: string]: unknown;
+  };
+  type?: string;
+  dynamicTaskNameParam?: string;
+  caseValueParam?: string;
+  caseValues?: Array<string>;
+  dynamicForkJoinTasksParam?: string;
+  dynamicForkTasksParam?: string;
+  dynamicForkTasksInputParamName?: string;
+  defaultCase?: Array<WorkflowTask>;
+  forkTasks?: Array<Array<WorkflowTask>>;
+  startDelay?: number;
+  subWorkflowParam?: {
+    name?: string;
+    version?: number;
+    taskToDomain?: {
+      [key: string]: string;
+    };
+    workflowDefinition?: WorkflowDef;
+  };
+  joinOn?: Array<string>;
+  sink?: string;
+  optional?: boolean;
+  taskDefinition?: TaskDef;
+  rateLimited?: boolean;
+  defaultExclusiveJoinTask?: Array<string>;
+  asyncComplete?: boolean;
+  loopCondition?: string;
+  loopOver?: Array<WorkflowTask>;
+  retryCount?: number;
+  evaluatorType?: string;
+  expression?: string;
+  decisionCases?: {
+    [key: string]: Array<WorkflowTask>;
+  };
+  scriptExpression?: string;
+  eventTaskName?: string;
+  eventTaskInput?: {
+    [key: string]: unknown;
+  };
+  status?: string;
+  retryLogic?: string;
+  retryDelaySeconds?: number;
+  timeoutSeconds?: number;
+  timeoutPolicy?: string;
+  responseTimeoutSeconds?: number;
+  concurrentExecLimit?: number;
+  rateLimitPerFrequency?: number;
+  rateLimitFrequencyInSeconds?: number;
+  isolationGroupId?: string;
+  executionNameSpace?: string;
+  ownerEmail?: string;
+  onStateChange?: {
+    [key: string]: unknown;
+  };
+  defaultRetryPolicy?: {
+    initialIntervalSeconds?: number;
+    backoffCoefficient?: number;
+    maximumAttempts?: number;
+    maximumIntervalSeconds?: number;
+  };
+};
+```
