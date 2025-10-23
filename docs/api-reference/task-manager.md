@@ -243,7 +243,7 @@ export interface DefaultLoggerConfig {
 ### `ConductorLogLevel`
 
 ```typescript
-export type ConductorLogLevel = keyof typeof LOG_LEVELS;
+export type ConductorLogLevel = "DEBUG" | "INFO" | "ERROR";
 ```
 
 ### `Task`
