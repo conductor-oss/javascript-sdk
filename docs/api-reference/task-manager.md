@@ -160,32 +160,187 @@ try {
 
 ## Type Definitions
 
-### `ConductorWorker`
-| Property | Type | Description |
-| --- | --- | --- |
-| `taskDefName` | `string` | The name of the task definition. |
-| `execute` | `(task: Task) => Promise<Omit<TaskResult, "workflowInstanceId" \| "taskId">>` | The function that executes the task. |
-| `domain` | `string` | The domain of the worker. |
-| `concurrency` | `number` | The number of polling instances to run concurrently. |
-| `pollInterval` | `number` | The interval in milliseconds to poll for tasks. |
-
 ### `TaskManagerConfig`
-| Property | Type | Description |
-| --- | --- | --- |
-| `logger` | `ConductorLogger` | A logger instance. If not provided, a `DefaultLogger` will be used. |
-| `options` | `Partial<TaskManagerOptions>` | The options for the `TaskManager`. |
-| `onError` | `TaskErrorHandler` | A function to handle errors. If not provided, a no-op error handler will be used. |
-| `maxRetries` | `number` | The maximum number of retries for a task. Defaults to 3. |
+
+```typescript
+export interface TaskManagerConfig {
+  logger?: ConductorLogger;
+  options?: Partial<TaskManagerOptions>;
+  onError?: TaskErrorHandler;
+  maxRetries?: number;
+}
+```
 
 ### `TaskManagerOptions`
-| Property | Type | Description |
-| --- | --- | --- |
-| `workerID` | `string` | The ID of the worker. |
-| `domain` | `string \| undefined` | The domain of the worker. |
-| `pollInterval?` | `number` | The interval in milliseconds to poll for tasks. |
-| `concurrency?` | `number` | The number of polling instances to run concurrently. |
-| `batchPollingTimeout?` | `number` | The timeout in milliseconds for batch polling. |
+
+```typescript
+export type TaskManagerOptions = TaskRunnerOptions;
+```
+
+### `TaskRunnerOptions`
+
+```typescript
+export interface TaskRunnerOptions {
+  workerID: string;
+  domain: string | undefined;
+  pollInterval?: number;
+  concurrency?: number;
+  batchPollingTimeout?: number;
+}
+```
+
+### `ConductorWorker`
+
+```typescript
+export interface ConductorWorker {
+  taskDefName: string;
+  execute: (
+    task: Task
+  ) => Promise<Omit<TaskResult, "workflowInstanceId" | "taskId">>;
+  domain?: string;
+  concurrency?: number;
+  pollInterval?: number;
+}
+```
 
 ### `TaskErrorHandler`
-`TaskErrorHandler` is a function that takes an `Error` and an optional `Task` and handles the error.
-`(error: Error, task?: Task) => void`
+
+```typescript
+export type TaskErrorHandler = (error: Error, task?: Task) => void;
+```
+
+### `ConductorLogger`
+
+```typescript
+export interface ConductorLogger {
+  info(...args: unknown[]): void;
+  error(...args: unknown[]): void;
+  debug(...args: unknown[]): void;
+}
+```
+
+### `DefaultLogger`
+
+```typescript
+export declare class DefaultLogger implements ConductorLogger {
+  constructor(config?: DefaultLoggerConfig);
+
+  info(...args: unknown[]): void;
+  error(...args: unknown[]): void;
+  debug(...args: unknown[]): void;
+}
+```
+
+### `DefaultLoggerConfig`
+
+```typescript
+export interface DefaultLoggerConfig {
+  level?: ConductorLogLevel;
+  tags?: object[];
+}
+```
+
+### `ConductorLogLevel`
+
+```typescript
+export type ConductorLogLevel = keyof typeof LOG_LEVELS;
+```
+
+### `Task`
+
+```typescript
+export type Task = {
+  callbackAfterSeconds?: number;
+  callbackFromWorker?: boolean;
+  correlationId?: string;
+  domain?: string;
+  endTime?: number;
+  executed?: boolean;
+  executionNameSpace?: string;
+  externalInputPayloadStoragePath?: string;
+  externalOutputPayloadStoragePath?: string;
+  firstStartTime?: number;
+  inputData?: {
+      [key: string]: unknown;
+  };
+  isolationGroupId?: string;
+  iteration?: number;
+  loopOverTask?: boolean;
+  outputData?: {
+      [key: string]: unknown;
+  };
+  parentTaskId?: string;
+  pollCount?: number;
+  queueWaitTime?: number;
+  rateLimitFrequencyInSeconds?: number;
+  rateLimitPerFrequency?: number;
+  reasonForIncompletion?: string;
+  referenceTaskName?: string;
+  responseTimeoutSeconds?: number;
+  retried?: boolean;
+  retriedTaskId?: string;
+  retryCount?: number;
+  scheduledTime?: number;
+  seq?: number;
+  startDelayInSeconds?: number;
+  startTime?: number;
+  status?: 'IN_PROGRESS' | 'CANCELED' | 'FAILED' | 'FAILED_WITH_TERMINAL_ERROR' | 'COMPLETED' | 'COMPLETED_WITH_ERRORS' | 'SCHEDULED' | 'TIMED_OUT' | 'SKIPPED';
+  subWorkflowId?: string;
+  subworkflowChanged?: boolean;
+  taskDefName?: string;
+  taskDefinition?: TaskDef;
+  taskId?: string;
+  taskType?: string;
+  updateTime?: number;
+  workerId?: string;
+  workflowInstanceId?: string;
+  workflowPriority?: number;
+  workflowTask?: WorkflowTask;
+  workflowType?: string;
+};
+```
+
+### `TaskResult`
+
+```typescript
+export type TaskResult = {
+  callbackAfterSeconds?: number;
+  extendLease?: boolean;
+  externalOutputPayloadStoragePath?: string;
+  logs?: Array<TaskExecLog>;
+  outputData?: {
+      [key: string]: unknown;
+  };
+  reasonForIncompletion?: string;
+  status?: 'IN_PROGRESS' | 'FAILED' | 'FAILED_WITH_TERMINAL_ERROR' | 'COMPLETED';
+  subWorkflowId?: string;
+  taskId: string;
+  workerId?: string;
+  workflowInstanceId: string;
+};
+```
+
+### `TaskResultStatusEnum`
+
+```typescript
+export enum TaskResultStatusEnum {
+  IN_PROGRESS = "IN_PROGRESS",
+  FAILED = "FAILED",
+  FAILED_WITH_TERMINAL_ERROR = "FAILED_WITH_TERMINAL_ERROR",
+  COMPLETED = "COMPLETED"
+}
+```
+
+### `RunnerArgs`
+
+```typescript
+export interface RunnerArgs {
+  worker: ConductorWorker;
+  client: Client;
+  options: TaskRunnerOptions;
+  logger?: ConductorLogger;
+  onError?: TaskErrorHandler;
+  concurrency?: number;
+  maxRetries?: number;
+}
+```
