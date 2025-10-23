@@ -333,15 +333,17 @@ Request object for creating or updating a schedule.
 
 | Property | Type | Description |
 | --- | --- | --- |
-| `name` | `string` | The name of the schedule. |
-| `cronExpression` | `string` | The cron expression for the schedule. |
-| `runCatchupScheduleInstances` | `boolean` | Whether to run catch-up schedule instances. |
-| `paused` | `boolean` | Whether the schedule is paused. |
-| `startWorkflowRequest` | `StartWorkflowRequest` | The request to start a workflow. |
 | `createdBy` | `string` | The user who created the schedule. |
-| `updatedBy` | `string` | The user who last updated the schedule. |
-| `scheduleStartTime` | `number` | The start time for the schedule. |
+| `cronExpression` | `string` | The cron expression for the schedule. |
+| `description` | `string` | The description of the schedule. |
+| `name` | `string` | The name of the schedule. |
+| `paused` | `boolean` | Whether the schedule is paused. |
+| `runCatchupScheduleInstances` | `boolean` | Whether to run catch-up schedule instances. |
 | `scheduleEndTime` | `number` | The end time for the schedule. |
+| `scheduleStartTime` | `number` | The start time for the schedule. |
+| `startWorkflowRequest` | `StartWorkflowRequest` | The request to start a workflow. |
+| `updatedBy` | `string` | The user who last updated the schedule. |
+| `zoneId` | `string` | The zone ID for the schedule. |
 
 ### `WorkflowSchedule`
 
@@ -349,17 +351,21 @@ Schedule object returned by the API.
 
 | Property | Type | Description |
 | --- | --- | --- |
-| `name` | `string` | The name of the schedule. |
-| `cronExpression` | `string` | The cron expression for the schedule. |
-| `runCatchupScheduleInstances` | `boolean` | Whether to run catch-up schedule instances. |
-| `paused` | `boolean` | Whether the schedule is paused. |
-| `startWorkflowRequest` | `StartWorkflowRequest` | The request to start a workflow. |
-| `scheduleStartTime` | `number` | The start time for the schedule. |
-| `scheduleEndTime` | `number` | The end time for the schedule. |
 | `createTime` | `number` | The creation time of the schedule. |
-| `updatedTime` | `number` | The last update time of the schedule. |
 | `createdBy` | `string` | The user who created the schedule. |
+| `cronExpression` | `string` | The cron expression for the schedule. |
+| `description` | `string` | The description of the schedule. |
+| `name` | `string` | The name of the schedule. |
+| `paused` | `boolean` | Whether the schedule is paused. |
+| `pausedReason` | `string` | The reason the schedule is paused. |
+| `runCatchupScheduleInstances` | `boolean` | Whether to run catch-up schedule instances. |
+| `scheduleEndTime` | `number` | The end time for the schedule. |
+| `scheduleStartTime` | `number` | The start time for the schedule. |
+| `startWorkflowRequest` | `StartWorkflowRequest` | The request to start a workflow. |
+| `tags` | `Tag[]` | The tags associated with the schedule. |
 | `updatedBy` | `string` | The user who last updated the schedule. |
+| `updatedTime` | `number` | The last update time of the schedule. |
+| `zoneId` | `string` | The zone ID for the schedule. |
 
 ### `WorkflowScheduleModel`
 
@@ -367,11 +373,23 @@ Simplified schedule model returned by `getAllSchedules()`.
 
 | Property | Type | Description |
 | --- | --- | --- |
-| `name` | `string` | The name of the schedule. |
+| `createTime` | `number` | The creation time of the schedule. |
+| `createdBy` | `string` | The user who created the schedule. |
 | `cronExpression` | `string` | The cron expression for the schedule. |
+| `description` | `string` | The description of the schedule. |
+| `name` | `string` | The name of the schedule. |
+| `orgId` | `string` | The organization ID. |
 | `paused` | `boolean` | Whether the schedule is paused. |
-| `workflowName` | `string` | The name of the workflow. |
-| `workflowVersion` | `string` | The version of the workflow. |
+| `pausedReason` | `string` | The reason the schedule is paused. |
+| `queueMsgId` | `string` | The queue message ID. |
+| `runCatchupScheduleInstances` | `boolean` | Whether to run catch-up schedule instances. |
+| `scheduleEndTime` | `number` | The end time for the schedule. |
+| `scheduleStartTime` | `number` | The start time for the schedule. |
+| `startWorkflowRequest` | `StartWorkflowRequest` | The request to start a workflow. |
+| `tags` | `Tag[]` | The tags associated with the schedule. |
+| `updatedBy` | `string` | The user who last updated the schedule. |
+| `updatedTime` | `number` | The last update time of the schedule. |
+| `zoneId` | `string` | The zone ID for the schedule. |
 
 ### `SearchResultWorkflowScheduleExecutionModel`
 
@@ -389,15 +407,16 @@ Individual schedule execution record.
 | Property | Type | Description |
 | --- | --- | --- |
 | `executionId` | `string` | The ID of the execution. |
+| `executionTime` | `number` | The execution time. |
+| `orgId` | `string` | The organization ID. |
+| `queueMsgId` | `string` | The queue message ID. |
+| `reason` | `string` | The reason for the execution status. |
 | `scheduleName` | `string` | The name of the schedule. |
 | `scheduledTime` | `number` | The scheduled time of the execution. |
-| `executionTime` | `number` | The execution time. |
-| `workflowName` | `string` | The name of the workflow. |
-| `workflowId` | `string` | The ID of the workflow instance. |
-| `reason` | `string` | The reason for the execution status. |
 | `stackTrace` | `string` | The stack trace for a failed execution. |
 | `startWorkflowRequest` | `StartWorkflowRequest` | The request to start a workflow. |
 | `state` | `'POLLED' \| 'FAILED' \| 'EXECUTED'` | The state of the execution. |
+| `workflowId` | `string` | The ID of the workflow instance. |
 
 ### `StartWorkflowRequest`
 
@@ -417,29 +436,4 @@ Request object for starting a workflow.
 | `priority` | `number` | The priority of the workflow. |
 | `createdBy` | `string` | The user who created the workflow. |
 
-### `WorkflowDef`
-
-Workflow definition object.
-
-| Property | Type | Description |
-| --- | --- | --- |
-| `ownerApp` | `string` | The owner app of the workflow. |
-| `createTime` | `number` | The creation time of the workflow. |
-| `updateTime` | `number` | The last update time of the workflow. |
-| `createdBy` | `string` | The user who created the workflow. |
-| `updatedBy` | `string` | The user who last updated the workflow. |
-| `name` | `string` | The name of the workflow. |
-| `description` | `string` | The description of the workflow. |
-| `version` | `number` | The version of the workflow. |
-| `tasks` | `WorkflowTask[]` | The tasks in the workflow. |
-| `inputParameters` | `string[]` | The input parameters of the workflow. |
-| `outputParameters` | `Record<string, any>` | The output parameters of the workflow. |
-| `failureWorkflow` | `string` | The failure workflow. |
-| `schemaVersion` | `number` | The schema version of the workflow. |
-| `restartable` | `boolean` | Whether the workflow is restartable. |
-| `workflowStatusListenerEnabled` | `boolean` | Whether the workflow status listener is enabled. |
-| `ownerEmail` | `string` | The owner email of the workflow. |
-| `timeoutPolicy` | `'TIME_OUT_WF' \| 'ALERT_ONLY'` | The timeout policy of the workflow. |
-| `timeoutSeconds` | `number` | The timeout in seconds of the workflow. |
-| `variables` | `Record<string, any>` | The variables of the workflow. |
-| `inputTemplate` | `Record<string, any>` | The input template of the workflow. |
+See the [WorkflowExecutor API Reference](workflow-executor.md) for complete `WorkflowDef` and `WorkflowTask` type definitions.

@@ -181,10 +181,10 @@ try {
 | Property | Type | Description |
 | --- | --- | --- |
 | `workerID` | `string` | The ID of the worker. |
-| `domain` | `string` | The domain of the worker. |
-| `pollInterval` | `number` | The interval in milliseconds to poll for tasks. |
-| `concurrency` | `number` | The number of polling instances to run concurrently. |
-| `batchPollingTimeout` | `number` | The timeout in milliseconds for batch polling. |
+| `domain` | `string \| undefined` | The domain of the worker. |
+| `pollInterval?` | `number` | The interval in milliseconds to poll for tasks. |
+| `concurrency?` | `number` | The number of polling instances to run concurrently. |
+| `batchPollingTimeout?` | `number` | The timeout in milliseconds for batch polling. |
 
 ### `TaskErrorHandler`
 `TaskErrorHandler` is a function that takes an `Error` and an optional `Task` and handles the error.

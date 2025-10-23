@@ -222,15 +222,21 @@ Discovers service methods.
 ### `ServiceRegistry`
 | Property | Type | Description |
 | --- | --- | --- |
-| `name` | `string` | The name of the service. |
-| `type` | `ServiceType` | The type of the service. |
-| `serviceURI` | `string` | The URI of the service. |
+| `circuitBreakerEnabled` | `boolean` | Whether the circuit breaker is enabled. |
+| `config` | `Config` | The configuration of the service. |
 | `methods` | `ServiceMethod[]` | The methods of the service. |
+| `name` | `string` | The name of the service. |
 | `requestParams` | `RequestParam[]` | The request parameters of the service. |
-| `config` | `ServiceRegistryConfig` | The configuration of the service. |
+| `serviceURI` | `string` | The URI of the service. |
+| `type` | `'HTTP' \| 'gRPC' \| 'MCP_REMOTE'` | The type of the service. |
 
 ### `ServiceType`
-`ServiceType` is an enum that can be one of the following values: `'HTTP'`, `'MCP_REMOTE'`, `'gRPC'`.
+`ServiceType` can be one of the following values: `'HTTP'`, `'MCP_REMOTE'`, `'gRPC'`.
+
+### `Config`
+| Property | Type | Description |
+| --- | --- | --- |
+| `circuitBreakerConfig` | `OrkesCircuitBreakerConfig` | The circuit breaker configuration. |
 
 ### `ServiceMethod`
 | Property | Type | Description |

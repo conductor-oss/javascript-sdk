@@ -463,60 +463,71 @@ Signals a workflow task asynchronously (fire-and-forget).
 ### `WorkflowDef`
 | Property | Type | Description |
 | --- | --- | --- |
-| `ownerApp` | `string` | The owner app of the workflow. |
+| `cacheConfig` | `CacheConfig` | The cache configuration. |
 | `createTime` | `number` | The creation time of the workflow. |
-| `updateTime` | `number` | The last update time of the workflow. |
 | `createdBy` | `string` | The user who created the workflow. |
-| `updatedBy` | `string` | The user who last updated the workflow. |
-| `name` | `string` | The name of the workflow. |
 | `description` | `string` | The description of the workflow. |
-| `version` | `number` | The version of the workflow. |
-| `tasks` | `WorkflowTask[]` | The tasks in the workflow. |
-| `inputParameters` | `string[]` | The input parameters of the workflow. |
-| `outputParameters` | `Record<string, any>` | The output parameters of the workflow. |
+| `enforceSchema` | `boolean` | Whether to enforce schema validation. |
 | `failureWorkflow` | `string` | The failure workflow. |
-| `schemaVersion` | `number` | The schema version of the workflow. |
-| `restartable` | `boolean` | Whether the workflow is restartable. |
-| `workflowStatusListenerEnabled` | `boolean` | Whether the workflow status listener is enabled. |
+| `inputParameters` | `string[]` | The input parameters of the workflow. |
+| `inputSchema` | `SchemaDef` | The input schema definition. |
+| `inputTemplate` | `Record<string, any>` | The input template of the workflow. |
+| `maskedFields` | `string[]` | The masked fields. |
+| `metadata` | `Record<string, any>` | The metadata of the workflow. |
+| `name` | `string` | The name of the workflow. |
+| `outputParameters` | `Record<string, any>` | The output parameters of the workflow. |
+| `outputSchema` | `SchemaDef` | The output schema definition. |
+| `ownerApp` | `string` | The owner app of the workflow. |
 | `ownerEmail` | `string` | The owner email of the workflow. |
+| `rateLimitConfig` | `RateLimitConfig` | The rate limit configuration. |
+| `restartable` | `boolean` | Whether the workflow is restartable. |
+| `schemaVersion` | `number` | The schema version of the workflow. |
+| `tasks` | `WorkflowTask[]` | The tasks in the workflow. |
 | `timeoutPolicy` | `'TIME_OUT_WF' \| 'ALERT_ONLY'` | The timeout policy of the workflow. |
 | `timeoutSeconds` | `number` | The timeout in seconds of the workflow. |
+| `updateTime` | `number` | The last update time of the workflow. |
+| `updatedBy` | `string` | The user who last updated the workflow. |
 | `variables` | `Record<string, any>` | The variables of the workflow. |
-| `inputTemplate` | `Record<string, any>` | The input template of the workflow. |
+| `version` | `number` | The version of the workflow. |
+| `workflowStatusListenerEnabled` | `boolean` | Whether the workflow status listener is enabled. |
+| `workflowStatusListenerSink` | `string` | The workflow status listener sink. |
 
 ### `WorkflowTask`
 | Property | Type | Description |
 | --- | --- | --- |
-| `name` | `string` | The name of the task. |
-| `taskReferenceName` | `string` | The reference name of the task. |
-| `description` | `string` | The description of the task. |
-| `inputParameters` | `Record<string, any>` | The input parameters of the task. |
-| `type` | `string` | The type of the task. |
-| `dynamicTaskNameParam` | `string` | The dynamic task name parameter. |
-| `caseValueParam` | `string` | The case value parameter. |
-| `caseExpression` | `string` | The case expression. |
-| `scriptExpression` | `string` | The script expression. |
-| `decisionCases` | `Record<string, Array<WorkflowTask>>` | The decision cases. |
-| `dynamicForkJoinTasksParam`| `string` | The dynamic fork join tasks parameter. |
-| `dynamicForkTasksParam` | `string` | The dynamic fork tasks parameter. |
-| `dynamicForkTasksInputParamName` | `string` | The dynamic fork tasks input parameter name. |
-| `defaultCase` | `WorkflowTask[]` | The default case. |
-| `forkTasks` | `WorkflowTask[][]` | The fork tasks. |
-| `startDelay` | `number` | The start delay in seconds. |
-| `subWorkflowParam` | `SubWorkflowParams` | The sub-workflow parameters. |
-| `joinOn` | `string[]` | The join on tasks. |
-| `sink` | `string` | The sink. |
-| `optional` | `boolean` | Whether the task is optional. |
-| `taskDefinition` | `TaskDef` | The task definition. |
-| `rateLimited` | `boolean` | Whether the task is rate limited. |
-| `defaultExclusiveJoinTask` | `string[]` | The default exclusive join task. |
 | `asyncComplete` | `boolean` | Whether the task is async complete. |
-| `loopCondition` | `string` | The loop condition. |
-| `loopOver` | `WorkflowTask[]` | The loop over tasks. |
-| `retryCount` | `number` | The retry count. |
+| `cacheConfig` | `CacheConfig` | The cache configuration. |
+| `caseExpression` | `string` | The case expression (deprecated). |
+| `caseValueParam` | `string` | The case value parameter (deprecated). |
+| `decisionCases` | `Record<string, Array<WorkflowTask>>` | The decision cases. |
+| `defaultCase` | `WorkflowTask[]` | The default case. |
+| `defaultExclusiveJoinTask` | `string[]` | The default exclusive join task. |
+| `description` | `string` | The description of the task. |
+| `dynamicForkJoinTasksParam` | `string` | The dynamic fork join tasks parameter (deprecated). |
+| `dynamicForkTasksInputParamName` | `string` | The dynamic fork tasks input parameter name. |
+| `dynamicForkTasksParam` | `string` | The dynamic fork tasks parameter. |
+| `dynamicTaskNameParam` | `string` | The dynamic task name parameter. |
 | `evaluatorType` | `string` | The evaluator type. |
 | `expression` | `string` | The expression. |
-| `workflowTaskType` | `'SIMPLE' \| 'DYNAMIC' \| 'FORK_JOIN' \| 'FORK_JOIN_DYNAMIC' \| 'DECISION' \| 'SWITCH' \| 'JOIN' \| 'DO_WHILE' \| 'SUB_WORKFLOW' \| 'START_WORKFLOW' \| 'EVENT' \| 'WAIT' \| 'HUMAN' \| 'USER_DEFINED' \| 'HTTP' \| 'LAMBDA' \| 'INLINE' \| 'EXCLUSIVE_JOIN' \| 'TERMINATE' \| 'KAFKA_PUBLISH' \| 'JSON_JQ_TRANSFORM' \| 'SET_VARIABLE'` | The type of the workflow task. |
+| `forkTasks` | `WorkflowTask[][]` | The fork tasks. |
+| `inputParameters` | `Record<string, any>` | The input parameters of the task. |
+| `joinOn` | `string[]` | The join on tasks. |
+| `joinStatus` | `string` | The join status. |
+| `loopCondition` | `string` | The loop condition. |
+| `loopOver` | `WorkflowTask[]` | The loop over tasks. |
+| `name` | `string` | The name of the task. |
+| `onStateChange` | `Record<string, Array<StateChangeEvent>>` | The on state change events. |
+| `optional` | `boolean` | Whether the task is optional. |
+| `permissive` | `boolean` | Whether the task is permissive. |
+| `rateLimited` | `boolean` | Whether the task is rate limited. |
+| `retryCount` | `number` | The retry count. |
+| `scriptExpression` | `string` | The script expression. |
+| `sink` | `string` | The sink. |
+| `startDelay` | `number` | The start delay in seconds. |
+| `subWorkflowParam` | `SubWorkflowParams` | The sub-workflow parameters. |
+| `taskDefinition` | `TaskDef` | The task definition. |
+| `taskReferenceName` | `string` | The reference name of the task. |
+| `type` | `string` | The type of the task. |
 
 ### `WorkflowRun`
 | Property | Type | Description |

@@ -125,23 +125,26 @@ console.log(`Updated task: ${taskId}`);
 ### `TaskSummary`
 | Property | Type | Description |
 | --- | --- | --- |
-| `workflowId` | `string` | The ID of the workflow instance. |
-| `workflowType` | `string` | The type of the workflow. |
 | `correlationId` | `string` | The correlation ID of the workflow. |
-| `scheduledTime` | `number` | The scheduled time of the task. |
-| `startTime` | `number` | The start time of the task. |
-| `updateTime` | `number` | The last update time of the task. |
-| `endTime` | `number` | The end time of the task. |
-| `status` | `string` | The status of the task. |
+| `endTime` | `string` | The end time of the task. |
+| `executionTime` | `number` | The execution time of the task. |
+| `externalInputPayloadStoragePath` | `string` | The path to external input payload storage. |
+| `externalOutputPayloadStoragePath` | `string` | The path to external output payload storage. |
+| `input` | `string` | The input data for the task (JSON string). |
+| `output` | `string` | The output data for the task (JSON string). |
+| `queueWaitTime` | `number` | The queue wait time. |
 | `reasonForIncompletion` | `string` | The reason for incompletion. |
-| `workerId` | `string` | The ID of the worker. |
+| `scheduledTime` | `string` | The scheduled time of the task. |
+| `startTime` | `string` | The start time of the task. |
+| `status` | `'IN_PROGRESS' \| 'CANCELED' \| 'FAILED' \| 'FAILED_WITH_TERMINAL_ERROR' \| 'COMPLETED' \| 'COMPLETED_WITH_ERRORS' \| 'SCHEDULED' \| 'TIMED_OUT' \| 'SKIPPED'` | The status of the task. |
 | `taskDefName` | `string` | The name of the task definition. |
 | `taskId` | `string` | The ID of the task. |
-| `taskRefName` | `string` | The reference name of the task. |
+| `taskReferenceName` | `string` | The reference name of the task. |
 | `taskType` | `string` | The type of the task. |
-| `input` | `Record<string, any>` | The input data for the task. |
-| `output` | `Record<string, any>` | The output data for the task. |
-| `logs` | `TaskExecLog[]` | The execution logs of the task. |
+| `updateTime` | `string` | The last update time of the task. |
+| `workflowId` | `string` | The ID of the workflow instance. |
+| `workflowPriority` | `number` | The priority of the workflow. |
+| `workflowType` | `string` | The type of the workflow. |
 
 ### `TaskResultStatus`
 Task result status type derived from the TaskResult status field. Represents the possible status values for a task.
@@ -199,43 +202,46 @@ type TaskResultStatus = "IN_PROGRESS" | "FAILED" | "FAILED_WITH_TERMINAL_ERROR" 
 ### `Task`
 | Property | Type | Description |
 | --- | --- | --- |
-| `taskType` | `string` | The type of the task. |
-| `status` | `'IN_PROGRESS' \| 'CANCELED' \| 'FAILED' \| 'FAILED_WITH_TERMINAL_ERROR' \| 'COMPLETED' \| 'COMPLETED_WITH_ERRORS' \| 'SCHEDULED' \| 'TIMED_OUT' \| 'SKIPPED'` | The status of the task. |
-| `inputData` | `Record<string, any>` | The input data for the task. |
-| `referenceTaskName` | `string` | The reference name of the task. |
-| `retryCount` | `number` | The retry count. |
-| `seq` | `number` | The sequence number of the task. |
-| `correlationId` | `string` | The correlation ID of the task. |
-| `pollCount` | `number` | The poll count. |
-| `taskDefName` | `string` | The name of the task definition. |
-| `scheduledTime` | `number` | The scheduled time of the task. |
-| `startTime` | `number` | The start time of the task. |
-| `endTime` | `number` | The end time of the task. |
-| `updateTime` | `number` | The last update time of the task. |
-| `startDelayInSeconds` | `number` | The start delay in seconds. |
-| `retriedTaskId` | `string` | The ID of the retried task. |
-| `retried` | `boolean` | Whether the task was retried. |
-| `executed` | `boolean` | Whether the task was executed. |
-| `callbackFromWorker` | `boolean` | Whether the callback is from a worker. |
-| `responseTimeoutSeconds` | `number` | The response timeout in seconds. |
-| `workflowInstanceId` | `string` | The ID of the workflow instance. |
-| `workflowType` | `string` | The type of the workflow. |
-| `taskId` | `string` | The ID of the task. |
-| `reasonForIncompletion` | `string` | The reason for incompletion. |
 | `callbackAfterSeconds` | `number` | The callback after seconds. |
-| `workerId` | `string` | The ID of the worker. |
-| `outputData` | `Record<string, any>` | The output data of the task. |
+| `callbackFromWorker` | `boolean` | Whether the callback is from a worker. |
+| `correlationId` | `string` | The correlation ID of the task. |
 | `domain` | `string` | The domain of the task. |
-| `rateLimitPerFrequency` | `number` | The rate limit per frequency. |
-| `rateLimitFrequencyInSeconds` | `number` | The rate limit frequency in seconds. |
-| `externalInputPayloadStoragePath`| `string` | The path to the external input payload storage. |
-| `externalOutputPayloadStoragePath`| `string` | The path to the external output payload storage. |
-| `workflowPriority` | `number` | The priority of the workflow. |
+| `endTime` | `number` | The end time of the task. |
+| `executed` | `boolean` | Whether the task was executed. |
 | `executionNameSpace` | `string` | The execution namespace. |
+| `externalInputPayloadStoragePath` | `string` | The path to the external input payload storage. |
+| `externalOutputPayloadStoragePath` | `string` | The path to the external output payload storage. |
+| `firstStartTime` | `number` | The first start time of the task. |
+| `inputData` | `Record<string, any>` | The input data for the task. |
 | `isolationGroupId` | `string` | The isolation group ID. |
 | `iteration` | `number` | The iteration number. |
+| `loopOverTask` | `boolean` | Whether the task is a loop over task. |
+| `outputData` | `Record<string, any>` | The output data of the task. |
+| `parentTaskId` | `string` | The ID of the parent task. |
+| `pollCount` | `number` | The poll count. |
+| `queueWaitTime` | `number` | The queue wait time. |
+| `rateLimitFrequencyInSeconds` | `number` | The rate limit frequency in seconds. |
+| `rateLimitPerFrequency` | `number` | The rate limit per frequency. |
+| `reasonForIncompletion` | `string` | The reason for incompletion. |
+| `referenceTaskName` | `string` | The reference name of the task. |
+| `responseTimeoutSeconds` | `number` | The response timeout in seconds. |
+| `retried` | `boolean` | Whether the task was retried. |
+| `retriedTaskId` | `string` | The ID of the retried task. |
+| `retryCount` | `number` | The retry count. |
+| `scheduledTime` | `number` | The scheduled time of the task. |
+| `seq` | `number` | The sequence number of the task. |
+| `startDelayInSeconds` | `number` | The start delay in seconds. |
+| `startTime` | `number` | The start time of the task. |
+| `status` | `'IN_PROGRESS' \| 'CANCELED' \| 'FAILED' \| 'FAILED_WITH_TERMINAL_ERROR' \| 'COMPLETED' \| 'COMPLETED_WITH_ERRORS' \| 'SCHEDULED' \| 'TIMED_OUT' \| 'SKIPPED'` | The status of the task. |
 | `subWorkflowId` | `string` | The ID of the sub-workflow. |
 | `subworkflowChanged` | `boolean` | Whether the sub-workflow was changed. |
-| `queueWaitTime` | `number` | The queue wait time. |
+| `taskDefName` | `string` | The name of the task definition. |
 | `taskDefinition` | `TaskDef` | The task definition. |
-| `loopOverTask` | `boolean` | Whether the task is a loop over task. |
+| `taskId` | `string` | The ID of the task. |
+| `taskType` | `string` | The type of the task. |
+| `updateTime` | `number` | The last update time of the task. |
+| `workflowInstanceId` | `string` | The ID of the workflow instance. |
+| `workflowPriority` | `number` | The priority of the workflow. |
+| `workflowTask` | `WorkflowTask` | The workflow task definition. |
+| `workflowType` | `string` | The type of the workflow. |
+| `workerId` | `string` | The ID of the worker. |

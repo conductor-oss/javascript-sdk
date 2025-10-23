@@ -86,15 +86,16 @@ Human task template definition that specifies the form schema and UI for human t
 
 | Property | Type | Description |
 | --- | --- | --- |
-| `name` | `string` | The name of the template. |
-| `version` | `number` | The version of the template. |
-| `jsonSchema` | `Record<string, unknown>` | JSON schema defining the structure and validation rules for the form data. |
-| `templateUI` | `Record<string, unknown>` | UI configuration defining how the form should be rendered. |
-| `ownerApp` | `string` | The owner application of the template. |
+| `createTime` | `number` | The creation time of the template. |
 | `createdBy` | `string` | The user who created the template. |
-| `createdOn` | `number` | The creation time of the template (in milliseconds since epoch). |
+| `jsonSchema` | `Record<string, unknown>` | JSON schema defining the structure and validation rules for the form data. |
+| `name` | `string` | The name of the template. |
+| `ownerApp` | `string` | The owner application of the template. |
+| `tags` | `Tag[]` | The tags associated with the template. |
+| `templateUI` | `Record<string, unknown>` | UI configuration defining how the form should be rendered. |
+| `updateTime` | `number` | The last update time of the template. |
 | `updatedBy` | `string` | The user who last updated the template. |
-| `updatedOn` | `number` | The last update time of the template (in milliseconds since epoch). |
+| `version` | `number` | The version of the template. |
 
 ## JSON Schema
 

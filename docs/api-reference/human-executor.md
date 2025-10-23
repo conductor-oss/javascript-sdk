@@ -339,6 +339,7 @@ console.log("Task completed");
 | `humanTaskDef`| `HumanTaskDefinition` | The task definition. |
 | `input` | `Record<string, any>` | The input data for the task. |
 | `output`| `Record<string, any>` | The output data for the task. |
+| `ownerApp` | `string` | The owner app of the task. |
 | `state` | `'PENDING' \| 'ASSIGNED' \| 'IN_PROGRESS' \| 'COMPLETED' \| 'TIMED_OUT' \| 'DELETED'` | The state of the task. |
 | `taskId`| `string` | The ID of the task. |
 | `taskRefName` | `string` | The reference name of the task. |
@@ -397,15 +398,22 @@ console.log("Task completed");
 ### `HumanTaskSearch`
 | Property | Type | Description |
 | --- | --- | --- |
+| `assignees` | `HumanTaskUser[]` | A list of assignees to filter by. |
+| `claimants` | `HumanTaskUser[]` | A list of claimants to filter by. |
+| `definitionNames` | `string[]` | A list of task definition names to filter by. |
+| `displayNames` | `string[]` | A list of display names to filter by. |
+| `fullTextQuery` | `string` | A full text query to search across all fields. |
+| `searchType` | `'ADMIN' \| 'INBOX'` | The type of search to perform. |
 | `size` | `number` | The number of results to return. |
-| `states` | `string[]` | A list of states to filter by. |
+| `start` | `number` | The starting offset. |
+| `states` | `('PENDING' \| 'ASSIGNED' \| 'IN_PROGRESS' \| 'COMPLETED' \| 'TIMED_OUT' \| 'DELETED')[]` | A list of states to filter by. |
 | `taskInputQuery` | `string` | A query to filter tasks by their input data. |
 | `taskOutputQuery` | `string` | A query to filter tasks by their output data. |
-| `definitionNames` | `string[]` | A list of task definition names to filter by. |
 | `taskRefNames` | `string[]` | A list of task reference names to filter by. |
-| `claimants` | `HumanTaskUser[]` | A list of claimants to filter by. |
-| `assignees` | `HumanTaskUser[]` | A list of assignees to filter by. |
-| `start` | `number` | The starting offset. |
+| `updateEndTime` | `number` | The end time for filtering by update time. |
+| `updateStartTime` | `number` | The start time for filtering by update time. |
+| `workflowIds` | `string[]` | A list of workflow IDs to filter by. |
+| `workflowNames` | `string[]` | A list of workflow names to filter by. |
 
 ### `PollIntervalOptions`
 | Property | Type | Description |
@@ -413,26 +421,3 @@ console.log("Task completed");
 | `pollInterval` | `number` | The interval in milliseconds to poll for tasks. |
 | `maxPollTimes` | `number` | The maximum number of times to poll for tasks. |
 
-### `WorkflowDef`
-| Property | Type | Description |
-| --- | --- | --- |
-| `ownerApp` | `string` | The owner app of the workflow. |
-| `createTime` | `number` | The creation time of the workflow. |
-| `updateTime` | `number` | The last update time of the workflow. |
-| `createdBy` | `string` | The user who created the workflow. |
-| `updatedBy` | `string` | The user who last updated the workflow. |
-| `name` | `string` | The name of the workflow. |
-| `description` | `string` | The description of the workflow. |
-| `version` | `number` | The version of the workflow. |
-| `tasks` | `WorkflowTask[]` | The tasks in the workflow. |
-| `inputParameters` | `string[]` | The input parameters of the workflow. |
-| `outputParameters` | `Record<string, any>` | The output parameters of the workflow. |
-| `failureWorkflow` | `string` | The failure workflow. |
-| `schemaVersion` | `number` | The schema version of the workflow. |
-| `restartable` | `boolean` | Whether the workflow is restartable. |
-| `workflowStatusListenerEnabled` | `boolean` | Whether the workflow status listener is enabled. |
-| `ownerEmail` | `string` | The owner email of the workflow. |
-| `timeoutPolicy` | `'TIME_OUT_WF' \| 'ALERT_ONLY'` | The timeout policy of the workflow. |
-| `timeoutSeconds` | `number` | The timeout in seconds of the workflow. |
-| `variables` | `Record<string, any>` | The variables of the workflow. |
-| `inputTemplate` | `Record<string, any>` | The input template of the workflow. |
