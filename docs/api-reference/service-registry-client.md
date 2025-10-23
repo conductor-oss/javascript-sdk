@@ -230,7 +230,7 @@ Discovers service methods.
 | `config` | `ServiceRegistryConfig` | The configuration of the service. |
 
 ### `ServiceType`
-`ServiceType` is an enum that can be one of the following values: `'HTTP'`, `'gRPC'`.
+`ServiceType` is an enum that can be one of the following values: `'HTTP'`, `'MCP_REMOTE'`, `'gRPC'`.
 
 ### `ServiceMethod`
 | Property | Type | Description |
@@ -290,4 +290,5 @@ Discovers service methods.
 | Property | Type | Description |
 | --- | --- | --- |
 | `filename` | `string` | The name of the proto file. |
-| `lastUpdated` | `number` | The last update time of the proto file. |
+| `serviceName` | `string` | The name of the service. |
+| `data` | `string` | The proto file data. |

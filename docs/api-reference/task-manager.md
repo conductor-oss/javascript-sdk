@@ -14,6 +14,33 @@ Creates a new TaskManager.
 -   `workers` (`Array<ConductorWorker>`): An array of `ConductorWorker` instances.
 -   `config` (`TaskManagerConfig`, optional): Configuration for the `TaskManager`.
 
+**Example:**
+
+```typescript
+import { TaskManager } from "@io-orkes/conductor-javascript";
+
+const workers = [
+  {
+    taskDefName: "email_task",
+    execute: async (task) => {
+      // Task execution logic
+      return {
+        status: "COMPLETED",
+        outputData: { sent: true }
+      };
+    }
+  }
+];
+
+const taskManager = new TaskManager(client, workers, {
+  options: {
+    concurrency: 5,
+    pollInterval: 100
+  },
+  maxRetries: 3
+});
+```
+
 ---
 
 ## Properties
@@ -35,6 +62,20 @@ Updates the polling options for a specific worker.
 -   `workerTaskDefName` (`string`): The task definition name of the worker.
 -   `options` (`Partial<TaskManagerOptions>`): The new polling options.
 
+**Example:**
+
+```typescript
+import { TaskManager } from "@io-orkes/conductor-javascript";
+
+const taskManager = new TaskManager(client, workers);
+
+// Update polling options for a specific worker
+taskManager.updatePollingOptionForWorker("email_task", {
+  concurrency: 10,
+  pollInterval: 500
+});
+```
+
 ---
 
 ### `updatePollingOptions(options: Partial<TaskManagerOptions>): void`
@@ -45,11 +86,37 @@ Updates the polling options for all workers.
 
 -   `options` (`Partial<TaskManagerOptions>`): The new polling options.
 
+**Example:**
+
+```typescript
+import { TaskManager } from "@io-orkes/conductor-javascript";
+
+const taskManager = new TaskManager(client, workers);
+
+// Update polling options for all workers
+taskManager.updatePollingOptions({
+  concurrency: 5,
+  pollInterval: 200
+});
+```
+
 ---
 
 ### `startPolling(): void`
 
 Starts polling for tasks for all workers.
+
+**Example:**
+
+```typescript
+import { TaskManager } from "@io-orkes/conductor-javascript";
+
+const taskManager = new TaskManager(client, workers);
+
+// Start polling for tasks
+taskManager.startPolling();
+console.log(`Polling started: ${taskManager.isPolling}`);
+```
 
 ---
 
@@ -57,13 +124,39 @@ Starts polling for tasks for all workers.
 
 Stops polling for tasks for all workers.
 
+**Example:**
+
+```typescript
+import { TaskManager } from "@io-orkes/conductor-javascript";
+
+const taskManager = new TaskManager(client, workers);
+
+// Stop polling for tasks
+await taskManager.stopPolling();
+console.log(`Polling stopped: ${taskManager.isPolling}`);
+```
+
 ---
 
 ### `sanityCheck(): void`
 
 Performs a sanity check on the workers, ensuring there are no duplicates and that at least one worker is present. Throws an error if the check fails.
 
----
+**Example:**
+
+```typescript
+import { TaskManager } from "@io-orkes/conductor-javascript";
+
+const taskManager = new TaskManager(client, workers);
+
+// Perform sanity check
+try {
+  taskManager.sanityCheck();
+  console.log("All workers are valid");
+} catch (error) {
+  console.error("Worker configuration error:", error.message);
+}
+```
 
 ## Type Definitions
 
@@ -79,10 +172,10 @@ Performs a sanity check on the workers, ensuring there are no duplicates and tha
 ### `TaskManagerConfig`
 | Property | Type | Description |
 | --- | --- | --- |
-| `logger` | `ConductorLogger` | A logger instance. |
+| `logger` | `ConductorLogger` | A logger instance. If not provided, a `DefaultLogger` will be used. |
 | `options` | `Partial<TaskManagerOptions>` | The options for the `TaskManager`. |
-| `onError` | `TaskErrorHandler` | A function to handle errors. |
-| `maxRetries` | `number` | The maximum number of retries for a task. |
+| `onError` | `TaskErrorHandler` | A function to handle errors. If not provided, a no-op error handler will be used. |
+| `maxRetries` | `number` | The maximum number of retries for a task. Defaults to 3. |
 
 ### `TaskManagerOptions`
 | Property | Type | Description |

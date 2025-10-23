@@ -18,6 +18,8 @@ Creates a new `HumanExecutor`.
 
 ### `getTasksByFilter(state: "PENDING" | "ASSIGNED" | "IN_PROGRESS" | "COMPLETED" | "TIMED_OUT", assignee?: string, assigneeType?: "EXTERNAL_USER" | "EXTERNAL_GROUP" | "CONDUCTOR_USER" | "CONDUCTOR_GROUP", claimedBy?: string, taskName?: string, taskInputQuery?: string, taskOutputQuery?: string): Promise<HumanTaskEntry[]>`
 
+**⚠️ DEPRECATED**: Use `search()` method instead.
+
 Gets human tasks by a set of filter parameters.
 
 **Parameters:**
@@ -25,7 +27,7 @@ Gets human tasks by a set of filter parameters.
 -   `state` (`"PENDING" | "ASSIGNED" | "IN_PROGRESS" | "COMPLETED" | "TIMED_OUT"`): The state of the tasks to filter by.
 -   `assignee` (`string`, optional): The assignee of the tasks.
 -   `assigneeType` (`"EXTERNAL_USER" | "EXTERNAL_GROUP" | "CONDUCTOR_USER" | "CONDUCTOR_GROUP"`, optional): The type of the assignee.
--   `claimedBy` (`string`, optional): The user who has claimed the tasks.
+-   `claimedBy` (`string`, optional): The user who has claimed the tasks (format: `<userType>:<user>`).
 -   `taskName` (`string`, optional): The name of the tasks.
 -   `taskInputQuery` (`string`, optional): A query to filter tasks by their input data.
 -   `taskOutputQuery` (`string`, optional): A query to filter tasks by their output data.
@@ -38,7 +40,7 @@ Gets human tasks by a set of filter parameters.
 
 ### `search(searchParams: Partial<HumanTaskSearch>): Promise<HumanTaskEntry[]>`
 
-Searches for human tasks.
+Searches for human tasks using flexible search parameters.
 
 **Parameters:**
 
@@ -48,11 +50,28 @@ Searches for human tasks.
 
 -   `Promise<HumanTaskEntry[]>`: An array of human task entries.
 
+**Example:**
+
+```typescript
+import { HumanExecutor } from "@io-orkes/conductor-javascript";
+
+const humanExecutor = new HumanExecutor(client);
+
+// Search for pending tasks
+const pendingTasks = await humanExecutor.search({
+  states: ["PENDING"],
+  definitionNames: ["approval_task"],
+  size: 20
+});
+
+console.log(`Found ${pendingTasks.length} pending tasks`);
+```
+
 ---
 
 ### `pollSearch(searchParams: Partial<HumanTaskSearch>, options: PollIntervalOptions = { pollInterval: 100, maxPollTimes: 20 }): Promise<HumanTaskEntry[]>`
 
-Polls for human tasks until a result is returned.
+Polls for human tasks until a result is returned or maximum poll attempts are reached.
 
 **Parameters:**
 
@@ -62,6 +81,24 @@ Polls for human tasks until a result is returned.
 **Returns:**
 
 -   `Promise<HumanTaskEntry[]>`: An array of human task entries.
+
+**Example:**
+
+```typescript
+import { HumanExecutor } from "@io-orkes/conductor-javascript";
+
+const humanExecutor = new HumanExecutor(client);
+
+// Poll for new tasks
+const newTasks = await humanExecutor.pollSearch(
+  { states: ["PENDING"] },
+  { pollInterval: 500, maxPollTimes: 10 }
+);
+
+if (newTasks.length > 0) {
+  console.log(`Found ${newTasks.length} new tasks to process`);
+}
+```
 
 ---
 
@@ -77,6 +114,18 @@ Gets a human task by its ID.
 
 -   `Promise<HumanTaskEntry>`: The human task entry.
 
+**Example:**
+
+```typescript
+import { HumanExecutor } from "@io-orkes/conductor-javascript";
+
+const humanExecutor = new HumanExecutor(client);
+
+// Get specific task details
+const task = await humanExecutor.getTaskById("task_123");
+console.log(`Task ${task.taskId} is ${task.state}`);
+```
+
 ---
 
 ### `claimTaskAsExternalUser(taskId: string, assignee: string, options?: Record<string, boolean>): Promise<HumanTaskEntry>`
@@ -87,11 +136,28 @@ Claims a task as an external user.
 
 -   `taskId` (`string`): The ID of the task.
 -   `assignee` (`string`): The external user to assign the task to.
--   `options` (`Record<string, boolean>`, optional): Additional options.
+-   `options` (`Record<string, boolean>`, optional): Additional options including `overrideAssignment` and `withTemplate`.
 
 **Returns:**
 
 -   `Promise<HumanTaskEntry>`: The claimed human task entry.
+
+**Example:**
+
+```typescript
+import { HumanExecutor } from "@io-orkes/conductor-javascript";
+
+const humanExecutor = new HumanExecutor(client);
+
+// Claim task as external user
+const claimedTask = await humanExecutor.claimTaskAsExternalUser(
+  "task_123",
+  "user@example.com",
+  { overrideAssignment: false, withTemplate: true }
+);
+
+console.log(`Task claimed by ${claimedTask.claimant?.user}`);
+```
 
 ---
 
@@ -102,17 +168,33 @@ Claims a task as a Conductor user.
 **Parameters:**
 
 -   `taskId` (`string`): The ID of the task.
--   `options` (`Record<string, boolean>`, optional): Additional options.
+-   `options` (`Record<string, boolean>`, optional): Additional options including `overrideAssignment` and `withTemplate`.
 
 **Returns:**
 
 -   `Promise<HumanTaskEntry>`: The claimed human task entry.
 
+**Example:**
+
+```typescript
+import { HumanExecutor } from "@io-orkes/conductor-javascript";
+
+const humanExecutor = new HumanExecutor(client);
+
+// Claim task as conductor user
+const claimedTask = await humanExecutor.claimTaskAsConductorUser(
+  "task_123",
+  { overrideAssignment: false, withTemplate: true }
+);
+
+console.log(`Task claimed by conductor user`);
+```
+
 ---
 
 ### `releaseTask(taskId: string): Promise<void>`
 
-Releases a task.
+Releases a claimed task.
 
 **Parameters:**
 
@@ -121,6 +203,18 @@ Releases a task.
 **Returns:**
 
 -   `Promise<void>`
+
+**Example:**
+
+```typescript
+import { HumanExecutor } from "@io-orkes/conductor-javascript";
+
+const humanExecutor = new HumanExecutor(client);
+
+// Release a task
+await humanExecutor.releaseTask("task_123");
+console.log("Task released");
+```
 
 ---
 
@@ -137,9 +231,23 @@ Gets a human task template by name and version.
 
 -   `Promise<HumanTaskTemplate>`: The human task template.
 
+**Example:**
+
+```typescript
+import { HumanExecutor } from "@io-orkes/conductor-javascript";
+
+const humanExecutor = new HumanExecutor(client);
+
+// Get template details
+const template = await humanExecutor.getTemplateByNameVersion("approval_form", 1);
+console.log(`Template version: ${template.version}`);
+```
+
 ---
 
 ### `getTemplateById(templateNameVersionOne: string): Promise<HumanTaskTemplate>`
+
+**⚠️ DEPRECATED**: Use `getTemplateByNameVersion()` instead.
 
 Gets a human task template by ID (name with version 1).
 
@@ -153,33 +261,67 @@ Gets a human task template by ID (name with version 1).
 
 ---
 
-### `updateTaskOutput(taskId: string, requestBody: Record<string, Record<string, any>>): Promise<void>`
+### `updateTaskOutput(taskId: string, requestBody: Record<string, Record<string, unknown>>): Promise<void>`
 
-Updates the output of a task.
+Updates the output of a task without completing it.
 
 **Parameters:**
 
 -   `taskId` (`string`): The ID of the task.
--   `requestBody` (`Record<string, Record<string, any>>`): The new output data.
+-   `requestBody` (`Record<string, Record<string, unknown>>`): The new output data.
 
 **Returns:**
 
 -   `Promise<void>`
+
+**Example:**
+
+```typescript
+import { HumanExecutor } from "@io-orkes/conductor-javascript";
+
+const humanExecutor = new HumanExecutor(client);
+
+// Update task output
+await humanExecutor.updateTaskOutput("task_123", {
+  output: {
+    status: "in_progress",
+    comments: "Working on approval"
+  }
+});
+```
 
 ---
 
-### `completeTask(taskId: string, requestBody: Record<string, Record<string, any>> = {}): Promise<void>`
+### `completeTask(taskId: string, requestBody: Record<string, Record<string, unknown>> = {}): Promise<void>`
 
-Completes a task.
+Completes a task with the provided output data.
 
 **Parameters:**
 
 -   `taskId` (`string`): The ID of the task.
--   `requestBody` (`Record<string, Record<string, any>>`, optional): The output data.
+-   `requestBody` (`Record<string, Record<string, unknown>>`, optional): The output data.
 
 **Returns:**
 
 -   `Promise<void>`
+
+**Example:**
+
+```typescript
+import { HumanExecutor } from "@io-orkes/conductor-javascript";
+
+const humanExecutor = new HumanExecutor(client);
+
+// Complete task
+await humanExecutor.completeTask("task_123", {
+  output: {
+    approved: true,
+    finalComments: "Approved with minor changes"
+  }
+});
+
+console.log("Task completed");
+```
 
 ---
 
@@ -270,3 +412,27 @@ Completes a task.
 | --- | --- | --- |
 | `pollInterval` | `number` | The interval in milliseconds to poll for tasks. |
 | `maxPollTimes` | `number` | The maximum number of times to poll for tasks. |
+
+### `WorkflowDef`
+| Property | Type | Description |
+| --- | --- | --- |
+| `ownerApp` | `string` | The owner app of the workflow. |
+| `createTime` | `number` | The creation time of the workflow. |
+| `updateTime` | `number` | The last update time of the workflow. |
+| `createdBy` | `string` | The user who created the workflow. |
+| `updatedBy` | `string` | The user who last updated the workflow. |
+| `name` | `string` | The name of the workflow. |
+| `description` | `string` | The description of the workflow. |
+| `version` | `number` | The version of the workflow. |
+| `tasks` | `WorkflowTask[]` | The tasks in the workflow. |
+| `inputParameters` | `string[]` | The input parameters of the workflow. |
+| `outputParameters` | `Record<string, any>` | The output parameters of the workflow. |
+| `failureWorkflow` | `string` | The failure workflow. |
+| `schemaVersion` | `number` | The schema version of the workflow. |
+| `restartable` | `boolean` | Whether the workflow is restartable. |
+| `workflowStatusListenerEnabled` | `boolean` | Whether the workflow status listener is enabled. |
+| `ownerEmail` | `string` | The owner email of the workflow. |
+| `timeoutPolicy` | `'TIME_OUT_WF' \| 'ALERT_ONLY'` | The timeout policy of the workflow. |
+| `timeoutSeconds` | `number` | The timeout in seconds of the workflow. |
+| `variables` | `Record<string, any>` | The variables of the workflow. |
+| `inputTemplate` | `Record<string, any>` | The input template of the workflow. |

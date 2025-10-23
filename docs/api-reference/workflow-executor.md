@@ -18,7 +18,7 @@ Creates a new WorkflowExecutor.
 
 ### `registerWorkflow(override: boolean, workflow: WorkflowDef): Promise<void>`
 
-Registers a workflow definition.
+Registers a workflow definition with Conductor.
 
 **Parameters:**
 
@@ -28,6 +28,19 @@ Registers a workflow definition.
 **Returns:**
 
 -   `Promise<void>`
+
+**Example:**
+
+```typescript
+import { WorkflowExecutor, workflow } from "@io-orkes/conductor-javascript";
+
+const executor = new WorkflowExecutor(client);
+
+// Register a workflow
+await executor.registerWorkflow(true, workflow("email_workflow", [
+  simpleTask("send_email", "email_task", { to: "user@example.com" })
+]));
+```
 
 ---
 
@@ -42,6 +55,27 @@ Starts a new workflow execution.
 **Returns:**
 
 -   `Promise<string>`: The ID of the workflow instance.
+
+**Example:**
+
+```typescript
+import { WorkflowExecutor } from "@io-orkes/conductor-javascript";
+
+const executor = new WorkflowExecutor(client);
+
+// Start a workflow
+const executionId = await executor.startWorkflow({
+  name: "email_workflow",
+  version: 1,
+  input: {
+    to: "user@example.com",
+    subject: "Welcome!",
+    message: "Welcome to our platform!"
+  }
+});
+
+console.log(`Workflow started with ID: ${executionId}`);
+```
 
 ---
 
@@ -65,6 +99,28 @@ Executes a workflow synchronously and waits for completion. Can return different
 
 -   `Promise<WorkflowRun | SignalResponse>`: A `WorkflowRun` object or a `SignalResponse` object.
 
+**Example:**
+
+```typescript
+import { WorkflowExecutor, ReturnStrategy } from "@io-orkes/conductor-javascript";
+
+const executor = new WorkflowExecutor(client);
+
+// Execute workflow synchronously
+const workflowRun = await executor.executeWorkflow(
+  {
+    name: "data_processing",
+    version: 1,
+    input: { fileId: "file_123" }
+  },
+  "data_processing",
+  1,
+  "req_123"
+);
+
+console.log(`Workflow completed with status: ${workflowRun.status}`);
+```
+
 ---
 
 ### `startWorkflows(workflowsRequest: StartWorkflowRequest[]): Promise<string>[]`
@@ -78,6 +134,27 @@ Starts multiple workflows at once.
 **Returns:**
 
 -   `Promise<string>[]`: An array of promises that resolve to the workflow instance IDs.
+
+**Example:**
+
+```typescript
+import { WorkflowExecutor } from "@io-orkes/conductor-javascript";
+
+const executor = new WorkflowExecutor(client);
+
+// Start multiple workflows
+const workflowRequests = [
+  { name: "email_workflow", version: 1, input: { to: "user1@example.com" } },
+  { name: "email_workflow", version: 1, input: { to: "user2@example.com" } },
+  { name: "email_workflow", version: 1, input: { to: "user3@example.com" } }
+];
+
+const promises = executor.startWorkflows(workflowRequests);
+
+// Wait for all to complete
+const executionIds = await Promise.all(promises);
+console.log(`Started ${executionIds.length} workflows:`, executionIds);
+```
 
 ---
 
@@ -529,6 +606,34 @@ Signals a workflow task asynchronously (fire-and-forget).
 
 ### `TaskResultStatus`
 `TaskResultStatus` is a string that represents the status of a task result. It can be one of the following values: `'IN_PROGRESS'`, `'FAILED'`, `'FAILED_WITH_TERMINAL_ERROR'`, `'COMPLETED'`.
+
+### `TaskDef`
+| Property | Type | Description |
+| --- | --- | --- |
+| `ownerApp` | `string` | The owner app of the task. |
+| `createTime` | `number` | The creation time of the task. |
+| `updateTime` | `number` | The last update time of the task. |
+| `createdBy` | `string` | The user who created the task. |
+| `updatedBy` | `string` | The user who last updated the task. |
+| `name` | `string` | The name of the task. |
+| `description` | `string` | The description of the task. |
+| `retryCount` | `number` | The retry count. |
+| `timeoutSeconds` | `number` | The timeout in seconds. |
+| `inputKeys` | `string[]` | The input keys of the task. |
+| `outputKeys` | `string[]` | The output keys of the task. |
+| `timeoutPolicy` | `'RETRY' \| 'TIME_OUT_WF' \| 'ALERT_ONLY'` | The timeout policy of the task. |
+| `retryLogic` | `'FIXED' \| 'EXPONENTIAL_BACKOFF' \| 'LINEAR_BACKOFF'` | The retry logic of the task. |
+| `retryDelaySeconds` | `number` | The retry delay in seconds. |
+| `responseTimeoutSeconds` | `number` | The response timeout in seconds. |
+| `concurrentExecLimit` | `number` | The concurrent execution limit. |
+| `inputTemplate` | `Record<string, any>` | The input template of the task. |
+| `rateLimitPerFrequency` | `number` | The rate limit per frequency. |
+| `rateLimitFrequencyInSeconds` | `number` | The rate limit frequency in seconds. |
+| `isolationGroupId` | `string` | The isolation group ID. |
+| `executionNameSpace` | `string` | The execution namespace. |
+| `ownerEmail` | `string` | The owner email of the task. |
+| `pollTimeoutSeconds` | `number` | The poll timeout in seconds. |
+| `backoffScaleFactor` | `number` | The backoff scale factor. |
 
 ### `Task`
 | Property | Type | Description |

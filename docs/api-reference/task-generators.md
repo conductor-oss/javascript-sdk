@@ -1,10 +1,10 @@
-### Task Generators Reference
+# Task Generators Reference
 
 This section provides code examples for each task type generator. Use these to build your workflow task lists.
 
-**Note:** These generators create workflow task references. To register task metadata (retry policies, timeouts, rate limits), use `taskDefinition()` or `MetadataClient` (see [Metadata](#metadata)).
+**Note:** These generators create workflow task references. To register task metadata (retry policies, timeouts, rate limits), use `taskDefinition()` or `MetadataClient` (see [MetadataClient API Reference](metadata-client.md)).
 
-#### Simple Task
+## Simple Task
 
 *Requires Custom Workers* - Executes custom business logic via workers you implement.
 
@@ -21,7 +21,7 @@ const task = simpleTask(
 );
 ```
 
-#### HTTP Task
+## HTTP Task
 
 *System Task* - Makes HTTP/REST API calls.
 
@@ -42,7 +42,7 @@ const task = httpTask(
 );
 ```
 
-#### Switch Task
+## Switch Task
 
 *System Task* - Provides conditional branching based on input values.
 
@@ -61,21 +61,36 @@ const task = switchTask(
 );
 ```
 
-#### Fork-Join Task
+## Fork-Join Task
 
 *System Task* - Executes multiple task branches in parallel and waits for all to complete.
 
 ```typescript
-import { forkJoinTask } from "@io-orkes/conductor-javascript";
+import { forkJoinTask, forkTask, forkTaskJoin } from "@io-orkes/conductor-javascript";
 
-const task = forkJoinTask("fork_ref", [
+// Method 1: Using forkJoinTask (creates fork-join pattern)
+const task1 = forkJoinTask("fork_ref", [
   [simpleTask("task1", "process_1", {})],
   [simpleTask("task2", "process_2", {})],
   [simpleTask("task3", "process_3", {})]
 ]);
+
+// Method 2: Using forkTask (creates only the fork)
+const task2 = forkTask("fork_ref", [
+  simpleTask("task1", "process_1", {}),
+  simpleTask("task2", "process_2", {}),
+  simpleTask("task3", "process_3", {})
+]);
+
+// Method 3: Using forkTaskJoin (creates both fork and join)
+const [fork, join] = forkTaskJoin("fork_ref", [
+  simpleTask("task1", "process_1", {}),
+  simpleTask("task2", "process_2", {}),
+  simpleTask("task3", "process_3", {})
+]);
 ```
 
-#### Do-While Task
+## Do-While Task
 
 *System Task* - Executes a loop with a condition evaluated after each iteration.
 
@@ -93,7 +108,7 @@ const task = doWhileTask("while_ref", "workflow.variables.counter < 10", [
 ]);
 ```
 
-#### Sub-Workflow Task
+## Sub-Workflow Task
 
 *System Task* - Executes another workflow as a task.
 
@@ -111,20 +126,24 @@ const task = subWorkflowTask(
 task.inputParameters = { inputParam: "value" };
 ```
 
-#### Event Task
+## Event Task
 
 *System Task* - Publishes events to external eventing systems.
 
 ```typescript
-import { eventTask } from "@io-orkes/conductor-javascript";
+import { eventTask, sqsEventTask, conductorEventTask } from "@io-orkes/conductor-javascript";
 
-const task = eventTask("event_ref", "event_name", {
-  sink: "event_sink",
-  asyncComplete: true
-});
+// Generic event task
+const task1 = eventTask("event_ref", "sqs", "my-queue");
+
+// SQS specific event task
+const task2 = sqsEventTask("sqs_ref", "my-queue");
+
+// Conductor internal event task
+const task3 = conductorEventTask("conductor_ref", "my-event");
 ```
 
-#### Wait Task
+## Wait Task
 
 *System Task* - Pauses workflow execution for a specified duration or until a specific time.
 
@@ -146,7 +165,7 @@ const taskUntil = waitTaskUntil(
 );
 ```
 
-#### Terminate Task
+## Terminate Task
 
 *System Task* - Terminates workflow execution with a specified status.
 
@@ -160,7 +179,7 @@ const task = terminateTask(
 );
 ```
 
-#### Set Variable Task
+## Set Variable Task
 
 *System Task* - Sets or updates workflow variables.
 
@@ -173,7 +192,7 @@ const task = setVariableTask("var_ref", {
 });
 ```
 
-#### JSON JQ Transform Task
+## JSON JQ Transform Task
 
 *System Task* - Transforms JSON data using JQ expressions.
 
@@ -183,7 +202,7 @@ import { jsonJqTask } from "@io-orkes/conductor-javascript";
 const task = jsonJqTask("transform_ref", ".data.items[] | {id: .id, name: .name}");
 ```
 
-#### Kafka Publish Task
+## Kafka Publish Task
 
 *System Task* - Publishes messages to Kafka topics.
 
@@ -198,7 +217,7 @@ const task = kafkaPublishTask("kafka_ref", "topic_name", {
 });
 ```
 
-#### Inline Task
+## Inline Task
 
 *System Task* - Executes JavaScript code inline within the workflow.
 
@@ -212,7 +231,7 @@ const task = inlineTask("inline_ref", `
 `);
 ```
 
-#### Dynamic Fork Task
+## Dynamic Fork Task
 
 *System Task* - Dynamically creates parallel task executions based on input.
 
@@ -222,7 +241,7 @@ import { dynamicForkTask } from "@io-orkes/conductor-javascript";
 const task = dynamicForkTask("dynamic_ref", "input.tasks", "task_name");
 ```
 
-#### Join Task
+## Join Task
 
 *System Task* - Synchronization point for forked tasks.
 
@@ -232,7 +251,7 @@ import { joinTask } from "@io-orkes/conductor-javascript";
 const task = joinTask("join_ref");
 ```
 
-#### Human Task
+## Human Task
 
 *System Task* - Pauses workflow until a person completes an action (approval, form submission, etc.).
 
@@ -248,4 +267,39 @@ const task = humanTask("human_ref", "approval_task", {
     ]
   }
 });
+```
+
+## Loop Task
+
+*System Task* - Creates a loop that executes a fixed number of times.
+
+```typescript
+import { newLoopTask } from "@io-orkes/conductor-javascript";
+
+const task = newLoopTask("loop_ref", 5, [
+  simpleTask("loop_task", "process_item", {
+    iteration: "${loop_ref.iteration}"
+  })
+]);
+```
+
+## Workflow Generator
+
+Helper function to create workflow definitions.
+
+```typescript
+import { workflow } from "@io-orkes/conductor-javascript";
+
+const workflowDef = workflow("my_workflow", [
+  simpleTask("task1", "process_data", { input: "value" }),
+  httpTask("task2", {
+    uri: "https://api.example.com/process",
+    method: "POST"
+  })
+]);
+
+// The workflow generator creates a basic workflow definition
+console.log(workflowDef.name); // "my_workflow"
+console.log(workflowDef.version); // 1
+console.log(workflowDef.tasks.length); // 2
 ```
