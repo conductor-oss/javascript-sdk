@@ -10,7 +10,7 @@ Creates a new WorkflowExecutor.
 
 **Parameters:**
 
--   `client` (`Client`): An instance of `Client`.
+- `client` (`Client`): An instance of `Client`.
 
 ---
 
@@ -22,12 +22,12 @@ Registers a workflow definition with Conductor.
 
 **Parameters:**
 
--   `override` (`boolean`): Whether to override the existing workflow definition.
--   `workflow` (`WorkflowDef`): The workflow definition.
+- `override` (`boolean`): Whether to override the existing workflow definition.
+- `workflow` (`WorkflowDef`): The workflow definition.
 
 **Returns:**
 
--   `Promise<void>`
+- `Promise<void>`
 
 **Example:**
 
@@ -37,9 +37,12 @@ import { WorkflowExecutor, workflow } from "@io-orkes/conductor-javascript";
 const executor = new WorkflowExecutor(client);
 
 // Register a workflow
-await executor.registerWorkflow(true, workflow("email_workflow", [
-  simpleTask("send_email", "email_task", { to: "user@example.com" })
-]));
+await executor.registerWorkflow(
+  true,
+  workflow("email_workflow", [
+    simpleTask("send_email", "email_task", { to: "user@example.com" }),
+  ])
+);
 ```
 
 ---
@@ -50,11 +53,11 @@ Starts a new workflow execution.
 
 **Parameters:**
 
--   `workflowRequest` (`StartWorkflowRequest`): The request to start a workflow.
+- `workflowRequest` (`StartWorkflowRequest`): The request to start a workflow.
 
 **Returns:**
 
--   `Promise<string>`: The ID of the workflow instance.
+- `Promise<string>`: The ID of the workflow instance.
 
 **Example:**
 
@@ -70,8 +73,8 @@ const executionId = await executor.startWorkflow({
   input: {
     to: "user@example.com",
     subject: "Welcome!",
-    message: "Welcome to our platform!"
-  }
+    message: "Welcome to our platform!",
+  },
 });
 
 console.log(`Workflow started with ID: ${executionId}`);
@@ -80,29 +83,33 @@ console.log(`Workflow started with ID: ${executionId}`);
 ---
 
 ### `executeWorkflow(workflowRequest: StartWorkflowRequest, name: string, version: number, requestId: string, waitUntilTaskRef?: string): Promise<WorkflowRun>`
-### `executeWorkflow(workflowRequest: StartWorkflowRequest, name: string, version: number, requestId: string, waitUntilTaskRef: string, waitForSeconds: number, consistency: Consistency, returnStrategy: ReturnStrategy): Promise<SignalResponse>`
+
+### `executeWorkflow(workflowRequest: StartWorkflowRequest, name: string, version: number, requestId: string, waitUntilTaskRef: string, waitForSeconds: number, consistency: Consistency, returnStrategy: ReturnStrategy): Promise<EnhancedSignalResponse>`
 
 Executes a workflow synchronously and waits for completion. Can return different responses based on the provided parameters.
 
 **Parameters:**
 
--   `workflowRequest` (`StartWorkflowRequest`): The request to start a workflow.
--   `name` (`string`): The name of the workflow.
--   `version` (`number`): The version of the workflow.
--   `requestId` (`string`): A unique ID for the request.
--   `waitUntilTaskRef` (`string`, optional): The reference name of the task to wait for.
--   `waitForSeconds` (`number`, optional): The number of seconds to wait for the task.
--   `consistency` (`Consistency`, optional): The consistency level for the read operations.
--   `returnStrategy` (`ReturnStrategy`, optional): The strategy for what data to return.
+- `workflowRequest` (`StartWorkflowRequest`): The request to start a workflow.
+- `name` (`string`): The name of the workflow.
+- `version` (`number`): The version of the workflow.
+- `requestId` (`string`): A unique ID for the request.
+- `waitUntilTaskRef` (`string`, optional): The reference name of the task to wait for.
+- `waitForSeconds` (`number`, optional): The number of seconds to wait for the task.
+- `consistency` (`Consistency`, optional): The consistency level for the read operations.
+- `returnStrategy` (`ReturnStrategy`, optional): The strategy for what data to return.
 
 **Returns:**
 
--   `Promise<WorkflowRun | SignalResponse>`: A `WorkflowRun` object or a `SignalResponse` object.
+- `Promise<WorkflowRun | EnhancedSignalResponse>`: A `WorkflowRun` object or a `EnhancedSignalResponse` object.
 
 **Example:**
 
 ```typescript
-import { WorkflowExecutor, ReturnStrategy } from "@io-orkes/conductor-javascript";
+import {
+  WorkflowExecutor,
+  ReturnStrategy,
+} from "@io-orkes/conductor-javascript";
 
 const executor = new WorkflowExecutor(client);
 
@@ -111,7 +118,7 @@ const workflowRun = await executor.executeWorkflow(
   {
     name: "data_processing",
     version: 1,
-    input: { fileId: "file_123" }
+    input: { fileId: "file_123" },
   },
   "data_processing",
   1,
@@ -129,11 +136,11 @@ Starts multiple workflows at once.
 
 **Parameters:**
 
--   `workflowsRequest` (`StartWorkflowRequest[]`): An array of workflow start requests.
+- `workflowsRequest` (`StartWorkflowRequest[]`): An array of workflow start requests.
 
 **Returns:**
 
--   `Promise<string>[]`: An array of promises that resolve to the workflow instance IDs.
+- `Promise<string>[]`: An array of promises that resolve to the workflow instance IDs.
 
 **Example:**
 
@@ -146,7 +153,7 @@ const executor = new WorkflowExecutor(client);
 const workflowRequests = [
   { name: "email_workflow", version: 1, input: { to: "user1@example.com" } },
   { name: "email_workflow", version: 1, input: { to: "user2@example.com" } },
-  { name: "email_workflow", version: 1, input: { to: "user3@example.com" } }
+  { name: "email_workflow", version: 1, input: { to: "user3@example.com" } },
 ];
 
 const promises = executor.startWorkflows(workflowRequests);
@@ -164,13 +171,13 @@ Reruns a workflow from a specific task.
 
 **Parameters:**
 
--   `workflowInstanceId` (`string`): The ID of the workflow instance.
--   `taskFinderPredicate` (`TaskFinderPredicate`): A function to find the task to rerun from.
--   `rerunWorkflowRequestOverrides` (`Partial<RerunWorkflowRequest>`, optional): Overrides for the rerun request.
+- `workflowInstanceId` (`string`): The ID of the workflow instance.
+- `taskFinderPredicate` (`TaskFinderPredicate`): A function to find the task to rerun from.
+- `rerunWorkflowRequestOverrides` (`Partial<RerunWorkflowRequest>`, optional): Overrides for the rerun request.
 
 **Returns:**
 
--   `Promise<void>`
+- `Promise<void>`
 
 ---
 
@@ -180,12 +187,12 @@ Reruns a workflow from the first task of a specific type.
 
 **Parameters:**
 
--   `workflowInstanceId` (`string`): The ID of the workflow instance.
--   `taskType` (`string`): The type of the task to rerun from.
+- `workflowInstanceId` (`string`): The ID of the workflow instance.
+- `taskType` (`string`): The type of the task to rerun from.
 
 **Returns:**
 
--   `Promise<void>`
+- `Promise<void>`
 
 ---
 
@@ -195,13 +202,13 @@ Gets the execution status of a workflow.
 
 **Parameters:**
 
--   `workflowInstanceId` (`string`): The ID of the workflow instance.
--   `includeTasks` (`boolean`): Whether to include the tasks in the response.
--   `retry` (`number`, optional): The number of times to retry on failure.
+- `workflowInstanceId` (`string`): The ID of the workflow instance.
+- `includeTasks` (`boolean`): Whether to include the tasks in the response.
+- `retry` (`number`, optional): The number of times to retry on failure.
 
 **Returns:**
 
--   `Promise<Workflow>`: The workflow execution status.
+- `Promise<Workflow>`: The workflow execution status.
 
 ---
 
@@ -211,13 +218,13 @@ Gets a summary of the current workflow status.
 
 **Parameters:**
 
--   `workflowInstanceId` (`string`): The ID of the workflow instance.
--   `includeOutput` (`boolean`): Whether to include the output in the response.
--   `includeVariables` (`boolean`): Whether to include the variables in the response.
+- `workflowInstanceId` (`string`): The ID of the workflow instance.
+- `includeOutput` (`boolean`): Whether to include the output in the response.
+- `includeVariables` (`boolean`): Whether to include the variables in the response.
 
 **Returns:**
 
--   `Promise<WorkflowStatus>`: The workflow status summary.
+- `Promise<WorkflowStatus>`: The workflow status summary.
 
 ---
 
@@ -227,12 +234,12 @@ Gets the execution status of a workflow, including tasks by default.
 
 **Parameters:**
 
--   `workflowInstanceId` (`string`): The ID of the workflow instance.
--   `includeTasks` (`boolean`, optional): Whether to include the tasks in the response. Defaults to `true`.
+- `workflowInstanceId` (`string`): The ID of the workflow instance.
+- `includeTasks` (`boolean`, optional): Whether to include the tasks in the response. Defaults to `true`.
 
 **Returns:**
 
--   `Promise<Workflow>`: The workflow execution status.
+- `Promise<Workflow>`: The workflow execution status.
 
 ---
 
@@ -242,11 +249,11 @@ Pauses a running workflow.
 
 **Parameters:**
 
--   `workflowInstanceId` (`string`): The ID of the workflow instance.
+- `workflowInstanceId` (`string`): The ID of the workflow instance.
 
 **Returns:**
 
--   `Promise<void>`
+- `Promise<void>`
 
 ---
 
@@ -256,12 +263,12 @@ Reruns a workflow with new parameters.
 
 **Parameters:**
 
--   `workflowInstanceId` (`string`): The ID of the workflow instance.
--   `rerunWorkflowRequest` (`Partial<RerunWorkflowRequest>`, optional): Overrides for the rerun request.
+- `workflowInstanceId` (`string`): The ID of the workflow instance.
+- `rerunWorkflowRequest` (`Partial<RerunWorkflowRequest>`, optional): Overrides for the rerun request.
 
 **Returns:**
 
--   `Promise<string>`: The ID of the new workflow instance.
+- `Promise<string>`: The ID of the new workflow instance.
 
 ---
 
@@ -271,12 +278,12 @@ Restarts a workflow.
 
 **Parameters:**
 
--   `workflowInstanceId` (`string`): The ID of the workflow instance.
--   `useLatestDefinitions` (`boolean`): Whether to use the latest workflow definition.
+- `workflowInstanceId` (`string`): The ID of the workflow instance.
+- `useLatestDefinitions` (`boolean`): Whether to use the latest workflow definition.
 
 **Returns:**
 
--   `Promise<void>`
+- `Promise<void>`
 
 ---
 
@@ -286,11 +293,11 @@ Resumes a paused workflow.
 
 **Parameters:**
 
--   `workflowInstanceId` (`string`): The ID of the workflow instance.
+- `workflowInstanceId` (`string`): The ID of the workflow instance.
 
 **Returns:**
 
--   `Promise<void>`
+- `Promise<void>`
 
 ---
 
@@ -300,12 +307,12 @@ Retries a workflow from the last failing task.
 
 **Parameters:**
 
--   `workflowInstanceId` (`string`): The ID of the workflow instance.
--   `resumeSubworkflowTasks` (`boolean`): Whether to resume tasks in sub-workflows.
+- `workflowInstanceId` (`string`): The ID of the workflow instance.
+- `resumeSubworkflowTasks` (`boolean`): Whether to resume tasks in sub-workflows.
 
 **Returns:**
 
--   `Promise<void>`
+- `Promise<void>`
 
 ---
 
@@ -315,16 +322,16 @@ Searches for workflows.
 
 **Parameters:**
 
--   `start` (`number`): The starting offset.
--   `size` (`number`): The number of results to return.
--   `query` (`string`): The search query.
--   `freeText` (`string`): The free text to search for.
--   `sort` (`string`, optional): The sort order.
--   `skipCache` (`boolean`, optional): Whether to skip the cache.
+- `start` (`number`): The starting offset.
+- `size` (`number`): The number of results to return.
+- `query` (`string`): The search query.
+- `freeText` (`string`): The free text to search for.
+- `sort` (`string`, optional): The sort order.
+- `skipCache` (`boolean`, optional): Whether to skip the cache.
 
 **Returns:**
 
--   `Promise<ScrollableSearchResultWorkflowSummary>`: The search results.
+- `Promise<ScrollableSearchResultWorkflowSummary>`: The search results.
 
 ---
 
@@ -334,13 +341,13 @@ Skips a task in a running workflow.
 
 **Parameters:**
 
--   `workflowInstanceId` (`string`): The ID of the workflow instance.
--   `taskReferenceName` (`string`): The reference name of the task to skip.
--   `skipTaskRequest` (`Partial<SkipTaskRequest>`): The request to skip the task.
+- `workflowInstanceId` (`string`): The ID of the workflow instance.
+- `taskReferenceName` (`string`): The reference name of the task to skip.
+- `skipTaskRequest` (`Partial<SkipTaskRequest>`): The request to skip the task.
 
 **Returns:**
 
--   `Promise<void>`
+- `Promise<void>`
 
 ---
 
@@ -350,12 +357,12 @@ Terminates a running workflow.
 
 **Parameters:**
 
--   `workflowInstanceId` (`string`): The ID of the workflow instance.
--   `reason` (`string`): The reason for termination.
+- `workflowInstanceId` (`string`): The ID of the workflow instance.
+- `reason` (`string`): The reason for termination.
 
 **Returns:**
 
--   `Promise<void>`
+- `Promise<void>`
 
 ---
 
@@ -365,14 +372,14 @@ Updates a task by its ID.
 
 **Parameters:**
 
--   `taskId` (`string`): The ID of the task.
--   `workflowInstanceId` (`string`): The ID of the workflow instance.
--   `taskStatus` (`TaskResultStatus`): The new status of the task.
--   `outputData` (`Record<string, any>`): The output data of the task.
+- `taskId` (`string`): The ID of the task.
+- `workflowInstanceId` (`string`): The ID of the workflow instance.
+- `taskStatus` (`TaskResultStatus`): The new status of the task.
+- `outputData` (`Record<string, any>`): The output data of the task.
 
 **Returns:**
 
--   `Promise<string>`
+- `Promise<string>`
 
 ---
 
@@ -382,14 +389,14 @@ Updates a task by its reference name.
 
 **Parameters:**
 
--   `taskReferenceName` (`string`): The reference name of the task.
--   `workflowInstanceId` (`string`): The ID of the workflow instance.
--   `status` (`TaskResultStatus`): The new status of the task.
--   `taskOutput` (`Record<string, any>`): The output data of the task.
+- `taskReferenceName` (`string`): The reference name of the task.
+- `workflowInstanceId` (`string`): The ID of the workflow instance.
+- `status` (`TaskResultStatus`): The new status of the task.
+- `taskOutput` (`Record<string, any>`): The output data of the task.
 
 **Returns:**
 
--   `Promise<string>`
+- `Promise<string>`
 
 ---
 
@@ -399,11 +406,11 @@ Gets a task by its ID.
 
 **Parameters:**
 
--   `taskId` (`string`): The ID of the task.
+- `taskId` (`string`): The ID of the task.
 
 **Returns:**
 
--   `Promise<Task>`: The task.
+- `Promise<Task>`: The task.
 
 ---
 
@@ -413,32 +420,32 @@ Updates a task by its reference name synchronously and returns the complete work
 
 **Parameters:**
 
--   `taskReferenceName` (`string`): The reference name of the task.
--   `workflowInstanceId` (`string`): The ID of the workflow instance.
--   `status` (`TaskResultStatusEnum`): The new status of the task.
--   `taskOutput` (`Record<string, any>`): The output data of the task.
--   `workerId` (`string`, optional): The ID of the worker.
+- `taskReferenceName` (`string`): The reference name of the task.
+- `workflowInstanceId` (`string`): The ID of the workflow instance.
+- `status` (`TaskResultStatusEnum`): The new status of the task.
+- `taskOutput` (`Record<string, any>`): The output data of the task.
+- `workerId` (`string`, optional): The ID of the worker.
 
 **Returns:**
 
--   `Promise<Workflow>`: The updated workflow.
+- `Promise<Workflow>`: The updated workflow.
 
 ---
 
-### `signal(workflowInstanceId: string, status: TaskResultStatusEnum, taskOutput: Record<string, any>, returnStrategy: ReturnStrategy = ReturnStrategy.TARGET_WORKFLOW): Promise<SignalResponse>`
+### `signal(workflowInstanceId: string, status: TaskResultStatusEnum, taskOutput: Record<string, any>, returnStrategy: ReturnStrategy = ReturnStrategy.TARGET_WORKFLOW): Promise<EnhancedSignalResponse>`
 
 Signals a workflow task and returns data based on the specified return strategy.
 
 **Parameters:**
 
--   `workflowInstanceId` (`string`): The ID of the workflow instance to signal.
--   `status` (`TaskResultStatusEnum`): The task status to set.
--   `taskOutput` (`Record<string, any>`): The output data for the task.
--   `returnStrategy` (`ReturnStrategy`, optional): The strategy for what data to return. Defaults to `TARGET_WORKFLOW`.
+- `workflowInstanceId` (`string`): The ID of the workflow instance to signal.
+- `status` (`TaskResultStatusEnum`): The task status to set.
+- `taskOutput` (`Record<string, any>`): The output data for the task.
+- `returnStrategy` (`ReturnStrategy`, optional): The strategy for what data to return. Defaults to `TARGET_WORKFLOW`.
 
 **Returns:**
 
--   `Promise<SignalResponse>`: The response from the signal.
+- `Promise<EnhancedSignalResponse>`: The response from the signal.
 
 ---
 
@@ -448,20 +455,73 @@ Signals a workflow task asynchronously (fire-and-forget).
 
 **Parameters:**
 
--   `workflowInstanceId` (`string`): The ID of the workflow instance to signal.
--   `status` (`TaskResultStatusEnum`): The task status to set.
--   `taskOutput` (`Record<string, any>`): The output data for the task.
+- `workflowInstanceId` (`string`): The ID of the workflow instance to signal.
+- `status` (`TaskResultStatusEnum`): The task status to set.
+- `taskOutput` (`Record<string, any>`): The output data for the task.
 
 **Returns:**
 
--   `Promise<void>`
+- `Promise<void>`
 
 ---
 
 ## Type Definitions
 
+### `Consistency`
+
+```typescript
+enum Consistency {
+  SYNCHRONOUS = "SYNCHRONOUS",
+  DURABLE = "DURABLE",
+  REGION_DURABLE = "REGION_DURABLE",
+}
+```
+
+### `ReturnStrategy`
+
+```typescript
+enum ReturnStrategy {
+  TARGET_WORKFLOW = "TARGET_WORKFLOW",
+  BLOCKING_WORKFLOW = "BLOCKING_WORKFLOW",
+  BLOCKING_TASK = "BLOCKING_TASK",
+  BLOCKING_TASK_INPUT = "BLOCKING_TASK_INPUT",
+}
+```
+
+### `TaskResultStatusEnum`
+
+```typescript
+enum TaskResultStatusEnum {
+  IN_PROGRESS = "IN_PROGRESS",
+  FAILED = "FAILED",
+  FAILED_WITH_TERMINAL_ERROR = "FAILED_WITH_TERMINAL_ERROR",
+  COMPLETED = "COMPLETED",
+}
+```
+
+### `StartWorkflowRequest`
+
+```typescript
+type StartWorkflowRequest = {
+  correlationId?: string;
+  createdBy?: string;
+  externalInputPayloadStoragePath?: string;
+  idempotencyKey?: string;
+  idempotencyStrategy?: "FAIL" | "RETURN_EXISTING" | "FAIL_ON_RUNNING";
+  input?: {
+    [key: string]: unknown;
+  };
+  name: string;
+  priority?: number;
+  taskToDomain?: {
+    [key: string]: string;
+  };
+  version?: number;
+  workflowDef?: WorkflowDef;
+};
+```
+
 ### `WorkflowDef`
-Workflow definition with comprehensive configuration options for workflow registration and management.
 
 ```typescript
 interface WorkflowDef {
@@ -478,7 +538,7 @@ interface WorkflowDef {
   workflowStatusListenerSink?: string;
   ownerEmail?: string;
   ownerApp?: string;
-  timeoutPolicy?: 'TIME_OUT_WF' | 'ALERT_ONLY';
+  timeoutPolicy?: "TIME_OUT_WF" | "ALERT_ONLY";
   timeoutSeconds?: number;
   variables?: Record<string, any>;
   inputTemplate?: Record<string, any>;
@@ -496,40 +556,25 @@ interface WorkflowDef {
 }
 ```
 
-This type provides all the configuration options available when defining and registering workflows.
-| Property | Type | Description |
-| --- | --- | --- |
-| `cacheConfig` | `CacheConfig` | The cache configuration. |
-| `createTime` | `number` | The creation time of the workflow. |
-| `createdBy` | `string` | The user who created the workflow. |
-| `description` | `string` | The description of the workflow. |
-| `enforceSchema` | `boolean` | Whether to enforce schema validation. |
-| `failureWorkflow` | `string` | The failure workflow. |
-| `inputParameters` | `string[]` | The input parameters of the workflow. |
-| `inputSchema` | `SchemaDef` | The input schema definition. |
-| `inputTemplate` | `Record<string, any>` | The input template of the workflow. |
-| `maskedFields` | `string[]` | The masked fields. |
-| `metadata` | `Record<string, any>` | The metadata of the workflow. |
-| `name` | `string` | The name of the workflow. |
-| `outputParameters` | `Record<string, any>` | The output parameters of the workflow. |
-| `outputSchema` | `SchemaDef` | The output schema definition. |
-| `ownerApp` | `string` | The owner app of the workflow. |
-| `ownerEmail` | `string` | The owner email of the workflow. |
-| `rateLimitConfig` | `RateLimitConfig` | The rate limit configuration. |
-| `restartable` | `boolean` | Whether the workflow is restartable. |
-| `schemaVersion` | `number` | The schema version of the workflow. |
-| `tasks` | `WorkflowTask[]` | The tasks in the workflow. |
-| `timeoutPolicy` | `'TIME_OUT_WF' \| 'ALERT_ONLY'` | The timeout policy of the workflow. |
-| `timeoutSeconds` | `number` | The timeout in seconds of the workflow. |
-| `updateTime` | `number` | The last update time of the workflow. |
-| `updatedBy` | `string` | The user who last updated the workflow. |
-| `variables` | `Record<string, any>` | The variables of the workflow. |
-| `version` | `number` | The version of the workflow. |
-| `workflowStatusListenerEnabled` | `boolean` | Whether the workflow status listener is enabled. |
-| `workflowStatusListenerSink` | `string` | The workflow status listener sink. |
+### `CacheConfig`
+
+```typescript
+export type CacheConfig = {
+  key?: string;
+  ttlInSecond?: number;
+};
+```
+
+### `RateLimitConfig`
+
+```typescript
+export type RateLimitConfig = {
+  concurrentExecLimit?: number;
+  rateLimitKey?: string;
+};
+```
 
 ### `WorkflowTask`
-Workflow task definition with configuration options for individual workflow steps.
 
 ```typescript
 interface WorkflowTask {
@@ -568,201 +613,409 @@ interface WorkflowTask {
 }
 ```
 
-This type defines the structure of individual tasks within a workflow definition.
-| Property | Type | Description |
-| --- | --- | --- |
-| `asyncComplete` | `boolean` | Whether the task is async complete. |
-| `cacheConfig` | `CacheConfig` | The cache configuration. |
-| `caseExpression` | `string` | The case expression (deprecated). |
-| `caseValueParam` | `string` | The case value parameter (deprecated). |
-| `decisionCases` | `Record<string, Array<WorkflowTask>>` | The decision cases. |
-| `defaultCase` | `WorkflowTask[]` | The default case. |
-| `defaultExclusiveJoinTask` | `string[]` | The default exclusive join task. |
-| `description` | `string` | The description of the task. |
-| `dynamicForkJoinTasksParam` | `string` | The dynamic fork join tasks parameter (deprecated). |
-| `dynamicForkTasksInputParamName` | `string` | The dynamic fork tasks input parameter name. |
-| `dynamicForkTasksParam` | `string` | The dynamic fork tasks parameter. |
-| `dynamicTaskNameParam` | `string` | The dynamic task name parameter. |
-| `evaluatorType` | `string` | The evaluator type. |
-| `expression` | `string` | The expression. |
-| `forkTasks` | `WorkflowTask[][]` | The fork tasks. |
-| `inputParameters` | `Record<string, any>` | The input parameters of the task. |
-| `joinOn` | `string[]` | The join on tasks. |
-| `joinStatus` | `string` | The join status. |
-| `loopCondition` | `string` | The loop condition. |
-| `loopOver` | `WorkflowTask[]` | The loop over tasks. |
-| `name` | `string` | The name of the task. |
-| `onStateChange` | `Record<string, Array<StateChangeEvent>>` | The on state change events. |
-| `optional` | `boolean` | Whether the task is optional. |
-| `permissive` | `boolean` | Whether the task is permissive. |
-| `rateLimited` | `boolean` | Whether the task is rate limited. |
-| `retryCount` | `number` | The retry count. |
-| `scriptExpression` | `string` | The script expression. |
-| `sink` | `string` | The sink. |
-| `startDelay` | `number` | The start delay in seconds. |
-| `subWorkflowParam` | `SubWorkflowParams` | The sub-workflow parameters. |
-| `taskDefinition` | `TaskDef` | The task definition. |
-| `taskReferenceName` | `string` | The reference name of the task. |
-| `type` | `string` | The type of the task. |
+### `SubWorkflowParams`
+
+```typescript
+export type SubWorkflowParams = {
+  idempotencyKey?: string;
+  idempotencyStrategy?: "FAIL" | "RETURN_EXISTING" | "FAIL_ON_RUNNING";
+  name?: string;
+  taskToDomain?: {
+    [key: string]: string;
+  };
+  version?: number;
+  workflowDefinition?: WorkflowDef;
+};
+```
+
+### `StateChangeEvent`
+
+```typescript
+export type StateChangeEvent = {
+  payload?: {
+    [key: string]: unknown;
+  };
+  type: string;
+};
+```
 
 ### `WorkflowRun`
-| Property | Type | Description |
-| --- | --- | --- |
-| `correlationId` | `string` | The correlation ID of the workflow. |
-| `createTime` | `number` | The creation time of the workflow. |
-| `createdBy` | `string` | The user who created the workflow. |
-| `priority` | `number` | The priority of the workflow. |
-| `requestId` | `string` | The request ID of the workflow. |
-| `status` | `string` | The status of the workflow. |
-| `tasks` | `Task[]` | The tasks in the workflow. |
-| `updateTime` | `number` | The last update time of the workflow. |
-| `workflowId` | `string` | The ID of the workflow instance. |
-| `variables` | `Record<string, object>` | The variables of the workflow. |
-| `input` | `Record<string, object>` | The input data for the workflow. |
-| `output` | `Record<string, object>` | The output data for the workflow. |
 
-### `SignalResponse`
-`SignalResponse` represents a unified response from the signal API. It contains different fields depending on the `returnStrategy` used. It also has helper methods to extract the workflow or task details from the response.
+```typescript
+type WorkflowRun = {
+  correlationId?: string;
+  createTime?: number;
+  createdBy?: string;
+  input?: {
+    [key: string]: unknown;
+  };
+  output?: {
+    [key: string]: unknown;
+  };
+  priority?: number;
+  requestId?: string;
+  responseType?:
+    | "TARGET_WORKFLOW"
+    | "BLOCKING_WORKFLOW"
+    | "BLOCKING_TASK"
+    | "BLOCKING_TASK_INPUT";
+  status?:
+    | "RUNNING"
+    | "COMPLETED"
+    | "FAILED"
+    | "TIMED_OUT"
+    | "TERMINATED"
+    | "PAUSED";
+  targetWorkflowId?: string;
+  targetWorkflowStatus?: string;
+  tasks?: Array<Task>;
+  updateTime?: number;
+  variables?: {
+    [key: string]: unknown;
+  };
+  workflowId?: string;
+};
+```
+
+### `EnhancedSignalResponse`
+
+```typescript
+interface EnhancedSignalResponse extends SignalResponse {
+  correlationId?: string;
+  input?: {
+    [key: string]: unknown;
+  };
+  output?: {
+    [key: string]: unknown;
+  };
+  requestId?: string;
+  responseType?:
+    | "TARGET_WORKFLOW"
+    | "BLOCKING_WORKFLOW"
+    | "BLOCKING_TASK"
+    | "BLOCKING_TASK_INPUT";
+  targetWorkflowId?: string;
+  targetWorkflowStatus?: string;
+  workflowId?: string;
+  priority?: number;
+  variables?: Record<string, unknown>;
+  tasks?: Task[];
+  createdBy?: string;
+  createTime?: number;
+  status?: string;
+  updateTime?: number;
+  taskType?: string;
+  taskId?: string;
+  referenceTaskName?: string;
+  retryCount?: number;
+  taskDefName?: string;
+  workflowType?: string;
+  isTargetWorkflow(): boolean;
+  isBlockingWorkflow(): boolean;
+  isBlockingTask(): boolean;
+  isBlockingTaskInput(): boolean;
+  getWorkflow(): Workflow;
+  getBlockingTask(): Task;
+  getTaskInput(): Record<string, unknown>;
+  getWorkflowId(): string;
+  getTargetWorkflowId(): string;
+  hasWorkflowData(): boolean;
+  hasTaskData(): boolean;
+  getResponseType(): string;
+  isTerminal(): boolean;
+  isRunning(): boolean;
+  isPaused(): boolean;
+  getSummary(): string;
+  toDebugJSON(): Record<string, unknown>;
+  toString(): string;
+}
+```
 
 ### `TaskFinderPredicate`
-`TaskFinderPredicate` is a function that takes a `Task` and returns a boolean. It is used to find a specific task in a workflow.
-` (task: Task) => boolean`
+
+```typescript
+type TaskFinderPredicate = (task: Task) => boolean;
+```
 
 ### `RerunWorkflowRequest`
-| Property | Type | Description |
-| --- | --- | --- |
-| `reRunFromWorkflowId` | `string` | The ID of the workflow to rerun from. |
-| `workflowInput` | `Record<string, any>` | The input data for the workflow. |
-| `reRunFromTaskId` | `string` | The ID of the task to rerun from. |
-| `taskInput` | `Record<string, any>` | The input data for the task. |
-| `correlationId` | `string` | The correlation ID of the workflow. |
+
+```typescript
+type RerunWorkflowRequest = {
+  correlationId?: string;
+  reRunFromTaskId?: string;
+  reRunFromWorkflowId?: string;
+  taskInput?: {
+    [key: string]: unknown;
+  };
+  workflowInput?: {
+    [key: string]: unknown;
+  };
+};
+```
 
 ### `Workflow`
-| Property | Type | Description |
-| --- | --- | --- |
-| `ownerApp` | `string` | The owner app of the workflow. |
-| `createTime` | `number` | The creation time of the workflow. |
-| `updateTime` | `number` | The last update time of the workflow. |
-| `createdBy` | `string` | The user who created the workflow. |
-| `updatedBy` | `string` | The user who last updated the workflow. |
-| `status` | `'RUNNING' \| 'COMPLETED' \| 'FAILED' \| 'TIMED_OUT' \| 'TERMINATED' \| 'PAUSED'` | The status of the workflow. |
-| `idempotencyKey` | `string` | The idempotency key for the workflow. |
-| `endTime` | `number` | The end time of the workflow. |
-| `workflowId` | `string` | The ID of the workflow instance. |
-| `parentWorkflowId` | `string` | The ID of the parent workflow instance. |
-| `parentWorkflowTaskId` | `string` | The ID of the parent workflow task. |
-| `tasks` | `Task[]` | The tasks in the workflow. |
-| `input` | `Record<string, any>` | The input data for the workflow. |
-| `output` | `Record<string, any>` | The output data for the workflow. |
-| `correlationId` | `string` | The correlation ID of the workflow. |
-| `reRunFromWorkflowId` | `string` | The ID of the workflow to rerun from. |
-| `reasonForIncompletion` | `string` | The reason for incompletion. |
-| `event` | `string` | The event that triggered the workflow. |
-| `taskToDomain` | `Record<string, string>` | A map of task reference names to domains. |
-| `failedReferenceTaskNames` | `string[]` | A list of failed task reference names. |
-| `workflowDefinition` | `WorkflowDef` | The workflow definition. |
-| `externalInputPayloadStoragePath`| `string` | The path to the external input payload storage. |
-| `externalOutputPayloadStoragePath`| `string` | The path to the external output payload storage. |
-| `priority` | `number` | The priority of the workflow. |
-| `variables` | `Record<string, any>` | The variables of the workflow. |
-| `lastRetriedTime` | `number` | The last time the workflow was retried. |
-| `startTime` | `number` | The start time of the workflow. |
-| `workflowVersion` | `number` | The version of the workflow. |
-| `workflowName` | `string` | The name of the workflow. |
+
+```typescript
+type Workflow = {
+  correlationId?: string;
+  createTime?: number;
+  createdBy?: string;
+  endTime?: number;
+  event?: string;
+  externalInputPayloadStoragePath?: string;
+  externalOutputPayloadStoragePath?: string;
+  failedReferenceTaskNames?: Array<string>;
+  failedTaskNames?: Array<string>;
+  history?: Array<Workflow>;
+  idempotencyKey?: string;
+  input?: {
+    [key: string]: unknown;
+  };
+  lastRetriedTime?: number;
+  output?: {
+    [key: string]: unknown;
+  };
+  ownerApp?: string;
+  parentWorkflowId?: string;
+  parentWorkflowTaskId?: string;
+  priority?: number;
+  rateLimitKey?: string;
+  rateLimited?: boolean;
+  reRunFromWorkflowId?: string;
+  reasonForIncompletion?: string;
+  startTime?: number;
+  status?:
+    | "RUNNING"
+    | "COMPLETED"
+    | "FAILED"
+    | "TIMED_OUT"
+    | "TERMINATED"
+    | "PAUSED";
+  taskToDomain?: {
+    [key: string]: string;
+  };
+  tasks?: Array<Task>;
+  updateTime?: number;
+  updatedBy?: string;
+  variables?: {
+    [key: string]: unknown;
+  };
+  workflowDefinition?: WorkflowDef;
+  workflowId?: string;
+  workflowName?: string;
+  workflowVersion?: number;
+};
+```
 
 ### `WorkflowStatus`
-| Property | Type | Description |
-| --- | --- | --- |
-| `workflowId` | `string` | The ID of the workflow instance. |
-| `correlationId` | `string` | The correlation ID of the workflow. |
-| `output` | `Record<string, any>` | The output data for the workflow. |
-| `variables` | `Record<string, any>` | The variables of the workflow. |
-| `status` | `'RUNNING' \| 'COMPLETED' \| 'FAILED' \| 'TIMED_OUT' \| 'TERMINATED' \| 'PAUSED'` | The status of the workflow. |
+
+```typescript
+type WorkflowStatus = {
+  correlationId?: string;
+  output?: {
+    [key: string]: unknown;
+  };
+  status?:
+    | "RUNNING"
+    | "COMPLETED"
+    | "FAILED"
+    | "TIMED_OUT"
+    | "TERMINATED"
+    | "PAUSED";
+  variables?: {
+    [key: string]: unknown;
+  };
+  workflowId?: string;
+};
+```
 
 ### `ScrollableSearchResultWorkflowSummary`
-| Property | Type | Description |
-| --- | --- | --- |
-| `results` | `WorkflowSummary[]` | The search results. |
-| `totalHits` | `number` | The total number of hits. |
+
+```typescript
+type ScrollableSearchResultWorkflowSummary = {
+  queryId?: string;
+  results?: Array<WorkflowSummary>;
+  totalHits?: number;
+};
+```
+
+### `WorkflowSummary`
+
+```typescript
+export type WorkflowSummary = {
+  correlationId?: string;
+  createdBy?: string;
+  endTime?: string;
+  event?: string;
+  executionTime?: number;
+  externalInputPayloadStoragePath?: string;
+  externalOutputPayloadStoragePath?: string;
+  failedReferenceTaskNames?: string;
+  failedTaskNames?: Array<string>;
+  idempotencyKey?: string;
+  input?: string;
+  inputSize?: number;
+  output?: string;
+  outputSize?: number;
+  priority?: number;
+  reasonForIncompletion?: string;
+  startTime?: string;
+  status?:
+    | "RUNNING"
+    | "COMPLETED"
+    | "FAILED"
+    | "TIMED_OUT"
+    | "TERMINATED"
+    | "PAUSED";
+  taskToDomain?: {
+    [key: string]: string;
+  };
+  updateTime?: string;
+  version?: number;
+  workflowId?: string;
+  workflowType?: string;
+};
+```
 
 ### `SkipTaskRequest`
-| Property | Type | Description |
-| --- | --- | --- |
-| `taskInput` | `Record<string, any>` | The input data for the task. |
-| `taskOutput` | `Record<string, any>` | The output data for the task. |
+
+```typescript
+type SkipTaskRequest = {
+  taskInput?: {
+    [key: string]: unknown;
+  };
+  taskOutput?: {
+    [key: string]: unknown;
+  };
+};
+```
 
 ### `TaskResultStatus`
-`TaskResultStatus` is a string that represents the status of a task result. It can be one of the following values: `'IN_PROGRESS'`, `'FAILED'`, `'FAILED_WITH_TERMINAL_ERROR'`, `'COMPLETED'`.
+
+```typescript
+type TaskResultStatus =
+  | "IN_PROGRESS"
+  | "FAILED"
+  | "FAILED_WITH_TERMINAL_ERROR"
+  | "COMPLETED";
+```
 
 ### `TaskDef`
-| Property | Type | Description |
-| --- | --- | --- |
-| `ownerApp` | `string` | The owner app of the task. |
-| `createTime` | `number` | The creation time of the task. |
-| `updateTime` | `number` | The last update time of the task. |
-| `createdBy` | `string` | The user who created the task. |
-| `updatedBy` | `string` | The user who last updated the task. |
-| `name` | `string` | The name of the task. |
-| `description` | `string` | The description of the task. |
-| `retryCount` | `number` | The retry count. |
-| `timeoutSeconds` | `number` | The timeout in seconds. |
-| `inputKeys` | `string[]` | The input keys of the task. |
-| `outputKeys` | `string[]` | The output keys of the task. |
-| `timeoutPolicy` | `'RETRY' \| 'TIME_OUT_WF' \| 'ALERT_ONLY'` | The timeout policy of the task. |
-| `retryLogic` | `'FIXED' \| 'EXPONENTIAL_BACKOFF' \| 'LINEAR_BACKOFF'` | The retry logic of the task. |
-| `retryDelaySeconds` | `number` | The retry delay in seconds. |
-| `responseTimeoutSeconds` | `number` | The response timeout in seconds. |
-| `concurrentExecLimit` | `number` | The concurrent execution limit. |
-| `inputTemplate` | `Record<string, any>` | The input template of the task. |
-| `rateLimitPerFrequency` | `number` | The rate limit per frequency. |
-| `rateLimitFrequencyInSeconds` | `number` | The rate limit frequency in seconds. |
-| `isolationGroupId` | `string` | The isolation group ID. |
-| `executionNameSpace` | `string` | The execution namespace. |
-| `ownerEmail` | `string` | The owner email of the task. |
-| `pollTimeoutSeconds` | `number` | The poll timeout in seconds. |
-| `backoffScaleFactor` | `number` | The backoff scale factor. |
+
+```typescript
+type TaskDef = {
+  backoffScaleFactor?: number;
+  baseType?: string;
+  concurrentExecLimit?: number;
+  createTime?: number;
+  createdBy?: string;
+  description?: string;
+  enforceSchema?: boolean;
+  executionNameSpace?: string;
+  inputKeys?: Array<string>;
+  inputSchema?: SchemaDef;
+  inputTemplate?: {
+    [key: string]: unknown;
+  };
+  isolationGroupId?: string;
+  name: string;
+  outputKeys?: Array<string>;
+  outputSchema?: SchemaDef;
+  ownerApp?: string;
+  ownerEmail?: string;
+  pollTimeoutSeconds?: number;
+  rateLimitFrequencyInSeconds?: number;
+  rateLimitPerFrequency?: number;
+  responseTimeoutSeconds?: number;
+  retryCount?: number;
+  retryDelaySeconds?: number;
+  retryLogic?: "FIXED" | "EXPONENTIAL_BACKOFF" | "LINEAR_BACKOFF";
+  timeoutPolicy?: "RETRY" | "TIME_OUT_WF" | "ALERT_ONLY";
+  timeoutSeconds: number;
+  totalTimeoutSeconds: number;
+  updateTime?: number;
+  updatedBy?: string;
+};
+```
 
 ### `Task`
-| Property | Type | Description |
-| --- | --- | --- |
-| `taskType` | `string` | The type of the task. |
-| `status` | `'IN_PROGRESS' \| 'CANCELED' \| 'FAILED' \| 'FAILED_WITH_TERMINAL_ERROR' \| 'COMPLETED' \| 'COMPLETED_WITH_ERRORS' \| 'SCHEDULED' \| 'TIMED_OUT' \| 'SKIPPED'` | The status of the task. |
-| `inputData` | `Record<string, any>` | The input data for the task. |
-| `referenceTaskName` | `string` | The reference name of the task. |
-| `retryCount` | `number` | The retry count. |
-| `seq` | `number` | The sequence number of the task. |
-| `correlationId` | `string` | The correlation ID of the task. |
-| `pollCount` | `number` | The poll count. |
-| `taskDefName` | `string` | The name of the task definition. |
-| `scheduledTime` | `number` | The scheduled time of the task. |
-| `startTime` | `number` | The start time of the task. |
-| `endTime` | `number` | The end time of the task. |
-| `updateTime` | `number` | The last update time of the task. |
-| `startDelayInSeconds` | `number` | The start delay in seconds. |
-| `retriedTaskId` | `string` | The ID of the retried task. |
-| `retried` | `boolean` | Whether the task was retried. |
-| `executed` | `boolean` | Whether the task was executed. |
-| `callbackFromWorker` | `boolean` | Whether the callback is from a worker. |
-| `responseTimeoutSeconds` | `number` | The response timeout in seconds. |
-| `workflowInstanceId` | `string` | The ID of the workflow instance. |
-| `workflowType` | `string` | The type of the workflow. |
-| `taskId` | `string` | The ID of the task. |
-| `reasonForIncompletion` | `string` | The reason for incompletion. |
-| `callbackAfterSeconds` | `number` | The callback after seconds. |
-| `workerId` | `string` | The ID of the worker. |
-| `outputData` | `Record<string, any>` | The output data of the task. |
-| `workflowTask` | `WorkflowTask` | The workflow task. |
-| `domain` | `string` | The domain of the task. |
-| `rateLimitPerFrequency` | `number` | The rate limit per frequency. |
-| `rateLimitFrequencyInSeconds` | `number` | The rate limit frequency in seconds. |
-| `externalInputPayloadStoragePath`| `string` | The path to the external input payload storage. |
-| `externalOutputPayloadStoragePath`| `string` | The path to the external output payload storage. |
-| `workflowPriority` | `number` | The priority of the workflow. |
-| `executionNameSpace` | `string` | The execution namespace. |
-| `isolationGroupId` | `string` | The isolation group ID. |
-| `iteration` | `number` | The iteration number. |
-| `subWorkflowId` | `string` | The ID of the sub-workflow. |
-| `subworkflowChanged` | `boolean` | Whether the sub-workflow was changed. |
-| `queueWaitTime` | `number` | The queue wait time. |
-| `taskDefinition` | `TaskDef` | The task definition. |
-| `loopOverTask` | `boolean` | Whether the task is a loop over task. |
+
+```typescript
+type Task = {
+  callbackAfterSeconds?: number;
+  callbackFromWorker?: boolean;
+  correlationId?: string;
+  domain?: string;
+  endTime?: number;
+  executed?: boolean;
+  executionNameSpace?: string;
+  externalInputPayloadStoragePath?: string;
+  externalOutputPayloadStoragePath?: string;
+  firstStartTime?: number;
+  inputData?: {
+    [key: string]: unknown;
+  };
+  isolationGroupId?: string;
+  iteration?: number;
+  loopOverTask?: boolean;
+  outputData?: {
+    [key: string]: unknown;
+  };
+  parentTaskId?: string;
+  pollCount?: number;
+  queueWaitTime?: number;
+  rateLimitFrequencyInSeconds?: number;
+  rateLimitPerFrequency?: number;
+  reasonForIncompletion?: string;
+  referenceTaskName?: string;
+  responseTimeoutSeconds?: number;
+  retried?: boolean;
+  retriedTaskId?: string;
+  retryCount?: number;
+  scheduledTime?: number;
+  seq?: number;
+  startDelayInSeconds?: number;
+  startTime?: number;
+  status?:
+    | "IN_PROGRESS"
+    | "CANCELED"
+    | "FAILED"
+    | "FAILED_WITH_TERMINAL_ERROR"
+    | "COMPLETED"
+    | "COMPLETED_WITH_ERRORS"
+    | "SCHEDULED"
+    | "TIMED_OUT"
+    | "SKIPPED";
+  subWorkflowId?: string;
+  subworkflowChanged?: boolean;
+  taskDefName?: string;
+  taskDefinition?: TaskDef;
+  taskId?: string;
+  taskType?: string;
+  updateTime?: number;
+  workerId?: string;
+  workflowInstanceId?: string;
+  workflowPriority?: number;
+  workflowTask?: WorkflowTask;
+  workflowType?: string;
+};
+```
+
+### `SchemaDef`
+
+```typescript
+export type SchemaDef = {
+  createTime?: number;
+  createdBy?: string;
+  data?: {
+    [key: string]: unknown;
+  };
+  externalRef?: string;
+  name: string;
+  ownerApp?: string;
+  type: "JSON" | "AVRO" | "PROTOBUF";
+  updateTime?: number;
+  updatedBy?: string;
+  version: number;
+};
+```
