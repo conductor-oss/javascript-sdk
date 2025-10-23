@@ -1,16 +1,24 @@
-import {expect, describe, test, jest, beforeAll, afterEach, afterAll} from "@jest/globals";
-import {ConductorClient, Consistency, ReturnStrategy} from "../../src/common";
+import {
+  expect,
+  describe,
+  test,
+  jest,
+  beforeAll,
+  afterEach,
+  afterAll,
+} from "@jest/globals";
+import { Consistency, ReturnStrategy } from "../../src/common";
 import { orkesConductorClient } from "../../src/orkes";
 import { WorkflowExecutor } from "../../src/core/executor";
 import { v4 as uuidv4 } from "uuid";
-import {MetadataClient} from "../../src/core/metadataClient";
-import {waitForWorkflowStatus} from "../utils/waitForWorkflowStatus";
-import {TaskResultStatusEnum} from "../../src/common/open-api/models/TaskResultStatusEnum";
-import {SignalResponse} from "../../src/common/open-api/models/SignalResponse";
+import { MetadataClient } from "../../src/core/metadataClient";
+import { waitForWorkflowStatus } from "../utils/waitForWorkflowStatus";
+import { TaskResultStatusEnum } from "../../src/common/";
 import { getComplexSignalTestWfDef } from "./metadata/complex_wf_signal_test";
 import { getComplexSignalTestSubWf1Def } from "./metadata/complex_wf_signal_test_subworkflow_1";
 import { getComplexSignalTestSubWf2Def } from "./metadata/complex_wf_signal_test_subworkflow_2";
 import { getWaitSignalTestWfDef } from "./metadata/wait_signal_test";
+import { Client } from "../../src/common/open-api/client/types.gen";
 
 describe("Execute with Return Strategy and Consistency", () => {
   // Constants specific to this test suite
@@ -19,16 +27,16 @@ describe("Execute with Return Strategy and Consistency", () => {
     COMPLEX_WF: getComplexSignalTestWfDef(now),
     SUB_WF_1: getComplexSignalTestSubWf1Def(now),
     SUB_WF_2: getComplexSignalTestSubWf2Def(now),
-    WAIT_SIGNAL_TEST: getWaitSignalTestWfDef(now)
+    WAIT_SIGNAL_TEST: getWaitSignalTestWfDef(now),
   };
 
   const clientPromise = orkesConductorClient();
   jest.setTimeout(300000);
 
-  let client: ConductorClient;
+  let client: Client;
   let executor: WorkflowExecutor;
   let metadataClient: MetadataClient;
-  const workflowsToCleanup: {name: string, version: number}[] = [];
+  const workflowsToCleanup: { name: string; version: number }[] = [];
   const executionsToCleanup: string[] = [];
 
   beforeAll(async () => {
@@ -44,13 +52,24 @@ describe("Execute with Return Strategy and Consistency", () => {
     // Clean up executions first
     for (const executionId of executionsToCleanup) {
       try {
-        const workflowStatus = await executor.getWorkflowStatus(executionId, false, false);
+        const workflowStatus = await executor.getWorkflowStatus(
+          executionId,
+          false,
+          false
+        );
 
-        if (workflowStatus.status && !['COMPLETED', 'FAILED', 'TERMINATED', 'TIMED_OUT'].includes(workflowStatus.status)) {
+        if (
+          workflowStatus?.status &&
+          !["COMPLETED", "FAILED", "TERMINATED", "TIMED_OUT"].includes(
+            workflowStatus.status
+          )
+        ) {
           await executor.terminate(executionId, "Test cleanup");
           console.debug(`Terminated running workflow: ${executionId}`);
         } else {
-          console.debug(`Skipping cleanup for ${workflowStatus.status} workflow: ${executionId}`);
+          console.debug(
+            `Skipping cleanup for ${workflowStatus?.status} workflow: ${executionId}`
+          );
         }
       } catch (e) {
         console.debug(`Failed to cleanup execution ${executionId}:`, e);
@@ -70,36 +89,37 @@ describe("Execute with Return Strategy and Consistency", () => {
         metadataClient.registerWorkflowDef(WORKFLOWS.COMPLEX_WF, true),
         metadataClient.registerWorkflowDef(WORKFLOWS.SUB_WF_1, true),
         metadataClient.registerWorkflowDef(WORKFLOWS.SUB_WF_2, true),
-        metadataClient.registerWorkflowDef(WORKFLOWS.WAIT_SIGNAL_TEST, true)
+        metadataClient.registerWorkflowDef(WORKFLOWS.WAIT_SIGNAL_TEST, true),
       ]);
 
       // Add to cleanup list
-      Object.values(WORKFLOWS).forEach(workflow => {
-        workflowsToCleanup.push({name: workflow.name, version: 1});
+      Object.values(WORKFLOWS).forEach((workflow) => {
+        workflowsToCleanup.push({ name: workflow.name, version: 1 });
       });
 
-      console.log('✓ All workflows registered successfully');
+      console.log("✓ All workflows registered successfully");
     } catch (error) {
       throw new Error(`Failed to register workflows: ${error}`);
     }
   }
 
   async function cleanupAllWorkflows(): Promise<void> {
-    const cleanupPromises = workflowsToCleanup.map(({name, version}) =>
+    const cleanupPromises = workflowsToCleanup.map(({ name, version }) =>
       metadataClient.unregisterWorkflow(name, version)
     );
 
     const results = await Promise.allSettled(cleanupPromises);
     results.forEach((result, index) => {
-      if (result.status === 'rejected') {
-        console.warn(`Failed to cleanup workflow ${workflowsToCleanup[index].name}: ${result.reason}`);
+      if (result.status === "rejected") {
+        console.warn(
+          `Failed to cleanup workflow ${workflowsToCleanup[index].name}: ${result.reason}`
+        );
       }
     });
-    console.log('✓ Cleanup completed');
+    console.log("✓ Cleanup completed");
   }
 
   describe("Execute Workflow with Return Strategies and Consistency Levels", () => {
-
     // Test data for combinations
     const testCombinations = [
       // SYNCHRONOUS consistency tests
@@ -108,28 +128,28 @@ describe("Execute with Return Strategy and Consistency", () => {
         consistency: Consistency.SYNCHRONOUS,
         returnStrategy: ReturnStrategy.TARGET_WORKFLOW,
         shouldHaveWorkflowFields: true,
-        shouldHaveTaskFields: false
+        shouldHaveTaskFields: false,
       },
       {
         name: "SYNC + BLOCKING_WORKFLOW",
         consistency: Consistency.SYNCHRONOUS,
         returnStrategy: ReturnStrategy.BLOCKING_WORKFLOW,
         shouldHaveWorkflowFields: true,
-        shouldHaveTaskFields: false
+        shouldHaveTaskFields: false,
       },
       {
         name: "SYNC + BLOCKING_TASK",
         consistency: Consistency.SYNCHRONOUS,
         returnStrategy: ReturnStrategy.BLOCKING_TASK,
         shouldHaveWorkflowFields: false,
-        shouldHaveTaskFields: true
+        shouldHaveTaskFields: true,
       },
       {
         name: "SYNC + BLOCKING_TASK_INPUT",
         consistency: Consistency.SYNCHRONOUS,
         returnStrategy: ReturnStrategy.BLOCKING_TASK_INPUT,
         shouldHaveWorkflowFields: false,
-        shouldHaveTaskFields: true
+        shouldHaveTaskFields: true,
       },
       // REGION_DURABLE consistency tests
       {
@@ -137,29 +157,29 @@ describe("Execute with Return Strategy and Consistency", () => {
         consistency: Consistency.REGION_DURABLE,
         returnStrategy: ReturnStrategy.TARGET_WORKFLOW,
         shouldHaveWorkflowFields: true,
-        shouldHaveTaskFields: false
+        shouldHaveTaskFields: false,
       },
       {
         name: "DURABLE + BLOCKING_WORKFLOW",
         consistency: Consistency.REGION_DURABLE,
         returnStrategy: ReturnStrategy.BLOCKING_WORKFLOW,
         shouldHaveWorkflowFields: true,
-        shouldHaveTaskFields: false
+        shouldHaveTaskFields: false,
       },
       {
         name: "DURABLE + BLOCKING_TASK",
         consistency: Consistency.REGION_DURABLE,
         returnStrategy: ReturnStrategy.BLOCKING_TASK,
         shouldHaveWorkflowFields: false,
-        shouldHaveTaskFields: true
+        shouldHaveTaskFields: true,
       },
       {
         name: "DURABLE + BLOCKING_TASK_INPUT",
         consistency: Consistency.REGION_DURABLE,
         returnStrategy: ReturnStrategy.BLOCKING_TASK_INPUT,
         shouldHaveWorkflowFields: false,
-        shouldHaveTaskFields: true
-      }
+        shouldHaveTaskFields: true,
+      },
     ];
 
     test("Should execute complex workflow with SYNC + TARGET_WORKFLOW and validate all aspects", async () => {
@@ -168,26 +188,25 @@ describe("Execute with Return Strategy and Consistency", () => {
       console.log(`\n--- Testing ${testCase.name} ---`);
 
       // 1. Execute workflow with return strategy
-      const rawResult = await executor.executeWorkflow(
-          { name: WORKFLOWS.COMPLEX_WF.name, version: 1 },
-          WORKFLOWS.COMPLEX_WF.name,
-          1,
-          uuidv4(),
-          "", // waitUntilTaskRef
-          10, // waitForSeconds
-          testCase.consistency,
-          testCase.returnStrategy
+      const result = await executor.executeWorkflow(
+        { name: WORKFLOWS.COMPLEX_WF.name, version: 1 },
+        WORKFLOWS.COMPLEX_WF.name,
+        1,
+        uuidv4(),
+        "", // waitUntilTaskRef
+        10, // waitForSeconds
+        testCase.consistency,
+        testCase.returnStrategy
       );
-
-      // Convert to SignalResponse instance
-      const result = Object.assign(new SignalResponse(), rawResult);
 
       // Add to cleanup list
       if (result.workflowId) {
         executionsToCleanup.push(result.workflowId);
       }
 
-      console.log(`Started workflow with ID: ${result.workflowId} for strategy: ${testCase.name}`);
+      console.log(
+        `Started workflow with ID: ${result.workflowId} for strategy: ${testCase.name}`
+      );
 
       // ========== BASIC VALIDATIONS ==========
       expect(result).not.toBeNull();
@@ -199,10 +218,18 @@ describe("Execute with Return Strategy and Consistency", () => {
       expect(result.output).toBeDefined();
 
       // ========== TYPE CHECK VALIDATIONS ==========
-      expect(result.isTargetWorkflow()).toBe(testCase.returnStrategy === ReturnStrategy.TARGET_WORKFLOW);
-      expect(result.isBlockingWorkflow()).toBe(testCase.returnStrategy === ReturnStrategy.BLOCKING_WORKFLOW);
-      expect(result.isBlockingTask()).toBe(testCase.returnStrategy === ReturnStrategy.BLOCKING_TASK);
-      expect(result.isBlockingTaskInput()).toBe(testCase.returnStrategy === ReturnStrategy.BLOCKING_TASK_INPUT);
+      expect(result.isTargetWorkflow()).toBe(
+        testCase.returnStrategy === ReturnStrategy.TARGET_WORKFLOW
+      );
+      expect(result.isBlockingWorkflow()).toBe(
+        testCase.returnStrategy === ReturnStrategy.BLOCKING_WORKFLOW
+      );
+      expect(result.isBlockingTask()).toBe(
+        testCase.returnStrategy === ReturnStrategy.BLOCKING_TASK
+      );
+      expect(result.isBlockingTaskInput()).toBe(
+        testCase.returnStrategy === ReturnStrategy.BLOCKING_TASK_INPUT
+      );
 
       // ========== STRATEGY-SPECIFIC VALIDATIONS ==========
       if (testCase.shouldHaveWorkflowFields) {
@@ -246,11 +273,17 @@ describe("Execute with Return Strategy and Consistency", () => {
         expect(workflowFromResp.updateTime).toEqual(result.updateTime);
 
         // Test that task helper methods throw errors
-        expect(() => result.getBlockingTask()).toThrow('does not contain task details');
-        expect(() => result.getTaskInput()).toThrow('does not contain task input details');
+        expect(() => result.getBlockingTask()).toThrow(
+          "does not contain task details"
+        );
+        expect(() => result.getTaskInput()).toThrow(
+          "does not contain task input details"
+        );
       } else {
         // Test that workflow helper method throws error
-        expect(() => result.getWorkflow()).toThrow('does not contain workflow details');
+        expect(() => result.getWorkflow()).toThrow(
+          "does not contain workflow details"
+        );
       }
 
       if (testCase.shouldHaveTaskFields) {
@@ -259,7 +292,9 @@ describe("Execute with Return Strategy and Consistency", () => {
         expect(taskFromResp).not.toBeNull();
         expect(taskFromResp.taskId).toEqual(result.taskId);
         expect(taskFromResp.taskType).toEqual(result.taskType);
-        expect(taskFromResp.referenceTaskName).toEqual(result.referenceTaskName);
+        expect(taskFromResp.referenceTaskName).toEqual(
+          result.referenceTaskName
+        );
         expect(taskFromResp.taskDefName).toEqual(result.taskDefName);
         expect(taskFromResp.workflowType).toEqual(result.workflowType);
 
@@ -270,7 +305,9 @@ describe("Execute with Return Strategy and Consistency", () => {
           expect(taskInput).toEqual(result.input);
         } else {
           // Test that getTaskInput throws error for non-BLOCKING_TASK_INPUT
-          expect(() => result.getTaskInput()).toThrow('does not contain task input details');
+          expect(() => result.getTaskInput()).toThrow(
+            "does not contain task input details"
+          );
         }
       }
 
@@ -282,35 +319,38 @@ describe("Execute with Return Strategy and Consistency", () => {
 
       // Signal workflow with same return strategy
       const signalResponse = await executor.signal(
-          workflowId,
-          TaskResultStatusEnum.COMPLETED,
-          { result: `Signal received for ${testCase.name}`, timestamp: Date.now() },
-          testCase.returnStrategy
+        workflowId,
+        TaskResultStatusEnum.COMPLETED,
+        {
+          result: `Signal received for ${testCase.name}`,
+          timestamp: Date.now(),
+        },
+        testCase.returnStrategy
       );
 
       // Validate signal response
-      expect(signalResponse.responseType).toEqual(testCase.returnStrategy);
-      expect(signalResponse.workflowId).toEqual(workflowId);
+      expect(signalResponse?.responseType).toEqual(testCase.returnStrategy);
+      expect(signalResponse?.workflowId).toEqual(workflowId);
 
       // ========== COMPLETE WORKFLOW ==========
       // Signal again to complete workflow
       await executor.signal(
-          workflowId,
-          TaskResultStatusEnum.COMPLETED,
-          { result: `Final signal for ${testCase.name}` },
-          testCase.returnStrategy
+        workflowId,
+        TaskResultStatusEnum.COMPLETED,
+        { result: `Final signal for ${testCase.name}` },
+        testCase.returnStrategy
       );
 
       // Wait for workflow completion
       const finalWorkflow = await waitForWorkflowStatus(
-          executor,
-          workflowId,
-          'COMPLETED',
-          300000, // 5 min max wait
-          200    // 200ms poll interval
+        executor,
+        workflowId,
+        "COMPLETED",
+        300000, // 5 min max wait
+        200 // 200ms poll interval
       );
 
-      expect(finalWorkflow.status).toEqual('COMPLETED');
+      expect(finalWorkflow.status).toEqual("COMPLETED");
       console.log(`✓ ${testCase.name} test completed successfully`);
     });
 
@@ -320,19 +360,16 @@ describe("Execute with Return Strategy and Consistency", () => {
         console.log(`\n--- Testing ${testCase.name} ---`);
 
         // Execute workflow
-        const rawResult = await executor.executeWorkflow(
-            { name: WORKFLOWS.COMPLEX_WF.name, version: 1 },
-            WORKFLOWS.COMPLEX_WF.name,
-            1,
-            uuidv4(),
-            "",
-            10,
-            testCase.consistency,
-            testCase.returnStrategy
+        const result = await executor.executeWorkflow(
+          { name: WORKFLOWS.COMPLEX_WF.name, version: 1 },
+          WORKFLOWS.COMPLEX_WF.name,
+          1,
+          uuidv4(),
+          "",
+          10,
+          testCase.consistency,
+          testCase.returnStrategy
         );
-
-        // Convert to SignalResponse instance
-        const result = Object.assign(new SignalResponse(), rawResult);
 
         // Add to cleanup list
         if (result.workflowId) {
@@ -344,10 +381,18 @@ describe("Execute with Return Strategy and Consistency", () => {
         expect(result.workflowId).toBeDefined();
 
         // Type check validations
-        expect(result.isTargetWorkflow()).toBe(testCase.returnStrategy === ReturnStrategy.TARGET_WORKFLOW);
-        expect(result.isBlockingWorkflow()).toBe(testCase.returnStrategy === ReturnStrategy.BLOCKING_WORKFLOW);
-        expect(result.isBlockingTask()).toBe(testCase.returnStrategy === ReturnStrategy.BLOCKING_TASK);
-        expect(result.isBlockingTaskInput()).toBe(testCase.returnStrategy === ReturnStrategy.BLOCKING_TASK_INPUT);
+        expect(result.isTargetWorkflow()).toBe(
+          testCase.returnStrategy === ReturnStrategy.TARGET_WORKFLOW
+        );
+        expect(result.isBlockingWorkflow()).toBe(
+          testCase.returnStrategy === ReturnStrategy.BLOCKING_WORKFLOW
+        );
+        expect(result.isBlockingTask()).toBe(
+          testCase.returnStrategy === ReturnStrategy.BLOCKING_TASK
+        );
+        expect(result.isBlockingTaskInput()).toBe(
+          testCase.returnStrategy === ReturnStrategy.BLOCKING_TASK_INPUT
+        );
 
         // Strategy-specific validations
         if (testCase.shouldHaveWorkflowFields) {
@@ -380,10 +425,20 @@ describe("Execute with Return Strategy and Consistency", () => {
         if (!workflowId) {
           throw new Error("workflowId is undefined");
         }
-        await executor.signal(workflowId, TaskResultStatusEnum.COMPLETED, { result: "signal1" });
-        await executor.signal(workflowId, TaskResultStatusEnum.COMPLETED, { result: "signal2" });
+        await executor.signal(workflowId, TaskResultStatusEnum.COMPLETED, {
+          result: "signal1",
+        });
+        await executor.signal(workflowId, TaskResultStatusEnum.COMPLETED, {
+          result: "signal2",
+        });
 
-        await waitForWorkflowStatus(executor, workflowId, 'COMPLETED', 300000, 200);
+        await waitForWorkflowStatus(
+          executor,
+          workflowId,
+          "COMPLETED",
+          300000,
+          200
+        );
         console.log(`✓ ${testCase.name} test completed successfully`);
       });
     });

@@ -1,16 +1,14 @@
 import { TaskResultStatus } from "../core/types";
-import {
-  ConductorClient,
-  SearchResultTask,
-  Task,
-  TaskResult,
-} from "../common";
-import { tryCatchReThrow } from "./helpers";
+
+import { handleSdkError } from "./helpers";
+import { Client } from "../common/open-api/client/types.gen";
+import { SearchResultTaskSummary, Task } from "../common";
+import { TaskResource } from "../common/open-api/sdk.gen";
 
 export class TaskClient {
-  public readonly _client: ConductorClient;
+  public readonly _client: Client;
 
-  constructor(client: ConductorClient) {
+  constructor(client: Client) {
     this._client = client;
   }
 
@@ -24,22 +22,24 @@ export class TaskClient {
    * @param query
    * @returns SearchResultWorkflowScheduleExecutionModel
    */
-  public search(
+  public async search(
     start: number,
     size: number,
     sort = "",
     freeText: string,
     query: string
-  ): Promise<SearchResultTask> {
-    return tryCatchReThrow(() =>
-      this._client.taskResource.search(
-        start,
-        size,
-        sort,
-        freeText,
-        query
-      )
-    );
+  ): Promise<SearchResultTaskSummary> {
+    try {
+      const { data } = await TaskResource.search2({
+        query: { start, size, sort, freeText, query },
+        client: this._client,
+        throwOnError: true,
+      });
+
+      return data;
+    } catch (error: unknown) {
+      handleSdkError(error, "Failed to search tasks");
+    }
   }
 
   /**
@@ -47,10 +47,18 @@ export class TaskClient {
    * @param taskId
    * @returns Task
    */
-  public getTask(taskId: string): Promise<Task> {
-    return tryCatchReThrow(() =>
-      this._client.taskResource.getTask(taskId)
-    );
+  public async getTask(taskId: string): Promise<Task> {
+    try {
+      const { data } = await TaskResource.getTask({
+        path: { taskId },
+        client: this._client,
+        throwOnError: true,
+      });
+
+      return data;
+    } catch (error: unknown) {
+      handleSdkError(error, `Failed to get task '${taskId}'`);
+    }
   }
 
   /**
@@ -63,19 +71,29 @@ export class TaskClient {
    * @param workerId
    * @returns
    */
-  public updateTaskResult(
+  public async updateTaskResult(
     workflowId: string,
-    taskReferenceName: string,
+    taskRefName: string,
     status: TaskResultStatus,
-    outputData: Record<string, unknown>,
-  ): Promise<TaskResult> {
-    return tryCatchReThrow(() =>
-      this._client.taskResource.updateTask(
-        workflowId,
-        taskReferenceName,
-        status,
-        outputData
-      )
-    );
+    outputData: Record<string, unknown>
+  ): Promise<string> {
+    try {
+      const { data } = await TaskResource.updateTask1({
+        body: {
+          outputData,
+        },
+        path: {
+          workflowId,
+          taskRefName,
+          status
+        },
+        client: this._client,
+        throwOnError: true,
+      });
+
+      return data;
+    } catch (error: unknown) {
+      handleSdkError(error, `Failed to update task '${taskRefName}' result for workflow '${workflowId}'`);
+    }
   }
 }

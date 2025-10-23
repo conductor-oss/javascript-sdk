@@ -1,7 +1,8 @@
 import { expect, describe, test, jest } from "@jest/globals";
 import { orkesConductorClient } from "../../src/orkes";
 import { SchedulerClient } from "../../src/core/schedulerClient";
-import { SaveScheduleRequest, TaskType, WorkflowDef } from "../../src/common";
+import { ExtendedWorkflowDef, SaveScheduleRequest, TaskType } from "../../src/common";
+import { MetadataClient } from "../../src/core";
 
 describe("ScheduleExecutor", () => {
   const clientPromise = orkesConductorClient();
@@ -18,7 +19,7 @@ describe("ScheduleExecutor", () => {
     const client = await clientPromise;
     const executor = new SchedulerClient(client);
 
-    const workflowDefinition: WorkflowDef = {
+    const workflowDefinition: ExtendedWorkflowDef = {
       name: workflowName,
       version: workflowVersion,
       description: "Test Workflow for Scheduler",
@@ -36,13 +37,18 @@ describe("ScheduleExecutor", () => {
       timeoutSeconds: 15,
     };
 
-    await client.metadataResource.create(workflowDefinition, true);
+    const metadataClient = new MetadataClient(client);
+    await metadataClient.registerWorkflowDef(workflowDefinition, true);
 
-    const workflowDefinitionFromApi = await client.metadataResource.get(
+    const workflowDefinitionFromApi = await metadataClient.getWorkflowDef(
       workflowName,
       workflowVersion
     );
 
+    expect(workflowDefinitionFromApi).toBeDefined();
+    if (!workflowDefinitionFromApi) {
+      throw new Error("Workflow definition is undefined");
+    }
     expect(workflowDefinitionFromApi.name).toEqual(workflowName);
     expect(workflowDefinitionFromApi.version).toEqual(workflowVersion);
 
@@ -65,6 +71,10 @@ describe("ScheduleExecutor", () => {
       executor.saveSchedule(schedulerDefinition)
     ).resolves.not.toThrow();
     const scheduler = await executor.getSchedule(name);
+    expect(scheduler).toBeDefined();
+    if (!scheduler) {
+      throw new Error("Scheduler is undefined");
+    }
     expect(scheduler.name).toEqual(name);
     expect(scheduler.cronExpression).toEqual(cronExpression);
   });
@@ -74,6 +84,10 @@ describe("ScheduleExecutor", () => {
     const executor = new SchedulerClient(client);
     await executor.resumeSchedule(name);
     const scheduler = await executor.getSchedule(name);
+    expect(scheduler).toBeDefined();
+    if (!scheduler) {
+      throw new Error("Scheduler is undefined");
+    }
     expect(scheduler.paused).toBeFalsy();
   });
 
@@ -96,19 +110,26 @@ describe("ScheduleExecutor", () => {
     const executor = new SchedulerClient(client);
     await executor.pauseSchedule(name);
     const scheduler = await executor.getSchedule(name);
+    if (!scheduler) {
+      throw new Error("Scheduler is undefined");
+    }
     expect(scheduler.paused).toBeTruthy();
   });
 
   test("Should be able to delete the schedule", async () => {
     const client = await clientPromise;
     const executor = new SchedulerClient(client);
+    const metadataClient = new MetadataClient(client);
     await executor.deleteSchedule(name);
     // delete workflowDef too
-    await client.metadataResource.unregisterWorkflowDef(
+    await metadataClient.unregisterWorkflow(
       workflowName,
       workflowVersion
     );
     const schedulerList = await executor.getAllSchedules();
+    if (!schedulerList) {
+      throw new Error("Scheduler list is undefined");
+    }
     const testSchedule = schedulerList.some(
       (schedule) => schedule.name === name
     );

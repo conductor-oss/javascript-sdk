@@ -1,14 +1,12 @@
-import {
-  ConductorClient,
-  HumanTaskTemplate,
-} from "../common";
-import { tryCatchReThrow } from "./helpers";
-
+import { HumanTaskTemplate } from "../common";
+import { HumanTask } from "../common/open-api/sdk.gen";
+import { Client } from "../common/open-api/client/types.gen";
+import { handleSdkError } from "./helpers";
 
 export class TemplateClient {
-  public readonly _client: ConductorClient;
+  public readonly _client: Client;
 
-  constructor(client: ConductorClient) {
+  constructor(client: Client) {
     this._client = client;
   }
 
@@ -22,8 +20,19 @@ export class TemplateClient {
     template: HumanTaskTemplate,
     asNewVersion = false
   ): Promise<HumanTaskTemplate> {
-    return tryCatchReThrow(() =>
-      this._client.humanTask.saveTemplate(template, asNewVersion)
-    );
+    try {
+      const { data } = await HumanTask.saveTemplate({
+        body: template,
+        query: {
+          newVersion: asNewVersion,
+        },
+        client: this._client,
+        throwOnError: true,
+      });
+
+      return data;
+    } catch (error: unknown) {
+      handleSdkError(error, "Failed to register template");
+    }
   }
 }

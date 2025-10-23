@@ -1,17 +1,17 @@
-The client is generated using [this library](https://github.com/ferdikoomen/openapi-typescript-codegen).
+The client is generated using [this library](https://github.com/hey-api/openapi-ts). Generated code must not be modified directly.
 
-1. Run the latest conductor OSS server locally 
-2. Run the npm commands:
+## Updating generated code
 
-#### Updating definitions
-To update `service` and `model` definitions:
+1. Copy OpenApi spec data from up to date cluster `({cluster_url}/api-docs)`
+2. Paste to `open-api-spec/spec.json`
+3. Prettify `spec.json`, run command: (todo: should be removed after OpenApi spec fix)
 
 ```text
-npm run generateClient:models
+node open-api-spec/fix-additional-properties.ts
 ```
 
-#### Updating the core
+4. run command:
 
-```
-npm run generateClient:core
+```text
+npm run generate-openapi-layer
 ```

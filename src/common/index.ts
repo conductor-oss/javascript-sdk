@@ -1,44 +1,23 @@
 export * from "./ConductorLogger";
-export * from "./RequestCustomizer";
 export * from "./types";
 
-export {
-  ConductorClient,
-  ApiError,
-  BaseHttpRequest,
-  CancelablePromise,
-  CancelError,
-  EventResourceService,
-  HealthCheckResourceService,
-  MetadataResourceService,
-  SchedulerResourceService,
-  TaskResourceService,
-  TokenResourceService,
-  WorkflowBulkResourceService,
-  WorkflowResourceService,
-} from "./open-api";
-
+export type { Client } from "./open-api/client";
 export type {
-  ApiRequestOptions,
-  ApiResult,
-  OpenAPIConfig,
-  OnCancel,
   Action,
+  CircuitBreakerTransitionResponse,
   EventHandler,
-  ExternalStorageLocation,
   GenerateTokenRequest,
   PollData,
+  ProtoRegistryEntry,
   RerunWorkflowRequest,
   Response,
   SaveScheduleRequest,
   ScrollableSearchResultWorkflowSummary,
-  SearchResultTask,
   SearchResultTaskSummary,
-  SearchResultWorkflow,
   SearchResultWorkflowScheduleExecutionModel,
-  SearchResultWorkflowSummary,
+  ServiceRegistry,
+  ServiceMethod,
   SkipTaskRequest,
-  StartWorkflow,
   StartWorkflowRequest,
   SubWorkflowParams,
   Task,
@@ -47,15 +26,17 @@ export type {
   TaskExecLog,
   TaskResult,
   TaskSummary,
+  TaskListSearchResultSummary,
   Workflow,
   WorkflowSchedule,
   WorkflowScheduleExecutionModel,
+  WorkflowScheduleModel,
   WorkflowStatus,
   WorkflowSummary,
   WorkflowTask,
-  HTScrollableSearchResultHumanTaskEntry,
-  Terminate,
-  TimeoutPolicy,
+  WorkflowDef,
+  WorkflowRun,
+  ExtendedWorkflowDef,
   HumanTaskUser,
   HumanTaskDefinition,
   HumanTaskAssignment,
@@ -66,3 +47,8 @@ export type {
   HumanTaskSearch,
   HumanTaskEntry,
 } from "./open-api";
+
+export type { ExtendedTaskDef, SignalResponse } from "./types";
+
+// todo: remove after April 2026 (backward compatibility types)
+export * from "./deprecated-types";

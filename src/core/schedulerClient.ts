@@ -1,15 +1,17 @@
 import {
-  ConductorClient,
   SaveScheduleRequest,
   SearchResultWorkflowScheduleExecutionModel,
   WorkflowSchedule,
+  WorkflowScheduleModel,
 } from "../common";
-import { tryCatchReThrow } from "./helpers";
+import { SchedulerResource } from "../common/open-api/sdk.gen";
+import { Client } from "../common/open-api/client/types.gen";
+import { handleSdkError } from "./helpers";
 
 export class SchedulerClient {
-  public readonly _client: ConductorClient;
+  public readonly _client: Client;
 
-  constructor(client: ConductorClient) {
+  constructor(client: Client) {
     this._client = client;
   }
 
@@ -18,10 +20,16 @@ export class SchedulerClient {
    * @param requestBody
    * @returns
    */
-  public saveSchedule(param: SaveScheduleRequest): Promise<void> {
-    return tryCatchReThrow(() =>
-      this._client.schedulerResource.saveSchedule(param)
-    );
+  public async saveSchedule(param: SaveScheduleRequest): Promise<void> {
+    try {
+      await SchedulerResource.saveSchedule({
+        body: param,
+        client: this._client,
+        throwOnError: true,
+      });
+    } catch (error: unknown) {
+      handleSdkError(error, "Failed to save schedule");
+    }
   }
 
   /**
@@ -34,33 +42,43 @@ export class SchedulerClient {
    * @param query
    * @returns SearchResultWorkflowScheduleExecutionModel
    */
-  public search(
+  public async search(
     start: number,
-    size: number,
+    size = 100,
     sort = "",
-    freeText: string,
-    query: string
+    freeText = "*",
+    query?: string
   ): Promise<SearchResultWorkflowScheduleExecutionModel> {
-    return tryCatchReThrow(() =>
-      this._client.schedulerResource.searchV21(
-        start,
-        size,
-        sort,
-        freeText,
-        query
-      )
-    );
+    try {
+      const { data } = await SchedulerResource.searchV2({
+        query: { start, size, sort, freeText, query },
+        client: this._client,
+        throwOnError: true,
+      });
+
+      return data;
+    } catch (error: unknown) {
+      handleSdkError(error, "Failed to search schedules");
+    }
   }
 
   /**
    * Get an existing schedule by name
    * @param name
-   * @returns SaveScheduleRequest
+   * @returns WorkflowSchedule
    */
-  public getSchedule(name: string): Promise<SaveScheduleRequest> {
-    return tryCatchReThrow(() =>
-      this._client.schedulerResource.getSchedule(name)
-    );
+  public async getSchedule(name: string): Promise<WorkflowSchedule> {
+    try {
+      const { data } = await SchedulerResource.getSchedule({
+        path: { name },
+        client: this._client,
+        throwOnError: true,
+      });
+
+      return data;
+    } catch (error: unknown) {
+      handleSdkError(error, `Failed to get schedule '${name}'`);
+    }
   }
 
   /**
@@ -68,10 +86,16 @@ export class SchedulerClient {
    * @param name
    * @returns
    */
-  public pauseSchedule(name: string): Promise<void> {
-    return tryCatchReThrow(() =>
-      this._client.schedulerResource.pauseSchedule(name)
-    );
+  public async pauseSchedule(name: string): Promise<void> {
+    try {
+      await SchedulerResource.pauseSchedule({
+        path: { name },
+        client: this._client,
+        throwOnError: true,
+      });
+    } catch (error: unknown) {
+      handleSdkError(error, `Failed to pause schedule '${name}'`);
+    }
   }
 
   /**
@@ -80,10 +104,16 @@ export class SchedulerClient {
    * @param name
    * @returns
    */
-  public resumeSchedule(name: string): Promise<void> {
-    return tryCatchReThrow(() =>
-      this._client.schedulerResource.resumeSchedule(name)
-    );
+  public async resumeSchedule(name: string): Promise<void> {
+    try {
+      await SchedulerResource.resumeSchedule({
+        path: { name },
+        client: this._client,
+        throwOnError: true,
+      });
+    } catch (error: unknown) {
+      handleSdkError(error, `Failed to resume schedule '${name}'`);
+    }
   }
 
   /**
@@ -92,23 +122,37 @@ export class SchedulerClient {
    * @param name
    * @returns
    */
-  public deleteSchedule(name: string): Promise<void> {
-    return tryCatchReThrow(() =>
-      this._client.schedulerResource.deleteSchedule(name)
-    );
+  public async deleteSchedule(name: string): Promise<void> {
+    try {
+      await SchedulerResource.deleteSchedule({
+        path: { name },
+        client: this._client,
+        throwOnError: true,
+      });
+    } catch (error: unknown) {
+      handleSdkError(error, `Failed to delete schedule '${name}'`);
+    }
   }
 
   /**
    * Get all existing workflow schedules and optionally filter by workflow name
    * @param workflowName
-   * @returns Array<WorkflowSchedule>
+   * @returns Array<WorkflowScheduleModel>
    */
-  public getAllSchedules(
+  public async getAllSchedules(
     workflowName?: string
-  ): Promise<WorkflowSchedule[]> {
-    return tryCatchReThrow(() =>
-      this._client.schedulerResource.getAllSchedules(workflowName)
-    );
+  ): Promise<WorkflowScheduleModel[]> {
+    try {
+      const { data } = await SchedulerResource.getAllSchedules({
+        query: { workflowName },
+        client: this._client,
+        throwOnError: true,
+      });
+
+      return data;
+    } catch (error: unknown) {
+      handleSdkError(error, "Failed to get all schedules");
+    }
   }
 
   /**
@@ -120,20 +164,23 @@ export class SchedulerClient {
    * @returns number OK
    * @throws ApiError
    */
-  public getNextFewSchedules(
+  public async getNextFewSchedules(
     cronExpression: string,
     scheduleStartTime?: number,
     scheduleEndTime?: number,
     limit = 3
-  ): Promise<number[][]> {
-    return tryCatchReThrow(() =>
-      this._client.schedulerResource.getNextFewSchedules(
-        cronExpression,
-        scheduleStartTime,
-        scheduleEndTime,
-        limit
-      )
-    );
+  ): Promise<number[]> {
+    try {
+      const { data } = await SchedulerResource.getNextFewSchedules({
+        query: { cronExpression, scheduleStartTime, scheduleEndTime, limit },
+        client: this._client,
+        throwOnError: true,
+      });
+
+      return data;
+    } catch (error: unknown) {
+      handleSdkError(error, "Failed to get next few schedules");
+    }
   }
 
   /**
@@ -141,10 +188,15 @@ export class SchedulerClient {
    * @returns any OK
    * @throws ApiError
    */
-  public pauseAllSchedules(): Promise<void> {
-    return tryCatchReThrow(() =>
-      this._client.schedulerResource.pauseAllSchedules()
-    );
+  public async pauseAllSchedules(): Promise<void> {
+    try {
+      await SchedulerResource.pauseAllSchedules({
+        client: this._client,
+        throwOnError: true,
+      });
+    } catch (error: unknown) {
+      handleSdkError(error, "Failed to pause all schedules");
+    }
   }
 
   /**
@@ -152,10 +204,15 @@ export class SchedulerClient {
    * @returns any OK
    * @throws ApiError
    */
-  public requeueAllExecutionRecords(): Promise<void> {
-    return tryCatchReThrow(() =>
-      this._client.schedulerResource.requeueAllExecutionRecords()
-    );
+  public async requeueAllExecutionRecords(): Promise<void> {
+    try {
+      await SchedulerResource.requeueAllExecutionRecords({
+        client: this._client,
+        throwOnError: true,
+      });
+    } catch (error: unknown) {
+      handleSdkError(error, "Failed to requeue all execution records");
+    }
   }
 
   /**
@@ -163,9 +220,14 @@ export class SchedulerClient {
    * @returns any OK
    * @throws ApiError
    */
-  public resumeAllSchedules(): Promise<void> {
-    return tryCatchReThrow(() =>
-      this._client.schedulerResource.resumeAllSchedules()
-    );
+  public async resumeAllSchedules(): Promise<void> {
+    try {
+      await SchedulerResource.resumeAllSchedules({
+        client: this._client,
+        throwOnError: true,
+      });
+    } catch (error: unknown) {
+      handleSdkError(error, "Failed to resume all schedules");
+    }
   }
 }

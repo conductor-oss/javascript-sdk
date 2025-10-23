@@ -1,4 +1,8 @@
-import { WorkflowDef as OriginalWorkflowDef } from "./open-api/models/WorkflowDef";
+import {
+  ExtendedTaskDef as OpenApiExtendedTaskDef,
+  SignalResponse as OpenApiSignalResponse,
+} from "./open-api";
+import { Task } from "./";
 
 export interface CommonTaskDef {
   name: string;
@@ -6,16 +10,23 @@ export interface CommonTaskDef {
 }
 
 export enum Consistency {
-  SYNCHRONOUS = 'SYNCHRONOUS',
-  DURABLE = 'DURABLE',
-  REGION_DURABLE = 'REGION_DURABLE'
+  SYNCHRONOUS = "SYNCHRONOUS",
+  DURABLE = "DURABLE",
+  REGION_DURABLE = "REGION_DURABLE",
 }
 
 export enum ReturnStrategy {
-  TARGET_WORKFLOW = 'TARGET_WORKFLOW',
-  BLOCKING_WORKFLOW = 'BLOCKING_WORKFLOW',
-  BLOCKING_TASK = 'BLOCKING_TASK',
-  BLOCKING_TASK_INPUT = 'BLOCKING_TASK_INPUT'
+  TARGET_WORKFLOW = "TARGET_WORKFLOW",
+  BLOCKING_WORKFLOW = "BLOCKING_WORKFLOW",
+  BLOCKING_TASK = "BLOCKING_TASK",
+  BLOCKING_TASK_INPUT = "BLOCKING_TASK_INPUT",
+}
+
+export enum TaskResultStatusEnum {
+  IN_PROGRESS = "IN_PROGRESS",
+  FAILED = "FAILED",
+  FAILED_WITH_TERMINAL_ERROR = "FAILED_WITH_TERMINAL_ERROR",
+  COMPLETED = "COMPLETED",
 }
 
 export enum TaskType {
@@ -41,6 +52,12 @@ export enum TaskType {
   KAFKA_PUBLISH = "KAFKA_PUBLISH",
   JSON_JQ_TRANSFORM = "JSON_JQ_TRANSFORM",
   SET_VARIABLE = "SET_VARIABLE",
+}
+
+export enum ServiceType {
+  HTTP = "HTTP",
+  MCP_REMOTE = "MCP_REMOTE",
+  gRPC = "gRPC",
 }
 
 export type TaskDefTypes =
@@ -216,9 +233,34 @@ export interface WaitTaskDef extends CommonTaskDef {
   optional?: boolean;
 }
 
-export interface WorkflowDef
-  extends Omit<OriginalWorkflowDef, "tasks" | "version" | "inputParameters"> {
-  inputParameters: string[];
-  version: number;
-  tasks: TaskDefTypes[];
+// TODO: need to remove this once OpenAPI spec is fixed
+export interface ExtendedTaskDef
+  extends Omit<
+    OpenApiExtendedTaskDef,
+    "timeoutSeconds" | "totalTimeoutSeconds"
+  > {
+  totalTimeoutSeconds?: number;
+  timeoutSeconds?: number;
+}
+
+// TODO: need to remove this once OpenAPI spec is fixed
+export interface SignalResponse extends OpenApiSignalResponse {
+  // ========== COMMON FIELDS IN ALL RESPONSES ==========
+  priority?: number;
+  variables?: Record<string, unknown>;
+
+  // ========== FIELDS SPECIFIC TO TARGET_WORKFLOW & BLOCKING_WORKFLOW ==========
+  tasks?: Task[];
+  createdBy?: string;
+  createTime?: number;
+  status?: string;
+  updateTime?: number;
+
+  // ========== FIELDS SPECIFIC TO BLOCKING_TASK & BLOCKING_TASK_INPUT ==========
+  taskType?: string;
+  taskId?: string;
+  referenceTaskName?: string;
+  retryCount?: number;
+  taskDefName?: string;
+  workflowType?: string;
 }

@@ -1,29 +1,38 @@
-import { ConductorError } from "./types";
+import { ConductorSdkError } from "./types";
 
-export const errorMapper = (error: unknown): ConductorError => {
-  const message =
-    error &&
-    typeof error === "object" &&
-    "body" in error &&
-    error.body &&
-    typeof error.body === "object" &&
-    "message" in error.body &&
-    typeof error.body.message === "string"
-      ? error.body.message
-      : undefined;
-
+export function handleSdkError(
+  error?: unknown,
+  customMessage?: string,
+  strategy?: "throw"
+): never;
+export function handleSdkError(
+  error?: unknown,
+  customMessage?: string,
+  strategy?: "log"
+): void;
+export function handleSdkError(
+  error?: unknown,
+  customMessage?: string,
+  strategy: "throw" | "log" = "throw"
+): void | never {
   const innerError = error instanceof Error ? error : undefined;
 
-  return new ConductorError(message, innerError);
-};
+  const messageFromError =
+    error && typeof error === "object" && "message" in error
+      ? String(error.message)
+      : undefined;
 
-export const tryCatchReThrow = <T>(fn: () => T): T => {
-  try {
-    return fn();
-  } catch (error) {
-    throw errorMapper(error);
+  const fullMessage =
+    customMessage && messageFromError
+      ? `${customMessage}: ${messageFromError}`
+      : customMessage || messageFromError || "Unknown error";
+
+  if (strategy === "log") {
+    console.error(`[Conductor SDK Error]: ${fullMessage}\n`, innerError);
+  } else {
+    throw new ConductorSdkError(fullMessage, innerError);
   }
-};
+}
 
 export function reverseFind<T>(
   array: T[],

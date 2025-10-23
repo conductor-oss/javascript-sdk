@@ -1,6 +1,7 @@
 import type { ConductorLogger } from "../common";
 import type { ConductorWorker } from "./Worker";
-import type { Task, TaskResourceService } from "../common/open-api";
+import type { Task } from "../common";
+import { Client } from "../common/open-api/client/types.gen";
 
 export type TaskErrorHandler = (error: Error, task?: Task) => void;
 export interface TaskRunnerOptions {
@@ -12,7 +13,7 @@ export interface TaskRunnerOptions {
 }
 export interface RunnerArgs {
   worker: ConductorWorker;
-  taskResource: TaskResourceService;
+  client: Client;
   options: TaskRunnerOptions;
   logger?: ConductorLogger;
   onError?: TaskErrorHandler;

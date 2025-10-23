@@ -1,7 +1,7 @@
 import {beforeAll, afterEach, describe, expect, jest, test} from "@jest/globals";
 import {ServiceRegistryClient} from "../../src/core/serviceRegistryClient";
 import {orkesConductorClient} from "../../src/orkes";
-import {ServiceType} from "../../src/common/open-api/models/ServiceRegistryModels";
+import {ServiceType} from "../../src/common/";
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -65,6 +65,9 @@ describe("ServiceRegistryClient", () => {
         );
 
         // Verify the service registry properties
+        if (!retrievedServiceRegistry) {
+            throw new Error("Retrieved service registry is undefined");
+        }
         expect(retrievedServiceRegistry.name).toEqual(testServiceRegistry.name);
         expect(retrievedServiceRegistry.type).toEqual(testServiceRegistry.type);
         expect(retrievedServiceRegistry.serviceURI).toEqual(testServiceRegistry.serviceURI);
@@ -151,7 +154,9 @@ describe("ServiceRegistryClient", () => {
         const retrievedServiceRegistry = await serviceRegistryClient.getService(
             testServiceRegistry.name
         );
-
+        if (!retrievedServiceRegistry) {
+            throw new Error("Retrieved service registry is undefined");
+        }
         // Check if methods array exists and contains our method
         expect(retrievedServiceRegistry.methods).toBeDefined();
 
@@ -189,6 +194,9 @@ describe("ServiceRegistryClient", () => {
 
         // Verify that we discovered methods
         expect(discoveredMethods).toBeDefined();
+        if (!discoveredMethods) {
+            throw new Error("Discovered methods are undefined");
+        }
         expect(Array.isArray(discoveredMethods)).toBe(true);
         expect(discoveredMethods.length).toBeGreaterThan(0);
 
@@ -222,6 +230,9 @@ describe("ServiceRegistryClient", () => {
         await serviceRegistryClient.setProtoData(testServiceRegistry.name, 'compiled.bin', blob);
 
         const serviceMethods = await serviceRegistryClient.getService(testServiceRegistry.name);
+        if (!serviceMethods) {
+            throw new Error("Service methods are undefined");
+        }
         const methods = serviceMethods.methods;
 
         expect(serviceMethods).toBeDefined();

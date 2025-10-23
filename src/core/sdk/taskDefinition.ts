@@ -1,4 +1,4 @@
-import type { TaskDef } from '../../common/open-api/models/TaskDef';
+import { TaskDef as OpenApiTaskDef, ExtendedTaskDef } from "../../common";
 
 export const taskDefinition = ({
   name,
@@ -19,23 +19,24 @@ export const taskDefinition = ({
   ownerEmail = "",
   pollTimeoutSeconds = 3600,
   backoffScaleFactor = 1,
-}: TaskDef) : TaskDef => ({
-  name,
-  ownerApp,
-  description,
-  retryCount,
-  timeoutSeconds,
-  inputKeys,
-  outputKeys,
-  timeoutPolicy,
-  retryLogic,
-  retryDelaySeconds,
-  responseTimeoutSeconds,
-  concurrentExecLimit,
-  inputTemplate,
-  rateLimitPerFrequency,
-  rateLimitFrequencyInSeconds,
-  ownerEmail,
-  pollTimeoutSeconds,
-  backoffScaleFactor,
-})
+}: ExtendedTaskDef): OpenApiTaskDef =>
+  ({
+    name,
+    ownerApp,
+    description,
+    retryCount,
+    timeoutSeconds,
+    inputKeys,
+    outputKeys,
+    timeoutPolicy,
+    retryLogic,
+    retryDelaySeconds,
+    responseTimeoutSeconds,
+    concurrentExecLimit,
+    inputTemplate,
+    rateLimitPerFrequency,
+    rateLimitFrequencyInSeconds,
+    ownerEmail,
+    pollTimeoutSeconds,
+    backoffScaleFactor,
+  } as OpenApiTaskDef);

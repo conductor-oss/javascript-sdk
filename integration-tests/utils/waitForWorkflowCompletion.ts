@@ -13,7 +13,7 @@ export const waitForWorkflowCompletion = async (
     try {
       const workflowStatus = await executor.getWorkflow(workflowId, true);
 
-      if (!workflowStatus.status) {
+      if (!workflowStatus?.status) {
         throw new Error("Workflow status is undefined");
       }
       // Check if workflow is in a terminal state
@@ -44,4 +44,3 @@ export const waitForWorkflowCompletion = async (
     `Workflow ${workflowId} did not complete within ${maxWaitMs}ms`
   );
 };
-

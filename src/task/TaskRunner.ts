@@ -1,6 +1,7 @@
 import { ConductorLogger, noopLogger } from "../common";
 import { ConductorWorker } from "./Worker";
-import { Task, TaskResourceService, TaskResult } from "../common/open-api";
+import { Task, TaskResult } from "../common";
+import { TaskResource } from "../common/open-api";
 import { Poller } from "./Poller";
 import {
   DEFAULT_POLL_INTERVAL,
@@ -9,6 +10,7 @@ import {
 } from "./constants";
 import { TaskErrorHandler, TaskRunnerOptions, RunnerArgs } from "./types";
 import { optionEquals } from "./helpers";
+import { Client } from "../common/open-api/client/types.gen";
 
 const DEFAULT_ERROR_MESSAGE = "An unknown error occurred";
 export const MAX_RETRIES = 3;
@@ -35,7 +37,7 @@ const defaultRunnerOptions: Required<TaskRunnerOptions> = {
  *
  */
 export class TaskRunner {
-  taskResource: TaskResourceService;
+  _client: Client;
   worker: ConductorWorker;
   private logger: ConductorLogger;
   private options: TaskRunnerOptions;
@@ -45,13 +47,13 @@ export class TaskRunner {
 
   constructor({
     worker,
-    taskResource,
+    client,
     options,
     logger = noopLogger,
     onError: errorHandler = noopErrorHandler,
     maxRetries = MAX_RETRIES,
   }: RunnerArgs) {
-    this.taskResource = taskResource;
+    this._client = client;
     this.maxRetries = maxRetries;
     this.logger = logger;
     this.worker = worker;
@@ -110,15 +112,21 @@ export class TaskRunner {
     return this.options;
   }
 
-  private batchPoll = async (count: number): Promise<Task[]> => {
+  private batchPoll = async (count: number): Promise<Task[] | undefined> => {
     const { workerID } = this.options;
-    const tasks = await this.taskResource.batchPoll(
-      this.worker.taskDefName,
-      workerID,
-      this.worker.domain ?? this.options.domain,
-      count,
-      this.options.batchPollingTimeout ?? 100 // default batch poll defined in the method
-    );
+
+    const { data: tasks } = await TaskResource.batchPoll({
+      client: this._client,
+      path: {
+        tasktype: this.worker.taskDefName,
+      },
+      query: {
+        workerid: workerID,
+        domain: this.worker.domain ?? this.options.domain,
+        count,
+        timeout: this.options.batchPollingTimeout ?? 100,
+      },
+    });
     return tasks;
   };
 
@@ -127,10 +135,14 @@ export class TaskRunner {
     let retryCount = 0;
     while (retryCount < this.maxRetries) {
       try {
-        await this.taskResource.updateTask1({
-          ...taskResult,
-          workerId: workerID,
+        await TaskResource.updateTask({
+          client: this._client,
+          body: {
+            ...taskResult,
+            workerId: workerID,
+          },
         });
+
         return;
       } catch (error: unknown) {
         this.errorHandler(error as Error, task);

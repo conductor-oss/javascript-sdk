@@ -4,13 +4,13 @@ The `ServiceRegistryClient` manages service registrations and circuit breakers.
 
 ## Constructor
 
-### `new ServiceRegistryClient(client: ConductorClient)`
+### `new ServiceRegistryClient(client: Client)`
 
 Creates a new `ServiceRegistryClient`.
 
 **Parameters:**
 
--   `client` (`ConductorClient`): An instance of `ConductorClient`.
+- `client` (`Client`): An instance of `Client`.
 
 ---
 
@@ -22,7 +22,7 @@ Retrieves all registered services.
 
 **Returns:**
 
--   `Promise<ServiceRegistry[]>`: An array of all registered services.
+- `Promise<ServiceRegistry[]>`: An array of all registered services.
 
 ---
 
@@ -32,11 +32,11 @@ Removes a service by name.
 
 **Parameters:**
 
--   `name` (`string`): The name of the service to remove.
+- `name` (`string`): The name of the service to remove.
 
 **Returns:**
 
--   `Promise<void>`
+- `Promise<void>`
 
 ---
 
@@ -46,11 +46,11 @@ Gets a service by name.
 
 **Parameters:**
 
--   `name` (`string`): The name of the service to retrieve.
+- `name` (`string`): The name of the service to retrieve.
 
 **Returns:**
 
--   `Promise<ServiceRegistry>`: The requested service registry.
+- `Promise<ServiceRegistry>`: The requested service registry.
 
 ---
 
@@ -60,11 +60,11 @@ Opens the circuit breaker for a service.
 
 **Parameters:**
 
--   `name` (`string`): The name of the service.
+- `name` (`string`): The name of the service.
 
 **Returns:**
 
--   `Promise<CircuitBreakerTransitionResponse>`: A response with the circuit breaker status.
+- `Promise<CircuitBreakerTransitionResponse>`: A response with the circuit breaker status.
 
 ---
 
@@ -74,11 +74,11 @@ Closes the circuit breaker for a service.
 
 **Parameters:**
 
--   `name` (`string`): The name of the service.
+- `name` (`string`): The name of the service.
 
 **Returns:**
 
--   `Promise<CircuitBreakerTransitionResponse>`: A response with the circuit breaker status.
+- `Promise<CircuitBreakerTransitionResponse>`: A response with the circuit breaker status.
 
 ---
 
@@ -88,11 +88,11 @@ Gets the circuit breaker status for a service.
 
 **Parameters:**
 
--   `name` (`string`): The name of the service.
+- `name` (`string`): The name of the service.
 
 **Returns:**
 
--   `Promise<CircuitBreakerTransitionResponse>`: A response with the circuit breaker status.
+- `Promise<CircuitBreakerTransitionResponse>`: A response with the circuit breaker status.
 
 ---
 
@@ -102,11 +102,11 @@ Adds or updates a service registry.
 
 **Parameters:**
 
--   `serviceRegistry` (`ServiceRegistry`): The service registry to add or update.
+- `serviceRegistry` (`ServiceRegistry`): The service registry to add or update.
 
 **Returns:**
 
--   `Promise<void>`
+- `Promise<void>`
 
 ---
 
@@ -116,12 +116,12 @@ Adds or updates a service method.
 
 **Parameters:**
 
--   `registryName` (`string`): The name of the registry.
--   `method` (`ServiceMethod`): The service method to add or update.
+- `registryName` (`string`): The name of the registry.
+- `method` (`ServiceMethod`): The service method to add or update.
 
 **Returns:**
 
--   `Promise<void>`
+- `Promise<void>`
 
 ---
 
@@ -131,14 +131,14 @@ Removes a service method.
 
 **Parameters:**
 
--   `registryName` (`string`): The name of the registry.
--   `serviceName` (`string`): The name of the service.
--   `method` (`string`): The name of the method.
--   `methodType` (`string`): The type of the method.
+- `registryName` (`string`): The name of the registry.
+- `serviceName` (`string`): The name of the service.
+- `method` (`string`): The name of the method.
+- `methodType` (`string`): The type of the method.
 
 **Returns:**
 
--   `Promise<void>`
+- `Promise<void>`
 
 ---
 
@@ -148,12 +148,12 @@ Gets proto data.
 
 **Parameters:**
 
--   `registryName` (`string`): The name of the registry.
--   `filename` (`string`): The name of the proto file.
+- `registryName` (`string`): The name of the registry.
+- `filename` (`string`): The name of the proto file.
 
 **Returns:**
 
--   `Promise<Blob>`: The proto file data as a `Blob`.
+- `Promise<Blob>`: The proto file data as a `Blob`.
 
 ---
 
@@ -163,13 +163,13 @@ Sets proto data.
 
 **Parameters:**
 
--   `registryName` (`string`): The name of the registry.
--   `filename` (`string`): The name of the proto file.
--   `data` (`Blob`): The proto file data.
+- `registryName` (`string`): The name of the registry.
+- `filename` (`string`): The name of the proto file.
+- `data` (`Blob`): The proto file data.
 
 **Returns:**
 
--   `Promise<void>`
+- `Promise<void>`
 
 ---
 
@@ -179,12 +179,12 @@ Deletes a proto file.
 
 **Parameters:**
 
--   `registryName` (`string`): The name of the registry.
--   `filename` (`string`): The name of the proto file.
+- `registryName` (`string`): The name of the registry.
+- `filename` (`string`): The name of the proto file.
 
 **Returns:**
 
--   `Promise<void>`
+- `Promise<void>`
 
 ---
 
@@ -194,11 +194,11 @@ Gets all proto files for a registry.
 
 **Parameters:**
 
--   `registryName` (`string`): The name of the registry.
+- `registryName` (`string`): The name of the registry.
 
 **Returns:**
 
--   `Promise<ProtoRegistryEntry[]>`: A list of proto registry entries.
+- `Promise<ProtoRegistryEntry[]>`: A list of proto registry entries.
 
 ---
 
@@ -208,86 +208,123 @@ Discovers service methods.
 
 **Parameters:**
 
--   `name` (`string`): The name of the service.
--   `create` (`boolean`, optional): Whether to create the discovered methods. Defaults to `false`.
+- `name` (`string`): The name of the service.
+- `create` (`boolean`, optional): Whether to create the discovered methods. Defaults to `false`.
 
 **Returns:**
 
--   `Promise<ServiceMethod[]>`: The discovered service methods.
+- `Promise<ServiceMethod[]>`: The discovered service methods.
 
 ---
 
 ## Type Definitions
 
-### `ServiceRegistry`
-| Property | Type | Description |
-| --- | --- | --- |
-| `name` | `string` | The name of the service. |
-| `type` | `ServiceType` | The type of the service. |
-| `serviceURI` | `string` | The URI of the service. |
-| `methods` | `ServiceMethod[]` | The methods of the service. |
-| `requestParams` | `RequestParam[]` | The request parameters of the service. |
-| `config` | `ServiceRegistryConfig` | The configuration of the service. |
-
 ### `ServiceType`
-`ServiceType` is an enum that can be one of the following values: `'HTTP'`, `'gRPC'`.
+
+```typescript
+export enum ServiceType {
+  HTTP = "HTTP",
+  MCP_REMOTE = "MCP_REMOTE",
+  gRPC = "gRPC",
+}
+```
+
+### `ServiceRegistry`
+
+```typescript
+export type ServiceRegistry = {
+  circuitBreakerEnabled?: boolean;
+  config?: Config;
+  methods?: ServiceMethod[];
+  name?: string;
+  requestParams?: RequestParam[];
+  serviceURI?: string;
+  type?: "HTTP" | "gRPC" | "MCP_REMOTE";
+};
+```
 
 ### `ServiceMethod`
-| Property | Type | Description |
-| --- | --- | --- |
-| `id` | `number` | The ID of the method. |
-| `operationName` | `string` | The name of the operation. |
-| `methodName` | `string` | The name of the method. |
-| `methodType` | `string` | The type of the method. |
-| `inputType` | `string` | The input type of the method. |
-| `outputType` | `string` | The output type of the method. |
-| `requestParams` | `RequestParam[]` | The request parameters of the method. |
-| `exampleInput` | `Record<string, any>` | An example input for the method. |
 
-### `RequestParam`
-| Property | Type | Description |
-| --- | --- | --- |
-| `name` | `string` | The name of the parameter. |
-| `type` | `string` | The type of the parameter. |
-| `required` | `boolean` | Whether the parameter is required. |
-| `schema` | `RequestParamSchema` | The schema of the parameter. |
-
-### `RequestParamSchema`
-| Property | Type | Description |
-| --- | --- | --- |
-| `type` | `string` | The type of the schema. |
-| `format` | `string` | The format of the schema. |
-| `defaultValue` | `any` | The default value of the schema. |
-
-### `ServiceRegistryConfig`
-| Property | Type | Description |
-| --- | --- | --- |
-| `circuitBreakerConfig` | `OrkesCircuitBreakerConfig` | The circuit breaker configuration. |
-
-### `OrkesCircuitBreakerConfig`
-| Property | Type | Description |
-| --- | --- | --- |
-| `failureRateThreshold` | `number` | The failure rate threshold. |
-| `slidingWindowSize` | `number` | The sliding window size. |
-| `minimumNumberOfCalls` | `number` | The minimum number of calls. |
-| `waitDurationInOpenState` | `number` | The wait duration in the open state. |
-| `permittedNumberOfCallsInHalfOpenState`| `number` | The permitted number of calls in the half-open state. |
-| `slowCallRateThreshold` | `number` | The slow call rate threshold. |
-| `slowCallDurationThreshold` | `number` | The slow call duration threshold. |
-| `automaticTransitionFromOpenToHalfOpenEnabled` | `boolean` | Whether automatic transition from open to half-open is enabled. |
-| `maxWaitDurationInHalfOpenState` | `number` | The maximum wait duration in the half-open state. |
+```typescript
+export type ServiceMethod = {
+  exampleInput?: {
+    [key: string]: unknown;
+  };
+  id?: number;
+  inputType?: string;
+  methodName?: string;
+  methodType?: string;
+  operationName?: string;
+  outputType?: string;
+  requestParams?: RequestParam[];
+};
+```
 
 ### `CircuitBreakerTransitionResponse`
-| Property | Type | Description |
-| --- | --- | --- |
-| `service` | `string` | The name of the service. |
-| `previousState` | `string` | The previous state of the circuit breaker. |
-| `currentState` | `string` | The current state of the circuit breaker. |
-| `transitionTimestamp` | `number` | The timestamp of the transition. |
-| `message` | `string` | The transition message. |
+
+```typescript
+export type CircuitBreakerTransitionResponse = {
+  currentState?: string;
+  message?: string;
+  previousState?: string;
+  service?: string;
+  transitionTimestamp?: number;
+};
+```
 
 ### `ProtoRegistryEntry`
-| Property | Type | Description |
-| --- | --- | --- |
-| `filename` | `string` | The name of the proto file. |
-| `lastUpdated` | `number` | The last update time of the proto file. |
+
+```typescript
+export type ProtoRegistryEntry = {
+  data?: string;
+  filename?: string;
+  serviceName?: string;
+};
+```
+
+### `Config`
+
+```typescript
+export type Config = {
+  circuitBreakerConfig?: OrkesCircuitBreakerConfig;
+};
+```
+
+### `OrkesCircuitBreakerConfig`
+
+```typescript
+export type OrkesCircuitBreakerConfig = {
+  automaticTransitionFromOpenToHalfOpenEnabled?: boolean;
+  failureRateThreshold?: number;
+  maxWaitDurationInHalfOpenState?: number;
+  minimumNumberOfCalls?: number;
+  permittedNumberOfCallsInHalfOpenState?: number;
+  slidingWindowSize?: number;
+  slowCallDurationThreshold?: number;
+  slowCallRateThreshold?: number;
+  waitDurationInOpenState?: number;
+};
+```
+
+### `RequestParam`
+
+```typescript
+export type RequestParam = {
+  name?: string;
+  required?: boolean;
+  schema?: Schema;
+  type?: string;
+};
+```
+
+### `Schema`
+
+```typescript
+export type Schema = {
+  defaultValue?: {
+    [key: string]: unknown;
+  };
+  format?: string;
+  type?: string;
+};
+```
