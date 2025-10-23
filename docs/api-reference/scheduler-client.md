@@ -4,13 +4,13 @@ The `SchedulerClient` manages workflow scheduling and provides methods for creat
 
 ## Constructor
 
-### `new SchedulerClient(client: ConductorClient)`
+### `new SchedulerClient(client: Client)`
 
 Creates a new `SchedulerClient`.
 
 **Parameters:**
 
--   `client` (`ConductorClient`): An instance of `ConductorClient`.
+-   `client` (`Client`): An instance of `Client`.
 
 ---
 

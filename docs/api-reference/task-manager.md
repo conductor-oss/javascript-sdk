@@ -4,13 +4,13 @@ The `TaskManager` is responsible for initializing and managing the runners that 
 
 ## Constructor
 
-### `new TaskManager(client: ConductorClient, workers: Array<ConductorWorker>, config: TaskManagerConfig = {})`
+### `new TaskManager(client: Client, workers: Array<ConductorWorker>, config: TaskManagerConfig = {})`
 
 Creates a new TaskManager.
 
 **Parameters:**
 
--   `client` (`ConductorClient`): An instance of `ConductorClient`.
+-   `client` (`Client`): An instance of `Client`.
 -   `workers` (`Array<ConductorWorker>`): An array of `ConductorWorker` instances.
 -   `config` (`TaskManagerConfig`, optional): Configuration for the `TaskManager`.
 

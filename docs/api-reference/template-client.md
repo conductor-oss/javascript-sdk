@@ -4,13 +4,13 @@ The `TemplateClient` provides functionality for managing human task templates. H
 
 ## Constructor
 
-### `new TemplateClient(client: ConductorClient)`
+### `new TemplateClient(client: Client)`
 
 Creates a new TemplateClient.
 
 **Parameters:**
 
--   `client` (`ConductorClient`): An instance of `ConductorClient`.
+-   `client` (`Client`): An instance of `Client`.
 
 ---
 

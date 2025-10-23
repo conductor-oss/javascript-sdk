@@ -4,13 +4,13 @@ The `TaskClient` provides capabilities for monitoring and debugging tasks within
 
 ## Constructor
 
-### `new TaskClient(client: ConductorClient)`
+### `new TaskClient(client: Client)`
 
 Creates a new TaskClient.
 
 **Parameters:**
 
--   `client` (`ConductorClient`): An instance of `ConductorClient`.
+-   `client` (`Client`): An instance of `Client`.
 
 ---
 

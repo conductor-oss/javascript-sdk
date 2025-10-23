@@ -4,13 +4,13 @@ The `HumanExecutor` class provides comprehensive human task management.
 
 ## Constructor
 
-### `new HumanExecutor(client: ConductorClient)`
+### `new HumanExecutor(client: Client)`
 
 Creates a new `HumanExecutor`.
 
 **Parameters:**
 
--   `client` (`ConductorClient`): An instance of `ConductorClient`.
+-   `client` (`Client`): An instance of `Client`.
 
 ---
 

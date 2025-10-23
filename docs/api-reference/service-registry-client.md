@@ -4,13 +4,13 @@ The `ServiceRegistryClient` manages service registrations and circuit breakers.
 
 ## Constructor
 
-### `new ServiceRegistryClient(client: ConductorClient)`
+### `new ServiceRegistryClient(client: Client)`
 
 Creates a new `ServiceRegistryClient`.
 
 **Parameters:**
 
--   `client` (`ConductorClient`): An instance of `ConductorClient`.
+-   `client` (`Client`): An instance of `Client`.
 
 ---
 

@@ -4,13 +4,13 @@ The `MetadataClient` class provides methods for managing task and workflow defin
 
 ## Constructor
 
-### `new MetadataClient(client: ConductorClient)`
+### `new MetadataClient(client: Client)`
 
 Creates a new `MetadataClient`.
 
 **Parameters:**
 
--   `client` (`ConductorClient`): An instance of `ConductorClient`.
+-   `client` (`Client`): An instance of `Client`.
 
 ---
 

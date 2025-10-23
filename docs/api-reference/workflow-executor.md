@@ -4,13 +4,13 @@ The `WorkflowExecutor` class is your main interface for managing workflows. It p
 
 ## Constructor
 
-### `new WorkflowExecutor(client: ConductorClient)`
+### `new WorkflowExecutor(client: Client)`
 
 Creates a new WorkflowExecutor.
 
 **Parameters:**
 
--   `client` (`ConductorClient`): An instance of `ConductorClient`.
+-   `client` (`Client`): An instance of `Client`.
 
 ---
 

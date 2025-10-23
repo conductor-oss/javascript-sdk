@@ -8,7 +8,7 @@ import type { OrkesApiConfig } from "./types";
 import { createClient } from "../common/open-api/client";
 
 /**
- * Takes a config with keyId and keySecret returns a promise with an instance of ConductorClient
+ * Takes a config with keyId and keySecret returns a promise with an instance of Client
  *
  * @param config (optional) OrkesApiConfig with keyId and keySecret
  * @param customFetch (optional) custom fetch function
