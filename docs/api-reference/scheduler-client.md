@@ -10,7 +10,7 @@ Creates a new `SchedulerClient`.
 
 **Parameters:**
 
--   `client` (`Client`): An instance of `Client`.
+- `client` (`Client`): An instance of `Client`.
 
 ---
 
@@ -22,11 +22,11 @@ Creates or updates a schedule for a specified workflow.
 
 **Parameters:**
 
--   `param` (`SaveScheduleRequest`): The request to save a schedule.
+- `param` (`SaveScheduleRequest`): The request to save a schedule.
 
 **Returns:**
 
--   `Promise<void>`
+- `Promise<void>`
 
 **Example:**
 
@@ -42,10 +42,10 @@ await scheduler.saveSchedule({
   startWorkflowRequest: {
     name: "generate_report",
     version: 1,
-    input: { reportType: "daily" }
+    input: { reportType: "daily" },
   },
   scheduleStartTime: Date.now(),
-  scheduleEndTime: Date.now() + (365 * 24 * 60 * 60 * 1000) // 1 year from now
+  scheduleEndTime: Date.now() + 365 * 24 * 60 * 60 * 1000, // 1 year from now
 });
 ```
 
@@ -57,15 +57,15 @@ Searches for scheduler executions.
 
 **Parameters:**
 
--   `start` (`number`): The starting offset.
--   `size` (`number`, optional): The number of results to return. Defaults to 100.
--   `sort` (`string`, optional): The sort order. Defaults to `""`.
--   `freeText` (`string`, optional): The free text to search for. Defaults to `"*"`.
--   `query` (`string`, optional): The search query.
+- `start` (`number`): The starting offset.
+- `size` (`number`, optional): The number of results to return. Defaults to 100.
+- `sort` (`string`, optional): The sort order. Defaults to `""`.
+- `freeText` (`string`, optional): The free text to search for. Defaults to `"*"`.
+- `query` (`string`, optional): The search query.
 
 **Returns:**
 
--   `Promise<SearchResultWorkflowScheduleExecutionModel>`: The search results.
+- `Promise<SearchResultWorkflowScheduleExecutionModel>`: The search results.
 
 **Example:**
 
@@ -94,11 +94,11 @@ Gets an existing schedule by name.
 
 **Parameters:**
 
--   `name` (`string`): The name of the schedule.
+- `name` (`string`): The name of the schedule.
 
 **Returns:**
 
--   `Promise<WorkflowSchedule>`: The schedule.
+- `Promise<WorkflowSchedule>`: The schedule.
 
 **Example:**
 
@@ -120,11 +120,11 @@ Pauses an existing schedule by name.
 
 **Parameters:**
 
--   `name` (`string`): The name of the schedule.
+- `name` (`string`): The name of the schedule.
 
 **Returns:**
 
--   `Promise<void>`
+- `Promise<void>`
 
 **Example:**
 
@@ -146,11 +146,11 @@ Resumes a paused schedule by name.
 
 **Parameters:**
 
--   `name` (`string`): The name of the schedule.
+- `name` (`string`): The name of the schedule.
 
 **Returns:**
 
--   `Promise<void>`
+- `Promise<void>`
 
 **Example:**
 
@@ -172,11 +172,11 @@ Deletes an existing schedule by name.
 
 **Parameters:**
 
--   `name` (`string`): The name of the schedule.
+- `name` (`string`): The name of the schedule.
 
 **Returns:**
 
--   `Promise<void>`
+- `Promise<void>`
 
 **Example:**
 
@@ -198,11 +198,11 @@ Gets all existing workflow schedules, optionally filtering by workflow name.
 
 **Parameters:**
 
--   `workflowName` (`string`, optional): The name of the workflow.
+- `workflowName` (`string`, optional): The name of the workflow.
 
 **Returns:**
 
--   `Promise<WorkflowScheduleModel[]>`: An array of workflow schedules.
+- `Promise<WorkflowScheduleModel[]>`: An array of workflow schedules.
 
 **Example:**
 
@@ -227,14 +227,14 @@ Gets a list of the next execution times for a schedule.
 
 **Parameters:**
 
--   `cronExpression` (`string`): The cron expression for the schedule.
--   `scheduleStartTime` (`number`, optional): The start time for the schedule.
--   `scheduleEndTime` (`number`, optional): The end time for the schedule.
--   `limit` (`number`, optional): The number of execution times to return. Defaults to 3.
+- `cronExpression` (`string`): The cron expression for the schedule.
+- `scheduleStartTime` (`number`, optional): The start time for the schedule.
+- `scheduleEndTime` (`number`, optional): The end time for the schedule.
+- `limit` (`number`, optional): The number of execution times to return. Defaults to 3.
 
 **Returns:**
 
--   `Promise<number[]>`: An array of the next execution times (in milliseconds since epoch).
+- `Promise<number[]>`: An array of the next execution times (in milliseconds since epoch).
 
 **Example:**
 
@@ -247,12 +247,12 @@ const scheduler = new SchedulerClient(client);
 const nextTimes = await scheduler.getNextFewSchedules(
   "0 0 9 * * ?", // Daily at 9 AM
   Date.now(),
-  Date.now() + (30 * 24 * 60 * 60 * 1000), // Next 30 days
+  Date.now() + 30 * 24 * 60 * 60 * 1000, // Next 30 days
   5
 );
 
 console.log("Next execution times:");
-nextTimes.forEach(time => {
+nextTimes.forEach((time) => {
   console.log(new Date(time).toISOString());
 });
 ```
@@ -265,7 +265,7 @@ Pauses all scheduling in the Conductor server instance (for debugging purposes o
 
 **Returns:**
 
--   `Promise<void>`
+- `Promise<void>`
 
 **Example:**
 
@@ -287,7 +287,7 @@ Requeues all execution records that may have failed or been missed.
 
 **Returns:**
 
--   `Promise<void>`
+- `Promise<void>`
 
 **Example:**
 
@@ -309,7 +309,7 @@ Resumes all scheduling in the Conductor server instance.
 
 **Returns:**
 
--   `Promise<void>`
+- `Promise<void>`
 
 **Example:**
 
@@ -413,7 +413,7 @@ export type WorkflowScheduleExecutionModel = {
   scheduledTime?: number;
   stackTrace?: string;
   startWorkflowRequest?: StartWorkflowRequest;
-  state?: 'POLLED' | 'FAILED' | 'EXECUTED';
+  state?: "POLLED" | "FAILED" | "EXECUTED";
   workflowId?: string;
   workflowName?: string;
   zoneId?: string;
@@ -428,7 +428,7 @@ export type StartWorkflowRequest = {
   createdBy?: string;
   externalInputPayloadStoragePath?: string;
   idempotencyKey?: string;
-  idempotencyStrategy?: 'FAIL' | 'RETURN_EXISTING' | 'FAIL_ON_RUNNING';
+  idempotencyStrategy?: "FAIL" | "RETURN_EXISTING" | "FAIL_ON_RUNNING";
   input?: {
     [key: string]: unknown;
   };
@@ -484,7 +484,7 @@ export type WorkflowDef = {
   restartable?: boolean;
   schemaVersion?: number;
   tasks: WorkflowTask[];
-  timeoutPolicy?: 'TIME_OUT_WF' | 'ALERT_ONLY';
+  timeoutPolicy?: "TIME_OUT_WF" | "ALERT_ONLY";
   timeoutSeconds: number;
   updateTime?: number;
   updatedBy?: string;
@@ -512,7 +512,7 @@ export type SchemaDef = {
   externalRef?: string;
   name: string;
   ownerApp?: string;
-  type: 'JSON' | 'AVRO' | 'PROTOBUF';
+  type: "JSON" | "AVRO" | "PROTOBUF";
   updateTime?: number;
 };
 ```
@@ -597,7 +597,7 @@ export type StateChangeEvent = {
 ```typescript
 export type SubWorkflowParams = {
   idempotencyKey?: string;
-  idempotencyStrategy?: 'FAIL' | 'RETURN_EXISTING' | 'FAIL_ON_RUNNING';
+  idempotencyStrategy?: "FAIL" | "RETURN_EXISTING" | "FAIL_ON_RUNNING";
   name?: string;
   taskToDomain?: {
     [key: string]: string;
@@ -636,8 +636,8 @@ export type TaskDef = {
   responseTimeoutSeconds?: number;
   retryCount?: number;
   retryDelaySeconds?: number;
-  retryLogic?: 'FIXED' | 'EXPONENTIAL_BACKOFF' | 'LINEAR_BACKOFF';
-  timeoutPolicy?: 'RETRY' | 'TIME_OUT_WF' | 'ALERT_ONLY';
+  retryLogic?: "FIXED" | "EXPONENTIAL_BACKOFF" | "LINEAR_BACKOFF";
+  timeoutPolicy?: "RETRY" | "TIME_OUT_WF" | "ALERT_ONLY";
   timeoutSeconds: number;
   totalTimeoutSeconds: number;
   updateTime?: number;

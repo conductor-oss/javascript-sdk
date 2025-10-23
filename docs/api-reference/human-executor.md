@@ -10,7 +10,7 @@ Creates a new `HumanExecutor`.
 
 **Parameters:**
 
--   `client` (`Client`): An instance of `Client`.
+- `client` (`Client`): An instance of `Client`.
 
 ---
 
@@ -24,17 +24,17 @@ Gets human tasks by a set of filter parameters.
 
 **Parameters:**
 
--   `state` (`"PENDING" | "ASSIGNED" | "IN_PROGRESS" | "COMPLETED" | "TIMED_OUT"`): The state of the tasks to filter by.
--   `assignee` (`string`, optional): The assignee of the tasks.
--   `assigneeType` (`"EXTERNAL_USER" | "EXTERNAL_GROUP" | "CONDUCTOR_USER" | "CONDUCTOR_GROUP"`, optional): The type of the assignee.
--   `claimedBy` (`string`, optional): The user who has claimed the tasks (format: `<userType>:<user>`).
--   `taskName` (`string`, optional): The name of the tasks.
--   `taskInputQuery` (`string`, optional): A query to filter tasks by their input data.
--   `taskOutputQuery` (`string`, optional): A query to filter tasks by their output data.
+- `state` (`"PENDING" | "ASSIGNED" | "IN_PROGRESS" | "COMPLETED" | "TIMED_OUT"`): The state of the tasks to filter by.
+- `assignee` (`string`, optional): The assignee of the tasks.
+- `assigneeType` (`"EXTERNAL_USER" | "EXTERNAL_GROUP" | "CONDUCTOR_USER" | "CONDUCTOR_GROUP"`, optional): The type of the assignee.
+- `claimedBy` (`string`, optional): The user who has claimed the tasks (format: `<userType>:<user>`).
+- `taskName` (`string`, optional): The name of the tasks.
+- `taskInputQuery` (`string`, optional): A query to filter tasks by their input data.
+- `taskOutputQuery` (`string`, optional): A query to filter tasks by their output data.
 
 **Returns:**
 
--   `Promise<HumanTaskEntry[]>`: An array of human task entries.
+- `Promise<HumanTaskEntry[]>`: An array of human task entries.
 
 ---
 
@@ -44,11 +44,11 @@ Searches for human tasks using flexible search parameters.
 
 **Parameters:**
 
--   `searchParams` (`Partial<HumanTaskSearch>`): The search parameters.
+- `searchParams` (`Partial<HumanTaskSearch>`): The search parameters.
 
 **Returns:**
 
--   `Promise<HumanTaskEntry[]>`: An array of human task entries.
+- `Promise<HumanTaskEntry[]>`: An array of human task entries.
 
 **Example:**
 
@@ -61,7 +61,7 @@ const humanExecutor = new HumanExecutor(client);
 const pendingTasks = await humanExecutor.search({
   states: ["PENDING"],
   definitionNames: ["approval_task"],
-  size: 20
+  size: 20,
 });
 
 console.log(`Found ${pendingTasks.length} pending tasks`);
@@ -75,12 +75,12 @@ Polls for human tasks until a result is returned or maximum poll attempts are re
 
 **Parameters:**
 
--   `searchParams` (`Partial<HumanTaskSearch>`): The search parameters.
--   `options` (`PollIntervalOptions`, optional): The polling options.
+- `searchParams` (`Partial<HumanTaskSearch>`): The search parameters.
+- `options` (`PollIntervalOptions`, optional): The polling options.
 
 **Returns:**
 
--   `Promise<HumanTaskEntry[]>`: An array of human task entries.
+- `Promise<HumanTaskEntry[]>`: An array of human task entries.
 
 **Example:**
 
@@ -108,11 +108,11 @@ Gets a human task by its ID.
 
 **Parameters:**
 
--   `taskId` (`string`): The ID of the task.
+- `taskId` (`string`): The ID of the task.
 
 **Returns:**
 
--   `Promise<HumanTaskEntry>`: The human task entry.
+- `Promise<HumanTaskEntry>`: The human task entry.
 
 **Example:**
 
@@ -134,13 +134,13 @@ Claims a task as an external user.
 
 **Parameters:**
 
--   `taskId` (`string`): The ID of the task.
--   `assignee` (`string`): The external user to assign the task to.
--   `options` (`Record<string, boolean>`, optional): Additional options including `overrideAssignment` and `withTemplate`.
+- `taskId` (`string`): The ID of the task.
+- `assignee` (`string`): The external user to assign the task to.
+- `options` (`Record<string, boolean>`, optional): Additional options including `overrideAssignment` and `withTemplate`.
 
 **Returns:**
 
--   `Promise<HumanTaskEntry>`: The claimed human task entry.
+- `Promise<HumanTaskEntry>`: The claimed human task entry.
 
 **Example:**
 
@@ -167,12 +167,12 @@ Claims a task as a Conductor user.
 
 **Parameters:**
 
--   `taskId` (`string`): The ID of the task.
--   `options` (`Record<string, boolean>`, optional): Additional options including `overrideAssignment` and `withTemplate`.
+- `taskId` (`string`): The ID of the task.
+- `options` (`Record<string, boolean>`, optional): Additional options including `overrideAssignment` and `withTemplate`.
 
 **Returns:**
 
--   `Promise<HumanTaskEntry>`: The claimed human task entry.
+- `Promise<HumanTaskEntry>`: The claimed human task entry.
 
 **Example:**
 
@@ -182,10 +182,10 @@ import { HumanExecutor } from "@io-orkes/conductor-javascript";
 const humanExecutor = new HumanExecutor(client);
 
 // Claim task as conductor user
-const claimedTask = await humanExecutor.claimTaskAsConductorUser(
-  "task_123",
-  { overrideAssignment: false, withTemplate: true }
-);
+const claimedTask = await humanExecutor.claimTaskAsConductorUser("task_123", {
+  overrideAssignment: false,
+  withTemplate: true,
+});
 
 console.log(`Task claimed by conductor user`);
 ```
@@ -198,11 +198,11 @@ Releases a claimed task.
 
 **Parameters:**
 
--   `taskId` (`string`): The ID of the task.
+- `taskId` (`string`): The ID of the task.
 
 **Returns:**
 
--   `Promise<void>`
+- `Promise<void>`
 
 **Example:**
 
@@ -224,12 +224,12 @@ Gets a human task template by name and version.
 
 **Parameters:**
 
--   `name` (`string`): The name of the template.
--   `version` (`number`): The version of the template.
+- `name` (`string`): The name of the template.
+- `version` (`number`): The version of the template.
 
 **Returns:**
 
--   `Promise<HumanTaskTemplate>`: The human task template.
+- `Promise<HumanTaskTemplate>`: The human task template.
 
 **Example:**
 
@@ -239,7 +239,10 @@ import { HumanExecutor } from "@io-orkes/conductor-javascript";
 const humanExecutor = new HumanExecutor(client);
 
 // Get template details
-const template = await humanExecutor.getTemplateByNameVersion("approval_form", 1);
+const template = await humanExecutor.getTemplateByNameVersion(
+  "approval_form",
+  1
+);
 console.log(`Template version: ${template.version}`);
 ```
 
@@ -253,11 +256,11 @@ Gets a human task template by ID (name with version 1).
 
 **Parameters:**
 
--   `templateNameVersionOne` (`string`): The name of the template.
+- `templateNameVersionOne` (`string`): The name of the template.
 
 **Returns:**
 
--   `Promise<HumanTaskTemplate>`: The human task template.
+- `Promise<HumanTaskTemplate>`: The human task template.
 
 ---
 
@@ -267,12 +270,12 @@ Updates the output of a task without completing it.
 
 **Parameters:**
 
--   `taskId` (`string`): The ID of the task.
--   `requestBody` (`Record<string, Record<string, unknown>>`): The new output data.
+- `taskId` (`string`): The ID of the task.
+- `requestBody` (`Record<string, Record<string, unknown>>`): The new output data.
 
 **Returns:**
 
--   `Promise<void>`
+- `Promise<void>`
 
 **Example:**
 
@@ -285,8 +288,8 @@ const humanExecutor = new HumanExecutor(client);
 await humanExecutor.updateTaskOutput("task_123", {
   output: {
     status: "in_progress",
-    comments: "Working on approval"
-  }
+    comments: "Working on approval",
+  },
 });
 ```
 
@@ -298,12 +301,12 @@ Completes a task with the provided output data.
 
 **Parameters:**
 
--   `taskId` (`string`): The ID of the task.
--   `requestBody` (`Record<string, Record<string, unknown>>`, optional): The output data.
+- `taskId` (`string`): The ID of the task.
+- `requestBody` (`Record<string, Record<string, unknown>>`, optional): The output data.
 
 **Returns:**
 
--   `Promise<void>`
+- `Promise<void>`
 
 **Example:**
 
@@ -316,8 +319,8 @@ const humanExecutor = new HumanExecutor(client);
 await humanExecutor.completeTask("task_123", {
   output: {
     approved: true,
-    finalComments: "Approved with minor changes"
-  }
+    finalComments: "Approved with minor changes",
+  },
 });
 
 console.log("Task completed");
@@ -345,7 +348,13 @@ export type HumanTaskEntry = {
     [key: string]: unknown;
   };
   ownerApp?: string;
-  state?: 'PENDING' | 'ASSIGNED' | 'IN_PROGRESS' | 'COMPLETED' | 'TIMED_OUT' | 'DELETED';
+  state?:
+    | "PENDING"
+    | "ASSIGNED"
+    | "IN_PROGRESS"
+    | "COMPLETED"
+    | "TIMED_OUT"
+    | "DELETED";
   taskId?: string;
   taskRefName?: string;
   updatedBy?: string;
@@ -360,7 +369,11 @@ export type HumanTaskEntry = {
 ```typescript
 export type HumanTaskUser = {
   user?: string;
-  userType?: 'EXTERNAL_USER' | 'EXTERNAL_GROUP' | 'CONDUCTOR_USER' | 'CONDUCTOR_GROUP';
+  userType?:
+    | "EXTERNAL_USER"
+    | "EXTERNAL_GROUP"
+    | "CONDUCTOR_USER"
+    | "CONDUCTOR_GROUP";
 };
 ```
 
@@ -368,7 +381,7 @@ export type HumanTaskUser = {
 
 ```typescript
 export type HumanTaskDefinition = {
-  assignmentCompletionStrategy?: 'LEAVE_OPEN' | 'TERMINATE';
+  assignmentCompletionStrategy?: "LEAVE_OPEN" | "TERMINATE";
   assignments?: Array<HumanTaskAssignment>;
   displayName?: string;
   fullTemplate?: HumanTaskTemplate;
@@ -391,7 +404,14 @@ export type HumanTaskAssignment = {
 ```typescript
 export type HumanTaskTrigger = {
   startWorkflowRequest?: StartWorkflowRequest;
-  triggerType?: 'ASSIGNEE_CHANGED' | 'CLAIMANT_CHANGED' | 'PENDING' | 'IN_PROGRESS' | 'ASSIGNED' | 'COMPLETED' | 'TIMED_OUT';
+  triggerType?:
+    | "ASSIGNEE_CHANGED"
+    | "CLAIMANT_CHANGED"
+    | "PENDING"
+    | "IN_PROGRESS"
+    | "ASSIGNED"
+    | "COMPLETED"
+    | "TIMED_OUT";
 };
 ```
 
@@ -433,7 +453,7 @@ export type StartWorkflowRequest = {
   createdBy?: string;
   externalInputPayloadStoragePath?: string;
   idempotencyKey?: string;
-  idempotencyStrategy?: 'FAIL' | 'RETURN_EXISTING' | 'FAIL_ON_RUNNING';
+  idempotencyStrategy?: "FAIL" | "RETURN_EXISTING" | "FAIL_ON_RUNNING";
   input?: {
     [key: string]: unknown;
   };
@@ -456,10 +476,17 @@ export type HumanTaskSearch = {
   definitionNames?: Array<string>;
   displayNames?: Array<string>;
   fullTextQuery?: string;
-  searchType?: 'ADMIN' | 'INBOX';
+  searchType?: "ADMIN" | "INBOX";
   size?: number;
   start?: number;
-  states?: Array<'PENDING' | 'ASSIGNED' | 'IN_PROGRESS' | 'COMPLETED' | 'TIMED_OUT' | 'DELETED'>;
+  states?: Array<
+    | "PENDING"
+    | "ASSIGNED"
+    | "IN_PROGRESS"
+    | "COMPLETED"
+    | "TIMED_OUT"
+    | "DELETED"
+  >;
   taskInputQuery?: string;
   taskOutputQuery?: string;
   taskRefNames?: Array<string>;
@@ -503,4 +530,3 @@ export type Tag = {
   value?: string;
 };
 ```
-

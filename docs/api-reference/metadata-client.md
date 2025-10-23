@@ -10,7 +10,7 @@ Creates a new `MetadataClient`.
 
 **Parameters:**
 
--   `client` (`Client`): An instance of `Client`.
+- `client` (`Client`): An instance of `Client`.
 
 ---
 
@@ -22,11 +22,11 @@ Unregisters an existing task definition by name.
 
 **Parameters:**
 
--   `name` (`string`): The name of the task definition.
+- `name` (`string`): The name of the task definition.
 
 **Returns:**
 
--   `Promise<void>`
+- `Promise<void>`
 
 ---
 
@@ -36,11 +36,11 @@ Registers a new task definition.
 
 **Parameters:**
 
--   `taskDef` (`ExtendedTaskDef`): The task definition to register.
+- `taskDef` (`ExtendedTaskDef`): The task definition to register.
 
 **Returns:**
 
--   `Promise<void>`
+- `Promise<void>`
 
 **Example:**
 
@@ -53,7 +53,7 @@ const metadataClient = new MetadataClient(client);
 const taskDef = taskDefinition({
   name: "email_task",
   description: "Send an email",
-  ownerEmail: "dev@example.com"
+  ownerEmail: "dev@example.com",
 });
 
 await metadataClient.registerTask(taskDef);
@@ -67,11 +67,11 @@ Registers multiple task definitions.
 
 **Parameters:**
 
--   `taskDefs` (`ExtendedTaskDef[]`): Array of task definitions to register.
+- `taskDefs` (`ExtendedTaskDef[]`): Array of task definitions to register.
 
 **Returns:**
 
--   `Promise<void>`
+- `Promise<void>`
 
 **Example:**
 
@@ -83,7 +83,7 @@ const metadataClient = new MetadataClient(client);
 // Register multiple tasks
 const taskDefs = [
   taskDefinition({ name: "email_task", description: "Send email" }),
-  taskDefinition({ name: "sms_task", description: "Send SMS" })
+  taskDefinition({ name: "sms_task", description: "Send SMS" }),
 ];
 
 await metadataClient.registerTasks(taskDefs);
@@ -97,11 +97,11 @@ Updates an existing task definition.
 
 **Parameters:**
 
--   `taskDef` (`ExtendedTaskDef`): The task definition to update.
+- `taskDef` (`ExtendedTaskDef`): The task definition to update.
 
 **Returns:**
 
--   `Promise<void>`
+- `Promise<void>`
 
 **Example:**
 
@@ -114,7 +114,7 @@ const metadataClient = new MetadataClient(client);
 const updatedTask = taskDefinition({
   name: "email_task",
   retryCount: 5,
-  timeoutSeconds: 300
+  timeoutSeconds: 300,
 });
 
 await metadataClient.updateTask(updatedTask);
@@ -128,11 +128,11 @@ Gets an existing task definition.
 
 **Parameters:**
 
--   `taskName` (`string`): The name of the task definition.
+- `taskName` (`string`): The name of the task definition.
 
 **Returns:**
 
--   `Promise<TaskDef>`: The task definition.
+- `Promise<TaskDef>`: The task definition.
 
 **Example:**
 
@@ -154,12 +154,12 @@ Creates or updates a workflow definition.
 
 **Parameters:**
 
--   `workflowDef` (`ExtendedWorkflowDef`): The workflow definition to register.
--   `overwrite` (`boolean`, optional): Whether to overwrite an existing workflow definition. Defaults to `false`.
+- `workflowDef` (`ExtendedWorkflowDef`): The workflow definition to register.
+- `overwrite` (`boolean`, optional): Whether to overwrite an existing workflow definition. Defaults to `false`.
 
 **Returns:**
 
--   `Promise<void>`
+- `Promise<void>`
 
 **Example:**
 
@@ -170,7 +170,7 @@ const metadataClient = new MetadataClient(client);
 
 // Register a workflow
 const workflowDef = workflow("email_workflow", [
-  simpleTask("send_email", "email_task", { to: "user@example.com" })
+  simpleTask("send_email", "email_task", { to: "user@example.com" }),
 ]);
 
 await metadataClient.registerWorkflowDef(workflowDef, true);
@@ -184,13 +184,13 @@ Gets an existing workflow definition.
 
 **Parameters:**
 
--   `name` (`string`): The name of the workflow definition.
--   `version` (`number`, optional): The version of the workflow definition.
--   `metadata` (`boolean`, optional): Whether to include metadata. Defaults to `false`.
+- `name` (`string`): The name of the workflow definition.
+- `version` (`number`, optional): The version of the workflow definition.
+- `metadata` (`boolean`, optional): Whether to include metadata. Defaults to `false`.
 
 **Returns:**
 
--   `Promise<WorkflowDef>`: The workflow definition.
+- `Promise<WorkflowDef>`: The workflow definition.
 
 **Example:**
 
@@ -212,12 +212,12 @@ Unregisters a workflow definition.
 
 **Parameters:**
 
--   `workflowName` (`string`): The name of the workflow to unregister.
--   `version` (`number`, optional): The version of the workflow to unregister. Defaults to `1`.
+- `workflowName` (`string`): The name of the workflow to unregister.
+- `version` (`number`, optional): The version of the workflow to unregister. Defaults to `1`.
 
 **Returns:**
 
--   `Promise<void>`
+- `Promise<void>`
 
 **Example:**
 
@@ -235,7 +235,6 @@ await metadataClient.unregisterWorkflow("email_workflow", 1);
 ## Type Definitions
 
 ### `ExtendedTaskDef`
-Extended task definition with comprehensive configuration options for task registration and management.
 
 ```typescript
 interface ExtendedTaskDef {
@@ -245,8 +244,8 @@ interface ExtendedTaskDef {
   ownerApp?: string;
   retryCount?: number;
   timeoutSeconds?: number;
-  timeoutPolicy?: 'RETRY' | 'TIME_OUT_WF' | 'ALERT_ONLY';
-  retryLogic?: 'FIXED' | 'EXPONENTIAL_BACKOFF' | 'LINEAR_BACKOFF';
+  timeoutPolicy?: "RETRY" | "TIME_OUT_WF" | "ALERT_ONLY";
+  retryLogic?: "FIXED" | "EXPONENTIAL_BACKOFF" | "LINEAR_BACKOFF";
   retryDelaySeconds?: number;
   responseTimeoutSeconds?: number;
   concurrentExecLimit?: number;
@@ -274,7 +273,6 @@ interface ExtendedTaskDef {
 ```
 
 ## `TaskDef`
-Task definition containing the configuration for a task.
 
 ```typescript
 export type TaskDef = {
@@ -303,8 +301,8 @@ export type TaskDef = {
   responseTimeoutSeconds?: number;
   retryCount?: number;
   retryDelaySeconds?: number;
-  retryLogic?: 'FIXED' | 'EXPONENTIAL_BACKOFF' | 'LINEAR_BACKOFF';
-  timeoutPolicy?: 'RETRY' | 'TIME_OUT_WF' | 'ALERT_ONLY';
+  retryLogic?: "FIXED" | "EXPONENTIAL_BACKOFF" | "LINEAR_BACKOFF";
+  timeoutPolicy?: "RETRY" | "TIME_OUT_WF" | "ALERT_ONLY";
   timeoutSeconds: number;
   totalTimeoutSeconds: number;
   updateTime?: number;
@@ -313,7 +311,6 @@ export type TaskDef = {
 ```
 
 ### `ExtendedWorkflowDef`
-Extended workflow definition with comprehensive configuration options for workflow registration and management.
 
 ```typescript
 export type ExtendedWorkflowDef = {
@@ -345,7 +342,7 @@ export type ExtendedWorkflowDef = {
   schemaVersion?: number;
   tags?: Array<Tag>;
   tasks: Array<WorkflowTask>;
-  timeoutPolicy?: 'TIME_OUT_WF' | 'ALERT_ONLY';
+  timeoutPolicy?: "TIME_OUT_WF" | "ALERT_ONLY";
   timeoutSeconds: number;
   updateTime?: number;
   updatedBy?: string;
@@ -359,7 +356,6 @@ export type ExtendedWorkflowDef = {
 ```
 
 ### `WorkflowDef`
-Workflow definition containing the configuration for a workflow.
 
 ```typescript
 export type WorkflowDef = {
@@ -389,7 +385,7 @@ export type WorkflowDef = {
   restartable?: boolean;
   schemaVersion?: number;
   tasks: Array<WorkflowTask>;
-  timeoutPolicy?: 'TIME_OUT_WF' | 'ALERT_ONLY';
+  timeoutPolicy?: "TIME_OUT_WF" | "ALERT_ONLY";
   timeoutSeconds: number;
   updateTime?: number;
   updatedBy?: string;
@@ -403,7 +399,6 @@ export type WorkflowDef = {
 ```
 
 ### `WorkflowTask`
-Definition of a task within a workflow.
 
 ```typescript
 export type WorkflowTask = {
@@ -460,7 +455,6 @@ export type WorkflowTask = {
 ```
 
 ### `SchemaDef`
-Schema definition for input/output validation.
 
 ```typescript
 export type SchemaDef = {
@@ -472,7 +466,7 @@ export type SchemaDef = {
   externalRef?: string;
   name: string;
   ownerApp?: string;
-  type: 'JSON' | 'AVRO' | 'PROTOBUF';
+  type: "JSON" | "AVRO" | "PROTOBUF";
   updateTime?: number;
   updatedBy?: string;
   version: number;
@@ -480,7 +474,6 @@ export type SchemaDef = {
 ```
 
 ### `CacheConfig`
-Configuration for workflow/task caching.
 
 ```typescript
 export type CacheConfig = {
@@ -490,7 +483,6 @@ export type CacheConfig = {
 ```
 
 ### `Tag`
-Tag definition for categorizing workflows and tasks.
 
 ```typescript
 export type Tag = {
@@ -504,7 +496,6 @@ export type Tag = {
 ```
 
 ### `RateLimitConfig`
-Configuration for rate limiting workflows.
 
 ```typescript
 export type RateLimitConfig = {
@@ -512,5 +503,3 @@ export type RateLimitConfig = {
   rateLimitKey?: string;
 };
 ```
-
-This type provides all the configuration options available when registering or updating task definitions with the metadata service.
