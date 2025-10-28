@@ -1,3 +1,5 @@
+// eslint-disable
+
 import { SignalResponse } from "../../common";
 import { Client } from "../../common/open-api/client/types.gen";
 import {
@@ -101,10 +103,7 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
     },
 
-    getEventHandlersForEvent: async (
-      event: string,
-      activeOnly: boolean = true
-    ) => {
+    getEventHandlersForEvent: async (event: string, activeOnly = true) => {
       warn();
       const { data } = await EventResource.getEventHandlersForEvent({
         client,
@@ -158,7 +157,7 @@ export const addServicesBackwardCompatibility = (client: Client) => {
   };
 
   (client as any).metadataResource = {
-    getTaskDef: async (tasktype: string, metadata: boolean = false) => {
+    getTaskDef: async (tasktype: string, metadata = false) => {
       warn();
       const { data } = await MetadataResource.getTaskDef({
         client,
@@ -179,8 +178,8 @@ export const addServicesBackwardCompatibility = (client: Client) => {
     },
 
     getAllWorkflows: async (
-      access: string = "READ",
-      metadata: boolean = false,
+      access = "READ",
+      metadata = false,
       tagKey?: string,
       tagValue?: string
     ) => {
@@ -193,7 +192,7 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       return data;
     },
 
-    update: async (requestBody: any[], overwrite: boolean = true) => {
+    update: async (requestBody: any[], overwrite = true) => {
       warn();
       await MetadataResource.update({
         client,
@@ -203,7 +202,7 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
     },
 
-    create: async (requestBody: any, overwrite: boolean = false) => {
+    create: async (requestBody: any, overwrite = false) => {
       warn();
       await MetadataResource.create({
         client,
@@ -214,8 +213,8 @@ export const addServicesBackwardCompatibility = (client: Client) => {
     },
 
     getTaskDefs: async (
-      access: string = "READ",
-      metadata: boolean = false,
+      access = "READ",
+      metadata = false,
       tagKey?: string,
       tagValue?: string
     ) => {
@@ -255,7 +254,7 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
     },
 
-    get: async (name: string, version?: number, metadata: boolean = false) => {
+    get: async (name: string, version?: number, metadata = false) => {
       warn();
       const { data } = await MetadataResource.get1({
         client,
@@ -291,7 +290,7 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       cronExpression: string,
       scheduleStartTime?: number,
       scheduleEndTime?: number,
-      limit: number = 3
+      limit = 3
     ) => {
       warn();
       const { data } = await SchedulerResource.getNextFewSchedules({
@@ -368,9 +367,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
 
     searchV21: async (
       start?: number,
-      size: number = 100,
+      size = 100,
       sort?: string,
-      freeText: string = "*",
+      freeText = "*",
       query?: string
     ) => {
       warn();
@@ -409,7 +408,7 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       return data;
     },
 
-    getUserInfo: async (claims: boolean = false) => {
+    getUserInfo: async (claims = false) => {
       warn();
       const { data } = await TokenResource.getUserInfo({
         client,
@@ -431,10 +430,7 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       return data;
     },
 
-    restart: async (
-      requestBody: any[],
-      useLatestDefinitions: boolean = false
-    ) => {
+    restart: async (requestBody: any[], useLatestDefinitions = false) => {
       warn();
       const { data } = await WorkflowBulkResource.restart1({
         client,
@@ -480,7 +476,7 @@ export const addServicesBackwardCompatibility = (client: Client) => {
   (client as any).workflowResource = {
     getRunningWorkflow: async (
       name: string,
-      version: number = 1,
+      version = 1,
       startTime?: number,
       endTime?: number
     ) => {
@@ -553,9 +549,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
 
     searchV21: async (
       start?: number,
-      size: number = 100,
+      size = 100,
       sort?: string,
-      freeText: string = "*",
+      freeText = "*",
       query?: string
     ) => {
       warn();
@@ -599,8 +595,8 @@ export const addServicesBackwardCompatibility = (client: Client) => {
     getWorkflows: async (
       name: string,
       requestBody: any[],
-      includeClosed: boolean = false,
-      includeTasks: boolean = false
+      includeClosed = false,
+      includeTasks = false
     ) => {
       warn();
       const { data } = await WorkflowResource.getWorkflows({
@@ -615,8 +611,8 @@ export const addServicesBackwardCompatibility = (client: Client) => {
 
     getWorkflowStatusSummary: async (
       workflowId: string,
-      includeOutput: boolean = false,
-      includeVariables: boolean = false
+      includeOutput = false,
+      includeVariables = false
     ) => {
       warn();
       const { data } = await WorkflowResource.getWorkflowStatusSummary({
@@ -631,8 +627,8 @@ export const addServicesBackwardCompatibility = (client: Client) => {
     getWorkflows1: async (
       name: string,
       correlationId: string,
-      includeClosed: boolean = false,
-      includeTasks: boolean = false
+      includeClosed = false,
+      includeTasks = false
     ) => {
       warn();
       const { data } = await WorkflowResource.getWorkflows2({
@@ -644,10 +640,7 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       return data;
     },
 
-    retry1: async (
-      workflowId: string,
-      resumeSubworkflowTasks: boolean = false
-    ) => {
+    retry1: async (workflowId: string, resumeSubworkflowTasks = false) => {
       warn();
       await WorkflowResource.retry({
         client,
@@ -657,10 +650,7 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
     },
 
-    getExecutionStatus: async (
-      workflowId: string,
-      includeTasks: boolean = true
-    ) => {
+    getExecutionStatus: async (workflowId: string, includeTasks = true) => {
       warn();
       const { data } = await WorkflowResource.getExecutionStatus({
         client,
@@ -690,7 +680,7 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
     },
 
-    delete: async (workflowId: string, archiveWorkflow: boolean = true) => {
+    delete: async (workflowId: string, archiveWorkflow = true) => {
       warn();
       await WorkflowResource.delete1({
         client,
@@ -702,9 +692,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
 
     searchWorkflowsByTasks: async (
       start?: number,
-      size: number = 100,
+      size = 100,
       sort?: string,
-      freeText: string = "*",
+      freeText = "*",
       query?: string
     ) => {
       warn();
@@ -760,10 +750,7 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       return data;
     },
 
-    restart1: async (
-      workflowId: string,
-      useLatestDefinitions: boolean = false
-    ) => {
+    restart1: async (workflowId: string, useLatestDefinitions = false) => {
       warn();
       await WorkflowResource.restart({
         client,
@@ -776,11 +763,11 @@ export const addServicesBackwardCompatibility = (client: Client) => {
     search1: async (
       queryId?: string,
       start?: number,
-      size: number = 100,
+      size = 100,
       sort?: string,
-      freeText: string = "*",
+      freeText = "*",
       query?: string,
-      skipCache: boolean = false
+      skipCache = false
     ) => {
       warn();
       const { data } = await client.get({
@@ -799,9 +786,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
 
     searchWorkflowsByTasksV2: async (
       start?: number,
-      size: number = 100,
+      size = 100,
       sort?: string,
-      freeText: string = "*",
+      freeText = "*",
       query?: string
     ) => {
       warn();
@@ -971,7 +958,7 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       return data;
     },
 
-    discover: async (name: string, create: boolean = false) => {
+    discover: async (name: string, create = false) => {
       warn();
       const { data } = await ServiceRegistryResource.discover({
         client,
@@ -1028,7 +1015,7 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       workflowId: string,
       taskRefName: string,
       requestBody: any,
-      complete: boolean = false,
+      complete = false,
       iteration?: any[]
     ) => {
       warn();
@@ -1058,8 +1045,8 @@ export const addServicesBackwardCompatibility = (client: Client) => {
 
     claimTask: async (
       taskId: string,
-      overrideAssignment: boolean = false,
-      withTemplate: boolean = false
+      overrideAssignment = false,
+      withTemplate = false
     ) => {
       warn();
       const { data } = await HumanTask.claimTask({
@@ -1074,8 +1061,8 @@ export const addServicesBackwardCompatibility = (client: Client) => {
     assignAndClaim: async (
       taskId: string,
       userId: string,
-      overrideAssignment: boolean = false,
-      withTemplate: boolean = false
+      overrideAssignment = false,
+      withTemplate = false
     ) => {
       warn();
       const { data } = await HumanTask.assignAndClaim({
@@ -1119,7 +1106,7 @@ export const addServicesBackwardCompatibility = (client: Client) => {
     updateTaskOutput: async (
       taskId: string,
       requestBody: any,
-      complete: boolean = false
+      complete = false
     ) => {
       warn();
       await HumanTask.updateTaskOutput({
@@ -1141,7 +1128,7 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       return data;
     },
 
-    saveTemplate: async (requestBody: any, newVersion: boolean = false) => {
+    saveTemplate: async (requestBody: any, newVersion = false) => {
       warn();
       const { data } = await UserForm.saveTemplate({
         client,
@@ -1152,7 +1139,7 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       return data;
     },
 
-    saveTemplates: async (requestBody: any[], newVersion: boolean = false) => {
+    saveTemplates: async (requestBody: any[], newVersion = false) => {
       warn();
       const { data } = await UserForm.saveTemplates({
         client,
@@ -1264,9 +1251,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
 
     search: async (
       start?: number,
-      size: number = 100,
+      size = 100,
       sort?: string,
-      freeText: string = "*",
+      freeText = "*",
       query?: string
     ) => {
       warn();
@@ -1280,9 +1267,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
 
     searchV22: async (
       start?: number,
-      size: number = 100,
+      size = 100,
       sort?: string,
-      freeText: string = "*",
+      freeText = "*",
       query?: string
     ) => {
       warn();
@@ -1343,8 +1330,8 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       tasktype: string,
       workerid?: string,
       domain?: string,
-      count: number = 1,
-      timeout: number = 100
+      count = 1,
+      timeout = 100
     ) => {
       warn();
       const { data } = await TaskResource.batchPoll({
