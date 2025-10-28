@@ -1,7 +1,9 @@
 import { Client } from "../../common/open-api/client/types.gen";
 import {
   EventResource,
+  HumanTask,
   HumanTaskResource,
+  UserForm,
   UserFormTemplateResource,
   MetadataResource,
   ServiceRegistryResource,
@@ -899,6 +901,392 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       return WorkflowResource.testWorkflow({
         client,
         body: requestBody,
+        throwOnError: true,
+      });
+    },
+  };
+
+  (client as any).serviceRegistryResource = {
+    getRegisteredServices: () => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return ServiceRegistryResource.getRegisteredServices({
+        client,
+        throwOnError: true,
+      });
+    },
+
+    removeService: (name: string) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      ServiceRegistryResource.removeService({
+        client,
+        path: { name },
+        throwOnError: true,
+      });
+    },
+
+    getService: (name: string) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return ServiceRegistryResource.getService({
+        client,
+        path: { name },
+        throwOnError: true,
+      });
+    },
+
+    openCircuitBreaker: (name: string) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return ServiceRegistryResource.openCircuitBreaker({
+        client,
+        path: { name },
+        throwOnError: true,
+      });
+    },
+
+    closeCircuitBreaker: (name: string) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return ServiceRegistryResource.closeCircuitBreaker({
+        client,
+        path: { name },
+        throwOnError: true,
+      });
+    },
+
+    getCircuitBreakerStatus: (name: string) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return ServiceRegistryResource.getCircuitBreakerStatus({
+        client,
+        path: { name },
+        throwOnError: true,
+      });
+    },
+
+    addOrUpdateService: (serviceRegistry: any) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      ServiceRegistryResource.addOrUpdateService({
+        client,
+        body: serviceRegistry,
+        throwOnError: true,
+      });
+    },
+
+    addOrUpdateServiceMethod: (registryName: string, method: any) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      ServiceRegistryResource.addOrUpdateMethod({
+        client,
+        path: { registryName },
+        body: method,
+        throwOnError: true,
+      });
+    },
+
+    removeMethod: (registryName: string, serviceName: string, method: string, methodType: string) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      ServiceRegistryResource.removeMethod({
+        client,
+        path: { registryName },
+        query: { serviceName, method, methodType },
+        throwOnError: true,
+      });
+    },
+
+    getProtoData: (registryName: string, filename: string) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return ServiceRegistryResource.getProtoData({
+        client,
+        path: { registryName, filename },
+        throwOnError: true,
+      });
+    },
+
+    setProtoData: (registryName: string, filename: string, data: any) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      ServiceRegistryResource.setProtoData({
+        client,
+        path: { registryName, filename },
+        body: data,
+        throwOnError: true,
+      });
+    },
+
+    deleteProto: (registryName: string, filename: string) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      ServiceRegistryResource.deleteProto({
+        client,
+        path: { registryName, filename },
+        throwOnError: true,
+      });
+    },
+
+    getAllProtos: (registryName: string) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return ServiceRegistryResource.getAllProtos({
+        client,
+        path: { registryName },
+        throwOnError: true,
+      });
+    },
+
+    discover: (name: string, create: boolean = false) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return ServiceRegistryResource.discover({
+        client,
+        path: { name },
+        query: { create },
+        throwOnError: true,
+      });
+    },
+  };
+
+  (client as any).humanTaskResource = {
+    getConductorTaskById: (taskId: string) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return HumanTaskResource.getConductorTaskById({
+        client,
+        path: { taskId },
+        throwOnError: true,
+      });
+    },
+  };
+
+  (client as any).humanTask = {
+    deleteTaskFromHumanTaskRecords: (requestBody: any[]) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      HumanTask.deleteTaskFromHumanTaskRecords({
+        client,
+        body: requestBody,
+        throwOnError: true,
+      });
+    },
+
+    deleteTaskFromHumanTaskRecords1: (taskId: string) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      HumanTask.deleteTaskFromHumanTaskRecords1({
+        client,
+        path: { taskId },
+        throwOnError: true,
+      });
+    },
+
+    search: (requestBody: any) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return HumanTask.search({
+        client,
+        body: requestBody,
+        throwOnError: true,
+      });
+    },
+
+    updateTaskOutputByRef: (
+      workflowId: string,
+      taskRefName: string,
+      requestBody: any,
+      complete: boolean = false,
+      iteration?: any[]
+    ) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return HumanTask.updateTaskOutputByRef({
+        client,
+        query: {
+          workflowId,
+          taskRefName,
+          complete,
+          iteration,
+        },
+        body: requestBody,
+        throwOnError: true,
+      });
+    },
+
+    getTask1: (taskId: string) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return HumanTask.getTask1({
+        client,
+        path: { taskId },
+        throwOnError: true,
+      });
+    },
+
+    claimTask: (taskId: string, overrideAssignment: boolean = false, withTemplate: boolean = false) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return HumanTask.claimTask({
+        client,
+        path: { taskId },
+        query: { overrideAssignment, withTemplate },
+        throwOnError: true,
+      });
+    },
+
+    assignAndClaim: (
+      taskId: string,
+      userId: string,
+      overrideAssignment: boolean = false,
+      withTemplate: boolean = false
+    ) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return HumanTask.assignAndClaim({
+        client,
+        path: { taskId, userId },
+        query: { overrideAssignment, withTemplate },
+        throwOnError: true,
+      });
+    },
+
+    reassignTask: (taskId: string, requestBody: any[]) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      HumanTask.reassignTask({
+        client,
+        path: { taskId },
+        body: requestBody,
+        throwOnError: true,
+      });
+    },
+
+    releaseTask: (taskId: string) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      HumanTask.releaseTask({
+        client,
+        path: { taskId },
+        throwOnError: true,
+      });
+    },
+
+    skipTask: (taskId: string, reason?: string) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      HumanTask.skipTask({
+        client,
+        path: { taskId },
+        query: { reason },
+        throwOnError: true,
+      });
+    },
+
+    updateTaskOutput: (taskId: string, requestBody: any, complete: boolean = false) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      HumanTask.updateTaskOutput({
+        client,
+        path: { taskId },
+        query: { complete },
+        body: requestBody,
+        throwOnError: true,
+      });
+    },
+
+    getAllTemplates: (name?: string, version?: number) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return UserForm.getAllTemplates({
+        client,
+        query: { name, version },
+        throwOnError: true,
+      });
+    },
+
+    saveTemplate: (requestBody: any, newVersion: boolean = false) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return UserForm.saveTemplate({
+        client,
+        query: { newVersion },
+        body: requestBody,
+        throwOnError: true,
+      });
+    },
+
+    saveTemplates: (requestBody: any[], newVersion: boolean = false) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return UserForm.saveTemplates({
+        client,
+        query: { newVersion },
+        body: requestBody,
+        throwOnError: true,
+      });
+    },
+
+    deleteTemplateByName: (name: string) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      UserForm.deleteTemplateByName({
+        client,
+        path: { name },
+        throwOnError: true,
+      });
+    },
+
+    deleteTemplatesByNameAndVersion: (name: string, version: number) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      HumanTask.deleteTemplatesByNameAndVersion({
+        client,
+        path: { name, version },
+        throwOnError: true,
+      });
+    },
+
+    getTemplateByNameAndVersion: (name: string, version: number) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return UserForm.getTemplateByNameAndVersion({
+        client,
+        path: { name, version },
         throwOnError: true,
       });
     },
