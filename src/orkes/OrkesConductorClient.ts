@@ -6,7 +6,7 @@ import {
 } from "./helpers";
 import type { OrkesApiConfig } from "./types";
 import { createClient } from "../common/open-api/client";
-import { addServicesBackwardCompatibility } from "./helpers/addServicesBackwardCompatibility";
+import { addResourcesBackwardCompatibility } from "./helpers/addResourcesBackwardCompatibility";
 
 /**
  * Takes a config with keyId and keySecret returns a promise with an instance of Client
@@ -14,7 +14,7 @@ import { addServicesBackwardCompatibility } from "./helpers/addServicesBackwardC
  * @param config (optional) OrkesApiConfig with keyId and keySecret
  * @param customFetch (optional) custom fetch function
  * @param requestHandler DEPRECATED! (optional) ConductorHttpRequest handler, replaced with customFetch
- * @returns
+ * @returns BackwardCompatibleClient with access to deprecated resource methods
  */
 export const orkesConductorClient = async (
   config?: OrkesApiConfig,
@@ -42,7 +42,6 @@ export const orkesConductorClient = async (
     await handleAuth(openApiClient, keyId, keySecret, refreshTokenInterval);
   }
 
-  addServicesBackwardCompatibility(openApiClient); // DEPRECATED, should be removed after April 2026
-
-  return openApiClient;
+  // DEPRECATED, should be replaced with return openApiClient after April 2026:
+  return addResourcesBackwardCompatibility(openApiClient);
 };

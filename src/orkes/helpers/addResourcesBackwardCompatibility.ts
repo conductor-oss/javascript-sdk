@@ -25,8 +25,11 @@ const warn = () => {
   );
 };
 
-export const addServicesBackwardCompatibility = (client: Client) => {
-  (client as any).eventResource = {
+export const addResourcesBackwardCompatibility = (client: Client) => {
+  const eventResource = {
+    /**
+     * @deprecated
+     */
     getQueueConfig: async (queueType: string, queueName: string) => {
       warn();
       const { data } = await EventResource.getQueueConfig({
@@ -36,7 +39,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     putQueueConfig: async (
       queueType: string,
       queueName: string,
@@ -50,7 +55,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
         throwOnError: true,
       });
     },
-
+    /**
+     * @deprecated
+     */
     deleteQueueConfig: async (queueType: string, queueName: string) => {
       warn();
       await EventResource.deleteQueueConfig({
@@ -59,7 +66,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
         throwOnError: true,
       });
     },
-
+    /**
+     * @deprecated
+     */
     getEventHandlers: async () => {
       warn();
       const { data } = await EventResource.getEventHandlers({
@@ -68,7 +77,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     updateEventHandler: async (body: any) => {
       warn();
       await EventResource.updateEventHandler({
@@ -77,7 +88,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
         throwOnError: true,
       });
     },
-
+    /**
+     * @deprecated
+     */
     addEventHandler: async (body: any) => {
       warn();
       await EventResource.addEventHandler({
@@ -86,7 +99,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
         throwOnError: true,
       });
     },
-
+    /**
+     * @deprecated
+     */
     getQueueNames: async () => {
       warn();
       const { data } = await EventResource.getQueueNames({
@@ -95,7 +110,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     removeEventHandlerStatus: async (name: string) => {
       warn();
       await EventResource.removeEventHandlerStatus({
@@ -104,7 +121,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
         throwOnError: true,
       });
     },
-
+    /**
+     * @deprecated
+     */
     getEventHandlersForEvent: async (event: string, activeOnly = true) => {
       warn();
       const { data } = await EventResource.getEventHandlersForEvent({
@@ -115,7 +134,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     deleteTagForEventHandler: async (name: string, body: any[]) => {
       warn();
       await EventResource.deleteTagForEventHandler({
@@ -125,7 +146,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
         throwOnError: true,
       });
     },
-
+    /**
+     * @deprecated
+     */
     getTagsForEventHandler: async (name: string) => {
       warn();
       const { data } = await EventResource.getTagsForEventHandler({
@@ -135,7 +158,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     putTagForEventHandler: async (name: string, body: any[]) => {
       warn();
       await EventResource.putTagForEventHandler({
@@ -146,8 +171,7 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
     },
   };
-
-  (client as any).healthCheckResource = {
+  const healthCheckResource = {
     doCheck: async () => {
       warn();
       const { data } = await HealthCheckResource.doCheck({
@@ -157,8 +181,7 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       return data;
     },
   };
-
-  (client as any).metadataResource = {
+  const metadataResource = {
     getTaskDef: async (tasktype: string, metadata = false) => {
       warn();
       const { data } = await MetadataResource.getTaskDef({
@@ -169,7 +192,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     unregisterTaskDef: async (tasktype: string) => {
       warn();
       await MetadataResource.unregisterTaskDef({
@@ -178,7 +203,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
         throwOnError: true,
       });
     },
-
+    /**
+     * @deprecated
+     */
     getAllWorkflows: async (
       access = "READ",
       metadata = false,
@@ -193,7 +220,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     update: async (requestBody: any[], overwrite = true) => {
       warn();
       await MetadataResource.update({
@@ -203,7 +232,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
         throwOnError: true,
       });
     },
-
+    /**
+     * @deprecated
+     */
     create: async (requestBody: any, overwrite = false) => {
       warn();
       await MetadataResource.create({
@@ -213,7 +244,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
         throwOnError: true,
       });
     },
-
+    /**
+     * @deprecated
+     */
     getTaskDefs: async (
       access = "READ",
       metadata = false,
@@ -228,7 +261,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     updateTaskDef: async (requestBody: any) => {
       warn();
       await MetadataResource.updateTaskDef({
@@ -237,7 +272,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
         throwOnError: true,
       });
     },
-
+    /**
+     * @deprecated
+     */
     registerTaskDef: async (requestBody: any[]) => {
       warn();
       await MetadataResource.registerTaskDef({
@@ -246,7 +283,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
         throwOnError: true,
       });
     },
-
+    /**
+     * @deprecated
+     */
     unregisterWorkflowDef: async (name: string, version: number) => {
       warn();
       await MetadataResource.unregisterWorkflowDef({
@@ -255,7 +294,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
         throwOnError: true,
       });
     },
-
+    /**
+     * @deprecated
+     */
     get: async (name: string, version?: number, metadata = false) => {
       warn();
       const { data } = await MetadataResource.get1({
@@ -267,8 +308,7 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       return data;
     },
   };
-
-  (client as any).schedulerResource = {
+  const schedulerResource = {
     getSchedule: async (name: string) => {
       warn();
       const { data } = await SchedulerResource.getSchedule({
@@ -278,7 +318,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     deleteSchedule: async (name: string) => {
       warn();
       await SchedulerResource.deleteSchedule({
@@ -287,7 +329,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
         throwOnError: true,
       });
     },
-
+    /**
+     * @deprecated
+     */
     getNextFewSchedules: async (
       cronExpression: string,
       scheduleStartTime?: number,
@@ -302,7 +346,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     pauseSchedule: async (name: string) => {
       warn();
       await SchedulerResource.pauseSchedule({
@@ -311,7 +357,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
         throwOnError: true,
       });
     },
-
+    /**
+     * @deprecated
+     */
     pauseAllSchedules: async () => {
       warn();
       const { data } = await SchedulerResource.pauseAllSchedules({
@@ -320,7 +368,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     resumeSchedule: async (name: string) => {
       warn();
       await SchedulerResource.resumeSchedule({
@@ -329,7 +379,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
         throwOnError: true,
       });
     },
-
+    /**
+     * @deprecated
+     */
     requeueAllExecutionRecords: async () => {
       warn();
       const { data } = await SchedulerResource.requeueAllExecutionRecords({
@@ -338,7 +390,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     resumeAllSchedules: async () => {
       warn();
       const { data } = await SchedulerResource.resumeAllSchedules({
@@ -347,7 +401,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     getAllSchedules: async (workflowName?: string) => {
       warn();
       const { data } = await SchedulerResource.getAllSchedules({
@@ -357,7 +413,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     saveSchedule: async (requestBody: any) => {
       warn();
       await SchedulerResource.saveSchedule({
@@ -366,7 +424,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
         throwOnError: true,
       });
     },
-
+    /**
+     * @deprecated
+     */
     searchV21: async (
       start?: number,
       size = 100,
@@ -382,7 +442,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     testTimeout: async () => {
       warn();
       const { data } = await client.get({
@@ -399,7 +461,7 @@ export const addServicesBackwardCompatibility = (client: Client) => {
     },
   };
 
-  (client as any).tokenResource = {
+  const tokenResource = {
     generateToken: async (requestBody: any) => {
       warn();
       const { data } = await TokenResource.generateToken({
@@ -421,7 +483,7 @@ export const addServicesBackwardCompatibility = (client: Client) => {
     },
   };
 
-  (client as any).workflowBulkResource = {
+  const workflowBulkResource = {
     retry: async (requestBody: any[]) => {
       warn();
       const { data } = await WorkflowBulkResource.retry1({
@@ -431,7 +493,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     restart: async (requestBody: any[], useLatestDefinitions = false) => {
       warn();
       const { data } = await WorkflowBulkResource.restart1({
@@ -442,7 +506,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     terminate: async (requestBody: any[], reason?: string) => {
       warn();
       const { data } = await WorkflowBulkResource.terminate({
@@ -453,7 +519,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     resumeWorkflow: async (requestBody: any[]) => {
       warn();
       const { data } = await WorkflowBulkResource.resumeWorkflow1({
@@ -463,7 +531,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     pauseWorkflow1: async (requestBody: any[]) => {
       warn();
       const { data } = await WorkflowBulkResource.pauseWorkflow1({
@@ -475,7 +545,7 @@ export const addServicesBackwardCompatibility = (client: Client) => {
     },
   };
 
-  (client as any).workflowResource = {
+  const workflowResource = {
     getRunningWorkflow: async (
       name: string,
       version = 1,
@@ -491,7 +561,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     executeWorkflow: async (
       body: any,
       name: string,
@@ -518,7 +590,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     startWorkflow: async (requestBody: any) => {
       warn();
       const { data } = await WorkflowResource.startWorkflow({
@@ -528,7 +602,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     decide: async (workflowId: string) => {
       warn();
       await WorkflowResource.decide({
@@ -537,7 +613,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
         throwOnError: true,
       });
     },
-
+    /**
+     * @deprecated
+     */
     rerun: async (workflowId: string, requestBody: any) => {
       warn();
       const { data } = await WorkflowResource.rerun({
@@ -548,7 +626,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     searchV21: async (
       start?: number,
       size = 100,
@@ -570,7 +650,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data as any;
     },
-
+    /**
+     * @deprecated
+     */
     pauseWorkflow: async (workflowId: string) => {
       warn();
       await WorkflowResource.pauseWorkflow({
@@ -579,7 +661,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
         throwOnError: true,
       });
     },
-
+    /**
+     * @deprecated
+     */
     skipTaskFromWorkflow: async (
       workflowId: string,
       taskReferenceName: string,
@@ -593,7 +677,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
         throwOnError: true,
       });
     },
-
+    /**
+     * @deprecated
+     */
     getWorkflows: async (
       name: string,
       requestBody: any[],
@@ -610,7 +696,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     getWorkflowStatusSummary: async (
       workflowId: string,
       includeOutput = false,
@@ -625,7 +713,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     getWorkflows1: async (
       name: string,
       correlationId: string,
@@ -641,7 +731,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     retry1: async (workflowId: string, resumeSubworkflowTasks = false) => {
       warn();
       await WorkflowResource.retry({
@@ -651,7 +743,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
         throwOnError: true,
       });
     },
-
+    /**
+     * @deprecated
+     */
     getExecutionStatus: async (workflowId: string, includeTasks = true) => {
       warn();
       const { data } = await WorkflowResource.getExecutionStatus({
@@ -662,7 +756,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     terminate1: async (workflowId: string, reason?: string) => {
       warn();
       await WorkflowResource.terminate1({
@@ -672,7 +768,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
         throwOnError: true,
       });
     },
-
+    /**
+     * @deprecated
+     */
     resumeWorkflow: async (workflowId: string) => {
       warn();
       await WorkflowResource.resumeWorkflow({
@@ -681,7 +779,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
         throwOnError: true,
       });
     },
-
+    /**
+     * @deprecated
+     */
     delete: async (workflowId: string, archiveWorkflow = true) => {
       warn();
       await WorkflowResource.delete1({
@@ -691,7 +791,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
         throwOnError: true,
       });
     },
-
+    /**
+     * @deprecated
+     */
     searchWorkflowsByTasks: async (
       start?: number,
       size = 100,
@@ -713,7 +815,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data as any;
     },
-
+    /**
+     * @deprecated
+     */
     getExternalStorageLocation: async (
       path: string,
       operation: string,
@@ -733,7 +837,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data as any;
     },
-
+    /**
+     * @deprecated
+     */
     startWorkflow1: async (
       name: string,
       requestBody: any,
@@ -751,7 +857,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     restart1: async (workflowId: string, useLatestDefinitions = false) => {
       warn();
       await WorkflowResource.restart({
@@ -761,7 +869,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
         throwOnError: true,
       });
     },
-
+    /**
+     * @deprecated
+     */
     search1: async (
       queryId?: string,
       start?: number,
@@ -785,7 +895,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data as any;
     },
-
+    /**
+     * @deprecated
+     */
     searchWorkflowsByTasksV2: async (
       start?: number,
       size = 100,
@@ -807,7 +919,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data as any;
     },
-
+    /**
+     * @deprecated
+     */
     resetWorkflow: async (workflowId: string) => {
       warn();
       await WorkflowResource.resetWorkflow({
@@ -816,7 +930,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
         throwOnError: true,
       });
     },
-
+    /**
+     * @deprecated
+     */
     testWorkflow: async (requestBody: any) => {
       warn();
       const { data } = await WorkflowResource.testWorkflow({
@@ -828,7 +944,7 @@ export const addServicesBackwardCompatibility = (client: Client) => {
     },
   };
 
-  (client as any).serviceRegistryResource = {
+  const serviceRegistryResource = {
     getRegisteredServices: async () => {
       warn();
       const { data } = await ServiceRegistryResource.getRegisteredServices({
@@ -837,7 +953,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     removeService: async (name: string) => {
       warn();
       await ServiceRegistryResource.removeService({
@@ -846,7 +964,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
         throwOnError: true,
       });
     },
-
+    /**
+     * @deprecated
+     */
     getService: async (name: string) => {
       warn();
       const { data } = await ServiceRegistryResource.getService({
@@ -856,7 +976,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     openCircuitBreaker: async (name: string) => {
       warn();
       const { data } = await ServiceRegistryResource.openCircuitBreaker({
@@ -866,7 +988,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     closeCircuitBreaker: async (name: string) => {
       warn();
       const { data } = await ServiceRegistryResource.closeCircuitBreaker({
@@ -876,7 +1000,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     getCircuitBreakerStatus: async (name: string) => {
       warn();
       const { data } = await ServiceRegistryResource.getCircuitBreakerStatus({
@@ -886,7 +1012,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     addOrUpdateService: async (serviceRegistry: any) => {
       warn();
       await ServiceRegistryResource.addOrUpdateService({
@@ -895,7 +1023,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
         throwOnError: true,
       });
     },
-
+    /**
+     * @deprecated
+     */
     addOrUpdateServiceMethod: async (registryName: string, method: any) => {
       warn();
       await ServiceRegistryResource.addOrUpdateMethod({
@@ -905,7 +1035,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
         throwOnError: true,
       });
     },
-
+    /**
+     * @deprecated
+     */
     removeMethod: async (
       registryName: string,
       serviceName: string,
@@ -920,7 +1052,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
         throwOnError: true,
       });
     },
-
+    /**
+     * @deprecated
+     */
     getProtoData: async (registryName: string, filename: string) => {
       warn();
       const { data } = await ServiceRegistryResource.getProtoData({
@@ -930,7 +1064,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     setProtoData: async (registryName: string, filename: string, data: any) => {
       warn();
       await ServiceRegistryResource.setProtoData({
@@ -940,7 +1076,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
         throwOnError: true,
       });
     },
-
+    /**
+     * @deprecated
+     */
     deleteProto: async (registryName: string, filename: string) => {
       warn();
       await ServiceRegistryResource.deleteProto({
@@ -949,7 +1087,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
         throwOnError: true,
       });
     },
-
+    /**
+     * @deprecated
+     */
     getAllProtos: async (registryName: string) => {
       warn();
       const { data } = await ServiceRegistryResource.getAllProtos({
@@ -959,7 +1099,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     discover: async (name: string, create = false) => {
       warn();
       const { data } = await ServiceRegistryResource.discover({
@@ -972,7 +1114,7 @@ export const addServicesBackwardCompatibility = (client: Client) => {
     },
   };
 
-  (client as any).humanTaskResource = {
+  const humanTaskResource = {
     getConductorTaskById: async (taskId: string) => {
       warn();
       const { data } = await HumanTaskResource.getConductorTaskById({
@@ -983,8 +1125,7 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       return data;
     },
   };
-
-  (client as any).humanTask = {
+  const humanTask = {
     deleteTaskFromHumanTaskRecords: async (requestBody: any[]) => {
       warn();
       await HumanTask.deleteTaskFromHumanTaskRecords({
@@ -993,7 +1134,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
         throwOnError: true,
       });
     },
-
+    /**
+     * @deprecated
+     */
     deleteTaskFromHumanTaskRecords1: async (taskId: string) => {
       warn();
       await HumanTask.deleteTaskFromHumanTaskRecords1({
@@ -1002,7 +1145,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
         throwOnError: true,
       });
     },
-
+    /**
+     * @deprecated
+     */
     search: async (requestBody: any) => {
       warn();
       const { data } = await HumanTask.search({
@@ -1012,7 +1157,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     updateTaskOutputByRef: async (
       workflowId: string,
       taskRefName: string,
@@ -1034,7 +1181,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data as any;
     },
-
+    /**
+     * @deprecated
+     */
     getTask1: async (taskId: string) => {
       warn();
       const { data } = await HumanTask.getTask1({
@@ -1044,7 +1193,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     claimTask: async (
       taskId: string,
       overrideAssignment = false,
@@ -1059,7 +1210,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     assignAndClaim: async (
       taskId: string,
       userId: string,
@@ -1075,7 +1228,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     reassignTask: async (taskId: string, requestBody: any[]) => {
       warn();
       await HumanTask.reassignTask({
@@ -1085,7 +1240,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
         throwOnError: true,
       });
     },
-
+    /**
+     * @deprecated
+     */
     releaseTask: async (taskId: string) => {
       warn();
       await HumanTask.releaseTask({
@@ -1094,7 +1251,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
         throwOnError: true,
       });
     },
-
+    /**
+     * @deprecated
+     */
     skipTask: async (taskId: string, reason?: string) => {
       warn();
       await HumanTask.skipTask({
@@ -1104,7 +1263,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
         throwOnError: true,
       });
     },
-
+    /**
+     * @deprecated
+     */
     updateTaskOutput: async (
       taskId: string,
       requestBody: any,
@@ -1119,7 +1280,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
         throwOnError: true,
       });
     },
-
+    /**
+     * @deprecated
+     */
     getAllTemplates: async (name?: string, version?: number) => {
       warn();
       const { data } = await UserForm.getAllTemplates({
@@ -1129,7 +1292,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     saveTemplate: async (requestBody: any, newVersion = false) => {
       warn();
       const { data } = await UserForm.saveTemplate({
@@ -1140,7 +1305,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     saveTemplates: async (requestBody: any[], newVersion = false) => {
       warn();
       const { data } = await UserForm.saveTemplates({
@@ -1151,7 +1318,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     deleteTemplateByName: async (name: string) => {
       warn();
       await UserForm.deleteTemplateByName({
@@ -1160,7 +1329,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
         throwOnError: true,
       });
     },
-
+    /**
+     * @deprecated
+     */
     deleteTemplatesByNameAndVersion: async (name: string, version: number) => {
       warn();
       await HumanTask.deleteTemplatesByNameAndVersion({
@@ -1169,7 +1340,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
         throwOnError: true,
       });
     },
-
+    /**
+     * @deprecated
+     */
     getTemplateByNameAndVersion: async (name: string, version: number) => {
       warn();
       const { data } = await UserForm.getTemplateByNameAndVersion({
@@ -1181,7 +1354,7 @@ export const addServicesBackwardCompatibility = (client: Client) => {
     },
   };
 
-  (client as any).taskResource = {
+  const taskResource = {
     poll: async (tasktype: string, workerid?: string, domain?: string) => {
       warn();
       const { data } = await TaskResource.poll({
@@ -1192,7 +1365,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     allVerbose: async () => {
       warn();
       const { data } = await TaskResource.allVerbose({
@@ -1201,7 +1376,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     updateTask: async (
       workflowId: string,
       taskRefName: string,
@@ -1221,7 +1398,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     getTask: async (taskId: string) => {
       warn();
       const { data } = await TaskResource.getTask({
@@ -1231,7 +1410,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     all: async () => {
       warn();
       const { data } = await TaskResource.all({
@@ -1240,7 +1421,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     requeuePendingTask: async (taskType: string) => {
       warn();
       const { data } = await TaskResource.requeuePendingTask({
@@ -1250,7 +1433,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     search: async (
       start?: number,
       size = 100,
@@ -1266,7 +1451,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     searchV22: async (
       start?: number,
       size = 100,
@@ -1288,7 +1475,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data as any;
     },
-
+    /**
+     * @deprecated
+     */
     getPollData: async (taskType: string) => {
       warn();
       const { data } = await TaskResource.getPollData({
@@ -1298,7 +1487,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     getTaskLogs: async (taskId: string) => {
       warn();
       const { data } = await TaskResource.getTaskLogs({
@@ -1308,7 +1499,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     log: async (taskId: string, requestBody: string) => {
       warn();
       await TaskResource.log({
@@ -1318,7 +1511,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
         throwOnError: true,
       });
     },
-
+    /**
+     * @deprecated
+     */
     getAllPollData: async () => {
       warn();
       const { data } = await TaskResource.getAllPollData({
@@ -1327,7 +1522,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     batchPoll: async (
       tasktype: string,
       workerid?: string,
@@ -1344,7 +1541,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     updateTask1: async (requestBody: any) => {
       warn();
       const { data } = await TaskResource.updateTask({
@@ -1354,7 +1553,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     size1: async (taskType?: string[]) => {
       warn();
       const { data } = await TaskResource.size({
@@ -1364,7 +1565,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     getExternalStorageLocation1: async (
       path: string,
       operation: string,
@@ -1384,7 +1587,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data as any;
     },
-
+    /**
+     * @deprecated
+     */
     updateTaskSync: async (
       workflowId: string,
       taskRefName: string,
@@ -1402,7 +1607,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     signal: async (
       workflowId: string,
       status: any,
@@ -1419,7 +1626,9 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data;
     },
-
+    /**
+     * @deprecated
+     */
     signalAsync: async (workflowId: string, status: any, output: any) => {
       warn();
       const { data } = await TaskResource.signalWorkflowTaskASync({
@@ -1430,5 +1639,20 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
       return data as SignalResponse;
     },
+  };
+
+  return {
+    ...client,
+    eventResource,
+    healthCheckResource,
+    metadataResource,
+    schedulerResource,
+    tokenResource,
+    workflowBulkResource,
+    workflowResource,
+    serviceRegistryResource,
+    humanTaskResource,
+    humanTask,
+    taskResource,
   };
 };
