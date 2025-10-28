@@ -6,6 +6,7 @@ import {
 } from "./helpers";
 import type { OrkesApiConfig } from "./types";
 import { createClient } from "../common/open-api/client";
+import { addServicesBackwardCompatibility } from "./helpers/addServicesBackwardCompatibility";
 
 /**
  * Takes a config with keyId and keySecret returns a promise with an instance of Client
@@ -40,6 +41,8 @@ export const orkesConductorClient = async (
   if (keyId && keySecret) {
     await handleAuth(openApiClient, keyId, keySecret, refreshTokenInterval);
   }
+
+  addServicesBackwardCompatibility(openApiClient); // DEPRECATED, should be removed after April 2026
 
   return openApiClient;
 };
