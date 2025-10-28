@@ -14,7 +14,7 @@ import { addResourcesBackwardCompatibility } from "./helpers/addResourcesBackwar
  * @param config (optional) OrkesApiConfig with keyId and keySecret
  * @param customFetch (optional) custom fetch function
  * @param requestHandler DEPRECATED! (optional) ConductorHttpRequest handler, replaced with customFetch
- * @returns BackwardCompatibleClient with access to deprecated resource methods
+ * @returns Client
  */
 export const orkesConductorClient = async (
   config?: OrkesApiConfig,
