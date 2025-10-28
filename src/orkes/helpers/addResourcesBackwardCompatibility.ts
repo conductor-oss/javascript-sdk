@@ -25,6 +25,9 @@ const warn = () => {
   );
 };
 
+/* everything this function does is add resources with related methods -
+   originally available in the old OpenAPI-generated client -
+   to the new client by mapping them to newly generated methods */
 export const addResourcesBackwardCompatibility = (client: Client) => {
   const eventResource = {
     /**
