@@ -1,4 +1,6 @@
 /* eslint-disable */
+// disable linter since related old functionality was not properly typed
+// TODO: everything in this file is DEPRECATED and whole file should be removed after April 2026
 
 import { SignalResponse } from "../../common";
 import { Client } from "../../common/open-api/client/types.gen";
