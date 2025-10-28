@@ -21,7 +21,7 @@ import {
 
 const warn = () => {
   console.warn(
-    "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+    "[Conductor SDK Deprecation Warning] Accessing resources directly on the client is deprecated and will be removed after April 2026"
   );
 };
 
