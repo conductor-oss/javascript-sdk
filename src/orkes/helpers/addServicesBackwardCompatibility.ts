@@ -1,10 +1,10 @@
+import { SignalResponse } from "../../common";
 import { Client } from "../../common/open-api/client/types.gen";
 import {
   EventResource,
   HumanTask,
   HumanTaskResource,
   UserForm,
-  UserFormTemplateResource,
   MetadataResource,
   ServiceRegistryResource,
   SchedulerResource,
@@ -17,22 +17,27 @@ import {
 
 export const addServicesBackwardCompatibility = (client: Client) => {
   (client as any).eventResource = {
-    getQueueConfig: (queueType: string, queueName: string) => {
+    getQueueConfig: async (queueType: string, queueName: string) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return EventResource.getQueueConfig({
+      const { data } = await EventResource.getQueueConfig({
         client,
         path: { queueType, queueName },
         throwOnError: true,
       });
+      return data;
     },
 
-    putQueueConfig: (queueType: string, queueName: string, body: string) => {
+    putQueueConfig: async (
+      queueType: string,
+      queueName: string,
+      body: string
+    ) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      EventResource.putQueueConfig({
+      await EventResource.putQueueConfig({
         client,
         path: { queueType, queueName },
         body,
@@ -40,87 +45,93 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
     },
 
-    deleteQueueConfig: (queueType: string, queueName: string) => {
+    deleteQueueConfig: async (queueType: string, queueName: string) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      EventResource.deleteQueueConfig({
+      await EventResource.deleteQueueConfig({
         client,
         path: { queueType, queueName },
         throwOnError: true,
       });
     },
 
-    getEventHandlers: () => {
+    getEventHandlers: async () => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return EventResource.getEventHandlers({
+      const { data } = await EventResource.getEventHandlers({
         client,
         throwOnError: true,
       });
+      return data;
     },
 
-    updateEventHandler: (body: any) => {
+    updateEventHandler: async (body: any) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      EventResource.updateEventHandler({
-        client,
-        body,
-        throwOnError: true,
-      });
-    },
-
-    addEventHandler: (body: any) => {
-      console.warn(
-        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
-      );
-      EventResource.addEventHandler({
+      await EventResource.updateEventHandler({
         client,
         body,
         throwOnError: true,
       });
     },
 
-    getQueueNames: () => {
+    addEventHandler: async (body: any) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return EventResource.getQueueNames({
+      await EventResource.addEventHandler({
         client,
+        body,
         throwOnError: true,
       });
     },
 
-    removeEventHandlerStatus: (name: string) => {
+    getQueueNames: async () => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      EventResource.removeEventHandlerStatus({
+      const { data } = await EventResource.getQueueNames({
+        client,
+        throwOnError: true,
+      });
+      return data;
+    },
+
+    removeEventHandlerStatus: async (name: string) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      await EventResource.removeEventHandlerStatus({
         client,
         path: { name },
         throwOnError: true,
       });
     },
 
-    getEventHandlersForEvent: (event: string, activeOnly: boolean = true) => {
+    getEventHandlersForEvent: async (
+      event: string,
+      activeOnly: boolean = true
+    ) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return EventResource.getEventHandlersForEvent({
+      const { data } = await EventResource.getEventHandlersForEvent({
         client,
         path: { event },
         query: { activeOnly },
         throwOnError: true,
       });
+      return data;
     },
 
-    deleteTagForEventHandler: (name: string, body: any[]) => {
+    deleteTagForEventHandler: async (name: string, body: any[]) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      EventResource.deleteTagForEventHandler({
+      await EventResource.deleteTagForEventHandler({
         client,
         path: { name },
         body,
@@ -128,22 +139,23 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
     },
 
-    getTagsForEventHandler: (name: string) => {
+    getTagsForEventHandler: async (name: string) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return EventResource.getTagsForEventHandler({
+      const { data } = await EventResource.getTagsForEventHandler({
         client,
         path: { name },
         throwOnError: true,
       });
+      return data;
     },
 
-    putTagForEventHandler: (name: string, body: any[]) => {
+    putTagForEventHandler: async (name: string, body: any[]) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      EventResource.putTagForEventHandler({
+      await EventResource.putTagForEventHandler({
         client,
         path: { name },
         body,
@@ -153,42 +165,44 @@ export const addServicesBackwardCompatibility = (client: Client) => {
   };
 
   (client as any).healthCheckResource = {
-    doCheck: () => {
+    doCheck: async () => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return HealthCheckResource.doCheck({
+      const { data } = await HealthCheckResource.doCheck({
         client,
         throwOnError: true,
       });
+      return data;
     },
   };
 
   (client as any).metadataResource = {
-    getTaskDef: (tasktype: string, metadata: boolean = false) => {
+    getTaskDef: async (tasktype: string, metadata: boolean = false) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return MetadataResource.getTaskDef({
+      const { data } = await MetadataResource.getTaskDef({
         client,
         path: { tasktype },
         query: { metadata },
         throwOnError: true,
       });
+      return data;
     },
 
-    unregisterTaskDef: (tasktype: string) => {
+    unregisterTaskDef: async (tasktype: string) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      MetadataResource.unregisterTaskDef({
+      await MetadataResource.unregisterTaskDef({
         client,
         path: { tasktype },
         throwOnError: true,
       });
     },
 
-    getAllWorkflows: (
+    getAllWorkflows: async (
       access: string = "READ",
       metadata: boolean = false,
       tagKey?: string,
@@ -197,18 +211,19 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return MetadataResource.getWorkflowDefs({
+      const { data } = await MetadataResource.getWorkflowDefs({
         client,
         query: { access, metadata, tagKey, tagValue },
         throwOnError: true,
       });
+      return data;
     },
 
-    update: (requestBody: any[], overwrite: boolean = true) => {
+    update: async (requestBody: any[], overwrite: boolean = true) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      MetadataResource.update({
+      await MetadataResource.update({
         client,
         body: requestBody,
         query: { overwrite },
@@ -216,11 +231,11 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
     },
 
-    create: (requestBody: any, overwrite: boolean = false) => {
+    create: async (requestBody: any, overwrite: boolean = false) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      MetadataResource.create({
+      await MetadataResource.create({
         client,
         body: requestBody,
         query: { overwrite },
@@ -228,7 +243,7 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
     },
 
-    getTaskDefs: (
+    getTaskDefs: async (
       access: string = "READ",
       metadata: boolean = false,
       tagKey?: string,
@@ -237,83 +252,86 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return MetadataResource.getTaskDefs({
+      const { data } = await MetadataResource.getTaskDefs({
         client,
         query: { access, metadata, tagKey, tagValue },
         throwOnError: true,
       });
+      return data;
     },
 
-    updateTaskDef: (requestBody: any) => {
+    updateTaskDef: async (requestBody: any) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      MetadataResource.updateTaskDef({
+      await MetadataResource.updateTaskDef({
         client,
         body: requestBody,
         throwOnError: true,
       });
     },
 
-    registerTaskDef: (requestBody: any[]) => {
+    registerTaskDef: async (requestBody: any[]) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      MetadataResource.registerTaskDef({
+      await MetadataResource.registerTaskDef({
         client,
         body: requestBody,
         throwOnError: true,
       });
     },
 
-    unregisterWorkflowDef: (name: string, version: number) => {
+    unregisterWorkflowDef: async (name: string, version: number) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      MetadataResource.unregisterWorkflowDef({
+      await MetadataResource.unregisterWorkflowDef({
         client,
         path: { name, version },
         throwOnError: true,
       });
     },
 
-    get: (name: string, version?: number, metadata: boolean = false) => {
+    get: async (name: string, version?: number, metadata: boolean = false) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return MetadataResource.get1({
+      const { data } = await MetadataResource.get1({
         client,
         path: { name },
         query: { version, metadata },
         throwOnError: true,
       });
+      return data;
     },
   };
 
   (client as any).schedulerResource = {
-    getSchedule: (name: string) => {
+    getSchedule: async (name: string) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return SchedulerResource.getSchedule({
+      const { data } = await SchedulerResource.getSchedule({
+        client,
+        path: { name },
+        throwOnError: true,
+      });
+      return data;
+    },
+
+    deleteSchedule: async (name: string) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      await SchedulerResource.deleteSchedule({
         client,
         path: { name },
         throwOnError: true,
       });
     },
 
-    deleteSchedule: (name: string) => {
-      console.warn(
-        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
-      );
-      SchedulerResource.deleteSchedule({
-        client,
-        path: { name },
-        throwOnError: true,
-      });
-    },
-
-    getNextFewSchedules: (
+    getNextFewSchedules: async (
       cronExpression: string,
       scheduleStartTime?: number,
       scheduleEndTime?: number,
@@ -322,88 +340,93 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return SchedulerResource.getNextFewSchedules({
+      const { data } = await SchedulerResource.getNextFewSchedules({
         client,
         query: { cronExpression, scheduleStartTime, scheduleEndTime, limit },
         throwOnError: true,
       });
+      return data;
     },
 
-    pauseSchedule: (name: string) => {
+    pauseSchedule: async (name: string) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      SchedulerResource.pauseSchedule({
+      await SchedulerResource.pauseSchedule({
         client,
         path: { name },
         throwOnError: true,
       });
     },
 
-    pauseAllSchedules: () => {
+    pauseAllSchedules: async () => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return SchedulerResource.pauseAllSchedules({
+      const { data } = await SchedulerResource.pauseAllSchedules({
         client,
         throwOnError: true,
       });
+      return data;
     },
 
-    resumeSchedule: (name: string) => {
+    resumeSchedule: async (name: string) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      SchedulerResource.resumeSchedule({
+      await SchedulerResource.resumeSchedule({
         client,
         path: { name },
         throwOnError: true,
       });
     },
 
-    requeueAllExecutionRecords: () => {
+    requeueAllExecutionRecords: async () => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return SchedulerResource.requeueAllExecutionRecords({
+      const { data } = await SchedulerResource.requeueAllExecutionRecords({
         client,
         throwOnError: true,
       });
+      return data;
     },
 
-    resumeAllSchedules: () => {
+    resumeAllSchedules: async () => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return SchedulerResource.resumeAllSchedules({
+      const { data } = await SchedulerResource.resumeAllSchedules({
         client,
         throwOnError: true,
       });
+      return data;
     },
 
-    getAllSchedules: (workflowName?: string) => {
+    getAllSchedules: async (workflowName?: string) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return SchedulerResource.getAllSchedules({
+      const { data } = await SchedulerResource.getAllSchedules({
         client,
         query: { workflowName },
         throwOnError: true,
       });
+      return data;
     },
 
-    saveSchedule: (requestBody: any) => {
+    saveSchedule: async (requestBody: any) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      SchedulerResource.saveSchedule({
+      await SchedulerResource.saveSchedule({
         client,
         body: requestBody,
         throwOnError: true,
       });
     },
 
-    searchV21: (
+    searchV21: async (
       start?: number,
       size: number = 100,
       sort?: string,
@@ -413,18 +436,19 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return SchedulerResource.searchV2({
+      const { data } = await SchedulerResource.searchV2({
         client,
         query: { start, size, sort, freeText, query },
         throwOnError: true,
       });
+      return data;
     },
 
-    testTimeout: () => {
+    testTimeout: async () => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return client.get({
+      const { data } = await client.get({
         security: [
           {
             name: "X-Authorization",
@@ -434,94 +458,105 @@ export const addServicesBackwardCompatibility = (client: Client) => {
         url: "/api/scheduler/test/timeout",
         throwOnError: true,
       });
+      return data as any;
     },
   };
 
   (client as any).tokenResource = {
-    generateToken: (requestBody: any) => {
+    generateToken: async (requestBody: any) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return TokenResource.generateToken({
+      const { data } = await TokenResource.generateToken({
         client,
         body: requestBody,
         throwOnError: true,
       });
+      return data;
     },
 
-    getUserInfo: (claims: boolean = false) => {
+    getUserInfo: async (claims: boolean = false) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return TokenResource.getUserInfo({
+      const { data } = await TokenResource.getUserInfo({
         client,
         query: { claims },
         throwOnError: true,
       });
+      return data;
     },
   };
 
   (client as any).workflowBulkResource = {
-    retry: (requestBody: any[]) => {
+    retry: async (requestBody: any[]) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return WorkflowBulkResource.retry1({
+      const { data } = await WorkflowBulkResource.retry1({
         client,
         body: requestBody,
         throwOnError: true,
       });
+      return data;
     },
 
-    restart: (requestBody: any[], useLatestDefinitions: boolean = false) => {
+    restart: async (
+      requestBody: any[],
+      useLatestDefinitions: boolean = false
+    ) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return WorkflowBulkResource.restart1({
+      const { data } = await WorkflowBulkResource.restart1({
         client,
         body: requestBody,
         query: { useLatestDefinitions },
         throwOnError: true,
       });
+      return data;
     },
 
-    terminate: (requestBody: any[], reason?: string) => {
+    terminate: async (requestBody: any[], reason?: string) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return WorkflowBulkResource.terminate({
+      const { data } = await WorkflowBulkResource.terminate({
         client,
         body: requestBody,
         query: { reason },
         throwOnError: true,
       });
+      return data;
     },
 
-    resumeWorkflow: (requestBody: any[]) => {
+    resumeWorkflow: async (requestBody: any[]) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return WorkflowBulkResource.resumeWorkflow1({
+      const { data } = await WorkflowBulkResource.resumeWorkflow1({
         client,
         body: requestBody,
         throwOnError: true,
       });
+      return data;
     },
 
-    pauseWorkflow1: (requestBody: any[]) => {
+    pauseWorkflow1: async (requestBody: any[]) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return WorkflowBulkResource.pauseWorkflow1({
+      const { data } = await WorkflowBulkResource.pauseWorkflow1({
         client,
         body: requestBody,
         throwOnError: true,
       });
+      return data;
     },
   };
 
   (client as any).workflowResource = {
-    getRunningWorkflow: (
+    getRunningWorkflow: async (
       name: string,
       version: number = 1,
       startTime?: number,
@@ -530,15 +565,16 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return WorkflowResource.getRunningWorkflow({
+      const { data } = await WorkflowResource.getRunningWorkflow({
         client,
         path: { name },
         query: { version, startTime, endTime },
         throwOnError: true,
       });
+      return data;
     },
 
-    executeWorkflow: (
+    executeWorkflow: async (
       body: any,
       name: string,
       version: number,
@@ -551,7 +587,7 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return WorkflowResource.executeWorkflow({
+      const { data } = await WorkflowResource.executeWorkflow({
         client,
         path: { name, version },
         query: {
@@ -564,43 +600,46 @@ export const addServicesBackwardCompatibility = (client: Client) => {
         body,
         throwOnError: true,
       });
+      return data;
     },
 
-    startWorkflow: (requestBody: any) => {
+    startWorkflow: async (requestBody: any) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return WorkflowResource.startWorkflow({
+      const { data } = await WorkflowResource.startWorkflow({
         client,
         body: requestBody,
         throwOnError: true,
       });
+      return data;
     },
 
-    decide: (workflowId: string) => {
+    decide: async (workflowId: string) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      WorkflowResource.decide({
+      await WorkflowResource.decide({
         client,
         path: { workflowId },
         throwOnError: true,
       });
     },
 
-    rerun: (workflowId: string, requestBody: any) => {
+    rerun: async (workflowId: string, requestBody: any) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return WorkflowResource.rerun({
+      const { data } = await WorkflowResource.rerun({
         client,
         path: { workflowId },
         body: requestBody,
         throwOnError: true,
       });
+      return data;
     },
 
-    searchV21: (
+    searchV21: async (
       start?: number,
       size: number = 100,
       sort?: string,
@@ -610,7 +649,7 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return client.get({
+      const { data } = await client.get({
         security: [
           {
             name: "X-Authorization",
@@ -621,20 +660,21 @@ export const addServicesBackwardCompatibility = (client: Client) => {
         query: { start, size, sort, freeText, query },
         throwOnError: true,
       });
+      return data as any;
     },
 
-    pauseWorkflow: (workflowId: string) => {
+    pauseWorkflow: async (workflowId: string) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      WorkflowResource.pauseWorkflow({
+      await WorkflowResource.pauseWorkflow({
         client,
         path: { workflowId },
         throwOnError: true,
       });
     },
 
-    skipTaskFromWorkflow: (
+    skipTaskFromWorkflow: async (
       workflowId: string,
       taskReferenceName: string,
       requestBody?: any
@@ -642,7 +682,7 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      WorkflowResource.skipTaskFromWorkflow({
+      await WorkflowResource.skipTaskFromWorkflow({
         client,
         path: { workflowId, taskReferenceName },
         body: requestBody,
@@ -650,7 +690,7 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
     },
 
-    getWorkflows: (
+    getWorkflows: async (
       name: string,
       requestBody: any[],
       includeClosed: boolean = false,
@@ -659,16 +699,17 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return WorkflowResource.getWorkflows({
+      const { data } = await WorkflowResource.getWorkflows({
         client,
         path: { name },
         query: { includeClosed, includeTasks },
         body: requestBody,
         throwOnError: true,
       });
+      return data;
     },
 
-    getWorkflowStatusSummary: (
+    getWorkflowStatusSummary: async (
       workflowId: string,
       includeOutput: boolean = false,
       includeVariables: boolean = false
@@ -676,15 +717,16 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return WorkflowResource.getWorkflowStatusSummary({
+      const { data } = await WorkflowResource.getWorkflowStatusSummary({
         client,
         path: { workflowId },
         query: { includeOutput, includeVariables },
         throwOnError: true,
       });
+      return data;
     },
 
-    getWorkflows1: (
+    getWorkflows1: async (
       name: string,
       correlationId: string,
       includeClosed: boolean = false,
@@ -693,19 +735,23 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return WorkflowResource.getWorkflows2({
+      const { data } = await WorkflowResource.getWorkflows2({
         client,
         path: { name, correlationId },
         query: { includeClosed, includeTasks },
         throwOnError: true,
       });
+      return data;
     },
 
-    retry1: (workflowId: string, resumeSubworkflowTasks: boolean = false) => {
+    retry1: async (
+      workflowId: string,
+      resumeSubworkflowTasks: boolean = false
+    ) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      WorkflowResource.retry({
+      await WorkflowResource.retry({
         client,
         path: { workflowId },
         query: { resumeSubworkflowTasks },
@@ -713,23 +759,27 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
     },
 
-    getExecutionStatus: (workflowId: string, includeTasks: boolean = true) => {
+    getExecutionStatus: async (
+      workflowId: string,
+      includeTasks: boolean = true
+    ) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return WorkflowResource.getExecutionStatus({
+      const { data } = await WorkflowResource.getExecutionStatus({
         client,
         path: { workflowId },
         query: { includeTasks },
         throwOnError: true,
       });
+      return data;
     },
 
-    terminate1: (workflowId: string, reason?: string) => {
+    terminate1: async (workflowId: string, reason?: string) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      WorkflowResource.terminate1({
+      await WorkflowResource.terminate1({
         client,
         path: { workflowId },
         query: { reason },
@@ -737,22 +787,22 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
     },
 
-    resumeWorkflow: (workflowId: string) => {
+    resumeWorkflow: async (workflowId: string) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      WorkflowResource.resumeWorkflow({
+      await WorkflowResource.resumeWorkflow({
         client,
         path: { workflowId },
         throwOnError: true,
       });
     },
 
-    delete: (workflowId: string, archiveWorkflow: boolean = true) => {
+    delete: async (workflowId: string, archiveWorkflow: boolean = true) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      WorkflowResource.delete1({
+      await WorkflowResource.delete1({
         client,
         path: { workflowId },
         query: { archiveWorkflow },
@@ -760,7 +810,7 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
     },
 
-    searchWorkflowsByTasks: (
+    searchWorkflowsByTasks: async (
       start?: number,
       size: number = 100,
       sort?: string,
@@ -770,7 +820,7 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return client.get({
+      const { data } = await client.get({
         security: [
           {
             name: "X-Authorization",
@@ -781,9 +831,10 @@ export const addServicesBackwardCompatibility = (client: Client) => {
         query: { start, size, sort, freeText, query },
         throwOnError: true,
       });
+      return data as any;
     },
 
-    getExternalStorageLocation: (
+    getExternalStorageLocation: async (
       path: string,
       operation: string,
       payloadType: string
@@ -791,7 +842,7 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return client.get({
+      const { data } = await client.get({
         security: [
           {
             name: "X-Authorization",
@@ -802,9 +853,10 @@ export const addServicesBackwardCompatibility = (client: Client) => {
         query: { path, operation, payloadType },
         throwOnError: true,
       });
+      return data as any;
     },
 
-    startWorkflow1: (
+    startWorkflow1: async (
       name: string,
       requestBody: any,
       version?: number,
@@ -814,20 +866,24 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return WorkflowResource.startWorkflow1({
+      const { data } = await WorkflowResource.startWorkflow1({
         client,
         path: { name },
         query: { version, correlationId, priority },
         body: requestBody,
         throwOnError: true,
       });
+      return data;
     },
 
-    restart1: (workflowId: string, useLatestDefinitions: boolean = false) => {
+    restart1: async (
+      workflowId: string,
+      useLatestDefinitions: boolean = false
+    ) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      WorkflowResource.restart({
+      await WorkflowResource.restart({
         client,
         path: { workflowId },
         query: { useLatestDefinitions },
@@ -835,7 +891,7 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
     },
 
-    search1: (
+    search1: async (
       queryId?: string,
       start?: number,
       size: number = 100,
@@ -847,7 +903,7 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return client.get({
+      const { data } = await client.get({
         security: [
           {
             name: "X-Authorization",
@@ -858,9 +914,10 @@ export const addServicesBackwardCompatibility = (client: Client) => {
         query: { queryId, start, size, sort, freeText, query, skipCache },
         throwOnError: true,
       });
+      return data as any;
     },
 
-    searchWorkflowsByTasksV2: (
+    searchWorkflowsByTasksV2: async (
       start?: number,
       size: number = 100,
       sort?: string,
@@ -870,7 +927,7 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return client.get({
+      const { data } = await client.get({
         security: [
           {
             name: "X-Authorization",
@@ -881,113 +938,120 @@ export const addServicesBackwardCompatibility = (client: Client) => {
         query: { start, size, sort, freeText, query },
         throwOnError: true,
       });
+      return data as any;
     },
 
-    resetWorkflow: (workflowId: string) => {
+    resetWorkflow: async (workflowId: string) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      WorkflowResource.resetWorkflow({
+      await WorkflowResource.resetWorkflow({
         client,
         path: { workflowId },
         throwOnError: true,
       });
     },
 
-    testWorkflow: (requestBody: any) => {
+    testWorkflow: async (requestBody: any) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return WorkflowResource.testWorkflow({
+      const { data } = await WorkflowResource.testWorkflow({
         client,
         body: requestBody,
         throwOnError: true,
       });
+      return data;
     },
   };
 
   (client as any).serviceRegistryResource = {
-    getRegisteredServices: () => {
+    getRegisteredServices: async () => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return ServiceRegistryResource.getRegisteredServices({
+      const { data } = await ServiceRegistryResource.getRegisteredServices({
         client,
         throwOnError: true,
       });
+      return data;
     },
 
-    removeService: (name: string) => {
+    removeService: async (name: string) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      ServiceRegistryResource.removeService({
-        client,
-        path: { name },
-        throwOnError: true,
-      });
-    },
-
-    getService: (name: string) => {
-      console.warn(
-        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
-      );
-      return ServiceRegistryResource.getService({
+      await ServiceRegistryResource.removeService({
         client,
         path: { name },
         throwOnError: true,
       });
     },
 
-    openCircuitBreaker: (name: string) => {
+    getService: async (name: string) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return ServiceRegistryResource.openCircuitBreaker({
+      const { data } = await ServiceRegistryResource.getService({
         client,
         path: { name },
         throwOnError: true,
       });
+      return data;
     },
 
-    closeCircuitBreaker: (name: string) => {
+    openCircuitBreaker: async (name: string) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return ServiceRegistryResource.closeCircuitBreaker({
+      const { data } = await ServiceRegistryResource.openCircuitBreaker({
         client,
         path: { name },
         throwOnError: true,
       });
+      return data;
     },
 
-    getCircuitBreakerStatus: (name: string) => {
+    closeCircuitBreaker: async (name: string) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return ServiceRegistryResource.getCircuitBreakerStatus({
+      const { data } = await ServiceRegistryResource.closeCircuitBreaker({
         client,
         path: { name },
         throwOnError: true,
       });
+      return data;
     },
 
-    addOrUpdateService: (serviceRegistry: any) => {
+    getCircuitBreakerStatus: async (name: string) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      ServiceRegistryResource.addOrUpdateService({
+      const { data } = await ServiceRegistryResource.getCircuitBreakerStatus({
+        client,
+        path: { name },
+        throwOnError: true,
+      });
+      return data;
+    },
+
+    addOrUpdateService: async (serviceRegistry: any) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      await ServiceRegistryResource.addOrUpdateService({
         client,
         body: serviceRegistry,
         throwOnError: true,
       });
     },
 
-    addOrUpdateServiceMethod: (registryName: string, method: any) => {
+    addOrUpdateServiceMethod: async (registryName: string, method: any) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      ServiceRegistryResource.addOrUpdateMethod({
+      await ServiceRegistryResource.addOrUpdateMethod({
         client,
         path: { registryName },
         body: method,
@@ -995,11 +1059,16 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
     },
 
-    removeMethod: (registryName: string, serviceName: string, method: string, methodType: string) => {
+    removeMethod: async (
+      registryName: string,
+      serviceName: string,
+      method: string,
+      methodType: string
+    ) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      ServiceRegistryResource.removeMethod({
+      await ServiceRegistryResource.removeMethod({
         client,
         path: { registryName },
         query: { serviceName, method, methodType },
@@ -1007,22 +1076,23 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
     },
 
-    getProtoData: (registryName: string, filename: string) => {
+    getProtoData: async (registryName: string, filename: string) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return ServiceRegistryResource.getProtoData({
+      const { data } = await ServiceRegistryResource.getProtoData({
         client,
         path: { registryName, filename },
         throwOnError: true,
       });
+      return data;
     },
 
-    setProtoData: (registryName: string, filename: string, data: any) => {
+    setProtoData: async (registryName: string, filename: string, data: any) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      ServiceRegistryResource.setProtoData({
+      await ServiceRegistryResource.setProtoData({
         client,
         path: { registryName, filename },
         body: data,
@@ -1030,89 +1100,93 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
     },
 
-    deleteProto: (registryName: string, filename: string) => {
+    deleteProto: async (registryName: string, filename: string) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      ServiceRegistryResource.deleteProto({
+      await ServiceRegistryResource.deleteProto({
         client,
         path: { registryName, filename },
         throwOnError: true,
       });
     },
 
-    getAllProtos: (registryName: string) => {
+    getAllProtos: async (registryName: string) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return ServiceRegistryResource.getAllProtos({
+      const { data } = await ServiceRegistryResource.getAllProtos({
         client,
         path: { registryName },
         throwOnError: true,
       });
+      return data;
     },
 
-    discover: (name: string, create: boolean = false) => {
+    discover: async (name: string, create: boolean = false) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return ServiceRegistryResource.discover({
+      const { data } = await ServiceRegistryResource.discover({
         client,
         path: { name },
         query: { create },
         throwOnError: true,
       });
+      return data;
     },
   };
 
   (client as any).humanTaskResource = {
-    getConductorTaskById: (taskId: string) => {
+    getConductorTaskById: async (taskId: string) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return HumanTaskResource.getConductorTaskById({
+      const { data } = await HumanTaskResource.getConductorTaskById({
         client,
         path: { taskId },
         throwOnError: true,
       });
+      return data;
     },
   };
 
   (client as any).humanTask = {
-    deleteTaskFromHumanTaskRecords: (requestBody: any[]) => {
+    deleteTaskFromHumanTaskRecords: async (requestBody: any[]) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      HumanTask.deleteTaskFromHumanTaskRecords({
+      await HumanTask.deleteTaskFromHumanTaskRecords({
         client,
         body: requestBody,
         throwOnError: true,
       });
     },
 
-    deleteTaskFromHumanTaskRecords1: (taskId: string) => {
+    deleteTaskFromHumanTaskRecords1: async (taskId: string) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      HumanTask.deleteTaskFromHumanTaskRecords1({
+      await HumanTask.deleteTaskFromHumanTaskRecords1({
         client,
         path: { taskId },
         throwOnError: true,
       });
     },
 
-    search: (requestBody: any) => {
+    search: async (requestBody: any) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return HumanTask.search({
+      const { data } = await HumanTask.search({
         client,
         body: requestBody,
         throwOnError: true,
       });
+      return data;
     },
 
-    updateTaskOutputByRef: (
+    updateTaskOutputByRef: async (
       workflowId: string,
       taskRefName: string,
       requestBody: any,
@@ -1122,7 +1196,7 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return HumanTask.updateTaskOutputByRef({
+      const { data } = await HumanTask.updateTaskOutputByRef({
         client,
         query: {
           workflowId,
@@ -1133,32 +1207,39 @@ export const addServicesBackwardCompatibility = (client: Client) => {
         body: requestBody,
         throwOnError: true,
       });
+      return data as any;
     },
 
-    getTask1: (taskId: string) => {
+    getTask1: async (taskId: string) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return HumanTask.getTask1({
+      const { data } = await HumanTask.getTask1({
         client,
         path: { taskId },
         throwOnError: true,
       });
+      return data;
     },
 
-    claimTask: (taskId: string, overrideAssignment: boolean = false, withTemplate: boolean = false) => {
+    claimTask: async (
+      taskId: string,
+      overrideAssignment: boolean = false,
+      withTemplate: boolean = false
+    ) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return HumanTask.claimTask({
+      const { data } = await HumanTask.claimTask({
         client,
         path: { taskId },
         query: { overrideAssignment, withTemplate },
         throwOnError: true,
       });
+      return data;
     },
 
-    assignAndClaim: (
+    assignAndClaim: async (
       taskId: string,
       userId: string,
       overrideAssignment: boolean = false,
@@ -1167,19 +1248,20 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return HumanTask.assignAndClaim({
+      const { data } = await HumanTask.assignAndClaim({
         client,
         path: { taskId, userId },
         query: { overrideAssignment, withTemplate },
         throwOnError: true,
       });
+      return data;
     },
 
-    reassignTask: (taskId: string, requestBody: any[]) => {
+    reassignTask: async (taskId: string, requestBody: any[]) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      HumanTask.reassignTask({
+      await HumanTask.reassignTask({
         client,
         path: { taskId },
         body: requestBody,
@@ -1187,22 +1269,22 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
     },
 
-    releaseTask: (taskId: string) => {
+    releaseTask: async (taskId: string) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      HumanTask.releaseTask({
+      await HumanTask.releaseTask({
         client,
         path: { taskId },
         throwOnError: true,
       });
     },
 
-    skipTask: (taskId: string, reason?: string) => {
+    skipTask: async (taskId: string, reason?: string) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      HumanTask.skipTask({
+      await HumanTask.skipTask({
         client,
         path: { taskId },
         query: { reason },
@@ -1210,11 +1292,15 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
     },
 
-    updateTaskOutput: (taskId: string, requestBody: any, complete: boolean = false) => {
+    updateTaskOutput: async (
+      taskId: string,
+      requestBody: any,
+      complete: boolean = false
+    ) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      HumanTask.updateTaskOutput({
+      await HumanTask.updateTaskOutput({
         client,
         path: { taskId },
         query: { complete },
@@ -1223,99 +1309,105 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
     },
 
-    getAllTemplates: (name?: string, version?: number) => {
+    getAllTemplates: async (name?: string, version?: number) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return UserForm.getAllTemplates({
+      const { data } = await UserForm.getAllTemplates({
         client,
         query: { name, version },
         throwOnError: true,
       });
+      return data;
     },
 
-    saveTemplate: (requestBody: any, newVersion: boolean = false) => {
+    saveTemplate: async (requestBody: any, newVersion: boolean = false) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return UserForm.saveTemplate({
+      const { data } = await UserForm.saveTemplate({
         client,
         query: { newVersion },
         body: requestBody,
         throwOnError: true,
       });
+      return data;
     },
 
-    saveTemplates: (requestBody: any[], newVersion: boolean = false) => {
+    saveTemplates: async (requestBody: any[], newVersion: boolean = false) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return UserForm.saveTemplates({
+      const { data } = await UserForm.saveTemplates({
         client,
         query: { newVersion },
         body: requestBody,
         throwOnError: true,
       });
+      return data;
     },
 
-    deleteTemplateByName: (name: string) => {
+    deleteTemplateByName: async (name: string) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      UserForm.deleteTemplateByName({
+      await UserForm.deleteTemplateByName({
         client,
         path: { name },
         throwOnError: true,
       });
     },
 
-    deleteTemplatesByNameAndVersion: (name: string, version: number) => {
+    deleteTemplatesByNameAndVersion: async (name: string, version: number) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      HumanTask.deleteTemplatesByNameAndVersion({
+      await HumanTask.deleteTemplatesByNameAndVersion({
         client,
         path: { name, version },
         throwOnError: true,
       });
     },
 
-    getTemplateByNameAndVersion: (name: string, version: number) => {
+    getTemplateByNameAndVersion: async (name: string, version: number) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return UserForm.getTemplateByNameAndVersion({
+      const { data } = await UserForm.getTemplateByNameAndVersion({
         client,
         path: { name, version },
         throwOnError: true,
       });
+      return data;
     },
   };
 
   (client as any).taskResource = {
-    poll: (tasktype: string, workerid?: string, domain?: string) => {
+    poll: async (tasktype: string, workerid?: string, domain?: string) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return TaskResource.poll({
+      const { data } = await TaskResource.poll({
         client,
         path: { tasktype },
         query: { workerid, domain },
         throwOnError: true,
       });
+      return data;
     },
 
-    allVerbose: () => {
+    allVerbose: async () => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return TaskResource.allVerbose({
+      const { data } = await TaskResource.allVerbose({
         client,
         throwOnError: true,
       });
+      return data;
     },
 
-    updateTask: (
+    updateTask: async (
       workflowId: string,
       taskRefName: string,
       status:
@@ -1328,47 +1420,51 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return TaskResource.updateTask1({
+      const { data } = await TaskResource.updateTask1({
         client,
         path: { workflowId, taskRefName, status },
         body: requestBody,
         throwOnError: true,
       });
+      return data;
     },
 
-    getTask: (taskId: string) => {
+    getTask: async (taskId: string) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return TaskResource.getTask({
+      const { data } = await TaskResource.getTask({
         client,
         path: { taskId },
         throwOnError: true,
       });
+      return data;
     },
 
-    all: () => {
+    all: async () => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return TaskResource.all({
+      const { data } = await TaskResource.all({
         client,
         throwOnError: true,
       });
+      return data;
     },
 
-    requeuePendingTask: (taskType: string) => {
+    requeuePendingTask: async (taskType: string) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return TaskResource.requeuePendingTask({
+      const { data } = await TaskResource.requeuePendingTask({
         client,
         path: { taskType },
         throwOnError: true,
       });
+      return data;
     },
 
-    search: (
+    search: async (
       start?: number,
       size: number = 100,
       sort?: string,
@@ -1378,14 +1474,15 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return TaskResource.search2({
+      const { data } = await TaskResource.search2({
         client,
         query: { start, size, sort, freeText, query },
         throwOnError: true,
       });
+      return data;
     },
 
-    searchV22: (
+    searchV22: async (
       start?: number,
       size: number = 100,
       sort?: string,
@@ -1395,7 +1492,7 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return client.get({
+      const { data } = await client.get({
         security: [
           {
             name: "X-Authorization",
@@ -1406,35 +1503,38 @@ export const addServicesBackwardCompatibility = (client: Client) => {
         query: { start, size, sort, freeText, query },
         throwOnError: true,
       });
+      return data as any;
     },
 
-    getPollData: (taskType: string) => {
+    getPollData: async (taskType: string) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return TaskResource.getPollData({
+      const { data } = await TaskResource.getPollData({
         client,
         query: { taskType },
         throwOnError: true,
       });
+      return data;
     },
 
-    getTaskLogs: (taskId: string) => {
+    getTaskLogs: async (taskId: string) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return TaskResource.getTaskLogs({
+      const { data } = await TaskResource.getTaskLogs({
         client,
         path: { taskId },
         throwOnError: true,
       });
+      return data;
     },
 
-    log: (taskId: string, requestBody: string) => {
+    log: async (taskId: string, requestBody: string) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      TaskResource.log({
+      await TaskResource.log({
         client,
         path: { taskId },
         body: requestBody,
@@ -1442,17 +1542,18 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
     },
 
-    getAllPollData: () => {
+    getAllPollData: async () => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return TaskResource.getAllPollData({
+      const { data } = await TaskResource.getAllPollData({
         client,
         throwOnError: true,
       });
+      return data;
     },
 
-    batchPoll: (
+    batchPoll: async (
       tasktype: string,
       workerid?: string,
       domain?: string,
@@ -1462,37 +1563,40 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return TaskResource.batchPoll({
+      const { data } = await TaskResource.batchPoll({
         client,
         path: { tasktype },
         query: { workerid, domain, count, timeout },
         throwOnError: true,
       });
+      return data;
     },
 
-    updateTask1: (requestBody: any) => {
+    updateTask1: async (requestBody: any) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return TaskResource.updateTask({
+      const { data } = await TaskResource.updateTask({
         client,
         body: requestBody,
         throwOnError: true,
       });
+      return data;
     },
 
-    size1: (taskType?: string[]) => {
+    size1: async (taskType?: string[]) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return TaskResource.size({
+      const { data } = await TaskResource.size({
         client,
         query: { taskType },
         throwOnError: true,
       });
+      return data;
     },
 
-    getExternalStorageLocation1: (
+    getExternalStorageLocation1: async (
       path: string,
       operation: string,
       payloadType: string
@@ -1500,7 +1604,7 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return client.get({
+      const { data } = await client.get({
         security: [
           {
             name: "X-Authorization",
@@ -1511,9 +1615,10 @@ export const addServicesBackwardCompatibility = (client: Client) => {
         query: { path, operation, payloadType },
         throwOnError: true,
       });
+      return data as any;
     },
 
-    updateTaskSync: (
+    updateTaskSync: async (
       workflowId: string,
       taskRefName: string,
       status: any,
@@ -1523,16 +1628,17 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return TaskResource.updateTaskSync({
+      const { data } = await TaskResource.updateTaskSync({
         client,
         path: { workflowId, taskRefName, status },
         query: { workerid: workerId },
         body: output,
         throwOnError: true,
       });
+      return data;
     },
 
-    signal: (
+    signal: async (
       workflowId: string,
       status: any,
       output: any,
@@ -1541,25 +1647,27 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      return TaskResource.signalWorkflowTaskSync({
+      const { data } = await TaskResource.signalWorkflowTaskSync({
         client,
         path: { workflowId, status },
         query: { returnStrategy },
         body: output,
         throwOnError: true,
       });
+      return data;
     },
 
-    signalAsync: (workflowId: string, status: any, output: any) => {
+    signalAsync: async (workflowId: string, status: any, output: any) => {
       console.warn(
         "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
       );
-      TaskResource.signalWorkflowTaskASync({
+      const { data } = await TaskResource.signalWorkflowTaskASync({
         client,
         path: { workflowId, status },
         body: output,
         throwOnError: true,
       });
+      return data as SignalResponse;
     },
   };
 };
