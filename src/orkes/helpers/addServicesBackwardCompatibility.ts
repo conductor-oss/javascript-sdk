@@ -435,6 +435,475 @@ export const addServicesBackwardCompatibility = (client: Client) => {
     },
   };
 
+  (client as any).tokenResource = {
+    generateToken: (requestBody: any) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return TokenResource.generateToken({
+        client,
+        body: requestBody,
+        throwOnError: true,
+      });
+    },
+
+    getUserInfo: (claims: boolean = false) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return TokenResource.getUserInfo({
+        client,
+        query: { claims },
+        throwOnError: true,
+      });
+    },
+  };
+
+  (client as any).workflowBulkResource = {
+    retry: (requestBody: any[]) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return WorkflowBulkResource.retry1({
+        client,
+        body: requestBody,
+        throwOnError: true,
+      });
+    },
+
+    restart: (requestBody: any[], useLatestDefinitions: boolean = false) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return WorkflowBulkResource.restart1({
+        client,
+        body: requestBody,
+        query: { useLatestDefinitions },
+        throwOnError: true,
+      });
+    },
+
+    terminate: (requestBody: any[], reason?: string) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return WorkflowBulkResource.terminate({
+        client,
+        body: requestBody,
+        query: { reason },
+        throwOnError: true,
+      });
+    },
+
+    resumeWorkflow: (requestBody: any[]) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return WorkflowBulkResource.resumeWorkflow1({
+        client,
+        body: requestBody,
+        throwOnError: true,
+      });
+    },
+
+    pauseWorkflow1: (requestBody: any[]) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return WorkflowBulkResource.pauseWorkflow1({
+        client,
+        body: requestBody,
+        throwOnError: true,
+      });
+    },
+  };
+
+  (client as any).workflowResource = {
+    getRunningWorkflow: (
+      name: string,
+      version: number = 1,
+      startTime?: number,
+      endTime?: number
+    ) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return WorkflowResource.getRunningWorkflow({
+        client,
+        path: { name },
+        query: { version, startTime, endTime },
+        throwOnError: true,
+      });
+    },
+
+    executeWorkflow: (
+      body: any,
+      name: string,
+      version: number,
+      requestId?: string,
+      waitUntilTaskRef?: string,
+      waitForSeconds?: number,
+      consistency?: any,
+      returnStrategy?: any
+    ) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return WorkflowResource.executeWorkflow({
+        client,
+        path: { name, version },
+        query: {
+          requestId,
+          waitUntilTaskRef,
+          waitForSeconds,
+          consistency,
+          returnStrategy,
+        },
+        body,
+        throwOnError: true,
+      });
+    },
+
+    startWorkflow: (requestBody: any) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return WorkflowResource.startWorkflow({
+        client,
+        body: requestBody,
+        throwOnError: true,
+      });
+    },
+
+    decide: (workflowId: string) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      WorkflowResource.decide({
+        client,
+        path: { workflowId },
+        throwOnError: true,
+      });
+    },
+
+    rerun: (workflowId: string, requestBody: any) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return WorkflowResource.rerun({
+        client,
+        path: { workflowId },
+        body: requestBody,
+        throwOnError: true,
+      });
+    },
+
+    searchV21: (
+      start?: number,
+      size: number = 100,
+      sort?: string,
+      freeText: string = "*",
+      query?: string
+    ) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return client.get({
+        security: [
+          {
+            name: "X-Authorization",
+            type: "apiKey",
+          },
+        ],
+        url: "/api/workflow/search-v2",
+        query: { start, size, sort, freeText, query },
+        throwOnError: true,
+      });
+    },
+
+    pauseWorkflow: (workflowId: string) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      WorkflowResource.pauseWorkflow({
+        client,
+        path: { workflowId },
+        throwOnError: true,
+      });
+    },
+
+    skipTaskFromWorkflow: (
+      workflowId: string,
+      taskReferenceName: string,
+      requestBody?: any
+    ) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      WorkflowResource.skipTaskFromWorkflow({
+        client,
+        path: { workflowId, taskReferenceName },
+        body: requestBody,
+        throwOnError: true,
+      });
+    },
+
+    getWorkflows: (
+      name: string,
+      requestBody: any[],
+      includeClosed: boolean = false,
+      includeTasks: boolean = false
+    ) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return WorkflowResource.getWorkflows({
+        client,
+        path: { name },
+        query: { includeClosed, includeTasks },
+        body: requestBody,
+        throwOnError: true,
+      });
+    },
+
+    getWorkflowStatusSummary: (
+      workflowId: string,
+      includeOutput: boolean = false,
+      includeVariables: boolean = false
+    ) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return WorkflowResource.getWorkflowStatusSummary({
+        client,
+        path: { workflowId },
+        query: { includeOutput, includeVariables },
+        throwOnError: true,
+      });
+    },
+
+    getWorkflows1: (
+      name: string,
+      correlationId: string,
+      includeClosed: boolean = false,
+      includeTasks: boolean = false
+    ) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return WorkflowResource.getWorkflows2({
+        client,
+        path: { name, correlationId },
+        query: { includeClosed, includeTasks },
+        throwOnError: true,
+      });
+    },
+
+    retry1: (workflowId: string, resumeSubworkflowTasks: boolean = false) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      WorkflowResource.retry({
+        client,
+        path: { workflowId },
+        query: { resumeSubworkflowTasks },
+        throwOnError: true,
+      });
+    },
+
+    getExecutionStatus: (workflowId: string, includeTasks: boolean = true) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return WorkflowResource.getExecutionStatus({
+        client,
+        path: { workflowId },
+        query: { includeTasks },
+        throwOnError: true,
+      });
+    },
+
+    terminate1: (workflowId: string, reason?: string) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      WorkflowResource.terminate1({
+        client,
+        path: { workflowId },
+        query: { reason },
+        throwOnError: true,
+      });
+    },
+
+    resumeWorkflow: (workflowId: string) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      WorkflowResource.resumeWorkflow({
+        client,
+        path: { workflowId },
+        throwOnError: true,
+      });
+    },
+
+    delete: (workflowId: string, archiveWorkflow: boolean = true) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      WorkflowResource.delete1({
+        client,
+        path: { workflowId },
+        query: { archiveWorkflow },
+        throwOnError: true,
+      });
+    },
+
+    searchWorkflowsByTasks: (
+      start?: number,
+      size: number = 100,
+      sort?: string,
+      freeText: string = "*",
+      query?: string
+    ) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return client.get({
+        security: [
+          {
+            name: "X-Authorization",
+            type: "apiKey",
+          },
+        ],
+        url: "/api/workflow/search-by-tasks",
+        query: { start, size, sort, freeText, query },
+        throwOnError: true,
+      });
+    },
+
+    getExternalStorageLocation: (
+      path: string,
+      operation: string,
+      payloadType: string
+    ) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return client.get({
+        security: [
+          {
+            name: "X-Authorization",
+            type: "apiKey",
+          },
+        ],
+        url: "/api/workflow/externalstoragelocation",
+        query: { path, operation, payloadType },
+        throwOnError: true,
+      });
+    },
+
+    startWorkflow1: (
+      name: string,
+      requestBody: any,
+      version?: number,
+      correlationId?: string,
+      priority?: number
+    ) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return WorkflowResource.startWorkflow1({
+        client,
+        path: { name },
+        query: { version, correlationId, priority },
+        body: requestBody,
+        throwOnError: true,
+      });
+    },
+
+    restart1: (workflowId: string, useLatestDefinitions: boolean = false) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      WorkflowResource.restart({
+        client,
+        path: { workflowId },
+        query: { useLatestDefinitions },
+        throwOnError: true,
+      });
+    },
+
+    search1: (
+      queryId?: string,
+      start?: number,
+      size: number = 100,
+      sort?: string,
+      freeText: string = "*",
+      query?: string,
+      skipCache: boolean = false
+    ) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return client.get({
+        security: [
+          {
+            name: "X-Authorization",
+            type: "apiKey",
+          },
+        ],
+        url: "/api/workflow/search",
+        query: { queryId, start, size, sort, freeText, query, skipCache },
+        throwOnError: true,
+      });
+    },
+
+    searchWorkflowsByTasksV2: (
+      start?: number,
+      size: number = 100,
+      sort?: string,
+      freeText: string = "*",
+      query?: string
+    ) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return client.get({
+        security: [
+          {
+            name: "X-Authorization",
+            type: "apiKey",
+          },
+        ],
+        url: "/api/workflow/search-by-tasks-v2",
+        query: { start, size, sort, freeText, query },
+        throwOnError: true,
+      });
+    },
+
+    resetWorkflow: (workflowId: string) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      WorkflowResource.resetWorkflow({
+        client,
+        path: { workflowId },
+        throwOnError: true,
+      });
+    },
+
+    testWorkflow: (requestBody: any) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return WorkflowResource.testWorkflow({
+        client,
+        body: requestBody,
+        throwOnError: true,
+      });
+    },
+  };
+
   (client as any).taskResource = {
     poll: (tasktype: string, workerid?: string, domain?: string) => {
       console.warn(
