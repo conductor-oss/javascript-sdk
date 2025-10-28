@@ -1,4 +1,4 @@
-// eslint-disable
+/* eslint-disable */
 
 import { SignalResponse } from "../../common";
 import { Client } from "../../common/open-api/client/types.gen";
