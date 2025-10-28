@@ -434,4 +434,275 @@ export const addServicesBackwardCompatibility = (client: Client) => {
       });
     },
   };
+
+  (client as any).taskResource = {
+    poll: (tasktype: string, workerid?: string, domain?: string) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return TaskResource.poll({
+        client,
+        path: { tasktype },
+        query: { workerid, domain },
+        throwOnError: true,
+      });
+    },
+
+    allVerbose: () => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return TaskResource.allVerbose({
+        client,
+        throwOnError: true,
+      });
+    },
+
+    updateTask: (
+      workflowId: string,
+      taskRefName: string,
+      status:
+        | "IN_PROGRESS"
+        | "FAILED"
+        | "FAILED_WITH_TERMINAL_ERROR"
+        | "COMPLETED",
+      requestBody: any
+    ) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return TaskResource.updateTask1({
+        client,
+        path: { workflowId, taskRefName, status },
+        body: requestBody,
+        throwOnError: true,
+      });
+    },
+
+    getTask: (taskId: string) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return TaskResource.getTask({
+        client,
+        path: { taskId },
+        throwOnError: true,
+      });
+    },
+
+    all: () => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return TaskResource.all({
+        client,
+        throwOnError: true,
+      });
+    },
+
+    requeuePendingTask: (taskType: string) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return TaskResource.requeuePendingTask({
+        client,
+        path: { taskType },
+        throwOnError: true,
+      });
+    },
+
+    search: (
+      start?: number,
+      size: number = 100,
+      sort?: string,
+      freeText: string = "*",
+      query?: string
+    ) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return TaskResource.search2({
+        client,
+        query: { start, size, sort, freeText, query },
+        throwOnError: true,
+      });
+    },
+
+    searchV22: (
+      start?: number,
+      size: number = 100,
+      sort?: string,
+      freeText: string = "*",
+      query?: string
+    ) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return client.get({
+        security: [
+          {
+            name: "X-Authorization",
+            type: "apiKey",
+          },
+        ],
+        url: "/api/tasks/search-v2",
+        query: { start, size, sort, freeText, query },
+        throwOnError: true,
+      });
+    },
+
+    getPollData: (taskType: string) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return TaskResource.getPollData({
+        client,
+        query: { taskType },
+        throwOnError: true,
+      });
+    },
+
+    getTaskLogs: (taskId: string) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return TaskResource.getTaskLogs({
+        client,
+        path: { taskId },
+        throwOnError: true,
+      });
+    },
+
+    log: (taskId: string, requestBody: string) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      TaskResource.log({
+        client,
+        path: { taskId },
+        body: requestBody,
+        throwOnError: true,
+      });
+    },
+
+    getAllPollData: () => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return TaskResource.getAllPollData({
+        client,
+        throwOnError: true,
+      });
+    },
+
+    batchPoll: (
+      tasktype: string,
+      workerid?: string,
+      domain?: string,
+      count: number = 1,
+      timeout: number = 100
+    ) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return TaskResource.batchPoll({
+        client,
+        path: { tasktype },
+        query: { workerid, domain, count, timeout },
+        throwOnError: true,
+      });
+    },
+
+    updateTask1: (requestBody: any) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return TaskResource.updateTask({
+        client,
+        body: requestBody,
+        throwOnError: true,
+      });
+    },
+
+    size1: (taskType?: string[]) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return TaskResource.size({
+        client,
+        query: { taskType },
+        throwOnError: true,
+      });
+    },
+
+    getExternalStorageLocation1: (
+      path: string,
+      operation: string,
+      payloadType: string
+    ) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return client.get({
+        security: [
+          {
+            name: "X-Authorization",
+            type: "apiKey",
+          },
+        ],
+        url: "/api/tasks/externalstoragelocation",
+        query: { path, operation, payloadType },
+        throwOnError: true,
+      });
+    },
+
+    updateTaskSync: (
+      workflowId: string,
+      taskRefName: string,
+      status: any,
+      output: any,
+      workerId?: string
+    ) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return TaskResource.updateTaskSync({
+        client,
+        path: { workflowId, taskRefName, status },
+        query: { workerid: workerId },
+        body: output,
+        throwOnError: true,
+      });
+    },
+
+    signal: (
+      workflowId: string,
+      status: any,
+      output: any,
+      returnStrategy: any = "TARGET_WORKFLOW"
+    ) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      return TaskResource.signalWorkflowTaskSync({
+        client,
+        path: { workflowId, status },
+        query: { returnStrategy },
+        body: output,
+        throwOnError: true,
+      });
+    },
+
+    signalAsync: (workflowId: string, status: any, output: any) => {
+      console.warn(
+        "DEPRECATED: Accessing methods directly on the client is deprecated and will be removed after April 2026"
+      );
+      TaskResource.signalWorkflowTaskASync({
+        client,
+        path: { workflowId, status },
+        body: output,
+        throwOnError: true,
+      });
+    },
+  };
 };
