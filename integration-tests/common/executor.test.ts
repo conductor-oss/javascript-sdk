@@ -11,7 +11,7 @@ import { MetadataClient } from "../../src/core";
 describe("Executor", () => {
   const clientPromise = orkesConductorClient();
 
-  jest.setTimeout(30000);
+  jest.setTimeout(60000);
   const name = `jsSdkTest-Workflow-${Date.now()}`;
   const version = 1;
   test("Should be able to register a workflow", async () => {

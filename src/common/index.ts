@@ -52,3 +52,20 @@ export type { ExtendedTaskDef, SignalResponse } from "./types";
 
 // todo: remove after April 2026 (backward compatibility types)
 export * from "./deprecated-types";
+
+/**
+ * Export types needed for client's return type in case if user is building another lib on top of sdk with declaration files
+ * @deprecated
+ * to import all the types below manually while using SDK since these types could change in future without backward compatibility
+ * TODO: remove after April 2026 
+ */
+export type {
+  Auth,
+  ClientOptions,
+  Config,
+  QuerySerializerOptions,
+  RequestOptions,
+  ResolvedRequestOptions,
+} from "./open-api/client";
+export type { Middleware } from "./open-api/client/utils.gen";
+export type { StreamEvent } from "./open-api/core/serverSentEvents.gen";
