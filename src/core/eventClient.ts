@@ -124,15 +124,21 @@ export class EventClient {
     eventHandlerName: string
   ): Promise<EventHandler> {
     try {
-      const { data } = await EventResource.getEventHandlerByName({
+      const { response, data } = await EventResource.getEventHandlerByName({
         client: this._client,
         throwOnError: true,
         path: { name: eventHandlerName },
       });
 
+      if (response.headers.get("content-length") === "0") {
+        throw new Error("Response is empty");
+      }
       return data;
     } catch (error: unknown) {
-      handleSdkError(error, `Failed to get event handler by name`);
+      handleSdkError(
+        error,
+        `Failed to get event handler by name ${eventHandlerName}`
+      );
     }
   }
 
@@ -172,7 +178,10 @@ export class EventClient {
         throwOnError: true,
       });
     } catch (error: unknown) {
-      handleSdkError(error, `Failed to delete queue config`);
+      handleSdkError(
+        error,
+        `Failed to delete queue config ${queueType} ${queueName}`
+      );
     }
   }
 
@@ -193,6 +202,10 @@ export class EventClient {
         client: this._client,
         throwOnError: true,
       });
+
+      if (Object.keys(data).length === 0) {
+        throw new Error("Response is empty");
+      }
 
       return data;
     } catch (error: unknown) {
@@ -290,7 +303,7 @@ export class EventClient {
    * @returns {Promise<void>}
    * @throws {ConductorSdkError}
    */
-  public async deleteTagForEventHandler(
+  public async deleteTagsForEventHandler(
     name: string,
     tags: Tag[]
   ): Promise<void> {
@@ -302,7 +315,33 @@ export class EventClient {
         body: tags,
       });
     } catch (error: unknown) {
-      handleSdkError(error, `Failed to delete tags for event handler: ${name}`);
+      handleSdkError(
+        error,
+        `Failed to delete tags for an event handler: ${name}`
+      );
+    }
+  }
+
+  /**
+   * Delete a tag for an event handler
+   * @param {string} name
+   * @param {Tag} tag
+   * @returns {Promise<void>}
+   * @throws {ConductorSdkError}
+   */
+  public async deleteTagForEventHandler(name: string, tag: Tag): Promise<void> {
+    try {
+      await EventResource.deleteTagForEventHandler({
+        client: this._client,
+        throwOnError: true,
+        path: { name },
+        body: [tag],
+      });
+    } catch (error: unknown) {
+      handleSdkError(
+        error,
+        `Failed to delete a tag for an event handler: ${name}`
+      );
     }
   }
 
