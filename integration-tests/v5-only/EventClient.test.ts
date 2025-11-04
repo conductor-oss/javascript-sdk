@@ -2,30 +2,13 @@ import { expect, describe, test, jest } from "@jest/globals";
 import { orkesConductorClient } from "../../src/orkes";
 import { EventClient } from "../../src/core";
 import type { EventHandler } from "../../src/common";
-import type {
-  Tag,
-  ConnectivityTestInput,
-  Action,
-} from "../../src/common/open-api/types.gen";
+import type { Action } from "../../src/common/open-api/types.gen";
 
 describe("EventClient", () => {
   jest.setTimeout(60000);
   // Helper function to create unique names
   const createUniqueName = (prefix: string) =>
     `jsSdkTest:${prefix}:${Date.now()}`;
-
-  // Helper function to create a test event handler
-  const createEventHandler = (
-    name: string,
-    event: string,
-    active = true
-  ): EventHandler => ({
-    name,
-    event,
-    active,
-    actions: [],
-    description: `Test event handler: ${name}`,
-  });
 
   describe("Event Processing", () => {
     test("Should handle incoming event", async () => {
