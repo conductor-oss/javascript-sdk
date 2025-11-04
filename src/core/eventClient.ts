@@ -5,15 +5,15 @@ import {
 } from "../common/open-api/sdk.gen";
 import { Client } from "../common/open-api/client";
 import { handleSdkError } from "./helpers";
-import type { EventHandler } from "../common";
-import {
+import type {
+  EventHandler,
   ExtendedEventExecution,
   EventMessage,
   SearchResultHandledEventResponse,
   Tag,
   ConnectivityTestInput,
   ConnectivityTestResult,
-} from "../common/open-api/types.gen";
+} from "../common";
 
 export class EventClient {
   public readonly _client: Client;
