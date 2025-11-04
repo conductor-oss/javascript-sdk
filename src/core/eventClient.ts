@@ -147,7 +147,7 @@ export class EventClient {
    * @returns {Promise<Record<string, string>>}
    * @throws {ConductorSdkError}
    */
-  public async getAllQueueConfigs(): Promise<{ [key: string]: string }> {
+  public async getAllQueueConfigs(): Promise<Record<string, string>> {
     try {
       const { data } = await EventResource.getQueueNames({
         client: this._client,

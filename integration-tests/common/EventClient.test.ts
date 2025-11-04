@@ -7,7 +7,6 @@ import type {
   ConnectivityTestInput,
   Action,
 } from "../../src/common/open-api/types.gen";
-import { IntegrationResource } from "../../src/common/open-api/sdk.gen";
 
 describe("EventClient", () => {
   jest.setTimeout(60000);
@@ -81,17 +80,17 @@ describe("EventClient", () => {
       expect(retrievedHandler.actions).toBeDefined();
       expect(Array.isArray(retrievedHandler.actions)).toBe(true);
       expect(retrievedHandler.actions?.length).toBeGreaterThanOrEqual(1);
-      const retrievedAction = retrievedHandler.actions![0];
-      expect(retrievedAction.action).toEqual("start_workflow");
-      expect(retrievedAction.start_workflow).toBeDefined();
-      expect(retrievedAction.start_workflow?.name).toEqual(workflowName);
-      expect(retrievedAction.start_workflow?.version).toEqual(1);
+      const retrievedAction = retrievedHandler.actions?.[0];
+      expect(retrievedAction?.action).toEqual("start_workflow");
+      expect(retrievedAction?.start_workflow).toBeDefined();
+      expect(retrievedAction?.start_workflow?.name).toEqual(workflowName);
+      expect(retrievedAction?.start_workflow?.version).toEqual(1);
 
       expect(retrievedHandler.tags).toBeDefined();
       expect(Array.isArray(retrievedHandler.tags)).toBe(true);
       expect(retrievedHandler.tags?.length).toBeGreaterThanOrEqual(2);
       eventHandler.tags?.forEach((tag) => {
-        const foundTag = retrievedHandler.tags!.find(
+        const foundTag = retrievedHandler.tags?.find(
           (t) => t.key === tag.key && t.value === tag.value
         );
         expect(foundTag).toBeDefined();
