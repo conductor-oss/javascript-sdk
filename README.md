@@ -62,6 +62,14 @@ Show support for the Conductor OSS.  Please help spread the awareness by starrin
     - [Step 1: Create a MetadataClient](#step-1-create-a-metadataclient)
     - [Step 2: Define and Register a Task](#step-2-define-and-register-a-task)
     - [Step 3: Define and Register a Workflow](#step-3-define-and-register-a-workflow)
+- [Events](#events)
+  - [The EventClient](#the-eventclient)
+  - [Quick Start: Using Event Handlers](#quick-start-using-event-handlers)
+    - [Step 1: Create an EventClient](#step-1-create-an-eventclient)
+    - [Step 2: Register an Event Handler](#step-2-register-an-event-handler)
+    - [Step 3: Publish Events](#step-3-publish-events)
+    - [Step 4: Monitor Event Processing](#step-4-monitor-event-processing)
+    - [Step 5: Manage Event Handlers](#step-5-manage-event-handlers)
 - [Human Tasks](#human-tasks)
   - [The HumanExecutor and TemplateClient](#the-humanexecutor-and-templateclient)
   - [Quick Start: Creating and Managing a Human Task](#quick-start-creating-and-managing-a-human-task)
@@ -715,6 +723,110 @@ await metadataClient.registerWorkflowDef(wf);
 ```
 
 For a complete method reference, see the [MetadataClient API Reference](docs/api-reference/metadata-client.md).
+
+## Events
+
+Event handlers in Conductor allow you to automatically trigger actions (like starting workflows) when events are received. This enables event-driven workflows and integrations with external systems.
+
+### The EventClient
+
+The `EventClient` manages event handlers and event processing. For a complete method reference, see the [EventClient API Reference](docs/api-reference/event-client.md).
+
+### Quick Start: Using Event Handlers
+
+Here's how to set up event-driven workflows:
+
+#### Step 1: Create an EventClient
+
+First, create an instance of the `EventClient`:
+
+```typescript
+import { EventClient } from "@io-orkes/conductor-javascript";
+
+const eventClient = new EventClient(client);
+```
+
+#### Step 2: Register an Event Handler
+
+Create an event handler that defines what action to take when an event is received. In this example, we'll start a workflow when an order is created:
+
+```typescript
+await eventClient.addEventHandler({
+  name: "order_created_handler",
+  event: "order.created",
+  active: true,
+  description: "Starts fulfillment workflow when order is created",
+  actions: [
+    {
+      action: "start_workflow",
+      start_workflow: {
+        name: "fulfill_order",
+        version: 1,
+        input: {
+          orderId: "${event.orderId}",
+          customerId: "${event.customerId}",
+        },
+      },
+    },
+  ],
+});
+```
+
+#### Step 3: Publish Events
+
+When an event occurs, publish it to Conductor. All active handlers registered for that event will be triggered:
+
+```typescript
+await eventClient.handleIncomingEvent({
+  event: "order.created",
+  orderId: "ORDER-123",
+  customerId: "CUST-456",
+  amount: "99.99",
+  timestamp: Date.now().toString(),
+});
+```
+
+#### Step 4: Monitor Event Processing
+
+You can monitor event handlers and their execution history:
+
+```typescript
+// Get all handlers for a specific event
+const handlers = await eventClient.getEventHandlersForEvent("order.created");
+
+// Get execution history for a handler
+const executions = await eventClient.getEventExecutions("order_created_handler");
+
+// Get event messages
+const messages = await eventClient.getEventMessages("order.created");
+```
+
+#### Step 5: Manage Event Handlers
+
+Update, deactivate, or remove event handlers as needed:
+
+```typescript
+// Update a handler
+await eventClient.updateEventHandler({
+  name: "order_created_handler",
+  active: false, // Deactivate
+  // ... other fields
+});
+
+// Remove a handler
+await eventClient.removeEventHandler("order_created_handler");
+```
+
+**Event Handler Actions:**
+
+Event handlers support various actions:
+- `start_workflow` - Start a workflow execution
+- `complete_task` - Complete a specific task
+- `fail_task` - Fail a specific task
+- `terminate_workflow` - Terminate a workflow
+- `update_workflow_variables` - Update workflow variables
+
+For a complete method reference, see the [EventClient API Reference](docs/api-reference/event-client.md).
 
 ## Human Tasks
 
