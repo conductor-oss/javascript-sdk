@@ -42,6 +42,7 @@ export type {
   WorkflowRun,
   ExtendedWorkflowDef,
   ExtendedEventExecution,
+  ExtendedConductorApplication,
   EventMessage,
   HumanTaskUser,
   HumanTaskDefinition,
