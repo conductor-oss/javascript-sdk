@@ -1,7 +1,12 @@
 import { ApplicationResource } from "../common/open-api/sdk.gen";
 import { Client } from "../common/open-api/client";
 import { handleSdkError } from "./helpers";
-import type { Tag, ExtendedConductorApplication } from "../common";
+import type {
+  Tag,
+  ExtendedConductorApplication,
+  AccessKey,
+  AccessKeyInfo,
+} from "../common";
 
 export class ApplicationClient {
   public readonly _client: Client;
@@ -22,13 +27,12 @@ export class ApplicationClient {
         throwOnError: true,
       });
 
-      return data;
+      return data as ExtendedConductorApplication[]; // TODO: remove cast after OpenApi spec type update
     } catch (error: unknown) {
       handleSdkError(error, `Failed to get all applications`);
     }
   }
 
-  // TODO: check acceptable data while testing
   /**
    * Create an application
    * @param {string} applicationName
@@ -45,22 +49,21 @@ export class ApplicationClient {
         throwOnError: true,
       });
 
-      return data;
+      return data as unknown as ExtendedConductorApplication; // TODO: remove cast after OpenApi spec type update
     } catch (error: unknown) {
       handleSdkError(error, `Failed to create application`);
     }
   }
 
-  // TODO: check return data while testing
   /**
-   * Get application id by access key id
+   * Get application by access key id
    * @param {string} accessKeyId
-   * @returns {Promise<Record<string, unknown>>}
+   * @returns {Promise<ExtendedConductorApplication>}
    * @throws {ConductorSdkError}
    */
   public async getAppByAccessKeyId(
     accessKeyId: string
-  ): Promise<Record<string, unknown>> {
+  ): Promise<ExtendedConductorApplication> {
     try {
       const { data } = await ApplicationResource.getAppByAccessKeyId({
         path: { accessKeyId },
@@ -68,7 +71,7 @@ export class ApplicationClient {
         throwOnError: true,
       });
 
-      return data;
+      return data as unknown as ExtendedConductorApplication; // TODO: remove cast after OpenApi spec type update
     } catch (error: unknown) {
       handleSdkError(
         error,
@@ -102,18 +105,17 @@ export class ApplicationClient {
     }
   }
 
-  // TODO: check return data while testing
   /**
    * Toggle the status of an access key
    * @param {string} applicationId
    * @param {string} keyId
-   * @returns {Promise<Record<string, unknown>>}
+   * @returns {Promise<AccessKeyInfo>}
    * @throws {ConductorSdkError}
    */
   public async toggleAccessKeyStatus(
     applicationId: string,
     keyId: string
-  ): Promise<Record<string, unknown>> {
+  ): Promise<AccessKeyInfo> {
     try {
       const { data } = await ApplicationResource.toggleAccessKeyStatus({
         path: { applicationId, keyId },
@@ -121,7 +123,7 @@ export class ApplicationClient {
         throwOnError: true,
       });
 
-      return data;
+      return data as unknown as AccessKeyInfo; // TODO: remove cast after OpenApi spec type update
     } catch (error: unknown) {
       handleSdkError(
         error,
@@ -134,21 +136,19 @@ export class ApplicationClient {
    * Remove role from application user
    * @param {string} applicationId
    * @param {string} role
-   * @returns {Promise<ExtendedConductorApplication>}
+   * @returns {Promise<void>}
    * @throws {ConductorSdkError}
    */
   public async removeRoleFromApplicationUser(
     applicationId: string,
     role: string
-  ): Promise<ExtendedConductorApplication> {
+  ): Promise<void> {
     try {
-      const { data } = await ApplicationResource.removeRoleFromApplicationUser({
+      await ApplicationResource.removeRoleFromApplicationUser({
         path: { applicationId, role },
         client: this._client,
         throwOnError: true,
       });
-
-      return data;
     } catch (error: unknown) {
       handleSdkError(
         error,
@@ -161,21 +161,19 @@ export class ApplicationClient {
    * Add role to application user
    * @param {string} applicationId
    * @param {string} role
-   * @returns {Promise<ExtendedConductorApplication>}
+   * @returns {Promise<void>}
    * @throws {ConductorSdkError}
    */
   public async addRoleToApplicationUser(
     applicationId: string,
     role: string
-  ): Promise<ExtendedConductorApplication> {
+  ): Promise<void> {
     try {
-      const { data } = await ApplicationResource.addRoleToApplicationUser({
+      await ApplicationResource.addRoleToApplicationUser({
         path: { applicationId, role },
         client: this._client,
         throwOnError: true,
       });
-
-      return data;
     } catch (error: unknown) {
       handleSdkError(
         error,
@@ -218,7 +216,7 @@ export class ApplicationClient {
         throwOnError: true,
       });
 
-      return data;
+      return data as unknown as ExtendedConductorApplication; // TODO: remove cast after OpenApi spec type update
     } catch (error: unknown) {
       handleSdkError(error, `Failed to get application: ${applicationId}`);
     }
@@ -243,22 +241,19 @@ export class ApplicationClient {
         throwOnError: true,
       });
 
-      return data;
+      return data as unknown as ExtendedConductorApplication; // TODO: remove cast after OpenApi spec type update
     } catch (error: unknown) {
       handleSdkError(error, `Failed to update application ${applicationId}`);
     }
   }
 
-  //TODO: check return data while testing
   /**
    * Get application's access keys
    * @param {string} applicationId
-   * @returns {Promise<Record<string, unknown>>}
+   * @returns {Promise<AccessKeyInfo[]>}
    * @throws {ConductorSdkError}
    */
-  public async getAccessKeys(
-    applicationId: string
-  ): Promise<Record<string, unknown>> {
+  public async getAccessKeys(applicationId: string): Promise<AccessKeyInfo[]> {
     try {
       const { data } = await ApplicationResource.getAccessKeys({
         path: { id: applicationId },
@@ -266,7 +261,7 @@ export class ApplicationClient {
         throwOnError: true,
       });
 
-      return data;
+      return data as unknown as AccessKeyInfo[]; // TODO: remove cast after OpenApi spec update
     } catch (error: unknown) {
       handleSdkError(
         error,
@@ -275,16 +270,13 @@ export class ApplicationClient {
     }
   }
 
-  //TODO: check return data while testing
   /**
    * Create an access key for an application
    * @param {string} applicationId
-   * @returns {Promise<Record<string, unknown>>}
+   * @returns {Promise<AccessKey>}
    * @throws {ConductorSdkError}
    */
-  public async createAccessKey(
-    applicationId: string
-  ): Promise<Record<string, unknown>> {
+  public async createAccessKey(applicationId: string): Promise<AccessKey> {
     try {
       const { data } = await ApplicationResource.createAccessKey({
         path: { id: applicationId },
@@ -292,7 +284,7 @@ export class ApplicationClient {
         throwOnError: true,
       });
 
-      return data;
+      return data as unknown as AccessKey; // TODO: remove cast after OpenApi spec update
     } catch (error: unknown) {
       handleSdkError(
         error,

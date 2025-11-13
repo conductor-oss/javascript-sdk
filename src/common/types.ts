@@ -1,6 +1,8 @@
 import {
   ExtendedTaskDef as OpenApiExtendedTaskDef,
   SignalResponse as OpenApiSignalResponse,
+  ExtendedConductorApplication as OpenApiExtendedConductorApplication,
+  Tag,
 } from "./open-api";
 import { Task } from "./";
 
@@ -263,4 +265,23 @@ export interface SignalResponse extends OpenApiSignalResponse {
   retryCount?: number;
   taskDefName?: string;
   workflowType?: string;
+}
+
+// TODO: need to remove this once AccessKey type is added to OpenAPI spec
+export interface AccessKey {
+  id: string;
+  secret: string;
+}
+
+// TODO: need to remove this once type is added to OpenAPI spec
+export interface AccessKeyInfo {
+  id: string;
+  createdAt: number;
+  status: "ACTIVE" | "INACTIVE";
+}
+
+// TODO: need to remove this once ExtendedConductorApplication type is corrected in OpenAPI spec
+export interface ExtendedConductorApplication
+  extends Required<Omit<OpenApiExtendedConductorApplication, "tags">> {
+  tags?: Array<Tag>;
 }

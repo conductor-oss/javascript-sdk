@@ -42,7 +42,7 @@ export type {
   WorkflowRun,
   ExtendedWorkflowDef,
   ExtendedEventExecution,
-  ExtendedConductorApplication,
+  // ExtendedConductorApplication, TODO: restore after OpenAPI spec update and remove export from ./types block
   EventMessage,
   HumanTaskUser,
   HumanTaskDefinition,
@@ -55,7 +55,13 @@ export type {
   HumanTaskEntry,
 } from "./open-api";
 
-export type { ExtendedTaskDef, SignalResponse } from "./types";
+export type {
+  ExtendedTaskDef,
+  SignalResponse,
+  AccessKey,
+  AccessKeyInfo,
+  ExtendedConductorApplication,
+} from "./types";
 
 // todo: remove after April 2026 (backward compatibility types)
 export * from "./deprecated-types";
@@ -64,7 +70,7 @@ export * from "./deprecated-types";
  * Export types needed for client's return type in case if user is building another lib on top of sdk with declaration files
  * @deprecated
  * to import all the types below manually while using SDK since these types could change in future without backward compatibility
- * TODO: remove after April 2026 
+ * TODO: remove after April 2026
  */
 export type {
   Auth,
