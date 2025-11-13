@@ -176,6 +176,10 @@ describe("ApplicationClient", () => {
       const foundKey = accessKeys.find((key) => key.id === createdKey.id);
       expect(foundKey).toBeDefined();
       expect(foundKey?.id).toEqual(createdKey.id);
+      expect(foundKey?.createdAt).toBeDefined();
+      expect(typeof foundKey?.createdAt).toBe("number");
+      expect(foundKey?.status).toBeDefined();
+      expect(["ACTIVE", "INACTIVE"]).toContain(foundKey?.status);
 
       testAppsToCleanup.push(createdApp.id);
     });
