@@ -283,5 +283,5 @@ export interface AccessKeyInfo {
 // TODO: need to remove this once ExtendedConductorApplication type is corrected in OpenAPI spec
 export interface ExtendedConductorApplication
   extends Required<Omit<OpenApiExtendedConductorApplication, "tags">> {
-  tags?: Array<Tag>;
+  tags?: Tag[];
 }
