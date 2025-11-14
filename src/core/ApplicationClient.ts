@@ -6,6 +6,7 @@ import type {
   ExtendedConductorApplication,
   AccessKey,
   AccessKeyInfo,
+  ApplicationRole,
 } from "../common";
 
 export class ApplicationClient {
@@ -158,15 +159,15 @@ export class ApplicationClient {
   }
 
   /**
-   * Add role to application user
+   * Add role to application
    * @param {string} applicationId
-   * @param {string} role
+   * @param {ApplicationRole} role
    * @returns {Promise<void>}
    * @throws {ConductorSdkError}
    */
-  public async addRoleToApplicationUser(
+  public async addApplicationRole(
     applicationId: string,
-    role: string
+    role: ApplicationRole
   ): Promise<void> {
     try {
       await ApplicationResource.addRoleToApplicationUser({

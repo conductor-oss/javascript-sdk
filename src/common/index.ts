@@ -61,6 +61,7 @@ export type {
   AccessKey,
   AccessKeyInfo,
   ExtendedConductorApplication,
+  ApplicationRole,
 } from "./types";
 
 // todo: remove after April 2026 (backward compatibility types)

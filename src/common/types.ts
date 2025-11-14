@@ -280,6 +280,20 @@ export interface AccessKeyInfo {
   status: "ACTIVE" | "INACTIVE";
 }
 
+// TODO: need to remove this once ApplicationRole type is added to OpenAPI spec
+export type ApplicationRole =
+  | "ADMIN"
+  | "UNRESTRICTED_WORKER"
+  | "METADATA_MANAGER"
+  | "WORKFLOW_MANAGER"
+  | "APPLICATION_MANAGER"
+  | "USER"
+  | "USER_READ_ONLY"
+  | "WORKER"
+  | "APPLICATION_CREATOR"
+  | "METADATA_API"
+  | "PROMPT_MANAGER";
+
 // TODO: need to remove this once ExtendedConductorApplication type is corrected in OpenAPI spec
 export interface ExtendedConductorApplication
   extends Required<Omit<OpenApiExtendedConductorApplication, "tags">> {

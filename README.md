@@ -853,7 +853,7 @@ Here's how to create and manage applications in Conductor:
 First, create an instance of the `ApplicationClient`:
 
 ```typescript
-import { ApplicationClient } from "@io-orkes/conductor-javascript";
+import { ApplicationClient, ApplicationRole } from "@io-orkes/conductor-javascript";
 
 const appClient = new ApplicationClient(client);
 ```
@@ -892,18 +892,30 @@ const authenticatedClient = await orkesConductorClient({
 Grant the application permissions by adding roles:
 
 ```typescript
+import { ApplicationRole } from "@io-orkes/conductor-javascript";
+
 // Add roles to the application
-await appClient.addRoleToApplicationUser(app.id, "WORKFLOW_EXECUTOR");
-await appClient.addRoleToApplicationUser(app.id, "WORKER");
+await appClient.addApplicationRole(app.id, "WORKFLOW_MANAGER");
+await appClient.addApplicationRole(app.id, "WORKER");
 
 console.log("Application can now execute workflows and run workers");
 ```
 
-**Common Roles:**
-- `WORKFLOW_EXECUTOR` - Start and manage workflow executions
-- `WORKER` - Poll for and execute tasks
+**Available Roles:**
+
+The SDK provides an `ApplicationRole` type with the following options:
+
+- `ADMIN` - Full administrative access to all resources
+- `WORKFLOW_MANAGER` - Start and manage workflow executions
+- `WORKER` - Poll for and execute assigned tasks
+- `UNRESTRICTED_WORKER` - Can execute any task without restrictions
 - `METADATA_MANAGER` - Manage workflow and task definitions
 - `APPLICATION_MANAGER` - Manage applications and access keys
+- `APPLICATION_CREATOR` - Can create new applications
+- `USER` - Standard user access
+- `USER_READ_ONLY` - Read-only access to resources
+- `METADATA_API` - API access to metadata operations
+- `PROMPT_MANAGER` - Can manage AI prompts and templates
 
 #### Step 5: Manage Applications
 

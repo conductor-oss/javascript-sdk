@@ -281,14 +281,14 @@ console.log(`Access key is now ${keyInfo.status}`);
 
 ---
 
-### `addRoleToApplicationUser(applicationId: string, role: string): Promise<void>`
+### `addApplicationRole(applicationId: string, role: ApplicationRole): Promise<void>`
 
 Adds a role to an application user.
 
 **Parameters:**
 
 - `applicationId` (`string`): The ID of the application.
-- `role` (`string`): The role to add.
+- `role` (`ApplicationRole`): The role to add.
 
 **Returns:**
 
@@ -297,13 +297,17 @@ Adds a role to an application user.
 **Example:**
 
 ```typescript
-import { ApplicationClient } from "@io-orkes/conductor-javascript";
+import { ApplicationClient, ApplicationRole } from "@io-orkes/conductor-javascript";
 
 const appClient = new ApplicationClient(client);
 
 // Add a role to the application
-await appClient.addRoleToApplicationUser("app-123", "WORKFLOW_EXECUTOR");
+await appClient.addApplicationRole("app-123", "WORKFLOW_MANAGER");
 console.log("Role added");
+
+// You can also use the ApplicationRole type
+const role: ApplicationRole = "METADATA_MANAGER";
+await appClient.addApplicationRole("app-123", role);
 ```
 
 ---
@@ -525,4 +529,37 @@ export type Tag = {
   value?: string;
 };
 ```
+
+### `ApplicationRole`
+
+Defines the available roles that can be assigned to an application.
+
+```typescript
+export type ApplicationRole =
+  | "ADMIN"
+  | "UNRESTRICTED_WORKER"
+  | "METADATA_MANAGER"
+  | "WORKFLOW_MANAGER"
+  | "APPLICATION_MANAGER"
+  | "USER"
+  | "USER_READ_ONLY"
+  | "WORKER"
+  | "APPLICATION_CREATOR"
+  | "METADATA_API"
+  | "PROMPT_MANAGER";
+```
+
+**Role Descriptions:**
+
+- `ADMIN` - Full administrative access to all resources
+- `UNRESTRICTED_WORKER` - Can execute any task without restrictions
+- `METADATA_MANAGER` - Can manage workflow and task definitions
+- `WORKFLOW_MANAGER` - Can manage workflow executions
+- `APPLICATION_MANAGER` - Can manage applications and access keys
+- `USER` - Standard user access
+- `USER_READ_ONLY` - Read-only access to resources
+- `WORKER` - Can poll for and execute assigned tasks
+- `APPLICATION_CREATOR` - Can create new applications
+- `METADATA_API` - API access to metadata operations
+- `PROMPT_MANAGER` - Can manage AI prompts and templates
 

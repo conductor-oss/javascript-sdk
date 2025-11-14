@@ -250,15 +250,15 @@ describe("ApplicationClient", () => {
   });
 
   describe("Role Management", () => {
-    test("Should add and remove role from application user", async () => {
+    test("Should add and remove role from application", async () => {
       const appName = createUniqueName("test-app-role");
-      const role = "USER";
+      const role = "APPLICATION_MANAGER";
 
       const createdApp = await applicationClient.createApplication(appName);
       expect(createdApp.id).toBeDefined();
 
       await expect(
-        applicationClient.addRoleToApplicationUser(createdApp.id, role)
+        applicationClient.addApplicationRole(createdApp.id, role)
       ).resolves.not.toThrow();
 
       await expect(
@@ -532,7 +532,7 @@ describe("ApplicationClient", () => {
       const role = "USER";
 
       await expect(
-        applicationClient.addRoleToApplicationUser(nonExistentId, role)
+        applicationClient.addApplicationRole(nonExistentId, role)
       ).rejects.toThrow();
     });
 
