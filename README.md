@@ -70,6 +70,14 @@ Show support for the Conductor OSS.  Please help spread the awareness by starrin
     - [Step 3: Publish Events](#step-3-publish-events)
     - [Step 4: Monitor Event Processing](#step-4-monitor-event-processing)
     - [Step 5: Manage Event Handlers](#step-5-manage-event-handlers)
+- [Applications](#applications)
+  - [The ApplicationClient](#the-applicationclient)
+  - [Quick Start: Managing Applications](#quick-start-managing-applications)
+    - [Step 1: Create an ApplicationClient](#step-1-create-an-applicationclient)
+    - [Step 2: Create an Application](#step-2-create-an-application)
+    - [Step 3: Generate Access Keys](#step-3-generate-access-keys)
+    - [Step 4: Manage Application Roles](#step-4-manage-application-roles)
+    - [Step 5: Manage Applications](#step-5-manage-applications)
 - [Human Tasks](#human-tasks)
   - [The HumanExecutor and TemplateClient](#the-humanexecutor-and-templateclient)
   - [Quick Start: Creating and Managing a Human Task](#quick-start-creating-and-managing-a-human-task)
@@ -827,6 +835,144 @@ Event handlers support various actions:
 - `update_workflow_variables` - Update workflow variables
 
 For a complete method reference, see the [EventClient API Reference](docs/api-reference/event-client.md).
+
+## Applications
+
+Applications in Conductor are security entities that enable programmatic access to the Conductor API. Each application can have multiple access keys for authentication and can be assigned roles to control what operations it can perform.
+
+### The ApplicationClient
+
+The `ApplicationClient` manages applications, access keys, and roles. For a complete method reference, see the [ApplicationClient API Reference](docs/api-reference/application-client.md).
+
+### Quick Start: Managing Applications
+
+Here's how to create and manage applications in Conductor:
+
+#### Step 1: Create an ApplicationClient
+
+First, create an instance of the `ApplicationClient`:
+
+```typescript
+import { ApplicationClient, ApplicationRole } from "@io-orkes/conductor-javascript";
+
+const appClient = new ApplicationClient(client);
+```
+
+#### Step 2: Create an Application
+
+Create a new application to represent your service or integration:
+
+```typescript
+// Create a new application
+const app = await appClient.createApplication("payment-service");
+console.log(`Created application: ${app.id}`);
+```
+
+#### Step 3: Generate Access Keys
+
+Create access keys for the application to authenticate API requests:
+
+```typescript
+// Create an access key
+const accessKey = await appClient.createAccessKey(app.id);
+console.log(`Key ID: ${accessKey.id}`);
+console.log(`Key Secret: ${accessKey.secret}`); // Save this immediately!
+
+// The secret is only shown once - store it securely
+// Use these credentials to create authenticated clients
+const authenticatedClient = await orkesConductorClient({
+  serverUrl: "https://play.orkes.io/api",
+  keyId: accessKey.id,
+  keySecret: accessKey.secret
+});
+```
+
+#### Step 4: Manage Application Roles
+
+Grant the application permissions by adding roles:
+
+```typescript
+import { ApplicationRole } from "@io-orkes/conductor-javascript";
+
+// Add roles to the application
+await appClient.addApplicationRole(app.id, "WORKFLOW_MANAGER");
+await appClient.addApplicationRole(app.id, "WORKER");
+
+console.log("Application can now execute workflows and run workers");
+```
+
+**Available Roles:**
+
+The SDK provides an `ApplicationRole` type with the following options:
+
+- `ADMIN` - Full administrative access to all resources
+- `WORKFLOW_MANAGER` - Start and manage workflow executions
+- `WORKER` - Poll for and execute assigned tasks
+- `UNRESTRICTED_WORKER` - Can execute any task without restrictions
+- `METADATA_MANAGER` - Manage workflow and task definitions
+- `APPLICATION_MANAGER` - Manage applications and access keys
+- `APPLICATION_CREATOR` - Can create new applications
+- `USER` - Standard user access
+- `USER_READ_ONLY` - Read-only access to resources
+- `METADATA_API` - API access to metadata operations
+- `PROMPT_MANAGER` - Can manage AI prompts and templates
+
+#### Step 5: Manage Applications
+
+Manage the lifecycle of your applications:
+
+```typescript
+// List all applications
+const applications = await appClient.getAllApplications();
+console.log(`Total applications: ${applications.length}`);
+
+// Get a specific application
+const myApp = await appClient.getApplication(app.id);
+console.log(`Application name: ${myApp.name}`);
+
+// Update application name
+await appClient.updateApplication(app.id, "payment-service-v2");
+
+// Get all access keys for an application
+const keys = await appClient.getAccessKeys(app.id);
+console.log(`Application has ${keys.length} access keys`);
+
+// Toggle access key status (ACTIVE/INACTIVE)
+await appClient.toggleAccessKeyStatus(app.id, accessKey.id);
+
+// Remove a role from the application
+await appClient.removeRoleFromApplicationUser(app.id, "WORKER");
+
+// Delete an access key
+await appClient.deleteAccessKey(app.id, accessKey.id);
+
+// Delete the application
+await appClient.deleteApplication(app.id);
+```
+
+**Tagging Applications:**
+
+Organize applications with tags for better management:
+
+```typescript
+// Add tags to an application
+await appClient.addApplicationTags(app.id, [
+  { key: "environment", value: "production" },
+  { key: "team", value: "payments" },
+  { key: "cost-center", value: "engineering" }
+]);
+
+// Get application tags
+const tags = await appClient.getApplicationTags(app.id);
+
+// Delete specific tags
+await appClient.deleteApplicationTag(app.id, {
+  key: "cost-center",
+  value: "engineering"
+});
+```
+
+For a complete method reference, see the [ApplicationClient API Reference](docs/api-reference/application-client.md).
 
 ## Human Tasks
 
