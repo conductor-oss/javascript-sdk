@@ -8,5 +8,10 @@
     ],
     "noEmit": true,
     "isolatedModules": true
-  }
+  },
+  "exclude": [
+    "src/integration-tests",
+    "node_modules",
+    "dist"
+  ]
 }

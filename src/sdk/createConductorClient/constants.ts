@@ -1,0 +1,3 @@
+export const REFRESH_TOKEN_IN_MILLISECONDS = 3600000; // 1 hour
+export const MAX_HTTP2_CONNECTIONS = 1;
+
