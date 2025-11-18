@@ -8,3 +8,5 @@ export * from "./taskClient";
 export * from "./templateClient";
 export * from "./metadataClient";
 export * from "./eventClient";
+export * from "./serviceRegistryClient";
+export * from "./ApplicationClient";
