@@ -12,37 +12,19 @@ import {
   WorkflowRun,
   WorkflowStatus,
 } from "../../../open-api";
-import { MetadataResource, TaskResource, WorkflowResource } from "../../../open-api/generated";
 import {
-  EnhancedSignalResponse,
-  TaskResultOutputData,
-  TaskResultStatus,
-} from "../../types";
+  MetadataResource,
+  TaskResource,
+  WorkflowResource,
+} from "../../../open-api/generated";
+import { TaskResultOutputData, TaskResultStatus } from "../../types";
+import { EnhancedSignalResponse, TaskFinderPredicate } from "./types";
 import { handleSdkError } from "../../helpers/errors";
 import { Client } from "../../../open-api/generated/client/types.gen";
-import { enhanceSignalResponse } from "./signal";
-
-// Helper function moved from helpers
-function reverseFind<T>(
-  array: T[],
-  predicate: (a: T, idx?: number, arr?: T[]) => boolean
-): T | undefined {
-  for (let i = array.length - 1; i >= 0; i--) {
-    if (predicate(array[i], i, array)) {
-      return array[i];
-    }
-  }
-  return undefined;
-}
-
-const RETRY_TIME_IN_MILLISECONDS = 10000;
-
-export type TaskFinderPredicate = (task: Task) => boolean;
-
-export const completedTaskMatchingType =
-  (taskType: string): TaskFinderPredicate =>
-  (task: Task) =>
-    task.status === "COMPLETED" && task.taskType === taskType;
+import { enhanceSignalResponse } from "./helpers/enhanceSignalResponse";
+import { reverseFind } from "./helpers/reverseFind";
+import { isCompletedTaskMatchingType } from "./helpers/isCompletedTaskMatchingType";
+import { RETRY_TIME_IN_MILLISECONDS } from "./constants";
 
 export class WorkflowExecutor {
   public readonly _client: Client;
@@ -199,7 +181,7 @@ export class WorkflowExecutor {
     try {
       return this.goBackToTask(
         workflowInstanceId,
-        completedTaskMatchingType(taskType)
+        isCompletedTaskMatchingType(taskType)
       );
     } catch (error: unknown) {
       handleSdkError(error, "Failed to go back to first task matching type");

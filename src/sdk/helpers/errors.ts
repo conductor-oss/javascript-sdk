@@ -1,4 +1,20 @@
-import { ConductorSdkError } from "../types";
+export class ConductorSdkError extends Error {
+  private _trace;
+  private __proto__: unknown;
+
+  constructor(message?: string, innerError?: Error) {
+    super(message);
+    this.name = "[Conductor SDK Error]";
+    this._trace = innerError;
+    const actualProto = new.target.prototype;
+
+    if (Object.setPrototypeOf) {
+      Object.setPrototypeOf(this, actualProto);
+    } else {
+      this.__proto__ = actualProto;
+    }
+  }
+}
 
 export function handleSdkError(
   error?: unknown,

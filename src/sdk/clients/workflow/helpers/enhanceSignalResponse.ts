@@ -1,5 +1,5 @@
 import type { SignalResponse, Task, Workflow } from "../../../../open-api";
-import type { EnhancedSignalResponse } from "../../types";
+import type { EnhancedSignalResponse } from "../types";
 
 export const enhanceSignalResponse = (
   response: SignalResponse

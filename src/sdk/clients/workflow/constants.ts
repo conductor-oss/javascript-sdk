@@ -1,0 +1,1 @@
+export const RETRY_TIME_IN_MILLISECONDS = 10000;

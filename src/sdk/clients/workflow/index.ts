@@ -1,3 +1,2 @@
 export { WorkflowExecutor } from "./WorkflowExecutor";
-export type { TaskFinderPredicate, completedTaskMatchingType } from "./WorkflowExecutor";
-
+export type * from "./types";
