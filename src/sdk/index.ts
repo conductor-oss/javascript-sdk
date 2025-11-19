@@ -11,6 +11,7 @@ export * from "./clients/template";
 export * from "./clients/human";
 export * from "./clients/service-registry";
 export * from "./clients/execution";
+export * from "./clients/application";
 
 // Builders
 export * from "./builders";
