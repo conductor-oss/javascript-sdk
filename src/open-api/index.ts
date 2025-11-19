@@ -39,7 +39,7 @@ export type {
   WorkflowRun,
   ExtendedWorkflowDef,
   ExtendedEventExecution,
-  // ExtendedConductorApplication, TODO: restore after OpenAPI spec update and remove export from ./types block
+  // ExtendedConductorApplication, TODO: restore after OpenAPI spec update
   EventMessage,
   HumanTaskUser,
   HumanTaskDefinition,
