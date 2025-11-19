@@ -1,4 +1,5 @@
 import {
+  Client,
   Consistency,
   ReturnStrategy,
   TaskResultStatusEnum,
@@ -20,7 +21,6 @@ import {
 import { TaskResultOutputData, TaskResultStatus } from "../../types";
 import { EnhancedSignalResponse, TaskFinderPredicate } from "./types";
 import { handleSdkError } from "../../helpers/errors";
-import { Client } from "../../../open-api/generated/client/types.gen";
 import { enhanceSignalResponse } from "./helpers/enhanceSignalResponse";
 import { reverseFind } from "./helpers/reverseFind";
 import { isCompletedTaskMatchingType } from "./helpers/isCompletedTaskMatchingType";

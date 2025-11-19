@@ -4,12 +4,7 @@ import {
   DEFAULT_WARN_AT_O,
   DEFAULT_CONCURRENCY,
 } from "./constants";
-
-interface PollerOptions {
-  pollInterval?: number;
-  concurrency: number;
-  warnAtO?: number;
-}
+import { PollerOptions } from "./types";
 
 export class Poller<T> {
   private timeoutHandler?: NodeJS.Timeout;

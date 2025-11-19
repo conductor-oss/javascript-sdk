@@ -1,23 +1,19 @@
-import os from "os";
-import { TaskRunner, noopErrorHandler, MAX_RETRIES } from "./TaskRunner";
+import { TaskRunner } from "./TaskRunner";
 import { ConductorLogger, DefaultLogger } from "../../helpers/logger";
-import { ConductorWorker } from "./Worker";
-import type { Client } from "../../../open-api/generated/client/types.gen";
+import type { Client } from "../../../open-api";
 import {
   DEFAULT_POLL_INTERVAL,
   DEFAULT_BATCH_POLLING_TIMEOUT,
   DEFAULT_CONCURRENCY,
+  MAX_RETRIES,
 } from "./constants";
-import { TaskErrorHandler, TaskRunnerOptions } from "./types";
-
-export type TaskManagerOptions = TaskRunnerOptions;
-
-export interface TaskManagerConfig {
-  logger?: ConductorLogger;
-  options?: Partial<TaskManagerOptions>;
-  onError?: TaskErrorHandler;
-  maxRetries?: number;
-}
+import {
+  TaskErrorHandler,
+  TaskManagerConfig,
+  TaskManagerOptions,
+  ConductorWorker,
+} from "./types";
+import { getWorkerId, noopErrorHandler } from "./helpers";
 
 const defaultManagerOptions: Required<TaskManagerOptions> = {
   workerID: "",
@@ -26,10 +22,6 @@ const defaultManagerOptions: Required<TaskManagerOptions> = {
   concurrency: DEFAULT_CONCURRENCY,
   batchPollingTimeout: DEFAULT_BATCH_POLLING_TIMEOUT,
 };
-
-function workerId(options: Partial<TaskManagerOptions>) {
-  return options.workerID ?? os.hostname();
-}
 
 /**
  * Responsible for initializing and managing the runners that poll and work different task queues.
@@ -63,7 +55,7 @@ export class TaskManager {
     this.options = {
       ...defaultManagerOptions,
       ...providedOptions,
-      workerID: workerId(providedOptions),
+      workerID: getWorkerId(providedOptions),
     };
   }
 

@@ -1,7 +1,6 @@
 import { TaskResultStatus } from "../../types";
 import { handleSdkError } from "../../helpers/errors";
-import type { Client } from "../../../open-api/generated/client/types.gen";
-import type { SearchResultTaskSummary, Task } from "../../../open-api";
+import type { Client, SearchResultTaskSummary, Task } from "../../../open-api";
 import { TaskResource } from "../../../open-api/generated";
 
 export class TaskClient {
@@ -84,7 +83,7 @@ export class TaskClient {
         path: {
           workflowId,
           taskRefName,
-          status
+          status,
         },
         client: this._client,
         throwOnError: true,
@@ -92,7 +91,10 @@ export class TaskClient {
 
       return data;
     } catch (error: unknown) {
-      handleSdkError(error, `Failed to update task '${taskRefName}' result for workflow '${workflowId}'`);
+      handleSdkError(
+        error,
+        `Failed to update task '${taskRefName}' result for workflow '${workflowId}'`
+      );
     }
   }
 }

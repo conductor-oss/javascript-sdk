@@ -1,23 +1,21 @@
 import { ConductorLogger, noopLogger } from "../../helpers/logger";
-import { ConductorWorker } from "./Worker";
-import type { Task, TaskResult } from "../../../open-api";
+import type { Client, Task, TaskResult } from "../../../open-api";
 import { TaskResource } from "../../../open-api/generated";
 import { Poller } from "./Poller";
 import {
   DEFAULT_POLL_INTERVAL,
   DEFAULT_BATCH_POLLING_TIMEOUT,
   DEFAULT_CONCURRENCY,
+  MAX_RETRIES,
+  DEFAULT_ERROR_MESSAGE,
 } from "./constants";
-import { TaskErrorHandler, TaskRunnerOptions, RunnerArgs } from "./types";
-import { optionEquals } from "./helpers";
-import type { Client } from "../../../open-api/generated/client/types.gen";
-
-const DEFAULT_ERROR_MESSAGE = "An unknown error occurred";
-export const MAX_RETRIES = 3;
-
-export const noopErrorHandler: TaskErrorHandler = (error: Error) => {
-  console.error(error);
-};
+import {
+  TaskErrorHandler,
+  TaskRunnerOptions,
+  RunnerArgs,
+  ConductorWorker,
+} from "./types";
+import { noopErrorHandler, optionEquals } from "./helpers";
 
 const defaultRunnerOptions: Required<TaskRunnerOptions> = {
   workerID: "",

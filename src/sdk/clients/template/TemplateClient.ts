@@ -1,6 +1,6 @@
 import type { HumanTaskTemplate } from "../../../open-api";
 import { HumanTask } from "../../../open-api/generated";
-import type { Client } from "../../../open-api/generated/client/types.gen";
+import type { Client } from "../../../open-api";
 import { handleSdkError } from "../../helpers/errors";
 
 export class TemplateClient {

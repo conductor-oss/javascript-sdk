@@ -1,32 +1,14 @@
-import type { HumanTaskSearch, HumanTaskEntry, HumanTaskTemplate } from "../../../open-api";
+import type {
+  Client,
+  HumanTaskSearch,
+  HumanTaskEntry,
+  HumanTaskTemplate,
+} from "../../../open-api";
 import { HumanTask } from "../../../open-api/generated";
-import type { Client } from "../../../open-api/generated/client/types.gen";
 import { handleSdkError } from "../../helpers/errors";
+import { DEFAULT_POLL_INTERVAL, EMPTY_SEARCH } from "./constants";
+import { PollIntervalOptions, UserType } from "./types";
 
-type UserType =
-  | "EXTERNAL_USER"
-  | "EXTERNAL_GROUP"
-  | "CONDUCTOR_USER"
-  | "CONDUCTOR_GROUP";
-
-const EMPTY_SEARCH: HumanTaskSearch = {
-  size: 15,
-  states: [],
-  taskInputQuery: "",
-  taskOutputQuery: "",
-  definitionNames: [],
-  taskRefNames: [],
-  claimants: [],
-  assignees: [],
-  start: 0,
-};
-
-const DEFAULT_POLL_INTERVAL = { pollInterval: 100, maxPollTimes: 20 };
-
-interface PollIntervalOptions {
-  pollInterval: number;
-  maxPollTimes: number;
-}
 export class HumanExecutor {
   public readonly _client: Client;
 
@@ -187,7 +169,10 @@ export class HumanExecutor {
 
       return data;
     } catch (error: unknown) {
-      handleSdkError(error, `Failed to claim human task '${taskId}' as external user '${assignee}'`);
+      handleSdkError(
+        error,
+        `Failed to claim human task '${taskId}' as external user '${assignee}'`
+      );
     }
   }
 
@@ -212,7 +197,10 @@ export class HumanExecutor {
       });
       return data;
     } catch (error: unknown) {
-      handleSdkError(error, `Failed to claim human task '${taskId}' as conductor user`);
+      handleSdkError(
+        error,
+        `Failed to claim human task '${taskId}' as conductor user`
+      );
     }
   }
 
@@ -252,7 +240,10 @@ export class HumanExecutor {
 
       return data;
     } catch (error: unknown) {
-      handleSdkError(error, `Failed to get template '${name}' version ${version}`);
+      handleSdkError(
+        error,
+        `Failed to get template '${name}' version ${version}`
+      );
     }
   }
 

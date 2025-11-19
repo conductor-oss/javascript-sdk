@@ -1,11 +1,11 @@
 import type {
+  Client,
   SaveScheduleRequest,
   SearchResultWorkflowScheduleExecutionModel,
   WorkflowSchedule,
   WorkflowScheduleModel,
 } from "../../../open-api";
 import { SchedulerResource } from "../../../open-api/generated";
-import type { Client } from "../../../open-api/generated/client/types.gen";
 import { handleSdkError } from "../../helpers/errors";
 
 export class SchedulerClient {

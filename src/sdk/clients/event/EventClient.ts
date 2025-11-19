@@ -3,9 +3,9 @@ import {
   EventExecutionResource,
   EventMessageResource,
 } from "../../../open-api/generated";
-import type { Client } from "../../../open-api/generated/client/types.gen";
 import { handleSdkError } from "../../helpers/errors";
 import type {
+  Client,
   EventHandler,
   ExtendedEventExecution,
   EventMessage,

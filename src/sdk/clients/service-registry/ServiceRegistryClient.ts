@@ -1,6 +1,6 @@
-import type { Client } from "../../../open-api/generated/client/types.gen";
 import { ServiceRegistryResource } from "../../../open-api/generated";
 import type {
+  Client,
   CircuitBreakerTransitionResponse,
   ProtoRegistryEntry,
   ServiceMethod,

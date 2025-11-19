@@ -1,5 +1,10 @@
-import { TaskRunnerOptions } from "./types";
-type OptionEntries = [keyof TaskRunnerOptions, string | number | undefined][];
+import os from "os";
+import {
+  OptionEntries,
+  TaskErrorHandler,
+  TaskManagerOptions,
+  TaskRunnerOptions,
+} from "./types";
 
 /**
  * Compares if the new options are really new
@@ -20,3 +25,10 @@ export const optionEquals = (
     )
   );
 };
+
+export function getWorkerId(options: Partial<TaskManagerOptions>) {
+  return options.workerID ?? os.hostname();
+}
+
+//eslint-disable-next-line
+export const noopErrorHandler: TaskErrorHandler = (error: Error) => {};
