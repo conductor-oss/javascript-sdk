@@ -11,6 +11,7 @@
   },
   "exclude": [
     "src/integration-tests",
+    "src/open-api/spec",
     "node_modules",
     "dist"
   ]

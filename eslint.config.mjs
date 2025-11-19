@@ -10,6 +10,7 @@ export default defineConfig(
     ignores: [
       "dist/**",
       "src/open-api/generated/**", // OpenAPI auto-generated code
+      "src/open-api/spec/**", // OpenAPI spec and fix script
       "docs/**",
       "node_modules/**",
     ],
