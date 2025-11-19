@@ -1,4 +1,4 @@
-import { TaskType, SwitchTaskDef, TaskDefTypes } from "../../../open-api/types";
+import { TaskType, SwitchTaskDef, TaskDefTypes } from "../../../open-api";
 
 export const switchTask = (
   taskReferenceName: string,

@@ -1,5 +1,4 @@
-import type { TaskDefTypes } from "../../open-api/types";
-import type { WorkflowDef } from "../../open-api";
+import type { TaskDefTypes, WorkflowDef } from "../../open-api";
 
 export const workflow = (name: string, tasks: TaskDefTypes[]): WorkflowDef => ({
   name,

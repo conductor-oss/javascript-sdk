@@ -3,7 +3,7 @@ import {
   ForkJoinTaskDef,
   TaskDefTypes,
   JoinTaskDef,
-} from "../../../open-api/types";
+} from "../../../open-api";
 import { generateJoinTask } from "../../generators";
 
 export const forkTask = (

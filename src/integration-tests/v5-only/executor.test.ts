@@ -7,18 +7,18 @@ import {
   afterEach,
   afterAll,
 } from "@jest/globals";
-import { Consistency, ReturnStrategy } from "../../src/open-api";
-import { orkesConductorClient } from "../../src/sdk/createConductorClient";
-import { WorkflowExecutor } from "../../src/sdk/clients/workflow";
+import { Consistency, ReturnStrategy } from "../../open-api";
+import { orkesConductorClient } from "../../sdk/createConductorClient";
+import { WorkflowExecutor } from "../../sdk/clients/workflow";
 import { v4 as uuidv4 } from "uuid";
-import { MetadataClient } from "../../src/sdk/clients/metadata";
+import { MetadataClient } from "../../sdk/clients/metadata";
 import { waitForWorkflowStatus } from "../utils/waitForWorkflowStatus";
-import { TaskResultStatusEnum } from "../../src/open-api";
+import { TaskResultStatusEnum } from "../../open-api";
 import { getComplexSignalTestWfDef } from "./metadata/complex_wf_signal_test";
 import { getComplexSignalTestSubWf1Def } from "./metadata/complex_wf_signal_test_subworkflow_1";
 import { getComplexSignalTestSubWf2Def } from "./metadata/complex_wf_signal_test_subworkflow_2";
 import { getWaitSignalTestWfDef } from "./metadata/wait_signal_test";
-import type { Client } from "../../src/open-api/generated/client/types.gen";
+import type { Client } from "../../open-api/generated/client/types.gen";
 
 describe("Execute with Return Strategy and Consistency", () => {
   // Constants specific to this test suite

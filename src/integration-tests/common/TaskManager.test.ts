@@ -4,9 +4,10 @@ import {
   simpleTask,
   taskDefinition,
   WorkflowExecutor,
-} from "../../src/sdk";
-import { orkesConductorClient } from "../../src/sdk/createConductorClient";
-import { TaskManager, ConductorWorker } from "../../src/sdk/clients/execution";
+  orkesConductorClient,
+  TaskManager,
+  ConductorWorker,
+} from "../../sdk";
 import { mockLogger } from "../utils/mockLogger";
 import { waitForWorkflowCompletion } from "../utils/waitForWorkflowCompletion";
 

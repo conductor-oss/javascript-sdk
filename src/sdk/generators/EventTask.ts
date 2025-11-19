@@ -1,4 +1,4 @@
-import { EventTaskDef, TaskType } from "../../../open-api/types";
+import { EventTaskDef, TaskType } from "../../open-api";
 import { nameTaskNameGenerator } from "./common";
 
 /**

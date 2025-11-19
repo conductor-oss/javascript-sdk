@@ -1,4 +1,4 @@
-import { ForkJoinDynamicDef, TaskType } from "../../../open-api/types";
+import { ForkJoinDynamicDef, TaskType } from "../../open-api";
 import { nameTaskNameGenerator } from "./common";
 
 export const generateForkJoinDynamic = (

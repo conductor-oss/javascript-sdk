@@ -1,4 +1,4 @@
-import { TaskType, SubWorkflowTaskDef } from "../../../open-api/types";
+import { TaskType, SubWorkflowTaskDef } from "../../../open-api";
 
 export const subWorkflowTask = (
   taskReferenceName: string,

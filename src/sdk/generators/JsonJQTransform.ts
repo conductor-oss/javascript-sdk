@@ -1,4 +1,4 @@
-import { JsonJQTransformTaskDef, TaskType } from "../../../open-api/types";
+import { JsonJQTransformTaskDef, TaskType } from "../../open-api";
 import { nameTaskNameGenerator } from "./common";
 
 /**

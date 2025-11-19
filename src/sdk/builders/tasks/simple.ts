@@ -1,4 +1,4 @@
-import { TaskType, SimpleTaskDef } from "../../../open-api/types";
+import { TaskType, SimpleTaskDef } from "../../../open-api";
 
 export const simpleTask = (
   taskReferenceName: string,

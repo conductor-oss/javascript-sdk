@@ -51,7 +51,7 @@
     "test:integration:v4": "npm test -- --testMatch='**/integration-tests/common/**/*.test.[jt]s?(x)'",
     "ci": "npm run lint && npm run test",
     "build": "tsup index.ts",
-    "generate-openapi-layer": "node src/open-api/spec/fix-additional-properties.ts && openapi-ts",
+    "generate-openapi-layer": "openapi-ts",
     "generate-docs": "typedoc --plugin typedoc-plugin-markdown",
     "prepublishOnly": "npm run build"
   },

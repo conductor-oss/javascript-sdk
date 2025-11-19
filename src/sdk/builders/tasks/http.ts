@@ -1,4 +1,4 @@
-import { TaskType, HttpTaskDef, HttpInputParameters } from "../../../open-api/types";
+import { TaskType, HttpTaskDef, HttpInputParameters } from "../../../open-api";
 
 export const httpTask = (
   taskReferenceName: string,

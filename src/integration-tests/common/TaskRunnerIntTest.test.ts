@@ -1,7 +1,10 @@
 import { expect, describe, test, jest } from "@jest/globals";
-import { TaskRunner } from "../../src/sdk/clients/execution/TaskRunner";
-import { WorkflowExecutor, simpleTask } from "../../src/sdk";
-import { orkesConductorClient } from "../../src/sdk/createConductorClient";
+import {
+  TaskRunner,
+  WorkflowExecutor,
+  simpleTask,
+  orkesConductorClient,
+} from "../../sdk";
 import { waitForWorkflowStatus } from "../utils/waitForWorkflowStatus";
 
 describe("TaskManager", () => {

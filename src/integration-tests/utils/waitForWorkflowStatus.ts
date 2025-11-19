@@ -1,5 +1,5 @@
-import { Workflow } from "../../src/open-api";
-import { WorkflowExecutor } from "../../src/sdk";
+import { Workflow } from "../../open-api";
+import { WorkflowExecutor } from "../../sdk";
 
 /**
  * Wait for workflow to reach expected status

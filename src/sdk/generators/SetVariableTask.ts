@@ -1,4 +1,4 @@
-import { SetVariableTaskDef, TaskType } from "../../../open-api/types";
+import { SetVariableTaskDef, TaskType } from "../../open-api";
 import { nameTaskNameGenerator } from "./common";
 
 /**

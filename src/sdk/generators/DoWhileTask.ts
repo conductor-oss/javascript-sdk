@@ -1,4 +1,4 @@
-import { TaskType, DoWhileTaskDef } from "../../../open-api/types";
+import { TaskType, DoWhileTaskDef } from "../../open-api";
 import { DoWhileTaskDefGen, NestedTaskMapper } from "./types";
 import { nameTaskNameGenerator } from "./common";
 

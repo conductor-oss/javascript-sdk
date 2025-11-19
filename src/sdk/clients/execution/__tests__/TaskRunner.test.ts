@@ -1,7 +1,7 @@
 import { jest, test, expect } from "@jest/globals";
 import { TaskRunner } from "../TaskRunner";
 import { RunnerArgs } from "../types";
-import { mockLogger } from "../../../integration-tests/utils/mockLogger";
+import { mockLogger } from "../../../../integration-tests/utils/mockLogger";
 import { TaskResource } from "../../../../open-api/generated";
 import { TaskResultStatusEnum } from "../../../../open-api";
 import type { Client } from "../../../../open-api/generated/client/types.gen";

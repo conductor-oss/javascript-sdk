@@ -1,4 +1,4 @@
-import { TaskType, JoinTaskDef } from "../../../open-api/types";
+import { TaskType, JoinTaskDef } from "../../../open-api";
 
 export const joinTask = (
   taskReferenceName: string,

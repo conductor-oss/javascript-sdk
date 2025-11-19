@@ -1,12 +1,11 @@
 import { expect, describe, test, jest } from "@jest/globals";
-import { orkesConductorClient } from "../../src/sdk/createConductorClient";
-import { EventClient } from "../../src/sdk";
-import type { EventHandler } from "../../src/open-api";
+import { orkesConductorClient, EventClient } from "../../sdk";
 import type {
+  EventHandler,
   Tag,
   ConnectivityTestInput,
   Action,
-} from "../../src/open-api/generated/types.gen";
+} from "../../open-api";
 
 describe("EventClient", () => {
   jest.setTimeout(60000);

@@ -1,4 +1,4 @@
-import { ForkJoinTaskDef, JoinTaskDef, TaskType } from "../../../open-api/types";
+import { ForkJoinTaskDef, JoinTaskDef, TaskType } from "../../open-api/";
 import { nameTaskNameGenerator } from "./common";
 import { ForkJoinTaskDefGen, NestedTaskMapper } from "./types";
 

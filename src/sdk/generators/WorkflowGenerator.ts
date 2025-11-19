@@ -1,4 +1,4 @@
-import { WorkflowDef } from "../../../open-api/types";
+import { WorkflowDef } from "../../open-api";
 
 export const workflowGenerator = (
   overrides: Partial<WorkflowDef>

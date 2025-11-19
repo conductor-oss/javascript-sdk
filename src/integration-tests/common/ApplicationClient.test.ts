@@ -6,8 +6,7 @@ import {
   beforeAll,
   afterEach,
 } from "@jest/globals";
-import { orkesConductorClient } from "../../sdk/createConductorClient";
-import { ApplicationClient } from "../../sdk";
+import { orkesConductorClient, ApplicationClient } from "../../sdk";
 import type { Tag } from "../../open-api";
 
 describe("ApplicationClient", () => {

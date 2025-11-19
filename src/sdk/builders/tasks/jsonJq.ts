@@ -1,4 +1,4 @@
-import { TaskType, JsonJQTransformTaskDef } from "../../../open-api/types";
+import { TaskType, JsonJQTransformTaskDef } from "../../../open-api";
 
 export const jsonJqTask = (
   taskReferenceName: string,

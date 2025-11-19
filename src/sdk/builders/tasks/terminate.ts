@@ -1,4 +1,4 @@
-import { TaskType, TerminateTaskDef } from "../../../open-api/types";
+import { TaskType, TerminateTaskDef } from "../../../open-api";
 export const terminateTask = (
   taskReferenceName: string,
   status: "COMPLETED" | "FAILED",

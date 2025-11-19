@@ -2,7 +2,7 @@ import {
   InlineTaskDef,
   TaskType,
   InlineTaskInputParameters,
-} from "../../../open-api/types";
+} from "../../open-api";
 import { InlineTaskDefGen, InlineTaskInputParametersGen } from "./types";
 import { nameTaskNameGenerator } from "./common";
 

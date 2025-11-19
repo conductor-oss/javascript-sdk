@@ -1,7 +1,9 @@
 import { expect, describe, test, jest } from "@jest/globals";
-import { MetadataClient } from "../../src/sdk/clients/metadata";
-import { taskDefinition } from "../../src/sdk/builders";
-import { orkesConductorClient } from "../../src/sdk/createConductorClient";
+import {
+  MetadataClient,
+  taskDefinition,
+  orkesConductorClient,
+} from "../../sdk";
 
 describe("MetadataClient", () => {
   const clientPromise = orkesConductorClient();
@@ -25,7 +27,7 @@ describe("MetadataClient", () => {
       responseTimeoutSeconds: 601,
       concurrentExecLimit: 1,
       inputTemplate: {
-        "inputKey1": "${workflow.input.inputKey1}",
+        inputKey1: "${workflow.input.inputKey1}",
       },
       rateLimitPerFrequency: 1,
       rateLimitFrequencyInSeconds: 2,
@@ -44,21 +46,51 @@ describe("MetadataClient", () => {
       throw new Error("Task definition not found");
     }
     expect(taskDefinitionFromApi.name).toEqual(newTaskDefinition.name);
-    expect(taskDefinitionFromApi.description).toEqual(newTaskDefinition.description);
-    expect(taskDefinitionFromApi.retryCount).toEqual(newTaskDefinition.retryCount);
-    expect(taskDefinitionFromApi.timeoutSeconds).toEqual(newTaskDefinition.timeoutSeconds);
-    expect(taskDefinitionFromApi.inputKeys).toEqual(newTaskDefinition.inputKeys);
-    expect(taskDefinitionFromApi.outputKeys).toEqual(newTaskDefinition.outputKeys);
-    expect(taskDefinitionFromApi.timeoutPolicy).toEqual(newTaskDefinition.timeoutPolicy);
-    expect(taskDefinitionFromApi.retryLogic).toEqual(newTaskDefinition.retryLogic);
-    expect(taskDefinitionFromApi.retryDelaySeconds).toEqual(newTaskDefinition.retryDelaySeconds);
-    expect(taskDefinitionFromApi.responseTimeoutSeconds).toEqual(newTaskDefinition.responseTimeoutSeconds);
-    expect(taskDefinitionFromApi.concurrentExecLimit).toEqual(newTaskDefinition.concurrentExecLimit);
-    expect(taskDefinitionFromApi.inputTemplate).toEqual(newTaskDefinition.inputTemplate);
-    expect(taskDefinitionFromApi.rateLimitPerFrequency).toEqual(newTaskDefinition.rateLimitPerFrequency);
-    expect(taskDefinitionFromApi.rateLimitFrequencyInSeconds).toEqual(newTaskDefinition.rateLimitFrequencyInSeconds);
-    expect(taskDefinitionFromApi.pollTimeoutSeconds).toEqual(newTaskDefinition.pollTimeoutSeconds);
-    expect(taskDefinitionFromApi.backoffScaleFactor).toEqual(newTaskDefinition.backoffScaleFactor);
+    expect(taskDefinitionFromApi.description).toEqual(
+      newTaskDefinition.description
+    );
+    expect(taskDefinitionFromApi.retryCount).toEqual(
+      newTaskDefinition.retryCount
+    );
+    expect(taskDefinitionFromApi.timeoutSeconds).toEqual(
+      newTaskDefinition.timeoutSeconds
+    );
+    expect(taskDefinitionFromApi.inputKeys).toEqual(
+      newTaskDefinition.inputKeys
+    );
+    expect(taskDefinitionFromApi.outputKeys).toEqual(
+      newTaskDefinition.outputKeys
+    );
+    expect(taskDefinitionFromApi.timeoutPolicy).toEqual(
+      newTaskDefinition.timeoutPolicy
+    );
+    expect(taskDefinitionFromApi.retryLogic).toEqual(
+      newTaskDefinition.retryLogic
+    );
+    expect(taskDefinitionFromApi.retryDelaySeconds).toEqual(
+      newTaskDefinition.retryDelaySeconds
+    );
+    expect(taskDefinitionFromApi.responseTimeoutSeconds).toEqual(
+      newTaskDefinition.responseTimeoutSeconds
+    );
+    expect(taskDefinitionFromApi.concurrentExecLimit).toEqual(
+      newTaskDefinition.concurrentExecLimit
+    );
+    expect(taskDefinitionFromApi.inputTemplate).toEqual(
+      newTaskDefinition.inputTemplate
+    );
+    expect(taskDefinitionFromApi.rateLimitPerFrequency).toEqual(
+      newTaskDefinition.rateLimitPerFrequency
+    );
+    expect(taskDefinitionFromApi.rateLimitFrequencyInSeconds).toEqual(
+      newTaskDefinition.rateLimitFrequencyInSeconds
+    );
+    expect(taskDefinitionFromApi.pollTimeoutSeconds).toEqual(
+      newTaskDefinition.pollTimeoutSeconds
+    );
+    expect(taskDefinitionFromApi.backoffScaleFactor).toEqual(
+      newTaskDefinition.backoffScaleFactor
+    );
   });
 
   test("Should update a task definition", async () => {
@@ -78,7 +110,7 @@ describe("MetadataClient", () => {
       responseTimeoutSeconds: 602,
       concurrentExecLimit: 1,
       inputTemplate: {
-        "inputKey2": "${workflow.input.inputKey2}",
+        inputKey2: "${workflow.input.inputKey2}",
       },
       rateLimitPerFrequency: 1,
       rateLimitFrequencyInSeconds: 3,
@@ -96,22 +128,51 @@ describe("MetadataClient", () => {
     if (!taskDefinitionFromApi) {
       throw new Error("Task definition not found");
     }
-    expect(taskDefinitionFromApi.description).toEqual(newTaskDefinition.description);
-    expect(taskDefinitionFromApi.retryCount).toEqual(newTaskDefinition.retryCount);
-    expect(taskDefinitionFromApi.timeoutSeconds).toEqual(newTaskDefinition.timeoutSeconds);
-    expect(taskDefinitionFromApi.inputKeys).toEqual(newTaskDefinition.inputKeys);
-    expect(taskDefinitionFromApi.outputKeys).toEqual(newTaskDefinition.outputKeys);
-    expect(taskDefinitionFromApi.timeoutPolicy).toEqual(newTaskDefinition.timeoutPolicy);
-    expect(taskDefinitionFromApi.retryLogic).toEqual(newTaskDefinition.retryLogic);
-    expect(taskDefinitionFromApi.retryDelaySeconds).toEqual(newTaskDefinition.retryDelaySeconds);
-    expect(taskDefinitionFromApi.responseTimeoutSeconds).toEqual(newTaskDefinition.responseTimeoutSeconds);
-    expect(taskDefinitionFromApi.concurrentExecLimit).toEqual(newTaskDefinition.concurrentExecLimit);
-    expect(taskDefinitionFromApi.inputTemplate).toEqual(newTaskDefinition.inputTemplate);
-    expect(taskDefinitionFromApi.rateLimitPerFrequency).toEqual(newTaskDefinition.rateLimitPerFrequency);
-    expect(taskDefinitionFromApi.rateLimitFrequencyInSeconds).toEqual(newTaskDefinition.rateLimitFrequencyInSeconds);
-    expect(taskDefinitionFromApi.pollTimeoutSeconds).toEqual(newTaskDefinition.pollTimeoutSeconds);
-    expect(taskDefinitionFromApi.backoffScaleFactor).toEqual(newTaskDefinition.backoffScaleFactor);
-
+    expect(taskDefinitionFromApi.description).toEqual(
+      newTaskDefinition.description
+    );
+    expect(taskDefinitionFromApi.retryCount).toEqual(
+      newTaskDefinition.retryCount
+    );
+    expect(taskDefinitionFromApi.timeoutSeconds).toEqual(
+      newTaskDefinition.timeoutSeconds
+    );
+    expect(taskDefinitionFromApi.inputKeys).toEqual(
+      newTaskDefinition.inputKeys
+    );
+    expect(taskDefinitionFromApi.outputKeys).toEqual(
+      newTaskDefinition.outputKeys
+    );
+    expect(taskDefinitionFromApi.timeoutPolicy).toEqual(
+      newTaskDefinition.timeoutPolicy
+    );
+    expect(taskDefinitionFromApi.retryLogic).toEqual(
+      newTaskDefinition.retryLogic
+    );
+    expect(taskDefinitionFromApi.retryDelaySeconds).toEqual(
+      newTaskDefinition.retryDelaySeconds
+    );
+    expect(taskDefinitionFromApi.responseTimeoutSeconds).toEqual(
+      newTaskDefinition.responseTimeoutSeconds
+    );
+    expect(taskDefinitionFromApi.concurrentExecLimit).toEqual(
+      newTaskDefinition.concurrentExecLimit
+    );
+    expect(taskDefinitionFromApi.inputTemplate).toEqual(
+      newTaskDefinition.inputTemplate
+    );
+    expect(taskDefinitionFromApi.rateLimitPerFrequency).toEqual(
+      newTaskDefinition.rateLimitPerFrequency
+    );
+    expect(taskDefinitionFromApi.rateLimitFrequencyInSeconds).toEqual(
+      newTaskDefinition.rateLimitFrequencyInSeconds
+    );
+    expect(taskDefinitionFromApi.pollTimeoutSeconds).toEqual(
+      newTaskDefinition.pollTimeoutSeconds
+    );
+    expect(taskDefinitionFromApi.backoffScaleFactor).toEqual(
+      newTaskDefinition.backoffScaleFactor
+    );
   });
 
   test("Should unregister a task definition", async () => {
@@ -122,8 +183,6 @@ describe("MetadataClient", () => {
       metadataClient.unregisterTask(taskName)
     ).resolves.not.toThrow();
 
-    await expect(metadataClient.getTask(
-      taskName
-    )).rejects.toThrow();
-  })
+    await expect(metadataClient.getTask(taskName)).rejects.toThrow();
+  });
 });

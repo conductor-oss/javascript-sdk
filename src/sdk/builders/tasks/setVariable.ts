@@ -1,4 +1,4 @@
-import { TaskType, SetVariableTaskDef } from "../../../open-api/types";
+import { TaskType, SetVariableTaskDef } from "../../../open-api";
 
 export const setVariableTask = (
   taskReferenceName: string,

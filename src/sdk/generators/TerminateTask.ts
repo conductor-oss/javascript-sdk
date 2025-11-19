@@ -1,4 +1,4 @@
-import { TerminateTaskDef, TaskType } from "../../../open-api/types";
+import { TerminateTaskDef, TaskType } from "../../open-api";
 import { nameTaskNameGenerator } from "./common";
 
 /**

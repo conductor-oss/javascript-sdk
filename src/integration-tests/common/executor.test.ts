@@ -1,12 +1,14 @@
 import { expect, describe, test, jest } from "@jest/globals";
-import { SetVariableTaskDef, TaskType, WorkflowDef } from "../../src/open-api";
-import { orkesConductorClient } from "../../src/sdk/createConductorClient";
-import { WorkflowExecutor } from "../../src/sdk/clients/workflow";
 import { v4 as uuidv4 } from "uuid";
+import { SetVariableTaskDef, TaskType, WorkflowDef } from "../../open-api";
+import {
+  httpTask,
+  TaskClient,
+  MetadataClient,
+  WorkflowExecutor,
+  orkesConductorClient,
+} from "../../sdk";
 import { waitForWorkflowStatus } from "../utils/waitForWorkflowStatus";
-import { httpTask } from "../../src/sdk/builders";
-import { TaskClient } from "../../src/sdk/clients/task";
-import { MetadataClient } from "../../src/sdk";
 
 describe("Executor", () => {
   const clientPromise = orkesConductorClient();

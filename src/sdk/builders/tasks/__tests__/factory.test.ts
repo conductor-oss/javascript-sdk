@@ -13,7 +13,7 @@ import { subWorkflowTask } from "../subWorkflow";
 import { switchTask } from "../switch";
 import { terminateTask } from "../terminate";
 import { waitTaskDuration, waitTaskUntil } from "../wait";
-import { workflow } from "../workflow";
+import { workflow } from "../../workflow";
 
 describe("doWhileTask", () => {
   it("Should generate a doWhile task ", () => {

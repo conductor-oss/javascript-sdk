@@ -1,4 +1,4 @@
-import { TaskType, InlineTaskDef } from "../../../open-api/types";
+import { TaskType, InlineTaskDef } from "../../../open-api";
 
 export const inlineTask = (
   taskReferenceName: string,

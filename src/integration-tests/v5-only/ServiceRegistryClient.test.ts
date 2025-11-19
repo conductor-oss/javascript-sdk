@@ -1,7 +1,7 @@
 import {beforeAll, afterEach, describe, expect, jest, test} from "@jest/globals";
-import {ServiceRegistryClient} from "../../src/sdk/clients/service-registry";
-import {orkesConductorClient} from "../../src/sdk/createConductorClient";
-import {ServiceType} from "../../src/open-api";
+import {ServiceRegistryClient} from "../../sdk/clients/service-registry";
+import {orkesConductorClient} from "../../sdk/createConductorClient";
+import {ServiceType} from "../../open-api";
 import * as fs from 'fs';
 import * as path from 'path';
 

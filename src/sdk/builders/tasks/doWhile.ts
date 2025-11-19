@@ -1,4 +1,4 @@
-import { TaskType, DoWhileTaskDef, TaskDefTypes } from "../../../open-api/types";
+import { TaskType, DoWhileTaskDef, TaskDefTypes } from "../../../open-api";
 
 export const doWhileTask = (
   taskRefName: string,

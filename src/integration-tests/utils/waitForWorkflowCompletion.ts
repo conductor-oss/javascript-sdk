@@ -1,4 +1,4 @@
-import type { WorkflowExecutor } from "../../src/sdk/clients/workflow/WorkflowExecutor";
+import type { WorkflowExecutor } from "../../sdk/clients/workflow/WorkflowExecutor";
 
 // Helper function to wait for workflow completion
 export const waitForWorkflowCompletion = async (

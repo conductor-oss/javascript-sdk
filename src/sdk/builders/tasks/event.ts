@@ -1,4 +1,4 @@
-import { TaskType, EventTaskDef } from "../../../open-api/types";
+import { TaskType, EventTaskDef } from "../../../open-api";
 
 export const eventTask = (
   taskReferenceName: string,

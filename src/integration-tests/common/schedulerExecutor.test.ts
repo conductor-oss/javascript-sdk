@@ -1,8 +1,14 @@
 import { expect, describe, test, jest } from "@jest/globals";
-import { orkesConductorClient } from "../../src/sdk/createConductorClient";
-import { SchedulerClient } from "../../src/sdk/clients/scheduler";
-import { ExtendedWorkflowDef, SaveScheduleRequest, TaskType } from "../../src/open-api";
-import { MetadataClient } from "../../src/sdk";
+import {
+  ExtendedWorkflowDef,
+  SaveScheduleRequest,
+  TaskType,
+} from "../../open-api";
+import {
+  MetadataClient,
+  orkesConductorClient,
+  SchedulerClient,
+} from "../../sdk";
 
 describe("ScheduleExecutor", () => {
   const clientPromise = orkesConductorClient();
@@ -122,10 +128,7 @@ describe("ScheduleExecutor", () => {
     const metadataClient = new MetadataClient(client);
     await executor.deleteSchedule(name);
     // delete workflowDef too
-    await metadataClient.unregisterWorkflow(
-      workflowName,
-      workflowVersion
-    );
+    await metadataClient.unregisterWorkflow(workflowName, workflowVersion);
     const schedulerList = await executor.getAllSchedules();
     if (!schedulerList) {
       throw new Error("Scheduler list is undefined");

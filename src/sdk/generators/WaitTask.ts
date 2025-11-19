@@ -1,4 +1,4 @@
-import { WaitTaskDef, TaskType } from "../../../open-api/types";
+import { WaitTaskDef, TaskType } from "../../open-api";
 import { nameTaskNameGenerator } from "./common";
 
 /**

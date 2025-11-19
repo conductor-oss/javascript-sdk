@@ -1,4 +1,4 @@
-import { TaskType, WaitTaskDef } from "../../../open-api/types";
+import { TaskType, WaitTaskDef } from "../../../open-api";
 
 export const waitTaskDuration = (
   taskReferenceName: string,

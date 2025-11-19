@@ -1,4 +1,4 @@
-import { HttpTaskDef, TaskType } from "../../../open-api/types";
+import { HttpTaskDef, TaskType } from "../../open-api";
 import { nameTaskNameGenerator } from "./common";
 
 /**

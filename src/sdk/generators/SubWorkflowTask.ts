@@ -1,4 +1,4 @@
-import { SubWorkflowTaskDef, TaskType } from "../../../open-api/types";
+import { SubWorkflowTaskDef, TaskType } from "../../open-api";
 import { nameTaskNameGenerator } from "./common";
 
 /**
