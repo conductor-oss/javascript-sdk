@@ -10,7 +10,7 @@ import {
   SchedulerClient,
 } from "../sdk";
 
-describe("ScheduleExecutor", () => {
+describe("SchedulerClient", () => {
   const clientPromise = orkesConductorClient();
   jest.setTimeout(15000);
 

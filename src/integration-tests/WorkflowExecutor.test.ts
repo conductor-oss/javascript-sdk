@@ -31,7 +31,7 @@ import { getComplexSignalTestSubWf2Def } from "./metadata/complex_wf_signal_test
 import { getWaitSignalTestWfDef } from "./metadata/wait_signal_test";
 import { describeForOrkesV5 } from "./utils/customJestDescribe";
 
-describe("Executor", () => {
+describe("WorkflowExecutor", () => {
   const clientPromise = orkesConductorClient();
 
   jest.setTimeout(60000);

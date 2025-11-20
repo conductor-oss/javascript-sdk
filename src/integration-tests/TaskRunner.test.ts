@@ -7,7 +7,7 @@ import {
 } from "../sdk";
 import { waitForWorkflowStatus } from "./utils/waitForWorkflowStatus";
 
-describe("TaskManager", () => {
+describe("TaskRunner", () => {
   const clientPromise = orkesConductorClient();
 
   jest.setTimeout(30000);
