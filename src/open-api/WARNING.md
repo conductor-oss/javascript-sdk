@@ -1,0 +1,1 @@
+Code inside "/generated" folder must not be modifed directly.

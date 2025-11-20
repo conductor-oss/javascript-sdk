@@ -8,5 +8,9 @@
     ],
     "noEmit": true,
     "isolatedModules": true
-  }
+  },
+  "exclude": [
+    "dist",
+    "src/open-api/spec"
+  ]
 }

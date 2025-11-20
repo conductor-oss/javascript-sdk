@@ -1,0 +1,2 @@
+export { ServiceRegistryClient } from "./ServiceRegistryClient";
+

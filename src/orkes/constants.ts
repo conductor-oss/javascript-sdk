@@ -1,2 +1,0 @@
-export const REFRESH_TOKEN_IN_MILLISECONDS = 30 * 60 * 1000;
-export const MAX_HTTP2_CONNECTIONS = 1;
