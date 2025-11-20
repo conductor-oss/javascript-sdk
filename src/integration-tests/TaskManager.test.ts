@@ -7,9 +7,9 @@ import {
   orkesConductorClient,
   TaskManager,
   ConductorWorker,
-} from "../../sdk";
-import { mockLogger } from "../utils/mockLogger";
-import { waitForWorkflowCompletion } from "../utils/waitForWorkflowCompletion";
+} from "../sdk";
+import { mockLogger } from "./utils/mockLogger";
+import { waitForWorkflowCompletion } from "./utils/waitForWorkflowCompletion";
 
 const BASE_TIME = 1000;
 describe("TaskManager", () => {

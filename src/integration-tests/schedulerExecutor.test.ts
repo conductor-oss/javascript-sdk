@@ -3,12 +3,12 @@ import {
   ExtendedWorkflowDef,
   SaveScheduleRequest,
   TaskType,
-} from "../../open-api";
+} from "../open-api";
 import {
   MetadataClient,
   orkesConductorClient,
   SchedulerClient,
-} from "../../sdk";
+} from "../sdk";
 
 describe("ScheduleExecutor", () => {
   const clientPromise = orkesConductorClient();

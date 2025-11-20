@@ -3,7 +3,7 @@ import {
   MetadataClient,
   taskDefinition,
   orkesConductorClient,
-} from "../../sdk";
+} from "../sdk";
 
 describe("MetadataClient", () => {
   const clientPromise = orkesConductorClient();

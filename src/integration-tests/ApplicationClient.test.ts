@@ -6,8 +6,8 @@ import {
   beforeAll,
   afterEach,
 } from "@jest/globals";
-import { orkesConductorClient, ApplicationClient } from "../../sdk";
-import type { Tag } from "../../open-api";
+import { orkesConductorClient, ApplicationClient } from "../sdk";
+import type { Tag } from "../open-api";
 
 describe("ApplicationClient", () => {
   jest.setTimeout(60000);

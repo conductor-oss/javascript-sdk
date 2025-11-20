@@ -4,8 +4,8 @@ import {
   WorkflowExecutor,
   simpleTask,
   orkesConductorClient,
-} from "../../sdk";
-import { waitForWorkflowStatus } from "../utils/waitForWorkflowStatus";
+} from "../sdk";
+import { waitForWorkflowStatus } from "./utils/waitForWorkflowStatus";
 
 describe("TaskManager", () => {
   const clientPromise = orkesConductorClient();
