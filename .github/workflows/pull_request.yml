@@ -23,7 +23,7 @@ jobs:
       fail-fast: false
       matrix:
         node-version: [20, 22, 24]
-        test: ["unit", "integration:v5", "integration:v4"]
+        test: ["unit", "integration:orkes-v5", "integration:orkes-v4"]
     name: Node.js v${{ matrix.node-version }} - ${{ matrix.test }} tests
     steps:
       - name: Checkout
