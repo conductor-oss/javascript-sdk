@@ -1,5 +1,8 @@
 # Conductor OSS JavaScript/TypeScript SDK
 
+[![Build Status](https://github.com/conductor-oss/javascript-sdk/actions/workflows/pull_request.yml/badge.svg)](https://github.com/conductor-oss/javascript-sdk/actions/workflows/pull_request.yml)
+[![codecov](https://codecov.io/gh/conductor-oss/javascript-sdk/graph/badge.svg?token=CNCOB0N3FI)](https://codecov.io/gh/conductor-oss/javascript-sdk)
+
 A comprehensive TypeScript/JavaScript client for [Conductor OSS](https://github.com/conductor-oss/conductor), enabling developers to build, orchestrate, and monitor distributed workflows with ease.
 
 [Conductor](https://www.conductor-oss.org/) is the leading open-source orchestration platform allowing developers to build highly scalable distributed applications.

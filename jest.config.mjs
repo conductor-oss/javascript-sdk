@@ -4,6 +4,13 @@ export default {
   preset: "ts-jest",
   clearMocks: true,
   coverageProvider: "v8",
+  collectCoverageFrom: [
+    "src/**/*.{ts,tsx}",
+    "!src/**/*.d.ts",
+    "!src/**/generated/**",
+    "!src/**/spec/**",
+  ],
+  coverageReporters: ["text", "lcov", "cobertura"],
   transformIgnorePatterns: ["/node_modules/", "\\.pnp\\.[^\\/]+$"],
   transform: {
     "^.+\\.tsx?$": [
