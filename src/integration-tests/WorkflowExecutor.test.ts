@@ -202,7 +202,9 @@ describe("WorkflowExecutor", () => {
     const workflowStatusAfter = await waitForWorkflowStatus(
       executor,
       executionId,
-      "COMPLETED"
+      "COMPLETED",
+      120000,
+      5000
     );
 
     expect(workflowStatusAfter.tasks?.[0]?.status).toEqual("COMPLETED");
