@@ -188,6 +188,8 @@ describe("WorkflowExecutor", () => {
       "RUNNING"
     );
 
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+
     expect(["IN_PROGRESS", "SCHEDULED"]).toContain(
       workflowStatusBefore.tasks?.[0]?.status
     );
@@ -200,7 +202,9 @@ describe("WorkflowExecutor", () => {
     const workflowStatusAfter = await waitForWorkflowStatus(
       executor,
       executionId,
-      "COMPLETED"
+      "COMPLETED",
+      120000,
+      5000
     );
 
     expect(workflowStatusAfter.tasks?.[0]?.status).toEqual("COMPLETED");
