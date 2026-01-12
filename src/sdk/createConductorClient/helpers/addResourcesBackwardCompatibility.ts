@@ -1,6 +1,7 @@
 /* eslint-disable */
 // disable linter since related old functionality was not properly typed
-// TODO: everything in this file is DEPRECATED and whole file should be removed after April 2026
+// Legacy compatibility layer: This file provides backward compatibility for the old resource-based API.
+// The legacy API is maintained for existing users, but new code should use the modern API methods.
 
 import type { SignalResponse } from "../../../open-api";
 import type { Client } from "../../../open-api/generated/client/types.gen";
@@ -21,7 +22,7 @@ import {
 
 const warn = () => {
   console.warn(
-    "[Conductor SDK Deprecation Warning] Accessing resources directly on the client is deprecated and will be removed after April 2026"
+    "[Conductor SDK Legacy API] You are using the legacy resource-based API. This API is maintained for backward compatibility. For new code, use higher-level clients (EventClient, TaskClient) or Resource classes directly."
   );
 };
 
