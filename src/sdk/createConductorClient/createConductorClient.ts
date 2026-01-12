@@ -41,6 +41,7 @@ export const createConductorClient = async (
     await handleAuth(openApiClient, keyId, keySecret, refreshTokenInterval);
   }
 
-  // DEPRECATED, should be replaced with return openApiClient after April 2026:
+  // Legacy compatibility: Adds resource-based API methods for backward compatibility.
+  // The modern API is available directly on openApiClient, but legacy methods are maintained.
   return addResourcesBackwardCompatibility(openApiClient);
 };

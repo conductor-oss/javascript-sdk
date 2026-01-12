@@ -1,5 +1,6 @@
 /* eslint-disable */
-// TODO: remove everything below (whole file) after April 2026 (backward compatibility types)
+// Legacy compatibility types: This file provides backward compatibility types.
+// These types are maintained for legacy users and will not be removed.
 // ------------------------------start------------------------------
 import type {
   HumanTaskEntry,
