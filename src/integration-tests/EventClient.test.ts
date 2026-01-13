@@ -531,12 +531,27 @@ describe("EventClient", () => {
       expect(handlerAfterEvent.active).toBe(true);
       expect(handlerAfterEvent.event).toEqual(eventName);
 
-      const executions = await eventClient.getEventExecutions(handlerName);
-      expect(Array.isArray(executions)).toBe(true);
+      // Wait for event execution to be created (async processing)
+      let ourExecution;
+      const maxWaitTime = 30000; // 30 seconds
+      const pollInterval = 500; // 500ms
+      const startTime = Date.now();
 
-      const ourExecution = executions.find(
-        (exec) => exec.event === eventName || exec.name === handlerName
-      );
+      while (Date.now() - startTime < maxWaitTime) {
+        const executions = await eventClient.getEventExecutions(handlerName);
+        expect(Array.isArray(executions)).toBe(true);
+
+        ourExecution = executions.find(
+          (exec) => exec.event === eventName || exec.name === handlerName
+        );
+
+        if (ourExecution) {
+          break;
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, pollInterval));
+      }
+
       expect(ourExecution).toBeDefined();
       if (ourExecution?.event) {
         expect(ourExecution.event).toEqual(eventName);
