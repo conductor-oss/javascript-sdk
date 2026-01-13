@@ -1,11 +1,11 @@
-import { expect, describe, test, jest } from "@jest/globals";
-import { orkesConductorClient, EventClient } from "../sdk";
+import { describe, expect, jest, test } from "@jest/globals";
 import type {
+  Action,
+  ConnectivityTestInput,
   EventHandler,
   Tag,
-  ConnectivityTestInput,
-  Action,
 } from "../open-api";
+import { EventClient, orkesConductorClient } from "../sdk";
 import { describeForOrkesV5 } from "./utils/customJestDescribe";
 
 describe("EventClient", () => {
@@ -531,12 +531,27 @@ describe("EventClient", () => {
       expect(handlerAfterEvent.active).toBe(true);
       expect(handlerAfterEvent.event).toEqual(eventName);
 
-      const executions = await eventClient.getEventExecutions(handlerName);
-      expect(Array.isArray(executions)).toBe(true);
+      // Wait for event execution to be created (async processing)
+      let ourExecution;
+      const maxWaitTime = 30000; // 30 seconds
+      const pollInterval = 500; // 500ms
+      const startTime = Date.now();
 
-      const ourExecution = executions.find(
-        (exec) => exec.event === eventName || exec.name === handlerName
-      );
+      while (Date.now() - startTime < maxWaitTime) {
+        const executions = await eventClient.getEventExecutions(handlerName);
+        expect(Array.isArray(executions)).toBe(true);
+
+        ourExecution = executions.find(
+          (exec) => exec.event === eventName || exec.name === handlerName
+        );
+
+        if (ourExecution) {
+          break;
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, pollInterval));
+      }
+
       expect(ourExecution).toBeDefined();
       if (ourExecution?.event) {
         expect(ourExecution.event).toEqual(eventName);
@@ -638,14 +653,27 @@ describe("EventClient", () => {
       };
       await eventClient.handleIncomingEvent(eventData);
 
-      const executions = await eventClient.getEventExecutions(handlerName, 0);
-      expect(Array.isArray(executions)).toBe(true);
-      expect(executions.length).toBeGreaterThan(0);
+      // Wait for event execution to be created (async processing)
+      let ourExecution;
+      const maxWaitTime = 30000; // 30 seconds
+      const pollInterval = 500; // 500ms
+      const startTime = Date.now();
 
-      // Find our execution in the results
-      const ourExecution = executions.find(
-        (exec) => exec.name === handlerName && exec.event === eventName
-      );
+      while (Date.now() - startTime < maxWaitTime) {
+        const executions = await eventClient.getEventExecutions(handlerName, 0);
+        expect(Array.isArray(executions)).toBe(true);
+
+        ourExecution = executions.find(
+          (exec) => exec.name === handlerName && exec.event === eventName
+        );
+
+        if (ourExecution) {
+          break;
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, pollInterval));
+      }
+
       expect(ourExecution).toBeDefined();
       expect(ourExecution?.name).toBe(handlerName);
       expect(ourExecution?.event).toBe(eventName);
@@ -689,14 +717,29 @@ describe("EventClient", () => {
       };
       await eventClient.handleIncomingEvent(eventData);
 
-      const response = await eventClient.getEventHandlersWithStats(0);
-      expect(response).toBeDefined();
-      expect(response).toHaveProperty("results");
-      expect(Array.isArray(response.results)).toBe(true);
-      expect(response.results?.length).toBeGreaterThan(0);
+      // Wait for statistics to be updated (async processing)
+      let foundHandler;
+      const maxWaitTime = 30000; // 30 seconds
+      const pollInterval = 500; // 500ms
+      const startTime = Date.now();
 
-      // Find our handler in the results
-      const foundHandler = response.results?.find((h) => h.event === eventName);
+      while (Date.now() - startTime < maxWaitTime) {
+        const response = await eventClient.getEventHandlersWithStats(0);
+        expect(response).toBeDefined();
+        expect(response).toHaveProperty("results");
+        expect(Array.isArray(response.results)).toBe(true);
+        expect(response.results?.length).toBeGreaterThan(0);
+
+        // Find our handler in the results
+        foundHandler = response.results?.find((h) => h.event === eventName);
+
+        if (foundHandler) {
+          break;
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, pollInterval));
+      }
+
       expect(foundHandler).toBeDefined();
       expect(foundHandler?.event).toBe(eventName);
       expect(foundHandler?.active).toBe(true);
