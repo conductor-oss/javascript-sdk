@@ -8,7 +8,12 @@ export const retryFetch = async (
   retries = 5,
   delay = 1000
 ): Promise<Response> => {
-  const response = await fetchFn(input, init);
+  // Clone the Request object if input is a Request, so retries work correctly.
+  // Request objects can only be used once - attempting to reuse them throws:
+  // "Cannot construct a Request with a Request object that has already been used"
+  const requestInput = input instanceof Request ? input.clone() : input;
+
+  const response = await fetchFn(requestInput, init);
   if (response.status == 429 && retries > 0) {
     await new Promise((resolve) => setTimeout(resolve, delay));
     return retryFetch(input, init, fetchFn, retries - 1, delay * 2);
