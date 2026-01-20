@@ -14,6 +14,7 @@ import {
   ConductorWorker,
 } from "./types";
 import { getWorkerId, noopErrorHandler } from "./helpers";
+import type { TaskRunnerEventsListener } from "./events";
 
 const defaultManagerOptions: Required<TaskManagerOptions> = {
   workerID: "",
@@ -35,6 +36,7 @@ export class TaskManager {
   readonly options: Required<TaskManagerOptions>;
   private polling = false;
   private maxRetries: number = MAX_RETRIES;
+  private eventListeners: TaskRunnerEventsListener[];
 
   constructor(
     client: Client,
@@ -51,6 +53,7 @@ export class TaskManager {
     this.maxRetries = config.maxRetries ?? MAX_RETRIES;
     this.errorHandler = config.onError ?? noopErrorHandler;
     this.workers = workers;
+    this.eventListeners = config.eventListeners ?? [];
     const providedOptions = config.options ?? {};
     this.options = {
       ...defaultManagerOptions,
@@ -133,6 +136,7 @@ export class TaskManager {
         logger: this.logger,
         onError: this.errorHandler,
         maxRetries: this.maxRetries,
+        eventListeners: this.eventListeners,
       });
       runner.startPolling();
       this.workerRunners.set(worker.taskDefName, runner);
