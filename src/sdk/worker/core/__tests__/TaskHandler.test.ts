@@ -5,19 +5,46 @@ import { worker } from "../../decorators/worker";
 import { clearWorkerRegistry } from "../../decorators/registry";
 import type { Client, Task } from "../../../../open-api";
 
-// Mock client
-const createMockClient = (): Client => ({
-  baseUrl: "http://localhost:8080/api",
-  headers: {},
-} as unknown as Client);
+// Mock client with all required methods
+const createMockClient = (): Client => {
+  const mockFn = jest.fn().mockResolvedValue({ data: null });
+  return {
+    buildUrl: jest.fn(),
+    getConfig: jest.fn(),
+    request: jest.fn(),
+    setConfig: jest.fn(),
+    get: mockFn,
+    post: mockFn,
+    put: mockFn,
+    patch: mockFn,
+    delete: mockFn,
+    options: mockFn,
+    head: mockFn,
+    interceptors: {
+      request: { use: jest.fn(), eject: jest.fn() },
+      response: { use: jest.fn(), eject: jest.fn() },
+      error: { use: jest.fn(), eject: jest.fn() },
+    },
+  } as unknown as Client;
+};
 
 describe("TaskHandler", () => {
+  const activeHandlers: TaskHandler[] = [];
+
   beforeEach(() => {
     clearWorkerRegistry();
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    // Stop all handlers to prevent async operations continuing after tests
+    for (const handler of activeHandlers) {
+      await handler.stopWorkers();
+    }
+    activeHandlers.length = 0;
     clearWorkerRegistry();
+    
+    // Wait for async cleanup
+    await new Promise(resolve => setTimeout(resolve, 50));
   });
 
   test("should create TaskHandler with auto-discovery", () => {
@@ -121,6 +148,7 @@ describe("TaskHandler", () => {
       client: createMockClient(),
       scanForDecorated: true,
     });
+    activeHandlers.push(handler);
 
     expect(handler.running).toBe(false);
     expect(handler.runningWorkerCount).toBe(0);
@@ -147,6 +175,7 @@ describe("TaskHandler", () => {
       client: createMockClient(),
       scanForDecorated: true,
     });
+    activeHandlers.push(handler);
 
     handler.startWorkers();
     expect(handler.runningWorkerCount).toBe(1);
@@ -167,6 +196,7 @@ describe("TaskHandler", () => {
       client: createMockClient(),
       scanForDecorated: true,
     });
+    activeHandlers.push(handler);
 
     handler.startWorkers();
     await handler.stopWorkers();
@@ -213,6 +243,7 @@ describe("TaskHandler", () => {
       client: createMockClient(),
       scanForDecorated: true,
     });
+    activeHandlers.push(handler);
 
     handler.startWorkers();
     expect(handler.running).toBe(true);
@@ -280,21 +311,29 @@ describe("TaskHandler", () => {
 });
 
 describe("TaskHandler - Module Imports", () => {
+  const activeHandlers: TaskHandler[] = [];
+
   beforeEach(() => {
     clearWorkerRegistry();
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    // Stop all handlers
+    for (const handler of activeHandlers) {
+      await handler.stopWorkers();
+    }
+    activeHandlers.length = 0;
     clearWorkerRegistry();
+    
+    // Wait for async cleanup
+    await new Promise(resolve => setTimeout(resolve, 50));
   });
 
-  test("should throw error for invalid module path", () => {
-    expect(() => {
-      new TaskHandler({
-        client: createMockClient(),
-        importModules: ["./nonexistent/module"],
-      });
-    }).toThrow("Failed to import worker module");
+  test("should throw error for invalid module path", async () => {
+    await expect(TaskHandler.create({
+      client: createMockClient(),
+      importModules: ["./nonexistent/module"],
+    })).rejects.toThrow("Failed to import worker module");
   });
 
   // Note: Testing actual module imports would require creating test files

@@ -1,4 +1,4 @@
-import { jest, test, expect } from "@jest/globals";
+import { jest, test, expect, afterEach } from "@jest/globals";
 import { TaskRunner } from "../TaskRunner";
 import { RunnerArgs } from "../types";
 import { mockLogger } from "../../../../integration-tests/utils/mockLogger";
@@ -14,8 +14,47 @@ jest.mock("../../../../open-api/generated", () => ({
   },
 }));
 
+// Create a proper mock client with all required methods
+const createMockClient = (): Client => {
+  const mockFn = jest.fn().mockResolvedValue({ data: null });
+  return {
+    buildUrl: jest.fn(),
+    getConfig: jest.fn(),
+    request: jest.fn(),
+    setConfig: jest.fn(),
+    get: mockFn,
+    post: mockFn,
+    put: mockFn,
+    patch: mockFn,
+    delete: mockFn,
+    options: mockFn,
+    head: mockFn,
+    interceptors: {
+      request: { use: jest.fn(), eject: jest.fn() },
+      response: { use: jest.fn(), eject: jest.fn() },
+      error: { use: jest.fn(), eject: jest.fn() },
+    },
+  } as unknown as Client;
+};
+
+// Track runners for cleanup
+const activeRunners: TaskRunner[] = [];
+
+afterEach(async () => {
+  // Stop all runners
+  for (const runner of activeRunners) {
+    runner.stopPolling();
+  }
+  activeRunners.length = 0;
+  
+  // Wait for async operations to complete
+  await new Promise(resolve => setTimeout(resolve, 50));
+  
+  jest.clearAllMocks();
+});
+
 test("polls tasks", async () => {
-  const mockClient = {} as Client;
+  const mockClient = createMockClient();
   const workerID = "worker-id";
   const args: RunnerArgs = {
     worker: {
@@ -60,8 +99,11 @@ test("polls tasks", async () => {
   } as Awaited<ReturnType<typeof TaskResource.batchPoll>>);
 
   const runner = new TaskRunner(args);
+  activeRunners.push(runner);
   runner.startPolling();
-  await new Promise((r) => setTimeout(() => r(true), 10));
+  
+  // Wait for polling to occur
+  await new Promise((r) => setTimeout(() => r(true), 100));
   runner.stopPolling();
 
   const expected = {
@@ -81,7 +123,7 @@ test("polls tasks", async () => {
 });
 
 test("Should set the task as failed if the task has an error", async () => {
-  const mockClient = {} as Client;
+  const mockClient = createMockClient();
   const workerID = "worker-id";
   const args: RunnerArgs = {
     worker: {
@@ -120,8 +162,11 @@ test("Should set the task as failed if the task has an error", async () => {
   } as Awaited<ReturnType<typeof TaskResource.batchPoll>>);
 
   const runner = new TaskRunner(args);
+  activeRunners.push(runner);
   runner.startPolling();
-  await new Promise((r) => setTimeout(() => r(true), 10));
+  
+  // Wait for polling to occur
+  await new Promise((r) => setTimeout(() => r(true), 100));
   runner.stopPolling();
 
   const expected = {

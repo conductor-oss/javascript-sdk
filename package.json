@@ -1,7 +1,7 @@
 {
   "name": "@io-orkes/conductor-javascript",
   "description": "Typescript SDK for Netflix Conductor",
-  "version": "v0.0.0",
+  "version": "v3.0.0",
   "private": false,
   "homepage": "https://orkes.io",
   "repository": {
