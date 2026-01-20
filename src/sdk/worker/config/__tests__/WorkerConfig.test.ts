@@ -1,9 +1,8 @@
-import { jest, test, expect, describe, beforeEach, afterEach } from "@jest/globals";
+import { test, expect, describe, beforeEach, afterEach } from "@jest/globals";
 import {
   resolveWorkerConfig,
   getWorkerConfigSummary,
   getWorkerConfigOneline,
-  type WorkerConfig,
 } from "../WorkerConfig";
 
 describe("WorkerConfig", () => {
@@ -13,11 +12,12 @@ describe("WorkerConfig", () => {
     // Clear environment variables before each test
     process.env = { ...originalEnv };
     // Remove all CONDUCTOR_WORKER_* variables
-    Object.keys(process.env).forEach((key) => {
+    for (const key of Object.keys(process.env)) {
       if (key.startsWith("CONDUCTOR_WORKER") || key.startsWith("conductor.worker")) {
+        // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
         delete process.env[key];
       }
-    });
+    }
   });
 
   afterEach(() => {

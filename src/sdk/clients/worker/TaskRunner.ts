@@ -216,7 +216,7 @@ export class TaskRunner {
       taskId: taskResult.taskId ?? "",
       workerId: workerID,
       workflowInstanceId: taskResult.workflowInstanceId,
-      cause: lastError!,
+      cause: lastError ?? new Error("Task update failed after all retries"),
       retryCount,
       taskResult,
       timestamp: new Date(),

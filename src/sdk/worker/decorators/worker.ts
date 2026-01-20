@@ -178,7 +178,7 @@ export interface WorkerOptions {
  */
 export function worker(options: WorkerOptions) {
   return function (
-    target: any,
+    target: unknown,
     propertyKey?: string,
     descriptor?: PropertyDescriptor
   ) {

@@ -139,24 +139,34 @@ export class TaskHandler {
   private logger: ConductorLogger;
   private isRunning = false;
 
-  constructor(config: TaskHandlerConfig) {
-    this.config = config;
-    this.client = config.client;
-    this.logger = config.logger ?? new DefaultLogger();
+  /**
+   * Create a TaskHandler instance with async module imports.
+   * Use this instead of `new TaskHandler()` when using `importModules`.
+   * 
+   * @example
+   * ```typescript
+   * const handler = await TaskHandler.create({
+   *   client,
+   *   importModules: ["./workers/orderWorkers", "./workers/paymentWorkers"],
+   * });
+   * ```
+   */
+  static async create(config: TaskHandlerConfig): Promise<TaskHandler> {
+    const logger = config.logger ?? new DefaultLogger();
 
     // Import modules for side-effect registration
     if (config.importModules && config.importModules.length > 0) {
-      this.logger.info(
+      logger.info(
         `Importing ${config.importModules.length} module(s) for worker discovery...`
       );
-      
+
       for (const modulePath of config.importModules) {
         try {
-          this.logger.debug(`Importing module: ${modulePath}`);
-          require(modulePath); // Triggers @worker decorator execution
-          this.logger.debug(`Successfully imported: ${modulePath}`);
+          logger.debug(`Importing module: ${modulePath}`);
+          await import(modulePath); // Async ES module import
+          logger.debug(`Successfully imported: ${modulePath}`);
         } catch (error) {
-          this.logger.error(
+          logger.error(
             `Failed to import module ${modulePath}:`,
             error instanceof Error ? error.message : error
           );
@@ -168,6 +178,15 @@ export class TaskHandler {
         }
       }
     }
+
+    // Now create the handler - workers are already registered via decorators
+    return new TaskHandler(config);
+  }
+
+  constructor(config: TaskHandlerConfig) {
+    this.config = config;
+    this.client = config.client;
+    this.logger = config.logger ?? new DefaultLogger();
 
     // Auto-discover decorated workers
     if (config.scanForDecorated !== false) {

@@ -654,7 +654,8 @@ export async function processPayment(task) { /* ... */ }
 // main.ts
 import { TaskHandler } from "@io-orkes/conductor-javascript";
 
-const handler = new TaskHandler({
+// Use TaskHandler.create() for async module imports
+const handler = await TaskHandler.create({
   client,
   importModules: [
     "./workers/orderWorkers",

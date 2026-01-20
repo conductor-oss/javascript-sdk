@@ -1,14 +1,15 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { jest, test, expect, describe, beforeEach, afterEach } from "@jest/globals";
-import { TaskHandler, type TaskHandlerConfig } from "../TaskHandler";
+import { TaskHandler } from "../TaskHandler";
 import { worker } from "../../decorators/worker";
-import { clearWorkerRegistry, getWorkerCount } from "../../decorators/registry";
+import { clearWorkerRegistry } from "../../decorators/registry";
 import type { Client, Task } from "../../../../open-api";
 
 // Mock client
 const createMockClient = (): Client => ({
   baseUrl: "http://localhost:8080/api",
   headers: {},
-} as Client);
+} as unknown as Client);
 
 describe("TaskHandler", () => {
   beforeEach(() => {
@@ -223,14 +224,14 @@ describe("TaskHandler", () => {
   });
 
   test("should handle event listeners", () => {
-    async function testWorker(task: Task) {
+    async function testWorker(_task: Task) {
       return { status: "COMPLETED" as const, outputData: {} };
     }
 
     worker({ taskDefName: "test_task" })(testWorker);
 
     const mockListener = {
-      onTaskExecutionCompleted: jest.fn(),
+      onTaskExecutionCompleted: jest.fn<() => void>(),
     };
 
     const handler = new TaskHandler({

@@ -1,13 +1,14 @@
-import { jest, test, expect, describe, beforeEach, afterEach } from "@jest/globals";
-import { worker, WorkerOptions } from "../worker";
-import {
-  registerWorker,
-  getRegisteredWorkers,
-  getRegisteredWorker,
-  clearWorkerRegistry,
-  getWorkerCount,
-} from "../registry";
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { afterEach, beforeEach, describe, expect, jest, test } from "@jest/globals";
 import type { Task } from "../../../../open-api";
+import {
+  clearWorkerRegistry,
+  getRegisteredWorker,
+  getRegisteredWorkers,
+  getWorkerCount,
+  registerWorker,
+} from "../registry";
+import { worker } from "../worker";
 
 describe("@worker decorator", () => {
   beforeEach(() => {
@@ -20,10 +21,10 @@ describe("@worker decorator", () => {
 
   test("should register a decorated function", () => {
     // Define function first, then apply decorator
-    async function testWorker(task: Task) {
+    async function testWorker(_task: Task) {
       return { status: "COMPLETED" as const, outputData: {} };
     }
-    
+
     // Apply decorator manually (equivalent to @worker)
     worker({ taskDefName: "test_task" })(testWorker);
 
@@ -38,9 +39,10 @@ describe("@worker decorator", () => {
       name: "complex_task",
       retryCount: 3,
       timeoutSeconds: 300,
+      totalTimeoutSeconds: 3600,
     };
 
-    async function complexWorker(task: Task) {
+    async function complexWorker(_task: Task) {
       return { status: "COMPLETED" as const, outputData: {} };
     }
 
@@ -71,15 +73,15 @@ describe("@worker decorator", () => {
   });
 
   test("should register multiple workers", () => {
-    async function worker1(task: Task) {
+    async function worker1(_task: Task) {
       return { status: "COMPLETED" as const, outputData: {} };
     }
 
-    async function worker2(task: Task) {
+    async function worker2(_task: Task) {
       return { status: "COMPLETED" as const, outputData: {} };
     }
 
-    async function worker3(task: Task) {
+    async function worker3(_task: Task) {
       return { status: "COMPLETED" as const, outputData: {} };
     }
 
@@ -94,15 +96,15 @@ describe("@worker decorator", () => {
   });
 
   test("should handle workers with same name but different domains", () => {
-    async function worker1(task: Task) {
+    async function worker1(_task: Task) {
       return { status: "COMPLETED" as const, outputData: { domain: 1 } };
     }
 
-    async function worker2(task: Task) {
+    async function worker2(_task: Task) {
       return { status: "COMPLETED" as const, outputData: { domain: 2 } };
     }
 
-    async function worker3(task: Task) {
+    async function worker3(_task: Task) {
       return { status: "COMPLETED" as const, outputData: { domain: 3 } };
     }
 
@@ -111,18 +113,18 @@ describe("@worker decorator", () => {
     worker({ taskDefName: "shared_task" })(worker3); // No domain
 
     expect(getWorkerCount()).toBe(3);
-    
+
     const w1 = getRegisteredWorker("shared_task", "domain1");
     const w2 = getRegisteredWorker("shared_task", "domain2");
     const w3 = getRegisteredWorker("shared_task");
-    
+
     expect(w1?.executeFunction).toBe(worker1);
     expect(w2?.executeFunction).toBe(worker2);
     expect(w3?.executeFunction).toBe(worker3);
   });
 
   test("should throw error if taskDefName is missing", () => {
-    async function invalidWorker(task: Task) {
+    async function invalidWorker(_task: Task) {
       return { status: "COMPLETED" as const, outputData: {} };
     }
 
@@ -135,8 +137,7 @@ describe("@worker decorator", () => {
   test("should throw error if applied to non-function", () => {
     expect(() => {
       const notAFunction = "invalid";
-      // @ts-expect-error - Testing invalid target
-      worker({ taskDefName: "test" })(notAFunction);
+      worker({ taskDefName: "test" })(notAFunction as never);
     }).toThrow("can only be applied to functions");
   });
 
@@ -144,7 +145,7 @@ describe("@worker decorator", () => {
     async function callableWorker(task: Task) {
       return {
         status: "COMPLETED" as const,
-        outputData: { result: (task.inputData as any).value * 2 },
+        outputData: { result: (task.inputData as Record<string, number>).value * 2 },
       };
     }
 
@@ -160,13 +161,13 @@ describe("@worker decorator", () => {
   });
 
   test("should warn when registering duplicate worker", () => {
-    const consoleSpy = jest.spyOn(console, "warn").mockImplementation();
+    const consoleSpy = jest.spyOn(console, "warn").mockImplementation(() => undefined);
 
-    async function worker1(task: Task) {
+    async function worker1(_task: Task) {
       return { status: "COMPLETED" as const, outputData: {} };
     }
 
-    async function worker2(task: Task) {
+    async function worker2(_task: Task) {
       return { status: "COMPLETED" as const, outputData: {} };
     }
 
@@ -177,7 +178,7 @@ describe("@worker decorator", () => {
       expect.stringContaining("already registered")
     );
     expect(getWorkerCount()).toBe(1); // Second overwrites first
-    
+
     const registered = getRegisteredWorker("duplicate_task");
     expect(registered?.executeFunction).toBe(worker2); // Latest wins
 
@@ -186,7 +187,7 @@ describe("@worker decorator", () => {
 
   test("should support class method decoration", () => {
     class WorkerClass {
-      async processTask(task: Task) {
+      async processTask(_task: Task) {
         return { status: "COMPLETED" as const, outputData: {} };
       }
     }
@@ -200,11 +201,11 @@ describe("@worker decorator", () => {
   });
 
   test("should clear registry", () => {
-    async function worker1(task: Task) {
+    async function worker1(_task: Task) {
       return { status: "COMPLETED" as const, outputData: {} };
     }
 
-    async function worker2(task: Task) {
+    async function worker2(_task: Task) {
       return { status: "COMPLETED" as const, outputData: {} };
     }
 
@@ -230,7 +231,7 @@ describe("Worker Registry", () => {
   });
 
   test("should register worker manually", () => {
-    const executeFunction = async (task: Task) => ({
+    const executeFunction = async (_task: Task) => ({
       status: "COMPLETED" as const,
       outputData: {},
     });
@@ -248,11 +249,11 @@ describe("Worker Registry", () => {
   });
 
   test("should get all registered workers", () => {
-    const worker1 = async (task: Task) => ({
+    const worker1 = async (_task: Task) => ({
       status: "COMPLETED" as const,
       outputData: {},
     });
-    const worker2 = async (task: Task) => ({
+    const worker2 = async (_task: Task) => ({
       status: "COMPLETED" as const,
       outputData: {},
     });
@@ -266,7 +267,7 @@ describe("Worker Registry", () => {
   });
 
   test("should get worker by name and domain", () => {
-    const executeFunction = async (task: Task) => ({
+    const executeFunction = async (_task: Task) => ({
       status: "COMPLETED" as const,
       outputData: {},
     });

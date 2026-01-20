@@ -1,5 +1,4 @@
 import type { ConductorLogger } from "../../helpers/logger";
-import { DefaultLogger } from "../../helpers/logger";
 
 /**
  * Worker configuration properties that can be overridden via environment variables.
@@ -36,7 +35,7 @@ export interface WorkerConfig {
 /**
  * Configurable property names and their types.
  */
-const CONFIGURABLE_PROPERTIES: Array<keyof WorkerConfig> = [
+const CONFIGURABLE_PROPERTIES: (keyof WorkerConfig)[] = [
   "pollInterval",
   "domain",
   "workerId",
@@ -206,33 +205,33 @@ function getEnvValue(
 export function resolveWorkerConfig(
   workerName: string,
   codeDefaults: Partial<WorkerConfig> = {},
-  logger?: ConductorLogger
+  _logger?: ConductorLogger
 ): WorkerConfig {
-  const resolved: WorkerConfig = {};
+  const resolved: Record<string, unknown> = {};
 
   for (const property of CONFIGURABLE_PROPERTIES) {
     const expectedType = PROPERTY_TYPES[property];
 
     // 1. Check environment variables (worker-specific > global)
-    const envValue = getEnvValue(workerName, property, expectedType, logger);
+    const envValue = getEnvValue(workerName, property, expectedType, _logger);
     if (envValue !== undefined) {
-      (resolved as any)[property] = envValue;
+      resolved[property] = envValue;
       continue;
     }
 
     // 2. Use code default if provided
     if (codeDefaults[property] !== undefined) {
-      (resolved as any)[property] = codeDefaults[property];
+      resolved[property] = codeDefaults[property];
       continue;
     }
 
     // 3. Use system default
     if (DEFAULT_VALUES[property] !== undefined) {
-      (resolved as any)[property] = DEFAULT_VALUES[property];
+      resolved[property] = DEFAULT_VALUES[property];
     }
   }
 
-  return resolved;
+  return resolved as WorkerConfig;
 }
 
 /**
@@ -254,8 +253,7 @@ export function resolveWorkerConfig(
  */
 export function getWorkerConfigSummary(
   workerName: string,
-  resolvedConfig: WorkerConfig,
-  logger?: ConductorLogger
+  resolvedConfig: WorkerConfig
 ): string {
   const lines: string[] = [`Worker '${workerName}' configuration:`];
 

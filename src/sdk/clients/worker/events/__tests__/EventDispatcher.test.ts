@@ -19,8 +19,8 @@ describe("EventDispatcher", () => {
 
   test("should register and call event listeners", async () => {
     const mockListener: TaskRunnerEventsListener = {
-      onPollStarted: jest.fn(),
-      onPollCompleted: jest.fn(),
+      onPollStarted: jest.fn<() => void>(),
+      onPollCompleted: jest.fn<() => void>(),
     };
 
     dispatcher.register(mockListener);
@@ -40,10 +40,10 @@ describe("EventDispatcher", () => {
 
   test("should call multiple listeners", async () => {
     const listener1: TaskRunnerEventsListener = {
-      onPollStarted: jest.fn(),
+      onPollStarted: jest.fn<() => void>(),
     };
     const listener2: TaskRunnerEventsListener = {
-      onPollStarted: jest.fn(),
+      onPollStarted: jest.fn<() => void>(),
     };
 
     dispatcher.register(listener1);
@@ -64,7 +64,7 @@ describe("EventDispatcher", () => {
 
   test("should unregister listeners", async () => {
     const listener: TaskRunnerEventsListener = {
-      onPollStarted: jest.fn(),
+      onPollStarted: jest.fn<() => void>(),
     };
 
     dispatcher.register(listener);
@@ -84,10 +84,10 @@ describe("EventDispatcher", () => {
 
   test("should isolate listener failures", async () => {
     const failingListener: TaskRunnerEventsListener = {
-      onPollStarted: jest.fn().mockRejectedValue(new Error("Listener error")),
+      onPollStarted: jest.fn<() => Promise<void>>().mockRejectedValue(new Error("Listener error")),
     };
     const workingListener: TaskRunnerEventsListener = {
-      onPollStarted: jest.fn(),
+      onPollStarted: jest.fn<() => void>(),
     };
 
     dispatcher.register(failingListener);
@@ -111,13 +111,13 @@ describe("EventDispatcher", () => {
 
   test("should handle all event types", async () => {
     const listener: TaskRunnerEventsListener = {
-      onPollStarted: jest.fn(),
-      onPollCompleted: jest.fn(),
-      onPollFailure: jest.fn(),
-      onTaskExecutionStarted: jest.fn(),
-      onTaskExecutionCompleted: jest.fn(),
-      onTaskExecutionFailure: jest.fn(),
-      onTaskUpdateFailure: jest.fn(),
+      onPollStarted: jest.fn<() => void>(),
+      onPollCompleted: jest.fn<() => void>(),
+      onPollFailure: jest.fn<() => void>(),
+      onTaskExecutionStarted: jest.fn<() => void>(),
+      onTaskExecutionCompleted: jest.fn<() => void>(),
+      onTaskExecutionFailure: jest.fn<() => void>(),
+      onTaskUpdateFailure: jest.fn<() => void>(),
     };
 
     dispatcher.register(listener);
@@ -218,7 +218,7 @@ describe("EventDispatcher", () => {
     let callbackExecuted = false;
 
     const asyncListener: TaskRunnerEventsListener = {
-      onPollStarted: async (event) => {
+      onPollStarted: async () => {
         await new Promise((resolve) => setTimeout(resolve, 10));
         callbackExecuted = true;
       },
