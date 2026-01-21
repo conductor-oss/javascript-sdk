@@ -9,6 +9,7 @@ export default {
     "!src/**/*.d.ts",
     "!src/**/generated/**",
     "!src/**/spec/**",
+    "!src/**/*.test.{ts,tsx}",
   ],
   coverageReporters: ["text", "lcov", "cobertura"],
   transformIgnorePatterns: ["/node_modules/", "\\.pnp\\.[^\\/]+$"],
