@@ -1,11 +1,11 @@
-import { jest, test, expect, afterEach } from "@jest/globals";
+import { afterEach, expect, jest, test } from "@jest/globals";
+import { mockLogger } from "../../../../integration-tests/utils/mockLogger";
+import type { Task } from "../../../../open-api";
+import { TaskResultStatusEnum } from "../../../../open-api";
+import { TaskResource } from "../../../../open-api/generated";
+import type { Client } from "../../../../open-api/generated/client/types.gen";
 import { TaskRunner } from "../TaskRunner";
 import { RunnerArgs } from "../types";
-import { mockLogger } from "../../../../integration-tests/utils/mockLogger";
-import { TaskResource } from "../../../../open-api/generated";
-import { TaskResultStatusEnum } from "../../../../open-api";
-import type { Client } from "../../../../open-api/generated/client/types.gen";
-import type { Task } from "../../../../open-api";
 
 jest.mock("../../../../open-api/generated", () => ({
   TaskResource: {
@@ -16,7 +16,7 @@ jest.mock("../../../../open-api/generated", () => ({
 
 // Create a proper mock client with all required methods
 const createMockClient = (): Client => {
-  const mockFn = jest.fn().mockResolvedValue({ data: null });
+  const mockFn = jest.fn<() => Promise<{ data: null }>>().mockResolvedValue({ data: null });
   return {
     buildUrl: jest.fn(),
     getConfig: jest.fn(),
@@ -46,10 +46,10 @@ afterEach(async () => {
     runner.stopPolling();
   }
   activeRunners.length = 0;
-  
+
   // Wait for async operations to complete
   await new Promise(resolve => setTimeout(resolve, 50));
-  
+
   jest.clearAllMocks();
 });
 
@@ -101,7 +101,7 @@ test("polls tasks", async () => {
   const runner = new TaskRunner(args);
   activeRunners.push(runner);
   runner.startPolling();
-  
+
   // Wait for polling to occur
   await new Promise((r) => setTimeout(() => r(true), 100));
   runner.stopPolling();
@@ -164,7 +164,7 @@ test("Should set the task as failed if the task has an error", async () => {
   const runner = new TaskRunner(args);
   activeRunners.push(runner);
   runner.startPolling();
-  
+
   // Wait for polling to occur
   await new Promise((r) => setTimeout(() => r(true), 100));
   runner.stopPolling();

@@ -8,7 +8,7 @@ import type {
   TaskExecutionCompleted,
   TaskExecutionFailure,
   TaskUpdateFailure,
-} from "../EventTypes";
+} from "../types";
 
 describe("EventDispatcher", () => {
   let dispatcher: EventDispatcher;

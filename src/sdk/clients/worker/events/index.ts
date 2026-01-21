@@ -1,2 +1,2 @@
-export * from "./EventTypes";
+export * from "./types";
 export * from "./EventDispatcher";

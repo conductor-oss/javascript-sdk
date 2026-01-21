@@ -1,13 +1,13 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { jest, test, expect, describe, beforeEach, afterEach } from "@jest/globals";
-import { TaskHandler } from "../TaskHandler";
-import { worker } from "../../decorators/worker";
-import { clearWorkerRegistry } from "../../decorators/registry";
+import { afterEach, beforeEach, describe, expect, jest, test } from "@jest/globals";
 import type { Client, Task } from "../../../../open-api";
+import { clearWorkerRegistry } from "../../decorators/registry";
+import { worker } from "../../decorators/worker";
+import { TaskHandler } from "../TaskHandler";
 
 // Mock client with all required methods
 const createMockClient = (): Client => {
-  const mockFn = jest.fn().mockResolvedValue({ data: null });
+  const mockFn = jest.fn<() => Promise<{ data: null }>>().mockResolvedValue({ data: null });
   return {
     buildUrl: jest.fn(),
     getConfig: jest.fn(),
@@ -42,7 +42,7 @@ describe("TaskHandler", () => {
     }
     activeHandlers.length = 0;
     clearWorkerRegistry();
-    
+
     // Wait for async cleanup
     await new Promise(resolve => setTimeout(resolve, 50));
   });
@@ -324,7 +324,7 @@ describe("TaskHandler - Module Imports", () => {
     }
     activeHandlers.length = 0;
     clearWorkerRegistry();
-    
+
     // Wait for async cleanup
     await new Promise(resolve => setTimeout(resolve, 50));
   });

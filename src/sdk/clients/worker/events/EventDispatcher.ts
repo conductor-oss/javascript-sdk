@@ -7,7 +7,7 @@ import type {
   TaskExecutionCompleted,
   TaskExecutionFailure,
   TaskUpdateFailure,
-} from "./EventTypes";
+} from "./types";
 
 /**
  * Interface for task runner event listeners.
