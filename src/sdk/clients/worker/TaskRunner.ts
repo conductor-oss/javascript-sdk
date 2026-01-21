@@ -310,11 +310,15 @@ export class TaskRunner {
   handleUnknownError = (unknownError: unknown) => {
     let message = "";
     let stack: string | undefined = "";
-    if ((unknownError as Error).stack) {
-      stack = (unknownError as Error).stack;
-    }
-    if ((unknownError as Error).message) {
-      message = (unknownError as Error).message;
+    if (unknownError && typeof unknownError === "object") {
+      if ("stack" in unknownError) {
+        stack = (unknownError as Error).stack;
+      }
+      if ("message" in unknownError) {
+        message = (unknownError as Error).message;
+      }
+    } else if (typeof unknownError === "string") {
+      message = unknownError;
     }
     this.logger.error(
       `Error for ${this.worker.taskDefName}: error: ${message}, stack: ${stack}`
