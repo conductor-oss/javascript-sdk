@@ -13,6 +13,7 @@ export default {
     "!src/**/index.ts",
     "!src/**/types.ts",
     "!src/**/*.types.ts",
+    "!src/**/exceptions/**",
   ],
   coverageReporters: ["text", "lcov", "cobertura"],
   transformIgnorePatterns: ["/node_modules/", "\\.pnp\\.[^\\/]+$"],
