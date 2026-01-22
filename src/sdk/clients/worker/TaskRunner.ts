@@ -16,6 +16,8 @@ import {
   ConductorWorker,
 } from "./types";
 import { noopErrorHandler, optionEquals } from "./helpers";
+import { EventDispatcher } from "./events/EventDispatcher";
+import { NonRetryableException } from "./exceptions";
 
 const defaultRunnerOptions: Required<TaskRunnerOptions> = {
   workerID: "",
@@ -42,6 +44,7 @@ export class TaskRunner {
   errorHandler: TaskErrorHandler;
   private poller: Poller<Task>;
   private maxRetries: number;
+  private eventDispatcher: EventDispatcher;
 
   constructor({
     worker,
@@ -50,6 +53,7 @@ export class TaskRunner {
     logger = noopLogger,
     onError: errorHandler = noopErrorHandler,
     maxRetries = MAX_RETRIES,
+    eventListeners = [],
   }: RunnerArgs) {
     this._client = client;
     this.maxRetries = maxRetries;
@@ -57,13 +61,20 @@ export class TaskRunner {
     this.worker = worker;
     this.options = { ...defaultRunnerOptions, ...options };
     this.errorHandler = errorHandler;
+    
+    // Initialize event dispatcher and register listeners
+    this.eventDispatcher = new EventDispatcher();
+    eventListeners.forEach((listener) => {
+      this.eventDispatcher.register(listener);
+    });
+    
     this.poller = new Poller(
       worker.taskDefName,
       this.batchPoll,
       this.executeTask,
       {
-        concurrency: worker.concurrency ?? options.concurrency,
-        pollInterval: worker.pollInterval ?? options.pollInterval,
+        concurrency: worker.concurrency ?? this.options.concurrency,
+        pollInterval: worker.pollInterval ?? this.options.pollInterval,
       },
       this.logger
     );
@@ -112,25 +123,61 @@ export class TaskRunner {
 
   private batchPoll = async (count: number): Promise<Task[] | undefined> => {
     const { workerID } = this.options;
+    const startTime = Date.now();
 
-    const { data: tasks } = await TaskResource.batchPoll({
-      client: this._client,
-      path: {
-        tasktype: this.worker.taskDefName,
-      },
-      query: {
-        workerid: workerID,
-        domain: this.worker.domain ?? this.options.domain,
-        count,
-        timeout: this.options.batchPollingTimeout ?? 100,
-      },
+    // Publish PollStarted event
+    await this.eventDispatcher.publishPollStarted({
+      taskType: this.worker.taskDefName,
+      workerId: workerID,
+      pollCount: count,
+      timestamp: new Date(),
     });
-    return tasks;
+
+    try {
+      const { data: tasks } = await TaskResource.batchPoll({
+        client: this._client,
+        path: {
+          tasktype: this.worker.taskDefName,
+        },
+        query: {
+          workerid: workerID,
+          domain: this.worker.domain ?? this.options.domain,
+          count,
+          timeout: this.options.batchPollingTimeout ?? 100,
+        },
+      });
+
+      const durationMs = Date.now() - startTime;
+
+      // Publish PollCompleted event
+      await this.eventDispatcher.publishPollCompleted({
+        taskType: this.worker.taskDefName,
+        durationMs,
+        tasksReceived: tasks?.length ?? 0,
+        timestamp: new Date(),
+      });
+
+      return tasks;
+    } catch (error) {
+      const durationMs = Date.now() - startTime;
+
+      // Publish PollFailure event
+      await this.eventDispatcher.publishPollFailure({
+        taskType: this.worker.taskDefName,
+        durationMs,
+        cause: error as Error,
+        timestamp: new Date(),
+      });
+
+      throw error;
+    }
   };
 
   updateTaskWithRetry = async (task: Task, taskResult: TaskResult) => {
     const { workerID } = this.options;
     let retryCount = 0;
+    let lastError: Error | null = null;
+
     while (retryCount < this.maxRetries) {
       try {
         await TaskResource.updateTask({
@@ -141,20 +188,39 @@ export class TaskRunner {
           },
         });
 
-        return;
+        return; // Success
       } catch (error: unknown) {
-        this.errorHandler(error as Error, task);
+        lastError = error as Error;
+        this.errorHandler(lastError, task);
         this.logger.error(
-          `Error updating task ${taskResult.taskId} on retry ${retryCount}`,
+          `Error updating task ${taskResult.taskId} on retry ${retryCount + 1}/${this.maxRetries}`,
           error
         );
         retryCount++;
-        await new Promise((r) => setTimeout(() => r(true), retryCount * 10));
+
+        if (retryCount < this.maxRetries) {
+          // Exponential backoff: 10s, 20s, 30s
+          const delayMs = retryCount * 10 * 1000;
+          await new Promise((r) => setTimeout(() => r(true), delayMs));
+        }
       }
     }
+
+    // All retries exhausted - publish critical TaskUpdateFailure event
     this.logger.error(
-      `Unable to update task ${taskResult.taskId} after ${retryCount} retries`
+      `CRITICAL: Task update failed after ${retryCount} retries. Task result LOST for task_id=${taskResult.taskId}`
     );
+
+    await this.eventDispatcher.publishTaskUpdateFailure({
+      taskType: this.worker.taskDefName,
+      taskId: taskResult.taskId ?? "",
+      workerId: workerID,
+      workflowInstanceId: taskResult.workflowInstanceId,
+      cause: lastError ?? new Error("Task update failed after all retries"),
+      retryCount,
+      taskResult,
+      timestamp: new Date(),
+    });
   };
 
   private executeTask = async (task: Task) => {
@@ -165,8 +231,38 @@ export class TaskRunner {
       return;
     }
 
+    const { workerID } = this.options;
+    const startTime = Date.now();
+
+    // Publish TaskExecutionStarted event
+    await this.eventDispatcher.publishTaskExecutionStarted({
+      taskType: this.worker.taskDefName,
+      taskId: task.taskId,
+      workerId: workerID,
+      workflowInstanceId: task.workflowInstanceId,
+      timestamp: new Date(),
+    });
+
     try {
       const result = await this.worker.execute(task);
+      const durationMs = Date.now() - startTime;
+
+      // Calculate output size if possible
+      const outputSizeBytes = result.outputData
+        ? JSON.stringify(result.outputData).length
+        : undefined;
+
+      // Publish TaskExecutionCompleted event
+      await this.eventDispatcher.publishTaskExecutionCompleted({
+        taskType: this.worker.taskDefName,
+        taskId: task.taskId,
+        workerId: workerID,
+        workflowInstanceId: task.workflowInstanceId,
+        durationMs,
+        outputSizeBytes,
+        timestamp: new Date(),
+      });
+
       await this.updateTaskWithRetry(task, {
         ...result,
         workflowInstanceId: task.workflowInstanceId,
@@ -174,15 +270,39 @@ export class TaskRunner {
       });
       this.logger.debug(`Task has executed successfully ${task.taskId}`);
     } catch (error: unknown) {
+      const durationMs = Date.now() - startTime;
+      const err = error as Error;
+
+      // Publish TaskExecutionFailure event
+      await this.eventDispatcher.publishTaskExecutionFailure({
+        taskType: this.worker.taskDefName,
+        taskId: task.taskId,
+        workerId: workerID,
+        workflowInstanceId: task.workflowInstanceId,
+        cause: err,
+        durationMs,
+        timestamp: new Date(),
+      });
+
+      // Determine task status based on exception type
+      const isNonRetryable = err instanceof NonRetryableException;
+      const status = isNonRetryable ? "FAILED_WITH_TERMINAL_ERROR" : "FAILED";
+
+      if (isNonRetryable) {
+        this.logger.error(
+          `Task ${task.taskId} failed with terminal error (no retry): ${err.message}`
+        );
+      }
+
       await this.updateTaskWithRetry(task, {
         workflowInstanceId: task.workflowInstanceId,
         taskId: task.taskId,
         reasonForIncompletion:
           (error as Record<string, string>)?.message ?? DEFAULT_ERROR_MESSAGE,
-        status: "FAILED",
+        status,
         outputData: {},
       });
-      this.errorHandler(error as Error, task);
+      this.errorHandler(err, task);
       this.logger.error(`Error executing ${task.taskId}`, error);
     }
   };
@@ -190,11 +310,15 @@ export class TaskRunner {
   handleUnknownError = (unknownError: unknown) => {
     let message = "";
     let stack: string | undefined = "";
-    if ((unknownError as Error).stack) {
-      stack = (unknownError as Error).stack;
-    }
-    if ((unknownError as Error).message) {
-      message = (unknownError as Error).message;
+    if (unknownError && typeof unknownError === "object") {
+      if ("stack" in unknownError) {
+        stack = (unknownError as Error).stack;
+      }
+      if ("message" in unknownError) {
+        message = (unknownError as Error).message;
+      }
+    } else if (typeof unknownError === "string") {
+      message = unknownError;
     }
     this.logger.error(
       `Error for ${this.worker.taskDefName}: error: ${message}, stack: ${stack}`

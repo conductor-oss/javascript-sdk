@@ -33,6 +33,14 @@ export class Poller<T> {
     this.performWorkFunction = performWorkFunction;
     this.options = { ...this.options, ...pollerOptions };
     this.logger = logger || noopLogger;
+    
+    // Ensure concurrency is a valid number
+    if (typeof this.options.concurrency !== 'number' || isNaN(this.options.concurrency) || this.options.concurrency < 1) {
+      this.logger.info(
+        `Invalid concurrency value (${this.options.concurrency}) for poller ${pollerId}. Using default: ${DEFAULT_CONCURRENCY}`
+      );
+      this.options.concurrency = DEFAULT_CONCURRENCY;
+    }
   }
 
   get isPolling() {
@@ -77,12 +85,10 @@ export class Poller<T> {
     while (this.isPolling) {
       try {
         // Concurrency could have been updated. Accounting for that
-        const count = Math.max(
-          0,
-          this.options.concurrency - this._tasksInProcess
-        );
+        const rawCount = (this.options.concurrency ?? DEFAULT_CONCURRENCY) - this._tasksInProcess;
+        const count = Math.max(0, Number.isFinite(rawCount) ? rawCount : DEFAULT_CONCURRENCY);
 
-        if (count === 0) {
+        if (count === 0 || !Number.isFinite(count)) {
           this.logger.debug(
             "Max in process reached, Will skip polling for " + this._pollerId
           );

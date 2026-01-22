@@ -7,7 +7,15 @@
       "dom"
     ],
     "noEmit": true,
-    "isolatedModules": true
+    "isolatedModules": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@open-api/*": ["src/open-api/*"],
+      "@test-utils/*": ["src/integration-tests/utils/*"]
+    }
   },
   "exclude": [
     "dist",

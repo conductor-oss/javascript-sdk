@@ -8,6 +8,8 @@ export * from "./generators";
 
 export * from "./types";
 
+export * from "./worker";
+
 export { DefaultLogger, noopLogger } from "./helpers/logger";
 export type { ConductorLogger } from "./helpers/logger";
 export type { ConductorSdkError } from "./helpers/errors";
