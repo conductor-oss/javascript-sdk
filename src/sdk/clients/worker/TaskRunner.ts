@@ -73,8 +73,8 @@ export class TaskRunner {
       this.batchPoll,
       this.executeTask,
       {
-        concurrency: worker.concurrency ?? options.concurrency,
-        pollInterval: worker.pollInterval ?? options.pollInterval,
+        concurrency: worker.concurrency ?? this.options.concurrency,
+        pollInterval: worker.pollInterval ?? this.options.pollInterval,
       },
       this.logger
     );

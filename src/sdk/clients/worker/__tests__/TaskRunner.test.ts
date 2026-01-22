@@ -1087,4 +1087,75 @@ describe("Polling state", () => {
 
     expect(runner.isPolling).toBe(false);
   });
+
+  test("handles undefined concurrency by using default", async () => {
+    const mockClient = createMockClient();
+    
+    // Create worker with undefined concurrency
+    const args: RunnerArgs = {
+      worker: {
+        taskDefName: "test-undefined-concurrency",
+        execute: async () => ({
+          status: "COMPLETED",
+          outputData: { result: "ok" },
+        }),
+        // concurrency is intentionally undefined
+      },
+      options: {
+        pollInterval: 10,
+        workerID: "test-worker",
+        // concurrency is also undefined here
+      },
+      logger: mockLogger,
+      client: mockClient,
+    };
+
+    const mockTask: Task = {
+      taskId: "task-1",
+      workflowInstanceId: "workflow-1",
+      status: "IN_PROGRESS",
+      taskType: "test-undefined-concurrency",
+      inputData: {},
+    } as Task;
+
+    (TaskResource.batchPoll as jest.MockedFunction<typeof TaskResource.batchPoll>)
+      .mockResolvedValueOnce({ 
+        data: [mockTask],
+        request: {} as Request,
+        response: {} as Response,
+      } as Awaited<ReturnType<typeof TaskResource.batchPoll>>)
+      .mockResolvedValue({ 
+        data: [],
+        request: {} as Request,
+        response: {} as Response,
+      } as Awaited<ReturnType<typeof TaskResource.batchPoll>>);
+
+    (TaskResource.updateTask as jest.MockedFunction<typeof TaskResource.updateTask>)
+      .mockResolvedValue({ 
+        data: null,
+        request: {} as Request,
+        response: {} as Response,
+      } as Awaited<ReturnType<typeof TaskResource.updateTask>>);
+
+    const runner = new TaskRunner(args);
+    activeRunners.push(runner);
+
+    runner.startPolling();
+    
+    // Wait for polling cycle
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    await runner.stopPolling();
+
+    // Verify batchPoll was called with a valid count (should be 1, the default concurrency)
+    expect(TaskResource.batchPoll).toHaveBeenCalled();
+    const batchPollCall = (TaskResource.batchPoll as jest.MockedFunction<typeof TaskResource.batchPoll>).mock.calls[0];
+    const queryParams = batchPollCall?.[0]?.query;
+    
+    // Verify count is a valid number, not NaN
+    expect(queryParams?.count).toBeDefined();
+    expect(typeof queryParams?.count).toBe('number');
+    expect(Number.isFinite(queryParams?.count)).toBe(true);
+    expect(queryParams?.count).toBeGreaterThan(0);
+  });
 });
