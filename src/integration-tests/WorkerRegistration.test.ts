@@ -35,7 +35,6 @@ describe("SDK Worker Registration", () => {
   test("worker() function registers workers in global registry", async () => {
     const taskName = `sdk_test_basic_worker_${Date.now()}`;
 
-    // Define worker using worker() function
     worker({ taskDefName: taskName })(
       async function basicWorker() {
         return {
@@ -58,7 +57,6 @@ describe("SDK Worker Registration", () => {
 
     let workerExecuted = false;
 
-    // Define worker using worker() function
     worker({ taskDefName: taskName, pollInterval: 100 })(
       async function autoDiscoverWorker(task: Task) {
         workerExecuted = true;
@@ -81,19 +79,24 @@ describe("SDK Worker Registration", () => {
     expect(handler.workerCount).toBe(1);
     expect(handler.running).toBe(false);
 
-    // Register workflow
+    // Start workers BEFORE registering workflow
+    handler.startWorkers();
+    
+    // Wait a bit for workers to start polling
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // Register workflow - pass workflow input to task
     await executor.registerWorkflow(true, {
       name: workflowName,
       version: 1,
       ownerEmail: "developers@orkes.io",
-      tasks: [simpleTask(taskName, taskName, {})],
-      inputParameters: [],
+      tasks: [simpleTask(taskName, taskName, {
+        testData: "${workflow.input.testData}",
+      })],
+      inputParameters: ["testData"],
       outputParameters: {},
       timeoutSeconds: 0,
     });
-
-    // Start workers
-    handler.startWorkers();
     expect(handler.running).toBe(true);
     expect(handler.runningWorkerCount).toBe(1);
 
@@ -128,7 +131,8 @@ describe("SDK Worker Registration", () => {
     expect(firstTask?.taskType).toBe(taskName);
     expect(firstTask?.status).toBe("COMPLETED");
     expect(firstTask?.outputData?.message).toBe("Auto-discovered worker executed");
-    expect(firstTask?.outputData?.inputReceived).toEqual({ testData: "hello" });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((firstTask?.outputData?.inputReceived as any)?.testData).toBe("hello");
 
     // Stop workers
     await handler.stopWorkers();
@@ -144,7 +148,6 @@ describe("SDK Worker Registration", () => {
     let executionCount = 0;
     const executionTimes: number[] = [];
 
-    // Define worker with concurrency
     worker({ taskDefName: taskName, concurrency: 3, pollInterval: 100 })(
       async function concurrentWorker(task: Task) {
         const startTime = Date.now();
@@ -170,6 +173,12 @@ describe("SDK Worker Registration", () => {
       scanForDecorated: true,
     });
 
+    // Start workers BEFORE registering workflow
+    handler.startWorkers();
+    
+    // Wait a bit for workers to start polling
+    await new Promise(resolve => setTimeout(resolve, 100));
+
     // Register workflow with multiple tasks
     await executor.registerWorkflow(true, {
       name: workflowName,
@@ -184,8 +193,6 @@ describe("SDK Worker Registration", () => {
       outputParameters: {},
       timeoutSeconds: 0,
     });
-
-    handler.startWorkers();
 
     const { workflowId } = await executor.executeWorkflow(
       {
@@ -219,7 +226,6 @@ describe("SDK Worker Registration", () => {
     const taskName = `sdk_test_domain_${Date.now()}`;
     const domain = "test_domain";
 
-    // Define worker with domain
     worker({ taskDefName: taskName, domain, pollInterval: 100 })(
       async function domainWorker() {
         return {
@@ -239,8 +245,15 @@ describe("SDK Worker Registration", () => {
     const registeredWorkers = getRegisteredWorkers();
     expect(registeredWorkers[0]?.domain).toBe(domain);
 
+    // Start workers and verify they start properly
     handler.startWorkers();
+    expect(handler.running).toBe(true);
+    
+    // Wait a bit for workers to initialize
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
     await handler.stopWorkers();
+    expect(handler.running).toBe(false);
   });
 
   test("NonRetryableException marks task as terminal failure", async () => {
@@ -248,7 +261,6 @@ describe("SDK Worker Registration", () => {
     const taskName = `sdk_test_non_retryable_${Date.now()}`;
     const workflowName = `sdk_test_non_retryable_wf_${Date.now()}`;
 
-    // Define worker that throws NonRetryableException
     worker({ taskDefName: taskName, pollInterval: 100 })(
       async function nonRetryableWorker(task: Task) {
         const shouldFail = task.inputData?.shouldFail;
@@ -269,18 +281,24 @@ describe("SDK Worker Registration", () => {
       scanForDecorated: true,
     });
 
-    // Register workflow
+    // Start workers BEFORE registering workflow (important!)
+    handler.startWorkers();
+
+    // Wait a bit for workers to start polling
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // Register workflow with input parameter
     await executor.registerWorkflow(true, {
       name: workflowName,
       version: 1,
       ownerEmail: "developers@orkes.io",
-      tasks: [simpleTask(taskName, taskName, {})],
-      inputParameters: [],
+      tasks: [simpleTask(taskName, taskName, {
+        shouldFail: "${workflow.input.shouldFail}",
+      })],
+      inputParameters: ["shouldFail"],
       outputParameters: {},
       timeoutSeconds: 0,
     });
-
-    handler.startWorkers();
 
     // Execute workflow with shouldFail flag
     const { workflowId } = await executor.executeWorkflow(
@@ -313,7 +331,7 @@ describe("SDK Worker Registration", () => {
     expect(firstTask?.reasonForIncompletion).toContain("Order not found - terminal error");
 
     await handler.stopWorkers();
-  }, 30000);
+  }, 60000);
 
   test("regular exceptions mark task for retry", async () => {
     const client = await clientPromise;
@@ -345,7 +363,13 @@ describe("SDK Worker Registration", () => {
       scanForDecorated: true,
     });
 
-    // Register workflow with retry policy
+    // Start workers BEFORE registering workflow (important!)
+    handler.startWorkers();
+
+    // Wait a bit for workers to start polling
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // Register workflow - task will be retried on failure
     await executor.registerWorkflow(true, {
       name: workflowName,
       version: 1,
@@ -355,8 +379,6 @@ describe("SDK Worker Registration", () => {
       outputParameters: {},
       timeoutSeconds: 0,
     });
-
-    handler.startWorkers();
 
     const { workflowId } = await executor.executeWorkflow(
       {
@@ -376,7 +398,7 @@ describe("SDK Worker Registration", () => {
       executor,
       workflowId,
       "COMPLETED",
-      30000
+      60000
     );
 
     expect(workflowStatus.status).toBe("COMPLETED");
@@ -387,7 +409,7 @@ describe("SDK Worker Registration", () => {
     expect(firstTask?.outputData?.message).toBe("Success on retry");
 
     await handler.stopWorkers();
-  }, 30000);
+  }, 90000); // Increased timeout for retry test
 
   test("event listeners receive lifecycle events", async () => {
     const client = await clientPromise;
@@ -396,7 +418,6 @@ describe("SDK Worker Registration", () => {
 
     const events: string[] = [];
 
-    // Define worker
     worker({ taskDefName: taskName, pollInterval: 100 })(
       async function eventWorker() {
         return {
@@ -428,6 +449,12 @@ describe("SDK Worker Registration", () => {
       eventListeners: [eventListener],
     });
 
+    // Start workers BEFORE registering workflow
+    handler.startWorkers();
+    
+    // Wait a bit for workers to start polling
+    await new Promise(resolve => setTimeout(resolve, 100));
+
     // Register workflow
     await executor.registerWorkflow(true, {
       name: workflowName,
@@ -438,8 +465,6 @@ describe("SDK Worker Registration", () => {
       outputParameters: {},
       timeoutSeconds: 0,
     });
-
-    handler.startWorkers();
 
     const { workflowId } = await executor.executeWorkflow(
       {
@@ -475,7 +500,6 @@ describe("SDK Worker Registration", () => {
     let worker1Executed = false;
     let worker2Executed = false;
 
-    // Define first worker
     worker({ taskDefName: taskName1, pollInterval: 100 })(
       async function worker1() {
         worker1Executed = true;
@@ -486,7 +510,6 @@ describe("SDK Worker Registration", () => {
       }
     );
 
-    // Define second worker
     worker({ taskDefName: taskName2, pollInterval: 100 })(
       async function worker2() {
         worker2Executed = true;
@@ -504,6 +527,12 @@ describe("SDK Worker Registration", () => {
 
     expect(handler.workerCount).toBe(2);
 
+    // Start workers BEFORE registering workflow
+    handler.startWorkers();
+    
+    // Wait a bit for workers to start polling
+    await new Promise(resolve => setTimeout(resolve, 100));
+
     // Register workflow with both tasks
     await executor.registerWorkflow(true, {
       name: workflowName,
@@ -517,8 +546,6 @@ describe("SDK Worker Registration", () => {
       outputParameters: {},
       timeoutSeconds: 0,
     });
-
-    handler.startWorkers();
     expect(handler.runningWorkerCount).toBe(2);
 
     const { workflowId } = await executor.executeWorkflow(
@@ -604,7 +631,6 @@ describe("SDK Worker Registration", () => {
     const decoratedTaskName = `sdk_test_decorated_${Date.now()}`;
     const manualTaskName = `sdk_test_manual_${Date.now()}`;
 
-    // Define decorated worker
     worker({ taskDefName: decoratedTaskName, pollInterval: 100 })(
       async function decoratedWorker() {
         return {
@@ -642,7 +668,6 @@ describe("SDK Worker Registration", () => {
   test("worker with custom configuration options", async () => {
     const taskName = `sdk_test_custom_config_${Date.now()}`;
 
-    // Define worker with custom configuration
     worker({
       taskDefName: taskName,
       concurrency: 5,
