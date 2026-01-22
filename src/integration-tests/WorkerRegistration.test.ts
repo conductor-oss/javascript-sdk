@@ -17,6 +17,7 @@ import type {
   TaskExecutionStarted,
 } from "../sdk/clients/worker/events/types";
 import { waitForWorkflowStatus } from "./utils/waitForWorkflowStatus";
+import { executeWorkflowWithRetry } from "./utils/executeWorkflowWithRetry";
 
 describe("SDK Worker Registration", () => {
   const clientPromise = orkesConductorClient();
@@ -100,8 +101,9 @@ describe("SDK Worker Registration", () => {
     expect(handler.running).toBe(true);
     expect(handler.runningWorkerCount).toBe(1);
 
-    // Execute workflow
-    const { workflowId } = await executor.executeWorkflow(
+    // Execute workflow with retry on transient failures
+    const { workflowId } = await executeWorkflowWithRetry(
+      executor,
       {
         name: workflowName,
         version: 1,
@@ -194,7 +196,9 @@ describe("SDK Worker Registration", () => {
       timeoutSeconds: 0,
     });
 
-    const { workflowId } = await executor.executeWorkflow(
+    // Execute workflow with retry on transient failures
+    const { workflowId } = await executeWorkflowWithRetry(
+      executor,
       {
         name: workflowName,
         version: 1,
@@ -300,8 +304,9 @@ describe("SDK Worker Registration", () => {
       timeoutSeconds: 0,
     });
 
-    // Execute workflow with shouldFail flag
-    const { workflowId } = await executor.executeWorkflow(
+    // Execute workflow with shouldFail flag and retry on transient failures
+    const { workflowId } = await executeWorkflowWithRetry(
+      executor,
       {
         name: workflowName,
         version: 1,
@@ -388,7 +393,9 @@ describe("SDK Worker Registration", () => {
       timeoutSeconds: 0,
     });
 
-    const { workflowId } = await executor.executeWorkflow(
+    // Execute workflow with retry on transient failures
+    const { workflowId } = await executeWorkflowWithRetry(
+      executor,
       {
         name: workflowName,
         version: 1,
@@ -470,7 +477,9 @@ describe("SDK Worker Registration", () => {
     });
     expect(handler.runningWorkerCount).toBe(2);
 
-    const { workflowId } = await executor.executeWorkflow(
+    // Execute workflow with retry on transient failures
+    const { workflowId } = await executeWorkflowWithRetry(
+      executor,
       {
         name: workflowName,
         version: 1,
