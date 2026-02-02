@@ -1,6 +1,7 @@
 import type { ConductorLogger } from "../../helpers/logger";
 import type { Task, TaskResult } from "../../../open-api";
 import type { Client } from "../../../open-api/generated/client/types.gen";
+import type { TaskRunnerEventsListener } from "./events";
 
 export type TaskErrorHandler = (error: Error, task?: Task) => void;
 
@@ -33,6 +34,7 @@ export interface RunnerArgs {
   onError?: TaskErrorHandler;
   concurrency?: number;
   maxRetries?: number;
+  eventListeners?: TaskRunnerEventsListener[];
 }
 
 export interface PollerOptions {
@@ -48,6 +50,7 @@ export interface TaskManagerConfig {
   options?: Partial<TaskManagerOptions>;
   onError?: TaskErrorHandler;
   maxRetries?: number;
+  eventListeners?: TaskRunnerEventsListener[];
 }
 
 export type OptionEntries = [
