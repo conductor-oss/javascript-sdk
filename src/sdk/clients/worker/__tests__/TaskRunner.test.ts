@@ -180,17 +180,22 @@ test("Should set the task as failed if the task has an error", async () => {
   await new Promise((r) => setTimeout(() => r(true), 100));
   runner.stopPolling();
 
-  const expected = {
-    taskId,
-    workflowInstanceId,
-    workerId: workerID,
-    status: TaskResultStatusEnum.FAILED,
-    outputData: {},
-    reasonForIncompletion: "Expected error from worker",
-  };
   expect(TaskResource.updateTask).toHaveBeenCalledWith({
     client: mockClient,
-    body: expected,
+    body: expect.objectContaining({
+      taskId,
+      workflowInstanceId,
+      workerId: workerID,
+      status: TaskResultStatusEnum.FAILED,
+      outputData: {},
+      reasonForIncompletion: "Expected error from worker",
+      logs: expect.arrayContaining([
+        expect.objectContaining({
+          log: expect.stringContaining("Expected error from worker"),
+          taskId,
+        }),
+      ]),
+    }),
   });
 });
 
@@ -240,17 +245,22 @@ describe("NonRetryableException handling", () => {
     await new Promise((r) => setTimeout(() => r(true), 100));
     runner.stopPolling();
 
-    const expected = {
-      taskId,
-      workflowInstanceId,
-      workerId: workerID,
-      status: "FAILED_WITH_TERMINAL_ERROR" as const,
-      outputData: {},
-      reasonForIncompletion: "Business validation failed",
-    };
     expect(TaskResource.updateTask).toHaveBeenCalledWith({
       client: mockClient,
-      body: expected,
+      body: expect.objectContaining({
+        taskId,
+        workflowInstanceId,
+        workerId: workerID,
+        status: "FAILED_WITH_TERMINAL_ERROR" as const,
+        outputData: {},
+        reasonForIncompletion: "Business validation failed",
+        logs: expect.arrayContaining([
+          expect.objectContaining({
+            log: expect.stringContaining("Business validation failed"),
+            taskId,
+          }),
+        ]),
+      }),
     });
   });
 });

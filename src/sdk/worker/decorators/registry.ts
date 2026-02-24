@@ -37,6 +37,15 @@ export interface RegisteredWorker {
   
   /** Enforce strict JSON schema validation (default: false) */
   strictSchema?: boolean;
+
+  /** JSON Schema for task input validation (registered alongside task def) */
+  inputSchema?: Record<string, unknown>;
+
+  /** JSON Schema for task output validation (registered alongside task def) */
+  outputSchema?: Record<string, unknown>;
+
+  /** Whether this worker should start in paused state (default: false) */
+  paused?: boolean;
 }
 
 /**

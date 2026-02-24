@@ -4,6 +4,12 @@ import type {
   Task,
   ExtendedConductorApplication as OpenApiExtendedConductorApplication,
   Tag,
+  ConductorUser as OpenApiConductorUser,
+  Group as OpenApiGroup,
+  IntegrationApiUpdate as OpenApiIntegrationApiUpdate,
+  RateLimitConfig as OpenApiRateLimitConfig,
+  BulkResponse as OpenApiBulkResponse,
+  TaskSummary as OpenApiTaskSummary,
 } from "./generated";
 
 export interface CommonTaskDef {
@@ -42,10 +48,14 @@ export enum TaskType {
   JOIN = "JOIN",
   DO_WHILE = "DO_WHILE",
   SUB_WORKFLOW = "SUB_WORKFLOW",
+  START_WORKFLOW = "START_WORKFLOW",
   EVENT = "EVENT",
   WAIT = "WAIT",
+  WAIT_FOR_WEBHOOK = "WAIT_FOR_WEBHOOK",
   USER_DEFINED = "USER_DEFINED",
   HTTP = "HTTP",
+  HTTP_POLL = "HTTP_POLL",
+  HUMAN = "HUMAN",
   LAMBDA = "LAMBDA",
   INLINE = "INLINE",
   EXCLUSIVE_JOIN = "EXCLUSIVE_JOIN",
@@ -54,6 +64,19 @@ export enum TaskType {
   KAFKA_PUBLISH = "KAFKA_PUBLISH",
   JSON_JQ_TRANSFORM = "JSON_JQ_TRANSFORM",
   SET_VARIABLE = "SET_VARIABLE",
+  GET_DOCUMENT = "GET_DOCUMENT",
+  LLM_CHAT_COMPLETE = "LLM_CHAT_COMPLETE",
+  LLM_TEXT_COMPLETE = "LLM_TEXT_COMPLETE",
+  LLM_GENERATE_EMBEDDINGS = "LLM_GENERATE_EMBEDDINGS",
+  LLM_INDEX_TEXT = "LLM_INDEX_TEXT",
+  LLM_SEARCH_INDEX = "LLM_SEARCH_INDEX",
+  LLM_SEARCH_EMBEDDINGS = "LLM_SEARCH_EMBEDDINGS",
+  LLM_STORE_EMBEDDINGS = "LLM_STORE_EMBEDDINGS",
+  LLM_GET_EMBEDDINGS = "LLM_GET_EMBEDDINGS",
+  GENERATE_IMAGE = "GENERATE_IMAGE",
+  GENERATE_AUDIO = "GENERATE_AUDIO",
+  CALL_MCP_TOOL = "CALL_MCP_TOOL",
+  LIST_MCP_TOOLS = "LIST_MCP_TOOLS",
 }
 
 export enum ServiceType {
@@ -264,7 +287,9 @@ export interface SignalResponse extends OpenApiSignalResponse {
   referenceTaskName?: string;
   retryCount?: number;
   taskDefName?: string;
+  retriedTaskId?: string;
   workflowType?: string;
+  reasonForIncompletion?: string;
 }
 
 // TODO: need to remove this once AccessKey type is added to OpenAPI spec
@@ -298,4 +323,40 @@ export type ApplicationRole =
 export interface ExtendedConductorApplication
   extends Required<Omit<OpenApiExtendedConductorApplication, "tags">> {
   tags?: Tag[];
+}
+
+// TODO: remove these once OpenAPI spec includes these fields
+
+/** Extended ConductorUser with fields present in Python SDK but missing from OpenAPI spec */
+export interface ExtendedConductorUser extends OpenApiConductorUser {
+  contactInformation?: { [key: string]: string };
+  namespace?: string;
+}
+
+/** Extended Group with fields present in Python SDK but missing from OpenAPI spec */
+export interface ExtendedGroup extends OpenApiGroup {
+  contactInformation?: { [key: string]: string };
+}
+
+/** Extended IntegrationApiUpdate with fields present in Python SDK but missing from OpenAPI spec */
+export interface ExtendedIntegrationApiUpdate
+  extends OpenApiIntegrationApiUpdate {
+  maxTokens?: number;
+  frequency?: string;
+}
+
+/** Extended RateLimitConfig with fields present in Python SDK but missing from OpenAPI spec */
+export interface ExtendedRateLimitConfig extends OpenApiRateLimitConfig {
+  tag?: string;
+  concurrentExecutionLimit?: number;
+}
+
+/** Extended BulkResponse with fields present in Python SDK but missing from OpenAPI spec */
+export interface ExtendedBulkResponse extends OpenApiBulkResponse {
+  message?: string;
+}
+
+/** Extended TaskSummary with fields present in Python SDK but missing from OpenAPI spec */
+export interface ExtendedTaskSummary extends OpenApiTaskSummary {
+  domain?: string;
 }

@@ -2,6 +2,7 @@ export interface ConductorLogger {
   info(...args: unknown[]): void
   error(...args: unknown[]): void
   debug(...args: unknown[]): void
+  warn?(...args: unknown[]): void
 }
 
 export type ConductorLogLevel = keyof typeof LOG_LEVELS
@@ -13,6 +14,7 @@ export interface DefaultLoggerConfig {
 const LOG_LEVELS = {
   DEBUG: 10,
   INFO: 30,
+  WARN: 40,
   ERROR: 60
 } as const
 
@@ -57,6 +59,10 @@ export class DefaultLogger implements ConductorLogger {
     this.log("DEBUG", ...args)
   }
 
+  warn = (...args: unknown[]): void => {
+    this.log("WARN", ...args)
+  }
+
   error =(...args: unknown[]): void => {
     this.log("ERROR", ...args)
   }
@@ -67,6 +73,8 @@ export const noopLogger: ConductorLogger = {
   debug: (...args: unknown[]) => {},
   //eslint-disable-next-line
   info: (...args: unknown[]) => {},
+  //eslint-disable-next-line
+  warn: (...args: unknown[]) => {},
   //eslint-disable-next-line
   error: (...args: unknown[]) => {},
 };

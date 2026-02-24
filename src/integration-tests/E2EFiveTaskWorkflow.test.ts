@@ -1,0 +1,151 @@
+import { afterEach, beforeAll, describe, expect, test } from "@jest/globals";
+import type { Task } from "../open-api";
+import {
+  TaskHandler,
+  WorkflowExecutor,
+  clearWorkerRegistry,
+  orkesConductorClient,
+  simpleTask,
+  worker,
+} from "../sdk";
+import { waitForWorkflowStatus } from "./utils/waitForWorkflowStatus";
+
+describe("E2E: 5-task workflow × 50 executions", () => {
+  const clientPromise = orkesConductorClient();
+  let executor: WorkflowExecutor;
+  let handler: TaskHandler | undefined;
+
+  beforeAll(async () => {
+    const client = await clientPromise;
+    executor = new WorkflowExecutor(client);
+  });
+
+  afterEach(async () => {
+    if (handler) {
+      await handler.stopWorkers();
+      handler = undefined;
+    }
+    clearWorkerRegistry();
+  });
+
+  test(
+    "50 workflows with 5 sequential tasks each all complete with correct output",
+    async () => {
+      const client = await clientPromise;
+      const testId = Date.now();
+      const workflowName = `e2e_five_task_wf_${testId}`;
+      const TASK_COUNT = 5;
+      const WORKFLOW_COUNT = 50;
+
+      // Track execution counts per task type
+      const executionCounts: Record<string, number> = {};
+
+      // Register 5 workers — one per task type
+      for (let i = 1; i <= TASK_COUNT; i++) {
+        const taskName = `e2e_task_${i}_${testId}`;
+        executionCounts[taskName] = 0;
+
+        worker({ taskDefName: taskName, pollInterval: 100, concurrency: 5 })(
+          async function taskWorker(task: Task) {
+            executionCounts[taskName]!++;
+            return {
+              status: "COMPLETED" as const,
+              outputData: {
+                taskNumber: i,
+                message: `Processed by task_${i}`,
+                workflowId: task.workflowInstanceId,
+                batchIndex: task.inputData?.batchIndex,
+              },
+            };
+          }
+        );
+      }
+
+      // Create TaskHandler with auto-discovery and start polling
+      handler = new TaskHandler({ client, scanForDecorated: true });
+      expect(handler.workerCount).toBe(TASK_COUNT);
+      await handler.startWorkers();
+
+      // Wait for workers to initialize
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
+      // Build workflow definition with 5 sequential simple tasks
+      const taskDefs = [];
+      for (let i = 1; i <= TASK_COUNT; i++) {
+        const taskName = `e2e_task_${i}_${testId}`;
+        taskDefs.push(
+          simpleTask(`task_${i}_ref`, taskName, {
+            batchIndex: "${workflow.input.batchIndex}",
+          })
+        );
+      }
+
+      await executor.registerWorkflow(true, {
+        name: workflowName,
+        version: 1,
+        ownerEmail: "test@test.com",
+        tasks: taskDefs,
+        inputParameters: ["batchIndex"],
+        outputParameters: {
+          task_1_output: "${task_1_ref.output}",
+          task_2_output: "${task_2_ref.output}",
+          task_3_output: "${task_3_ref.output}",
+          task_4_output: "${task_4_ref.output}",
+          task_5_output: "${task_5_ref.output}",
+        },
+        timeoutSeconds: 120,
+      });
+
+      // Fire all 50 workflows
+      const workflowIds: string[] = [];
+      for (let i = 0; i < WORKFLOW_COUNT; i++) {
+        const id = await executor.startWorkflow({
+          name: workflowName,
+          version: 1,
+          input: { batchIndex: i },
+        });
+        workflowIds.push(id);
+      }
+
+      expect(workflowIds.length).toBe(WORKFLOW_COUNT);
+
+      // Wait for all 50 to complete (120s timeout, poll every 2s)
+      const results = await Promise.all(
+        workflowIds.map((id) =>
+          waitForWorkflowStatus(executor, id, "COMPLETED", 120_000, 2000)
+        )
+      );
+
+      // ── Validate all 50 workflows ──────────────────────────────────
+
+      expect(results.length).toBe(WORKFLOW_COUNT);
+
+      for (let w = 0; w < results.length; w++) {
+        const wf = results[w]!;
+        expect(wf.status).toBe("COMPLETED");
+
+        // Each workflow should have exactly 5 tasks
+        expect(wf.tasks?.length).toBe(TASK_COUNT);
+
+        // Validate each task's output
+        for (let t = 0; t < TASK_COUNT; t++) {
+          const task = wf.tasks![t]!;
+          expect(task.status).toBe("COMPLETED");
+          expect(task.outputData?.taskNumber).toBe(t + 1);
+          expect(task.outputData?.message).toBe(
+            `Processed by task_${t + 1}`
+          );
+          expect(task.outputData?.batchIndex).toBe(w);
+        }
+      }
+
+      // ── Validate execution counts ──────────────────────────────────
+      // Each of the 5 task types should have been executed exactly 50 times
+      for (let i = 1; i <= TASK_COUNT; i++) {
+        const taskName = `e2e_task_${i}_${testId}`;
+        expect(executionCounts[taskName]).toBe(WORKFLOW_COUNT);
+      }
+    },
+    180_000 // 3 minute timeout for the entire test
+  );
+});

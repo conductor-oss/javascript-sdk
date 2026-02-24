@@ -2,6 +2,7 @@ import type {
   Client,
   SaveScheduleRequest,
   SearchResultWorkflowScheduleExecutionModel,
+  Tag,
   WorkflowSchedule,
   WorkflowScheduleModel,
 } from "../../../open-api";
@@ -228,6 +229,60 @@ export class SchedulerClient {
       });
     } catch (error: unknown) {
       handleSdkError(error, "Failed to resume all schedules");
+    }
+  }
+
+  /**
+   * Set tags for a schedule
+   * @param tags - The tags to set
+   * @param name - The schedule name
+   */
+  public async setSchedulerTags(tags: Tag[], name: string): Promise<void> {
+    try {
+      await SchedulerResource.putTagForSchedule({
+        path: { name },
+        body: tags,
+        client: this._client,
+        throwOnError: true,
+      });
+    } catch (error: unknown) {
+      handleSdkError(error, `Failed to set tags for schedule '${name}'`);
+    }
+  }
+
+  /**
+   * Get tags for a schedule
+   * @param name - The schedule name
+   * @returns Array of tags
+   */
+  public async getSchedulerTags(name: string): Promise<Tag[]> {
+    try {
+      const { data } = await SchedulerResource.getTagsForSchedule({
+        path: { name },
+        client: this._client,
+        throwOnError: true,
+      });
+      return data;
+    } catch (error: unknown) {
+      handleSdkError(error, `Failed to get tags for schedule '${name}'`);
+    }
+  }
+
+  /**
+   * Delete tags from a schedule
+   * @param tags - The tags to delete
+   * @param name - The schedule name
+   */
+  public async deleteSchedulerTags(tags: Tag[], name: string): Promise<void> {
+    try {
+      await SchedulerResource.deleteTagForSchedule({
+        path: { name },
+        body: tags,
+        client: this._client,
+        throwOnError: true,
+      });
+    } catch (error: unknown) {
+      handleSdkError(error, `Failed to delete tags from schedule '${name}'`);
     }
   }
 }

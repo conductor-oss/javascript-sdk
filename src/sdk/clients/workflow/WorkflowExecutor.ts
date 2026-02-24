@@ -13,6 +13,11 @@ import {
   WorkflowRun,
   WorkflowStatus,
 } from "../../../open-api";
+import type {
+  CorrelationIdsSearchRequest,
+  WorkflowTestRequest,
+  WorkflowStateUpdate,
+} from "../../../open-api/generated";
 import {
   MetadataResource,
   TaskResource,
@@ -652,6 +657,164 @@ export class WorkflowExecutor {
         error,
         `Failed to signal workflow '${workflowInstanceId}' asynchronously`
       );
+    }
+  }
+
+  /**
+   * Deletes a workflow execution
+   * @param workflowId - The workflow instance ID to delete
+   * @param archiveWorkflow - Whether to archive the workflow before deletion
+   */
+  public async deleteWorkflow(
+    workflowId: string,
+    archiveWorkflow = true
+  ): Promise<void> {
+    try {
+      await WorkflowResource.delete1({
+        path: { workflowId },
+        query: { archiveWorkflow },
+        client: this._client,
+        throwOnError: true,
+      });
+    } catch (error: unknown) {
+      handleSdkError(
+        error,
+        `Failed to delete workflow '${workflowId}'`
+      );
+    }
+  }
+
+  /**
+   * Gets workflows by correlation IDs
+   * @param request - Correlation IDs search request containing workflow names and correlation IDs
+   * @param includeClosed - Whether to include closed workflows
+   * @param includeTasks - Whether to include task details
+   * @returns Map of correlation ID to array of matching workflows
+   */
+  public async getByCorrelationIds(
+    request: CorrelationIdsSearchRequest,
+    includeClosed = false,
+    includeTasks = false
+  ): Promise<{ [key: string]: Workflow[] }> {
+    try {
+      const { data } = await WorkflowResource.getWorkflows1({
+        body: request,
+        query: { includeClosed, includeTasks },
+        client: this._client,
+        throwOnError: true,
+      });
+      return data;
+    } catch (error: unknown) {
+      handleSdkError(error, "Failed to get workflows by correlation IDs");
+    }
+  }
+
+  /**
+   * Tests a workflow execution with mock data
+   * @param testRequest - The workflow test request containing workflow definition and mock task outputs
+   * @returns The simulated workflow execution result
+   */
+  public async testWorkflow(
+    testRequest: WorkflowTestRequest
+  ): Promise<Workflow> {
+    try {
+      const { data } = await WorkflowResource.testWorkflow({
+        body: testRequest,
+        client: this._client,
+        throwOnError: true,
+      });
+      return data;
+    } catch (error: unknown) {
+      handleSdkError(error, "Failed to test workflow");
+    }
+  }
+
+  /**
+   * Updates workflow variables
+   * @param workflowId - The workflow instance ID
+   * @param variables - The variables to update
+   * @returns The updated workflow
+   */
+  public async updateVariables(
+    workflowId: string,
+    variables: { [key: string]: unknown }
+  ): Promise<Workflow> {
+    try {
+      const { data } = await WorkflowResource.updateWorkflowState({
+        path: { workflowId },
+        body: variables,
+        client: this._client,
+        throwOnError: true,
+      });
+      return data;
+    } catch (error: unknown) {
+      handleSdkError(
+        error,
+        `Failed to update variables for workflow '${workflowId}'`
+      );
+    }
+  }
+
+  /**
+   * Updates the workflow state (task result + variables) and optionally waits for further execution
+   * @param workflowId - The workflow instance ID
+   * @param updateRequest - The state update request containing task result and/or variables
+   * @param requestId - A unique request ID for idempotency
+   * @param waitUntilTaskRef - Optional task reference name to wait until
+   * @param waitForSeconds - Optional number of seconds to wait
+   * @returns The workflow run status after the update
+   */
+  public async updateState(
+    workflowId: string,
+    updateRequest: WorkflowStateUpdate,
+    requestId: string,
+    waitUntilTaskRef?: string,
+    waitForSeconds?: number
+  ): Promise<WorkflowRun> {
+    try {
+      const { data } = await WorkflowResource.updateWorkflowAndTaskState({
+        path: { workflowId },
+        body: updateRequest,
+        query: { requestId, waitUntilTaskRef, waitForSeconds },
+        client: this._client,
+        throwOnError: true,
+      });
+      return data;
+    } catch (error: unknown) {
+      handleSdkError(
+        error,
+        `Failed to update state for workflow '${workflowId}'`
+      );
+    }
+  }
+
+  /**
+   * Starts a workflow by name with input directly (without a StartWorkflowRequest object)
+   * @param name - The workflow name
+   * @param input - The workflow input data
+   * @param version - Optional workflow version
+   * @param correlationId - Optional correlation ID
+   * @param priority - Optional priority
+   * @returns The workflow instance ID
+   */
+  public async startWorkflowByName(
+    name: string,
+    input: { [key: string]: unknown },
+    version?: number,
+    correlationId?: string,
+    priority?: number
+  ): Promise<string> {
+    try {
+      const { data } = await WorkflowResource.startWorkflow1({
+        path: { name },
+        body: input,
+        query: { version, correlationId, priority },
+        client: this._client,
+        throwOnError: true,
+      });
+      return data;
+    } catch (error: unknown) {
+      handleSdkError(error, `Failed to start workflow '${name}'`);
     }
   }
 }

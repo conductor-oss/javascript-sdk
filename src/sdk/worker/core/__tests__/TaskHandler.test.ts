@@ -154,7 +154,7 @@ describe("TaskHandler", () => {
     expect(handler.running).toBe(false);
     expect(handler.runningWorkerCount).toBe(0);
 
-    handler.startWorkers();
+    await handler.startWorkers();
 
     expect(handler.running).toBe(true);
     expect(handler.runningWorkerCount).toBe(1);
@@ -165,7 +165,7 @@ describe("TaskHandler", () => {
     expect(handler.runningWorkerCount).toBe(0);
   });
 
-  test("should be idempotent for startWorkers", () => {
+  test("should be idempotent for startWorkers", async () => {
     async function testWorker(task: Task) {
       return { status: "COMPLETED" as const, outputData: {} };
     }
@@ -178,11 +178,11 @@ describe("TaskHandler", () => {
     });
     activeHandlers.push(handler);
 
-    handler.startWorkers();
+    await handler.startWorkers();
     expect(handler.runningWorkerCount).toBe(1);
 
     // Call again - should be no-op
-    handler.startWorkers();
+    await handler.startWorkers();
     expect(handler.runningWorkerCount).toBe(1);
   });
 
@@ -199,7 +199,7 @@ describe("TaskHandler", () => {
     });
     activeHandlers.push(handler);
 
-    handler.startWorkers();
+    await handler.startWorkers();
     await handler.stopWorkers();
     expect(handler.running).toBe(false);
 
@@ -246,7 +246,7 @@ describe("TaskHandler", () => {
     });
     activeHandlers.push(handler);
 
-    handler.startWorkers();
+    await handler.startWorkers();
     expect(handler.running).toBe(true);
 
     // Simulate using keyword (TypeScript 5.2+)
@@ -276,7 +276,7 @@ describe("TaskHandler", () => {
     // Event listeners are passed to TaskRunner (tested separately)
   });
 
-  test("should handle empty workers array gracefully", () => {
+  test("should handle empty workers array gracefully", async () => {
     const handler = new TaskHandler({
       client: createMockClient(),
       scanForDecorated: false,
@@ -285,7 +285,7 @@ describe("TaskHandler", () => {
 
     expect(handler.workerCount).toBe(0);
 
-    handler.startWorkers(); // Should not throw
+    await handler.startWorkers(); // Should not throw
     expect(handler.running).toBe(false);
   });
 
@@ -391,7 +391,7 @@ describe("TaskHandler - Error Handling", () => {
     });
     activeHandlers.push(handler);
 
-    handler.startWorkers();
+    await handler.startWorkers();
 
     // Mock one of the runners to throw an error on stop
     const runnerToFail = handler["taskRunners"][0];
@@ -490,7 +490,7 @@ describe("TaskHandler - Custom Logger", () => {
     );
   });
 
-  test("should log debug messages for worker registration", () => {
+  test("should log worker config one-liner on registration", () => {
     async function testWorker(task: Task) {
       return { status: "COMPLETED" as const, outputData: {} };
     }
@@ -509,10 +509,11 @@ describe("TaskHandler - Custom Logger", () => {
       logger: mockLogger,
     });
 
-    expect(mockLogger.debug).toHaveBeenCalledWith(
+    // Config one-liner logged via info: "Conductor Worker[name=test_task, ..., domain=test-domain, ...]"
+    expect(mockLogger.info).toHaveBeenCalledWith(
       expect.stringContaining("test_task")
     );
-    expect(mockLogger.debug).toHaveBeenCalledWith(
+    expect(mockLogger.info).toHaveBeenCalledWith(
       expect.stringContaining("test-domain")
     );
   });
@@ -540,7 +541,7 @@ describe("TaskHandler - Custom Logger", () => {
 
     infoMock.mockClear();
 
-    handler.startWorkers();
+    await handler.startWorkers();
 
     expect(infoMock).toHaveBeenCalledWith(
       expect.stringContaining("Starting 1 worker(s)")
@@ -704,7 +705,7 @@ describe("TaskHandler - Multiple Workers Lifecycle", () => {
     expect(handler.runningWorkerCount).toBe(0);
     expect(handler.running).toBe(false);
 
-    handler.startWorkers();
+    await handler.startWorkers();
 
     expect(handler.runningWorkerCount).toBe(3);
     expect(handler.running).toBe(true);
@@ -715,7 +716,7 @@ describe("TaskHandler - Multiple Workers Lifecycle", () => {
     expect(handler.running).toBe(false);
   });
 
-  test("should handle starting workers when none are registered", () => {
+  test("should handle starting workers when none are registered", async () => {
     const mockLogger: ConductorLogger = {
       info: jest.fn(),
       debug: jest.fn(),
@@ -728,7 +729,7 @@ describe("TaskHandler - Multiple Workers Lifecycle", () => {
       logger: mockLogger,
     });
 
-    handler.startWorkers();
+    await handler.startWorkers();
 
     expect(mockLogger.info).toHaveBeenCalledWith(
       expect.stringContaining("No workers to start")
@@ -835,7 +836,7 @@ describe("TaskHandler - Edge Cases", () => {
     });
     activeHandlers.push(handler);
 
-    handler.startWorkers();
+    await handler.startWorkers();
 
     expect(mockLogger.info).toHaveBeenCalledWith(
       expect.stringContaining("domain_worker")
@@ -869,7 +870,7 @@ describe("TaskHandler - Edge Cases", () => {
     expect(handler.running).toBe(false);
 
     // After starting
-    handler.startWorkers();
+    await handler.startWorkers();
     expect(handler.workerCount).toBe(2);
     expect(handler.runningWorkerCount).toBe(2);
     expect(handler.running).toBe(true);
@@ -893,7 +894,7 @@ describe("TaskHandler - Edge Cases", () => {
       scanForDecorated: true,
     });
 
-    handler.startWorkers();
+    await handler.startWorkers();
     expect(handler.running).toBe(true);
 
     await handler[Symbol.asyncDispose]();

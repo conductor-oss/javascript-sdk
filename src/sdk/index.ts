@@ -1,5 +1,7 @@
 export * from "./createConductorClient";
 
+export { OrkesClients } from "./OrkesClients";
+
 export * from "./clients";
 
 export * from "./builders";

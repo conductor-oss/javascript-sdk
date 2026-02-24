@@ -11,6 +11,28 @@ export {
   type RegisteredWorker,
 } from "./decorators/registry";
 
+// Context
+export { TaskContext, getTaskContext } from "./context";
+
+// Metrics
+export {
+  MetricsCollector,
+  MetricsServer,
+  type MetricsCollectorConfig,
+  type WorkerMetrics,
+} from "./metrics";
+
+// Schema
+export {
+  jsonSchema,
+  schemaField,
+  generateSchemaFromClass,
+  type FieldDescriptor,
+  type JsonSchemaType,
+  type JsonSchemaOutput,
+  type SchemaFieldOptions,
+} from "./schema";
+
 // Events (re-export from clients/worker for now)
 export * from "../clients/worker/events";
 
@@ -18,4 +40,9 @@ export * from "../clients/worker/events";
 export * from "../clients/worker/exceptions";
 
 // Types
-export type { ConductorWorker } from "../clients/worker/types";
+export type {
+  ConductorWorker,
+  TaskInProgressResult,
+  HealthMonitorConfig,
+} from "../clients/worker/types";
+export { isTaskInProgress } from "../clients/worker/types";

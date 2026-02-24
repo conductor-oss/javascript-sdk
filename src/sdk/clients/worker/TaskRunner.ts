@@ -14,10 +14,12 @@ import {
   TaskRunnerOptions,
   RunnerArgs,
   ConductorWorker,
+  isTaskInProgress,
 } from "./types";
 import { noopErrorHandler, optionEquals } from "./helpers";
 import { EventDispatcher } from "./events/EventDispatcher";
 import { NonRetryableException } from "./exceptions";
+import { runWithTaskContext } from "../../worker/context";
 
 const defaultRunnerOptions: Required<TaskRunnerOptions> = {
   workerID: "",
@@ -61,13 +63,13 @@ export class TaskRunner {
     this.worker = worker;
     this.options = { ...defaultRunnerOptions, ...options };
     this.errorHandler = errorHandler;
-    
+
     // Initialize event dispatcher and register listeners
     this.eventDispatcher = new EventDispatcher();
     eventListeners.forEach((listener) => {
       this.eventDispatcher.register(listener);
     });
-    
+
     this.poller = new Poller(
       worker.taskDefName,
       this.batchPoll,
@@ -115,6 +117,18 @@ export class TaskRunner {
     }
 
     this.options = newOptions;
+  }
+
+  /** Pause or unpause the worker's polling */
+  setPaused(paused: boolean): void {
+    this.poller.updateOptions({ paused });
+    this.logger.info(
+      `Worker ${this.worker.taskDefName} ${paused ? "paused" : "resumed"}`
+    );
+  }
+
+  get isPaused(): boolean {
+    return this.poller.options.paused ?? false;
   }
 
   get getOptions(): TaskRunnerOptions {
@@ -244,12 +258,73 @@ export class TaskRunner {
     });
 
     try {
-      const result = await this.worker.execute(task);
+      // Wrap execution in TaskContext (AsyncLocalStorage)
+      const { result, context } = await runWithTaskContext(
+        task,
+        async (ctx) => {
+          const r = await this.worker.execute(task);
+          return { result: r, context: ctx };
+        }
+      );
+
       const durationMs = Date.now() - startTime;
 
+      // Handle TaskInProgress return
+      if (isTaskInProgress(result)) {
+        const contextLogs = context.getLogs();
+        await this.updateTaskWithRetry(task, {
+          workflowInstanceId: task.workflowInstanceId,
+          taskId: task.taskId,
+          status: "IN_PROGRESS",
+          callbackAfterSeconds: result.callbackAfterSeconds,
+          outputData:
+            result.outputData ?? context.getOutput() ?? {},
+          logs: contextLogs.length > 0 ? contextLogs : undefined,
+        });
+
+        // Publish completion event for IN_PROGRESS
+        await this.eventDispatcher.publishTaskExecutionCompleted({
+          taskType: this.worker.taskDefName,
+          taskId: task.taskId,
+          workerId: workerID,
+          workflowInstanceId: task.workflowInstanceId,
+          durationMs,
+          timestamp: new Date(),
+        });
+
+        this.logger.debug(
+          `Task ${task.taskId} returned IN_PROGRESS, callback after ${result.callbackAfterSeconds}s`
+        );
+        return;
+      }
+
+      // Regular completion path — merge context data
+      const merged = { ...result };
+
+      // Merge context logs
+      const contextLogs = context.getLogs();
+      if (contextLogs.length > 0) {
+        merged.logs = [...(merged.logs ?? []), ...contextLogs];
+      }
+
+      // Merge context callbackAfterSeconds
+      const ctxCallback = context.getCallbackAfterSeconds();
+      if (
+        ctxCallback !== undefined &&
+        merged.callbackAfterSeconds === undefined
+      ) {
+        merged.callbackAfterSeconds = ctxCallback;
+      }
+
+      // Merge context output (context output is base, result output overrides)
+      const ctxOutput = context.getOutput();
+      if (ctxOutput !== undefined) {
+        merged.outputData = { ...ctxOutput, ...merged.outputData };
+      }
+
       // Calculate output size if possible
-      const outputSizeBytes = result.outputData
-        ? JSON.stringify(result.outputData).length
+      const outputSizeBytes = merged.outputData
+        ? JSON.stringify(merged.outputData).length
         : undefined;
 
       // Publish TaskExecutionCompleted event
@@ -264,7 +339,7 @@ export class TaskRunner {
       });
 
       await this.updateTaskWithRetry(task, {
-        ...result,
+        ...merged,
         workflowInstanceId: task.workflowInstanceId,
         taskId: task.taskId,
       });
@@ -294,6 +369,15 @@ export class TaskRunner {
         );
       }
 
+      // Include error stack trace in task logs for debugging in Conductor UI
+      const errorLogs = [
+        {
+          log: `${err.name}: ${err.message}${err.stack ? "\n" + err.stack : ""}`,
+          createdTime: Date.now(),
+          taskId: task.taskId,
+        },
+      ];
+
       await this.updateTaskWithRetry(task, {
         workflowInstanceId: task.workflowInstanceId,
         taskId: task.taskId,
@@ -301,6 +385,7 @@ export class TaskRunner {
           (error as Record<string, string>)?.message ?? DEFAULT_ERROR_MESSAGE,
         status,
         outputData: {},
+        logs: errorLogs,
       });
       this.errorHandler(err, task);
       this.logger.error(`Error executing ${task.taskId}`, error);
