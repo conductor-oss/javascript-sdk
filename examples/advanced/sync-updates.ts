@@ -20,16 +20,17 @@ import {
 } from "../../src/sdk";
 import type { Task, TaskResult } from "../../src/open-api";
 
-@worker({ taskDefName: "su_check_vars", registerTaskDef: true })
-async function checkVars(task: Task): Promise<TaskResult> {
-  return {
-    status: "COMPLETED",
-    outputData: {
-      receivedInput: task.inputData,
-      timestamp: new Date().toISOString(),
-    },
-  };
-}
+const checkVars = worker({ taskDefName: "su_check_vars", registerTaskDef: true })(
+  async (task: Task) => {
+    return {
+      status: "COMPLETED",
+      outputData: {
+        receivedInput: task.inputData,
+        timestamp: new Date().toISOString(),
+      },
+    };
+  }
+);
 
 async function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));

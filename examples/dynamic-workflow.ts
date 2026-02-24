@@ -17,47 +17,50 @@ import {
   doWhileTask,
   inlineTask,
 } from "../src/sdk";
-import type { Task, TaskResult } from "../src/open-api";
+import type { Task } from "../src/open-api";
 
 // ── Workers ─────────────────────────────────────────────────────────
-@worker({ taskDefName: "fetch_data", registerTaskDef: true })
-async function fetchData(task: Task): Promise<TaskResult> {
-  const source = (task.inputData?.source as string) ?? "default";
-  return {
-    status: "COMPLETED",
-    outputData: {
-      records: [
-        { id: 1, value: "alpha" },
-        { id: 2, value: "beta" },
-      ],
-      source,
-    },
-  };
-}
+const fetchData = worker({ taskDefName: "fetch_data", registerTaskDef: true })(
+  async (task: Task) => {
+    const source = (task.inputData?.source as string) ?? "default";
+    return {
+      status: "COMPLETED",
+      outputData: {
+        records: [
+          { id: 1, value: "alpha" },
+          { id: 2, value: "beta" },
+        ],
+        source,
+      },
+    };
+  }
+);
 
-@worker({ taskDefName: "process_record", registerTaskDef: true })
-async function processRecord(task: Task): Promise<TaskResult> {
-  const record = task.inputData?.record as Record<string, unknown>;
-  return {
-    status: "COMPLETED",
-    outputData: {
-      processed: true,
-      id: record?.id,
-      result: `processed-${record?.value}`,
-    },
-  };
-}
+const processRecord = worker({ taskDefName: "process_record", registerTaskDef: true })(
+  async (task: Task) => {
+    const record = task.inputData?.record as Record<string, unknown>;
+    return {
+      status: "COMPLETED",
+      outputData: {
+        processed: true,
+        id: record?.id,
+        result: `processed-${record?.value}`,
+      },
+    };
+  }
+);
 
-@worker({ taskDefName: "send_notification", registerTaskDef: true })
-async function sendNotification(task: Task): Promise<TaskResult> {
-  const channel = (task.inputData?.channel as string) ?? "email";
-  const message = (task.inputData?.message as string) ?? "";
-  console.log(`  [Notification] channel=${channel} message="${message}"`);
-  return {
-    status: "COMPLETED",
-    outputData: { sent: true, channel },
-  };
-}
+const sendNotification = worker({ taskDefName: "send_notification", registerTaskDef: true })(
+  async (task: Task) => {
+    const channel = (task.inputData?.channel as string) ?? "email";
+    const message = (task.inputData?.message as string) ?? "";
+    console.log(`  [Notification] channel=${channel} message="${message}"`);
+    return {
+      status: "COMPLETED",
+      outputData: { sent: true, channel },
+    };
+  }
+);
 
 // ── Build the workflow dynamically ──────────────────────────────────
 async function main() {
@@ -118,23 +121,16 @@ async function main() {
     )
   );
 
-  // Step 4: Inline summary
+  // Step 4: Simple summary task
   wf.add(
-    inlineTask(
-      "summary_ref",
-      `
-      (function() {
-        return {
-          totalRecords: $.fetch_ref.output.records.length,
-          channel: $.workflow.input.notifyChannel || 'default'
-        };
-      })()
-      `
-    )
+    simpleTask("summary_ref", "fetch_data", {
+      source: "summary",
+    })
   );
 
   wf.outputParameters({
-    summary: "${summary_ref.output.result}",
+    fetchResult: "${fetch_ref.output}",
+    notifyChannel: "${workflow.input.notifyChannel}",
   });
 
   // Register and execute

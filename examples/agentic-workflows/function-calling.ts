@@ -25,49 +25,52 @@ import {
 import type { Task, TaskResult } from "../../src/open-api";
 
 // ── Tool workers ────────────────────────────────────────────────────
-@worker({ taskDefName: "fn_get_weather", registerTaskDef: true })
-async function getWeather(task: Task): Promise<TaskResult> {
-  const city = (task.inputData?.city as string) ?? "Unknown";
-  // Simulate weather API
-  const weather = {
-    city,
-    temperature: Math.round(15 + Math.random() * 20),
-    condition: ["Sunny", "Cloudy", "Rainy", "Windy"][
-      Math.floor(Math.random() * 4)
-    ],
-    humidity: Math.round(30 + Math.random() * 50),
-  };
-  return { status: "COMPLETED", outputData: weather };
-}
-
-@worker({ taskDefName: "fn_get_stock_price", registerTaskDef: true })
-async function getStockPrice(task: Task): Promise<TaskResult> {
-  const symbol = (task.inputData?.symbol as string) ?? "AAPL";
-  // Simulate stock API
-  const price = {
-    symbol,
-    price: Math.round(100 + Math.random() * 200 * 100) / 100,
-    change: Math.round((Math.random() * 10 - 5) * 100) / 100,
-    currency: "USD",
-  };
-  return { status: "COMPLETED", outputData: price };
-}
-
-@worker({ taskDefName: "fn_calculate", registerTaskDef: true })
-async function calculate(task: Task): Promise<TaskResult> {
-  const expression = (task.inputData?.expression as string) ?? "0";
-  let result: number;
-  try {
-    // Simple safe evaluation (in production, use a proper math parser)
-    result = Function(`"use strict"; return (${expression})`)();
-  } catch {
-    return {
-      status: "FAILED",
-      outputData: { error: `Invalid expression: ${expression}` },
+const getWeather = worker({ taskDefName: "fn_get_weather", registerTaskDef: true })(
+  async (task: Task) => {
+    const city = (task.inputData?.city as string) ?? "Unknown";
+    // Simulate weather API
+    const weather = {
+      city,
+      temperature: Math.round(15 + Math.random() * 20),
+      condition: ["Sunny", "Cloudy", "Rainy", "Windy"][
+        Math.floor(Math.random() * 4)
+      ],
+      humidity: Math.round(30 + Math.random() * 50),
     };
+    return { status: "COMPLETED", outputData: weather };
   }
-  return { status: "COMPLETED", outputData: { expression, result } };
-}
+);
+
+const getStockPrice = worker({ taskDefName: "fn_get_stock_price", registerTaskDef: true })(
+  async (task: Task) => {
+    const symbol = (task.inputData?.symbol as string) ?? "AAPL";
+    // Simulate stock API
+    const price = {
+      symbol,
+      price: Math.round(100 + Math.random() * 200 * 100) / 100,
+      change: Math.round((Math.random() * 10 - 5) * 100) / 100,
+      currency: "USD",
+    };
+    return { status: "COMPLETED", outputData: price };
+  }
+);
+
+const calculate = worker({ taskDefName: "fn_calculate", registerTaskDef: true })(
+  async (task: Task) => {
+    const expression = (task.inputData?.expression as string) ?? "0";
+    let result: number;
+    try {
+      // Simple safe evaluation (in production, use a proper math parser)
+      result = Function(`"use strict"; return (${expression})`)();
+    } catch {
+      return {
+        status: "FAILED",
+        outputData: { error: `Invalid expression: ${expression}` },
+      };
+    }
+    return { status: "COMPLETED", outputData: { expression, result } };
+  }
+);
 
 // ── Main ────────────────────────────────────────────────────────────
 async function main() {

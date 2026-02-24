@@ -26,7 +26,7 @@ import type {
   TaskExecutionFailure,
   TaskUpdateFailure,
 } from "../src/sdk";
-import type { Task, TaskResult } from "../src/open-api";
+import type { Task } from "../src/open-api";
 
 // ── Custom event listener ───────────────────────────────────────────
 class ExecutionLogger implements TaskRunnerEventsListener {
@@ -111,23 +111,25 @@ class TimingListener implements TaskRunnerEventsListener {
 }
 
 // ── Workers ─────────────────────────────────────────────────────────
-@worker({ taskDefName: "evt_fast_task", registerTaskDef: true })
-async function fastTask(task: Task): Promise<TaskResult> {
-  return {
-    status: "COMPLETED",
-    outputData: { fast: true },
-  };
-}
+const fastTask = worker({ taskDefName: "evt_fast_task", registerTaskDef: true })(
+  async (task: Task) => {
+    return {
+      status: "COMPLETED",
+      outputData: { fast: true },
+    };
+  }
+);
 
-@worker({ taskDefName: "evt_slow_task", registerTaskDef: true })
-async function slowTask(task: Task): Promise<TaskResult> {
-  // Simulate work
-  await new Promise((resolve) => setTimeout(resolve, 100));
-  return {
-    status: "COMPLETED",
-    outputData: { slow: true },
-  };
-}
+const slowTask = worker({ taskDefName: "evt_slow_task", registerTaskDef: true })(
+  async (task: Task) => {
+    // Simulate work
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    return {
+      status: "COMPLETED",
+      outputData: { slow: true },
+    };
+  }
+);
 
 // ── Main ────────────────────────────────────────────────────────────
 async function main() {

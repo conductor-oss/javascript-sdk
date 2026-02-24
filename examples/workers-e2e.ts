@@ -15,49 +15,52 @@ import {
   simpleTask,
   NonRetryableException,
 } from "../src/sdk";
-import type { Task, TaskResult } from "../src/open-api";
+import type { Task } from "../src/open-api";
 
 // ── Worker 1: Validate input ────────────────────────────────────────
 // Demonstrates NonRetryableException for permanent failures (no retry).
-@worker({ taskDefName: "e2e_validate", registerTaskDef: true })
-async function validate(task: Task): Promise<TaskResult> {
-  const orderId = task.inputData?.orderId as string;
-  if (!orderId) {
-    // NonRetryableException → FAILED_WITH_TERMINAL_ERROR (won't retry)
-    throw new NonRetryableException("Missing orderId — cannot process");
+const validate = worker({ taskDefName: "e2e_validate", registerTaskDef: true })(
+  async (task: Task) => {
+    const orderId = task.inputData?.orderId as string;
+    if (!orderId) {
+      // NonRetryableException → FAILED_WITH_TERMINAL_ERROR (won't retry)
+      throw new NonRetryableException("Missing orderId — cannot process");
+    }
+    return {
+      status: "COMPLETED",
+      outputData: { orderId, valid: true },
+    };
   }
-  return {
-    status: "COMPLETED",
-    outputData: { orderId, valid: true },
-  };
-}
+);
 
 // ── Worker 2: Process order ─────────────────────────────────────────
-@worker({ taskDefName: "e2e_process", registerTaskDef: true })
-async function processOrder(task: Task): Promise<TaskResult> {
-  const orderId = task.inputData?.orderId as string;
-  // Simulate processing
-  const total = Math.round(Math.random() * 10000) / 100;
-  return {
-    status: "COMPLETED",
-    outputData: { orderId, total, processed: true },
-  };
-}
+const processOrder = worker({ taskDefName: "e2e_process", registerTaskDef: true })(
+  async (task: Task) => {
+    const orderId = task.inputData?.orderId as string;
+    // Simulate processing
+    const total = Math.round(Math.random() * 10000) / 100;
+    return {
+      status: "COMPLETED",
+      outputData: { orderId, total, processed: true },
+    };
+  }
+);
 
 // ── Worker 3: Send confirmation ─────────────────────────────────────
-@worker({ taskDefName: "e2e_confirm", registerTaskDef: true })
-async function confirm(task: Task): Promise<TaskResult> {
-  const orderId = task.inputData?.orderId as string;
-  const total = task.inputData?.total as number;
-  return {
-    status: "COMPLETED",
-    outputData: {
-      orderId,
-      total,
-      confirmation: `Order ${orderId} confirmed for $${total}`,
-    },
-  };
-}
+const confirm = worker({ taskDefName: "e2e_confirm", registerTaskDef: true })(
+  async (task: Task) => {
+    const orderId = task.inputData?.orderId as string;
+    const total = task.inputData?.total as number;
+    return {
+      status: "COMPLETED",
+      outputData: {
+        orderId,
+        total,
+        confirmation: `Order ${orderId} confirmed for $${total}`,
+      },
+    };
+  }
+);
 
 // ── Main ────────────────────────────────────────────────────────────
 async function main() {

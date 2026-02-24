@@ -19,17 +19,18 @@ import {
   worker,
   simpleTask,
 } from "../src/sdk";
-import type { Task, TaskResult } from "../src/open-api";
+import type { Task } from "../src/open-api";
 
 // ── 1. Define a worker ──────────────────────────────────────────────
-@worker({ taskDefName: "greet", registerTaskDef: true })
-async function greet(task: Task): Promise<TaskResult> {
-  const name = (task.inputData?.name as string) ?? "World";
-  return {
-    status: "COMPLETED",
-    outputData: { greeting: `Hello, ${name}!` },
-  };
-}
+const greet = worker({ taskDefName: "greet", registerTaskDef: true })(
+  async (task: Task) => {
+    const name = (task.inputData?.name as string) ?? "World";
+    return {
+      status: "COMPLETED",
+      outputData: { greeting: `Hello, ${name}!` },
+    };
+  }
+);
 
 // ── 2. Main ─────────────────────────────────────────────────────────
 async function main() {

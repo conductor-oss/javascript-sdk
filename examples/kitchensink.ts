@@ -23,41 +23,45 @@ import {
   subWorkflowTask,
   doWhileTask,
 } from "../src/sdk";
-import type { Task, TaskResult } from "../src/open-api";
+import type { Task } from "../src/open-api";
 
 // ── Workers ─────────────────────────────────────────────────────────
-@worker({ taskDefName: "ks_simple_worker", registerTaskDef: true })
-async function simpleWorker(task: Task): Promise<TaskResult> {
-  return {
-    status: "COMPLETED",
-    outputData: { processed: true, input: task.inputData },
-  };
-}
+const simpleWorker = worker({ taskDefName: "ks_simple_worker", registerTaskDef: true })(
+  async (task: Task) => {
+    return {
+      status: "COMPLETED",
+      outputData: { processed: true, input: task.inputData },
+    };
+  }
+);
 
-@worker({ taskDefName: "ks_branch_a", registerTaskDef: true })
-async function branchA(task: Task): Promise<TaskResult> {
-  return {
-    status: "COMPLETED",
-    outputData: { branch: "A", done: true },
-  };
-}
+const branchA = worker({ taskDefName: "ks_branch_a", registerTaskDef: true })(
+  async (task: Task) => {
+    return {
+      status: "COMPLETED",
+      outputData: { branch: "A", done: true },
+    };
+  }
+);
 
-@worker({ taskDefName: "ks_branch_b", registerTaskDef: true })
-async function branchB(task: Task): Promise<TaskResult> {
-  return {
-    status: "COMPLETED",
-    outputData: { branch: "B", done: true },
-  };
-}
+const branchB = worker({ taskDefName: "ks_branch_b", registerTaskDef: true })(
+  async (task: Task) => {
+    return {
+      status: "COMPLETED",
+      outputData: { branch: "B", done: true },
+    };
+  }
+);
 
-@worker({ taskDefName: "ks_loop_task", registerTaskDef: true })
-async function loopTask(task: Task): Promise<TaskResult> {
-  const iteration = (task.inputData?.iteration as number) ?? 0;
-  return {
-    status: "COMPLETED",
-    outputData: { iteration, processed: true },
-  };
-}
+const loopTask = worker({ taskDefName: "ks_loop_task", registerTaskDef: true })(
+  async (task: Task) => {
+    const iteration = (task.inputData?.iteration as number) ?? 0;
+    return {
+      status: "COMPLETED",
+      outputData: { iteration, processed: true },
+    };
+  }
+);
 
 // ── Workflow ─────────────────────────────────────────────────────────
 async function main() {

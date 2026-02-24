@@ -21,30 +21,35 @@ import {
   worker,
   simpleTask,
   MetricsCollector,
+  MetricsServer,
 } from "../src/sdk";
-import type { Task, TaskResult } from "../src/open-api";
+import type { Task } from "../src/open-api";
 
-@worker({ taskDefName: "metrics_task", registerTaskDef: true })
-async function metricsTask(task: Task): Promise<TaskResult> {
-  // Simulate variable processing time
-  const delay = Math.random() * 50;
-  await new Promise((resolve) => setTimeout(resolve, delay));
-  return {
-    status: "COMPLETED",
-    outputData: { processed: true, durationMs: delay },
-  };
-}
+const metricsTask = worker({ taskDefName: "metrics_task", registerTaskDef: true })(
+  async (task: Task) => {
+    // Simulate variable processing time
+    const delay = Math.random() * 50;
+    await new Promise((resolve) => setTimeout(resolve, delay));
+    return {
+      status: "COMPLETED",
+      outputData: { processed: true, durationMs: delay },
+    };
+  }
+);
 
 async function main() {
   const clients = await OrkesClients.from();
   const workflowClient = clients.getWorkflowClient();
   const client = clients.getClient();
 
-  // Create metrics collector with HTTP server
+  // Create metrics collector (no httpPort — avoids dynamic import issue with ts-node)
   const metrics = new MetricsCollector({
-    httpPort: 9090,
     prefix: "conductor_worker",
   });
+
+  // Start the HTTP server manually
+  const server = new MetricsServer(metrics, 9090);
+  await server.start();
 
   console.log("Metrics server started on http://localhost:9090");
   console.log("  GET /metrics — Prometheus text format");
@@ -92,7 +97,7 @@ async function main() {
   console.log(metrics.toPrometheusText());
 
   await handler.stopWorkers();
-  await metrics.stop();
+  await server.stop();
   process.exit(0);
 }
 

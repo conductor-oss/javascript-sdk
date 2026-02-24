@@ -19,14 +19,15 @@ import {
 } from "../../src/sdk";
 import type { Task, TaskResult } from "../../src/open-api";
 
-@worker({ taskDefName: "hp_process_result", registerTaskDef: true })
-async function processResult(task: Task): Promise<TaskResult> {
-  const pollResult = task.inputData?.pollResult;
-  return {
-    status: "COMPLETED",
-    outputData: { processed: true, data: pollResult },
-  };
-}
+const processResult = worker({ taskDefName: "hp_process_result", registerTaskDef: true })(
+  async (task: Task) => {
+    const pollResult = task.inputData?.pollResult;
+    return {
+      status: "COMPLETED",
+      outputData: { processed: true, data: pollResult },
+    };
+  }
+);
 
 async function main() {
   const clients = await OrkesClients.from();

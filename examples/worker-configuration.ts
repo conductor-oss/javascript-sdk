@@ -28,62 +28,66 @@ import {
   simpleTask,
   getRegisteredWorkers,
 } from "../src/sdk";
-import type { Task, TaskResult } from "../src/open-api";
+import type { Task } from "../src/open-api";
 
 // ── Worker with defaults (uses env vars or SDK defaults) ────────────
-@worker({
+const defaultWorker = worker({
   taskDefName: "config_default_worker",
   registerTaskDef: true,
-})
-async function defaultWorker(task: Task): Promise<TaskResult> {
-  return {
-    status: "COMPLETED",
-    outputData: { worker: "default", input: task.inputData },
-  };
-}
+})(
+  async (task: Task) => {
+    return {
+      status: "COMPLETED",
+      outputData: { worker: "default", input: task.inputData },
+    };
+  }
+);
 
 // ── Worker with explicit concurrency ────────────────────────────────
-@worker({
+const highConcurrencyWorker = worker({
   taskDefName: "config_high_concurrency",
   registerTaskDef: true,
   concurrency: 10,
   pollInterval: 200,
-})
-async function highConcurrencyWorker(task: Task): Promise<TaskResult> {
-  return {
-    status: "COMPLETED",
-    outputData: { worker: "high_concurrency", input: task.inputData },
-  };
-}
+})(
+  async (task: Task) => {
+    return {
+      status: "COMPLETED",
+      outputData: { worker: "high_concurrency", input: task.inputData },
+    };
+  }
+);
 
 // ── Worker with domain isolation ────────────────────────────────────
-@worker({
+const domainWorker = worker({
   taskDefName: "config_domain_worker",
   registerTaskDef: true,
   domain: "staging",
   concurrency: 2,
   pollInterval: 1000,
-})
-async function domainWorker(task: Task): Promise<TaskResult> {
-  return {
-    status: "COMPLETED",
-    outputData: { worker: "domain", domain: "staging", input: task.inputData },
-  };
-}
+})(
+  async (task: Task) => {
+    return {
+      status: "COMPLETED",
+      outputData: { worker: "domain", domain: "staging", input: task.inputData },
+    };
+  }
+);
 
 // ── Worker with custom poll timeout ─────────────────────────────────
-@worker({
+const longPollWorker = worker({
   taskDefName: "config_long_poll",
   registerTaskDef: true,
   pollTimeout: 5000,
   concurrency: 1,
-})
-async function longPollWorker(task: Task): Promise<TaskResult> {
-  return {
-    status: "COMPLETED",
-    outputData: { worker: "long_poll", input: task.inputData },
-  };
-}
+})(
+  async (task: Task) => {
+    return {
+      status: "COMPLETED",
+      outputData: { worker: "long_poll", input: task.inputData },
+    };
+  }
+);
 
 async function main() {
   const clients = await OrkesClients.from();

@@ -22,27 +22,29 @@ import {
   worker,
   simpleTask,
 } from "../src/sdk";
-import type { Task, TaskResult } from "../src/open-api";
+import type { Task } from "../src/open-api";
 import type { WorkflowExecutor } from "../src/sdk/clients/workflow";
 
 // ── Workers ─────────────────────────────────────────────────────────
-@worker({ taskDefName: "svc_greet", registerTaskDef: true })
-async function greetWorker(task: Task): Promise<TaskResult> {
-  const name = (task.inputData?.name as string) ?? "World";
-  return {
-    status: "COMPLETED",
-    outputData: { greeting: `Hello, ${name}!`, timestamp: new Date().toISOString() },
-  };
-}
+const greetWorker = worker({ taskDefName: "svc_greet", registerTaskDef: true })(
+  async (task: Task) => {
+    const name = (task.inputData?.name as string) ?? "World";
+    return {
+      status: "COMPLETED",
+      outputData: { greeting: `Hello, ${name}!`, timestamp: new Date().toISOString() },
+    };
+  }
+);
 
-@worker({ taskDefName: "svc_process", registerTaskDef: true })
-async function processWorker(task: Task): Promise<TaskResult> {
-  const data = task.inputData?.data as string;
-  return {
-    status: "COMPLETED",
-    outputData: { processed: true, length: data?.length ?? 0 },
-  };
-}
+const processWorker = worker({ taskDefName: "svc_process", registerTaskDef: true })(
+  async (task: Task) => {
+    const data = task.inputData?.data as string;
+    return {
+      status: "COMPLETED",
+      outputData: { processed: true, length: data?.length ?? 0 },
+    };
+  }
+);
 
 // ── Express server setup ────────────────────────────────────────────
 async function createExpressApp(

@@ -15,15 +15,16 @@ import {
   simpleTask,
   waitTaskDuration,
 } from "../src/sdk";
-import type { Task, TaskResult } from "../src/open-api";
+import type { Task } from "../src/open-api";
 
-@worker({ taskDefName: "ops_step", registerTaskDef: true })
-async function opsStep(task: Task): Promise<TaskResult> {
-  return {
-    status: "COMPLETED",
-    outputData: { step: task.inputData?.step, done: true },
-  };
-}
+const opsStep = worker({ taskDefName: "ops_step", registerTaskDef: true })(
+  async (task: Task) => {
+    return {
+      status: "COMPLETED",
+      outputData: { step: task.inputData?.step, done: true },
+    };
+  }
+);
 
 async function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));

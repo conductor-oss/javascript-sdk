@@ -19,19 +19,20 @@ import {
 } from "../../src/sdk";
 import type { Task, TaskResult } from "../../src/open-api";
 
-@worker({ taskDefName: "wh_process_payload", registerTaskDef: true })
-async function processWebhookPayload(task: Task): Promise<TaskResult> {
-  const payload = task.inputData?.webhookPayload as Record<string, unknown>;
-  return {
-    status: "COMPLETED",
-    outputData: {
-      processed: true,
-      paymentId: payload?.paymentId,
-      status: payload?.status,
-      amount: payload?.amount,
-    },
-  };
-}
+const processWebhookPayload = worker({ taskDefName: "wh_process_payload", registerTaskDef: true })(
+  async (task: Task) => {
+    const payload = task.inputData?.webhookPayload as Record<string, unknown>;
+    return {
+      status: "COMPLETED",
+      outputData: {
+        processed: true,
+        paymentId: payload?.paymentId,
+        status: payload?.status,
+        amount: payload?.amount,
+      },
+    };
+  }
+);
 
 async function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));

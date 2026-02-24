@@ -20,43 +20,46 @@ import {
 import type { Task, TaskResult } from "../../src/open-api";
 
 // ── Workers for parallel branches ───────────────────────────────────
-@worker({ taskDefName: "fj_fetch_user", registerTaskDef: true })
-async function fetchUser(task: Task): Promise<TaskResult> {
-  const userId = task.inputData?.userId as string;
-  return {
-    status: "COMPLETED",
-    outputData: { userId, name: "Jane Doe", email: "jane@example.com" },
-  };
-}
+const fetchUser = worker({ taskDefName: "fj_fetch_user", registerTaskDef: true })(
+  async (task: Task) => {
+    const userId = task.inputData?.userId as string;
+    return {
+      status: "COMPLETED",
+      outputData: { userId, name: "Jane Doe", email: "jane@example.com" },
+    };
+  }
+);
 
-@worker({ taskDefName: "fj_fetch_orders", registerTaskDef: true })
-async function fetchOrders(task: Task): Promise<TaskResult> {
-  const userId = task.inputData?.userId as string;
-  // Simulate fetching orders
-  await new Promise((resolve) => setTimeout(resolve, 50));
-  return {
-    status: "COMPLETED",
-    outputData: {
-      userId,
-      orders: [
-        { id: "ORD-1", total: 99.99 },
-        { id: "ORD-2", total: 149.50 },
-      ],
-    },
-  };
-}
+const fetchOrders = worker({ taskDefName: "fj_fetch_orders", registerTaskDef: true })(
+  async (task: Task) => {
+    const userId = task.inputData?.userId as string;
+    // Simulate fetching orders
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    return {
+      status: "COMPLETED",
+      outputData: {
+        userId,
+        orders: [
+          { id: "ORD-1", total: 99.99 },
+          { id: "ORD-2", total: 149.50 },
+        ],
+      },
+    };
+  }
+);
 
-@worker({ taskDefName: "fj_fetch_preferences", registerTaskDef: true })
-async function fetchPreferences(task: Task): Promise<TaskResult> {
-  const userId = task.inputData?.userId as string;
-  return {
-    status: "COMPLETED",
-    outputData: {
-      userId,
-      preferences: { theme: "dark", notifications: true, language: "en" },
-    },
-  };
-}
+const fetchPreferences = worker({ taskDefName: "fj_fetch_preferences", registerTaskDef: true })(
+  async (task: Task) => {
+    const userId = task.inputData?.userId as string;
+    return {
+      status: "COMPLETED",
+      outputData: {
+        userId,
+        preferences: { theme: "dark", notifications: true, language: "en" },
+      },
+    };
+  }
+);
 
 async function main() {
   const clients = await OrkesClients.from();

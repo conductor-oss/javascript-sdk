@@ -87,18 +87,21 @@ async function main() {
       description: "Batch task 1",
       retryCount: 3,
       timeoutSeconds: 60,
+      responseTimeoutSeconds: 30,
     },
     {
       name: "cfg_batch_task_2",
       description: "Batch task 2",
       retryCount: 3,
       timeoutSeconds: 60,
+      responseTimeoutSeconds: 30,
     },
     {
       name: "cfg_batch_task_3",
       description: "Batch task 3",
       retryCount: 3,
       timeoutSeconds: 60,
+      responseTimeoutSeconds: 30,
     },
   ]);
   console.log("6. Batch registered 3 tasks");

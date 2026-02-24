@@ -20,56 +20,60 @@ import {
 import type { Task, TaskResult } from "../../src/open-api";
 
 // ── Workers ─────────────────────────────────────────────────────────
-@worker({ taskDefName: "sw_validate", registerTaskDef: true })
-async function validateOrder(task: Task): Promise<TaskResult> {
-  const orderId = task.inputData?.orderId as string;
-  return {
-    status: "COMPLETED",
-    outputData: { orderId, valid: true, validatedAt: new Date().toISOString() },
-  };
-}
+const validateOrder = worker({ taskDefName: "sw_validate", registerTaskDef: true })(
+  async (task: Task) => {
+    const orderId = task.inputData?.orderId as string;
+    return {
+      status: "COMPLETED",
+      outputData: { orderId, valid: true, validatedAt: new Date().toISOString() },
+    };
+  }
+);
 
-@worker({ taskDefName: "sw_charge", registerTaskDef: true })
-async function chargePayment(task: Task): Promise<TaskResult> {
-  const orderId = task.inputData?.orderId as string;
-  const amount = (task.inputData?.amount as number) ?? 0;
-  return {
-    status: "COMPLETED",
-    outputData: {
-      orderId,
-      amount,
-      charged: true,
-      transactionId: `TXN-${Date.now()}`,
-    },
-  };
-}
+const chargePayment = worker({ taskDefName: "sw_charge", registerTaskDef: true })(
+  async (task: Task) => {
+    const orderId = task.inputData?.orderId as string;
+    const amount = (task.inputData?.amount as number) ?? 0;
+    return {
+      status: "COMPLETED",
+      outputData: {
+        orderId,
+        amount,
+        charged: true,
+        transactionId: `TXN-${Date.now()}`,
+      },
+    };
+  }
+);
 
-@worker({ taskDefName: "sw_ship", registerTaskDef: true })
-async function shipOrder(task: Task): Promise<TaskResult> {
-  const orderId = task.inputData?.orderId as string;
-  return {
-    status: "COMPLETED",
-    outputData: {
-      orderId,
-      shipped: true,
-      trackingNumber: `TRACK-${Date.now()}`,
-    },
-  };
-}
+const shipOrder = worker({ taskDefName: "sw_ship", registerTaskDef: true })(
+  async (task: Task) => {
+    const orderId = task.inputData?.orderId as string;
+    return {
+      status: "COMPLETED",
+      outputData: {
+        orderId,
+        shipped: true,
+        trackingNumber: `TRACK-${Date.now()}`,
+      },
+    };
+  }
+);
 
-@worker({ taskDefName: "sw_notify", registerTaskDef: true })
-async function notifyCustomer(task: Task): Promise<TaskResult> {
-  const orderId = task.inputData?.orderId as string;
-  const tracking = task.inputData?.trackingNumber as string;
-  return {
-    status: "COMPLETED",
-    outputData: {
-      orderId,
-      notified: true,
-      message: `Order ${orderId} shipped. Tracking: ${tracking}`,
-    },
-  };
-}
+const notifyCustomer = worker({ taskDefName: "sw_notify", registerTaskDef: true })(
+  async (task: Task) => {
+    const orderId = task.inputData?.orderId as string;
+    const tracking = task.inputData?.trackingNumber as string;
+    return {
+      status: "COMPLETED",
+      outputData: {
+        orderId,
+        notified: true,
+        message: `Order ${orderId} shipped. Tracking: ${tracking}`,
+      },
+    };
+  }
+);
 
 async function main() {
   const clients = await OrkesClients.from();

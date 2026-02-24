@@ -19,67 +19,66 @@ import {
   simpleTask,
   getTaskContext,
 } from "../src/sdk";
-import type { Task, TaskResult } from "../src/open-api";
-import type { TaskInProgressResult } from "../src/sdk";
+import type { Task } from "../src/open-api";
 
 // ── Worker with context usage ───────────────────────────────────────
-@worker({ taskDefName: "ctx_logging_worker", registerTaskDef: true })
-async function loggingWorker(task: Task): Promise<TaskResult> {
-  const ctx = getTaskContext();
+const loggingWorker = worker({ taskDefName: "ctx_logging_worker", registerTaskDef: true })(
+  async (task: Task) => {
+    const ctx = getTaskContext();
 
-  // Log execution metadata
-  ctx?.addLog(`Task started — taskId=${ctx.getTaskId()}`);
-  ctx?.addLog(`Workflow: ${ctx.getWorkflowInstanceId()}`);
-  ctx?.addLog(`Retry count: ${ctx.getRetryCount()}`);
-  ctx?.addLog(`Poll count: ${ctx.getPollCount()}`);
-  ctx?.addLog(`Task def: ${ctx.getTaskDefName()}`);
+    // Log execution metadata
+    ctx?.addLog(`Task started — taskId=${ctx.getTaskId()}`);
+    ctx?.addLog(`Workflow: ${ctx.getWorkflowInstanceId()}`);
+    ctx?.addLog(`Retry count: ${ctx.getRetryCount()}`);
+    ctx?.addLog(`Poll count: ${ctx.getPollCount()}`);
+    ctx?.addLog(`Task def: ${ctx.getTaskDefName()}`);
 
-  // Access input through context
-  const input = ctx?.getInput() ?? task.inputData ?? {};
-  ctx?.addLog(`Input keys: ${Object.keys(input).join(", ")}`);
+    // Access input through context
+    const input = ctx?.getInput() ?? task.inputData ?? {};
+    ctx?.addLog(`Input keys: ${Object.keys(input).join(", ")}`);
 
-  // Set output through context
-  ctx?.setOutput({
-    processed: true,
-    taskId: ctx.getTaskId(),
-    message: input.message ?? "no message",
-  });
+    // Set output through context
+    ctx?.setOutput({
+      processed: true,
+      taskId: ctx.getTaskId(),
+      message: input.message ?? "no message",
+    });
 
-  ctx?.addLog("Task completed successfully");
+    ctx?.addLog("Task completed successfully");
 
-  return {
-    status: "COMPLETED",
-    outputData: ctx?.getOutput() ?? { processed: true },
-  };
-}
-
-// ── Worker demonstrating IN_PROGRESS callback pattern ───────────────
-@worker({ taskDefName: "ctx_long_running", registerTaskDef: true })
-async function longRunningWorker(
-  task: Task
-): Promise<TaskResult | TaskInProgressResult> {
-  const ctx = getTaskContext();
-  const attempt = (task.inputData?.attempt as number) ?? 0;
-
-  ctx?.addLog(`Long-running task attempt ${attempt}`);
-
-  // Simulate a task that needs multiple callbacks
-  if (attempt < 2) {
-    ctx?.addLog("Not ready yet, requesting callback in 5 seconds");
-    ctx?.setCallbackAfter(5);
     return {
-      status: "IN_PROGRESS",
-      callbackAfterSeconds: 5,
-      outputData: { attempt: attempt + 1, progress: (attempt + 1) * 33 },
+      status: "COMPLETED",
+      outputData: ctx?.getOutput() ?? { processed: true },
     };
   }
+);
 
-  ctx?.addLog("Processing complete!");
-  return {
-    status: "COMPLETED",
-    outputData: { result: "done", totalAttempts: attempt + 1 },
-  };
-}
+// ── Worker demonstrating IN_PROGRESS callback pattern ───────────────
+const longRunningWorker = worker({ taskDefName: "ctx_long_running", registerTaskDef: true })(
+  async (task: Task) => {
+    const ctx = getTaskContext();
+    const attempt = (task.inputData?.attempt as number) ?? 0;
+
+    ctx?.addLog(`Long-running task attempt ${attempt}`);
+
+    // Simulate a task that needs multiple callbacks
+    if (attempt < 2) {
+      ctx?.addLog("Not ready yet, requesting callback in 5 seconds");
+      ctx?.setCallbackAfter(5);
+      return {
+        status: "IN_PROGRESS" as const,
+        callbackAfterSeconds: 5,
+        outputData: { attempt: attempt + 1, progress: (attempt + 1) * 33 },
+      };
+    }
+
+    ctx?.addLog("Processing complete!");
+    return {
+      status: "COMPLETED" as const,
+      outputData: { result: "done", totalAttempts: attempt + 1 },
+    };
+  }
+);
 
 // ── Main ────────────────────────────────────────────────────────────
 async function main() {
