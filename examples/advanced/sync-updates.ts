@@ -18,9 +18,9 @@ import {
   simpleTask,
   waitTaskDuration,
 } from "../../src/sdk";
-import type { Task, TaskResult } from "../../src/open-api";
+import type { Task } from "../../src/open-api";
 
-const checkVars = worker({ taskDefName: "su_check_vars", registerTaskDef: true })(
+const _checkVars = worker({ taskDefName: "su_check_vars", registerTaskDef: true })(
   async (task: Task) => {
     return {
       status: "COMPLETED",

@@ -31,7 +31,7 @@ import {
 import type { Task } from "../src/open-api";
 
 // ── Worker with defaults (uses env vars or SDK defaults) ────────────
-const defaultWorker = worker({
+const _defaultWorker = worker({
   taskDefName: "config_default_worker",
   registerTaskDef: true,
 })(
@@ -44,7 +44,7 @@ const defaultWorker = worker({
 );
 
 // ── Worker with explicit concurrency ────────────────────────────────
-const highConcurrencyWorker = worker({
+const _highConcurrencyWorker = worker({
   taskDefName: "config_high_concurrency",
   registerTaskDef: true,
   concurrency: 10,
@@ -59,7 +59,7 @@ const highConcurrencyWorker = worker({
 );
 
 // ── Worker with domain isolation ────────────────────────────────────
-const domainWorker = worker({
+const _domainWorker = worker({
   taskDefName: "config_domain_worker",
   registerTaskDef: true,
   domain: "staging",
@@ -75,7 +75,7 @@ const domainWorker = worker({
 );
 
 // ── Worker with custom poll timeout ─────────────────────────────────
-const longPollWorker = worker({
+const _longPollWorker = worker({
   taskDefName: "config_long_poll",
   registerTaskDef: true,
   pollTimeout: 5000,

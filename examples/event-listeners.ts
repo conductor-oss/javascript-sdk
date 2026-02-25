@@ -91,7 +91,7 @@ class ExecutionLogger implements TaskRunnerEventsListener {
 
 // ── Timing listener (measures execution time) ───────────────────────
 class TimingListener implements TaskRunnerEventsListener {
-  private timings: Array<{ task: string; ms: number }> = [];
+  private timings: { task: string; ms: number }[] = [];
 
   onTaskExecutionCompleted(event: TaskExecutionCompleted): void {
     this.timings.push({ task: event.taskType, ms: event.durationMs });
@@ -111,8 +111,8 @@ class TimingListener implements TaskRunnerEventsListener {
 }
 
 // ── Workers ─────────────────────────────────────────────────────────
-const fastTask = worker({ taskDefName: "evt_fast_task", registerTaskDef: true })(
-  async (task: Task) => {
+const _fastTask = worker({ taskDefName: "evt_fast_task", registerTaskDef: true })(
+  async (_task: Task) => {
     return {
       status: "COMPLETED",
       outputData: { fast: true },
@@ -120,8 +120,8 @@ const fastTask = worker({ taskDefName: "evt_fast_task", registerTaskDef: true })
   }
 );
 
-const slowTask = worker({ taskDefName: "evt_slow_task", registerTaskDef: true })(
-  async (task: Task) => {
+const _slowTask = worker({ taskDefName: "evt_slow_task", registerTaskDef: true })(
+  async (_task: Task) => {
     // Simulate work
     await new Promise((resolve) => setTimeout(resolve, 100));
     return {

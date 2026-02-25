@@ -17,9 +17,9 @@ import {
   simpleTask,
   waitForWebhookTask,
 } from "../../src/sdk";
-import type { Task, TaskResult } from "../../src/open-api";
+import type { Task } from "../../src/open-api";
 
-const processWebhookPayload = worker({ taskDefName: "wh_process_payload", registerTaskDef: true })(
+const _processWebhookPayload = worker({ taskDefName: "wh_process_payload", registerTaskDef: true })(
   async (task: Task) => {
     const payload = task.inputData?.webhookPayload as Record<string, unknown>;
     return {

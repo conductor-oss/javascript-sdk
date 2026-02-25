@@ -17,7 +17,7 @@ import {
 } from "../src/sdk";
 import type { Task } from "../src/open-api";
 
-const opsStep = worker({ taskDefName: "ops_step", registerTaskDef: true })(
+const _opsStep = worker({ taskDefName: "ops_step", registerTaskDef: true })(
   async (task: Task) => {
     return {
       status: "COMPLETED",

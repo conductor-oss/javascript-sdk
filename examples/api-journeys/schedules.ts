@@ -21,8 +21,6 @@ async function main() {
   const clients = await OrkesClients.from();
   const scheduler = clients.getSchedulerClient();
   const workflowClient = clients.getWorkflowClient();
-  const client = clients.getClient();
-
   const scheduleName = "journey_example_schedule";
   const wfName = "schedule_journey_workflow";
 

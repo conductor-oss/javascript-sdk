@@ -22,7 +22,7 @@ import {
 import type { Task } from "../src/open-api";
 
 // ── Worker with context usage ───────────────────────────────────────
-const loggingWorker = worker({ taskDefName: "ctx_logging_worker", registerTaskDef: true })(
+const _loggingWorker = worker({ taskDefName: "ctx_logging_worker", registerTaskDef: true })(
   async (task: Task) => {
     const ctx = getTaskContext();
 
@@ -54,7 +54,7 @@ const loggingWorker = worker({ taskDefName: "ctx_logging_worker", registerTaskDe
 );
 
 // ── Worker demonstrating IN_PROGRESS callback pattern ───────────────
-const longRunningWorker = worker({ taskDefName: "ctx_long_running", registerTaskDef: true })(
+const _longRunningWorker = worker({ taskDefName: "ctx_long_running", registerTaskDef: true })(
   async (task: Task) => {
     const ctx = getTaskContext();
     const attempt = (task.inputData?.attempt as number) ?? 0;

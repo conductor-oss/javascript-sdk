@@ -21,7 +21,7 @@ import {
 import type { Task } from "../src/open-api";
 
 // ── Worker ──────────────────────────────────────────────────────────
-const helloTask = worker({ taskDefName: "hello_task", registerTaskDef: true })(
+const _helloTask = worker({ taskDefName: "hello_task", registerTaskDef: true })(
   async (task: Task) => {
     const name = (task.inputData?.name as string) ?? "World";
     return {

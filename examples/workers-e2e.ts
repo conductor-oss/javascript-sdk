@@ -19,7 +19,7 @@ import type { Task } from "../src/open-api";
 
 // ── Worker 1: Validate input ────────────────────────────────────────
 // Demonstrates NonRetryableException for permanent failures (no retry).
-const validate = worker({ taskDefName: "e2e_validate", registerTaskDef: true })(
+const _validate = worker({ taskDefName: "e2e_validate", registerTaskDef: true })(
   async (task: Task) => {
     const orderId = task.inputData?.orderId as string;
     if (!orderId) {
@@ -34,7 +34,7 @@ const validate = worker({ taskDefName: "e2e_validate", registerTaskDef: true })(
 );
 
 // ── Worker 2: Process order ─────────────────────────────────────────
-const processOrder = worker({ taskDefName: "e2e_process", registerTaskDef: true })(
+const _processOrder = worker({ taskDefName: "e2e_process", registerTaskDef: true })(
   async (task: Task) => {
     const orderId = task.inputData?.orderId as string;
     // Simulate processing
@@ -47,7 +47,7 @@ const processOrder = worker({ taskDefName: "e2e_process", registerTaskDef: true 
 );
 
 // ── Worker 3: Send confirmation ─────────────────────────────────────
-const confirm = worker({ taskDefName: "e2e_confirm", registerTaskDef: true })(
+const _confirm = worker({ taskDefName: "e2e_confirm", registerTaskDef: true })(
   async (task: Task) => {
     const orderId = task.inputData?.orderId as string;
     const total = task.inputData?.total as number;

@@ -26,7 +26,7 @@ import type { Task } from "../src/open-api";
 import type { WorkflowExecutor } from "../src/sdk/clients/workflow";
 
 // ── Workers ─────────────────────────────────────────────────────────
-const greetWorker = worker({ taskDefName: "svc_greet", registerTaskDef: true })(
+const _greetWorker = worker({ taskDefName: "svc_greet", registerTaskDef: true })(
   async (task: Task) => {
     const name = (task.inputData?.name as string) ?? "World";
     return {
@@ -36,7 +36,7 @@ const greetWorker = worker({ taskDefName: "svc_greet", registerTaskDef: true })(
   }
 );
 
-const processWorker = worker({ taskDefName: "svc_process", registerTaskDef: true })(
+const _processWorker = worker({ taskDefName: "svc_process", registerTaskDef: true })(
   async (task: Task) => {
     const data = task.inputData?.data as string;
     return {

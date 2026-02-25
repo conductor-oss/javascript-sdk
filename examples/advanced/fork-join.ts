@@ -17,10 +17,10 @@ import {
   simpleTask,
   inlineTask,
 } from "../../src/sdk";
-import type { Task, TaskResult } from "../../src/open-api";
+import type { Task } from "../../src/open-api";
 
 // ── Workers for parallel branches ───────────────────────────────────
-const fetchUser = worker({ taskDefName: "fj_fetch_user", registerTaskDef: true })(
+const _fetchUser = worker({ taskDefName: "fj_fetch_user", registerTaskDef: true })(
   async (task: Task) => {
     const userId = task.inputData?.userId as string;
     return {
@@ -30,7 +30,7 @@ const fetchUser = worker({ taskDefName: "fj_fetch_user", registerTaskDef: true }
   }
 );
 
-const fetchOrders = worker({ taskDefName: "fj_fetch_orders", registerTaskDef: true })(
+const _fetchOrders = worker({ taskDefName: "fj_fetch_orders", registerTaskDef: true })(
   async (task: Task) => {
     const userId = task.inputData?.userId as string;
     // Simulate fetching orders
@@ -48,7 +48,7 @@ const fetchOrders = worker({ taskDefName: "fj_fetch_orders", registerTaskDef: tr
   }
 );
 
-const fetchPreferences = worker({ taskDefName: "fj_fetch_preferences", registerTaskDef: true })(
+const _fetchPreferences = worker({ taskDefName: "fj_fetch_preferences", registerTaskDef: true })(
   async (task: Task) => {
     const userId = task.inputData?.userId as string;
     return {

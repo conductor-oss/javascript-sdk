@@ -22,10 +22,10 @@ import {
   inlineTask,
   Role,
 } from "../../src/sdk";
-import type { Task, TaskResult } from "../../src/open-api";
+import type { Task } from "../../src/open-api";
 
 // ── Tool workers ────────────────────────────────────────────────────
-const getWeather = worker({ taskDefName: "fn_get_weather", registerTaskDef: true })(
+const _getWeather = worker({ taskDefName: "fn_get_weather", registerTaskDef: true })(
   async (task: Task) => {
     const city = (task.inputData?.city as string) ?? "Unknown";
     // Simulate weather API
@@ -41,7 +41,7 @@ const getWeather = worker({ taskDefName: "fn_get_weather", registerTaskDef: true
   }
 );
 
-const getStockPrice = worker({ taskDefName: "fn_get_stock_price", registerTaskDef: true })(
+const _getStockPrice = worker({ taskDefName: "fn_get_stock_price", registerTaskDef: true })(
   async (task: Task) => {
     const symbol = (task.inputData?.symbol as string) ?? "AAPL";
     // Simulate stock API
@@ -55,7 +55,7 @@ const getStockPrice = worker({ taskDefName: "fn_get_stock_price", registerTaskDe
   }
 );
 
-const calculate = worker({ taskDefName: "fn_calculate", registerTaskDef: true })(
+const _calculate = worker({ taskDefName: "fn_calculate", registerTaskDef: true })(
   async (task: Task) => {
     const expression = (task.inputData?.expression as string) ?? "0";
     let result: number;

@@ -25,8 +25,8 @@ import {
 } from "../src/sdk";
 import type { Task } from "../src/open-api";
 
-const metricsTask = worker({ taskDefName: "metrics_task", registerTaskDef: true })(
-  async (task: Task) => {
+const _metricsTask = worker({ taskDefName: "metrics_task", registerTaskDef: true })(
+  async (_task: Task) => {
     // Simulate variable processing time
     const delay = Math.random() * 50;
     await new Promise((resolve) => setTimeout(resolve, delay));

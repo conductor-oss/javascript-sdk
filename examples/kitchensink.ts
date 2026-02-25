@@ -26,7 +26,7 @@ import {
 import type { Task } from "../src/open-api";
 
 // ── Workers ─────────────────────────────────────────────────────────
-const simpleWorker = worker({ taskDefName: "ks_simple_worker", registerTaskDef: true })(
+const _simpleWorker = worker({ taskDefName: "ks_simple_worker", registerTaskDef: true })(
   async (task: Task) => {
     return {
       status: "COMPLETED",
@@ -35,8 +35,8 @@ const simpleWorker = worker({ taskDefName: "ks_simple_worker", registerTaskDef: 
   }
 );
 
-const branchA = worker({ taskDefName: "ks_branch_a", registerTaskDef: true })(
-  async (task: Task) => {
+const _branchA = worker({ taskDefName: "ks_branch_a", registerTaskDef: true })(
+  async (_task: Task) => {
     return {
       status: "COMPLETED",
       outputData: { branch: "A", done: true },
@@ -44,8 +44,8 @@ const branchA = worker({ taskDefName: "ks_branch_a", registerTaskDef: true })(
   }
 );
 
-const branchB = worker({ taskDefName: "ks_branch_b", registerTaskDef: true })(
-  async (task: Task) => {
+const _branchB = worker({ taskDefName: "ks_branch_b", registerTaskDef: true })(
+  async (_task: Task) => {
     return {
       status: "COMPLETED",
       outputData: { branch: "B", done: true },
@@ -53,7 +53,7 @@ const branchB = worker({ taskDefName: "ks_branch_b", registerTaskDef: true })(
   }
 );
 
-const loopTask = worker({ taskDefName: "ks_loop_task", registerTaskDef: true })(
+const _loopTask = worker({ taskDefName: "ks_loop_task", registerTaskDef: true })(
   async (task: Task) => {
     const iteration = (task.inputData?.iteration as number) ?? 0;
     return {

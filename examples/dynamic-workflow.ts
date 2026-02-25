@@ -15,12 +15,11 @@ import {
   simpleTask,
   switchTask,
   doWhileTask,
-  inlineTask,
 } from "../src/sdk";
 import type { Task } from "../src/open-api";
 
 // ── Workers ─────────────────────────────────────────────────────────
-const fetchData = worker({ taskDefName: "fetch_data", registerTaskDef: true })(
+const _fetchData = worker({ taskDefName: "fetch_data", registerTaskDef: true })(
   async (task: Task) => {
     const source = (task.inputData?.source as string) ?? "default";
     return {
@@ -36,7 +35,7 @@ const fetchData = worker({ taskDefName: "fetch_data", registerTaskDef: true })(
   }
 );
 
-const processRecord = worker({ taskDefName: "process_record", registerTaskDef: true })(
+const _processRecord = worker({ taskDefName: "process_record", registerTaskDef: true })(
   async (task: Task) => {
     const record = task.inputData?.record as Record<string, unknown>;
     return {
@@ -50,7 +49,7 @@ const processRecord = worker({ taskDefName: "process_record", registerTaskDef: t
   }
 );
 
-const sendNotification = worker({ taskDefName: "send_notification", registerTaskDef: true })(
+const _sendNotification = worker({ taskDefName: "send_notification", registerTaskDef: true })(
   async (task: Task) => {
     const channel = (task.inputData?.channel as string) ?? "email";
     const message = (task.inputData?.message as string) ?? "";

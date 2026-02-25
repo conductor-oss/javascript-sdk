@@ -17,9 +17,9 @@ import {
   worker,
   TaskHandler,
 } from "../../src/sdk";
-import type { Task, TaskResult } from "../../src/open-api";
+import type { Task } from "../../src/open-api";
 
-const processResult = worker({ taskDefName: "hp_process_result", registerTaskDef: true })(
+const _processResult = worker({ taskDefName: "hp_process_result", registerTaskDef: true })(
   async (task: Task) => {
     const pollResult = task.inputData?.pollResult;
     return {

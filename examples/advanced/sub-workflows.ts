@@ -17,10 +17,10 @@ import {
   simpleTask,
   subWorkflowTask,
 } from "../../src/sdk";
-import type { Task, TaskResult } from "../../src/open-api";
+import type { Task } from "../../src/open-api";
 
 // ── Workers ─────────────────────────────────────────────────────────
-const validateOrder = worker({ taskDefName: "sw_validate", registerTaskDef: true })(
+const _validateOrder = worker({ taskDefName: "sw_validate", registerTaskDef: true })(
   async (task: Task) => {
     const orderId = task.inputData?.orderId as string;
     return {
@@ -30,7 +30,7 @@ const validateOrder = worker({ taskDefName: "sw_validate", registerTaskDef: true
   }
 );
 
-const chargePayment = worker({ taskDefName: "sw_charge", registerTaskDef: true })(
+const _chargePayment = worker({ taskDefName: "sw_charge", registerTaskDef: true })(
   async (task: Task) => {
     const orderId = task.inputData?.orderId as string;
     const amount = (task.inputData?.amount as number) ?? 0;
@@ -46,7 +46,7 @@ const chargePayment = worker({ taskDefName: "sw_charge", registerTaskDef: true }
   }
 );
 
-const shipOrder = worker({ taskDefName: "sw_ship", registerTaskDef: true })(
+const _shipOrder = worker({ taskDefName: "sw_ship", registerTaskDef: true })(
   async (task: Task) => {
     const orderId = task.inputData?.orderId as string;
     return {
@@ -60,7 +60,7 @@ const shipOrder = worker({ taskDefName: "sw_ship", registerTaskDef: true })(
   }
 );
 
-const notifyCustomer = worker({ taskDefName: "sw_notify", registerTaskDef: true })(
+const _notifyCustomer = worker({ taskDefName: "sw_notify", registerTaskDef: true })(
   async (task: Task) => {
     const orderId = task.inputData?.orderId as string;
     const tracking = task.inputData?.trackingNumber as string;
