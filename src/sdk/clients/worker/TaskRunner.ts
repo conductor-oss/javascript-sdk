@@ -299,14 +299,17 @@ export class TaskRunner {
    */
   private executeOneTask = async (task: Task): Promise<Task | undefined> => {
     const { workerID } = this.options;
+    // Safe: caller (executeTask) already validated these via isValidTask()
+    const taskId = task.taskId as string;
+    const workflowInstanceId = task.workflowInstanceId as string;
     const startTime = Date.now();
 
     // Publish TaskExecutionStarted event
     await this.eventDispatcher.publishTaskExecutionStarted({
       taskType: this.worker.taskDefName,
-      taskId: task.taskId!,
+      taskId,
       workerId: workerID,
-      workflowInstanceId: task.workflowInstanceId,
+      workflowInstanceId,
       timestamp: new Date(),
     });
 
@@ -326,8 +329,8 @@ export class TaskRunner {
       if (isTaskInProgress(result)) {
         const contextLogs = context.getLogs();
         const nextTask = await this.updateTaskWithRetry(task, {
-          workflowInstanceId: task.workflowInstanceId,
-          taskId: task.taskId,
+          workflowInstanceId,
+          taskId,
           status: "IN_PROGRESS",
           callbackAfterSeconds: result.callbackAfterSeconds,
           outputData:
@@ -338,15 +341,15 @@ export class TaskRunner {
         // Publish completion event for IN_PROGRESS
         await this.eventDispatcher.publishTaskExecutionCompleted({
           taskType: this.worker.taskDefName,
-          taskId: task.taskId!,
+          taskId,
           workerId: workerID,
-          workflowInstanceId: task.workflowInstanceId,
+          workflowInstanceId,
           durationMs,
           timestamp: new Date(),
         });
 
         this.logger.debug(
-          `Task ${task.taskId} returned IN_PROGRESS, callback after ${result.callbackAfterSeconds}s`
+          `Task ${taskId} returned IN_PROGRESS, callback after ${result.callbackAfterSeconds}s`
         );
         return nextTask;
       }
@@ -383,9 +386,9 @@ export class TaskRunner {
       // Publish TaskExecutionCompleted event
       await this.eventDispatcher.publishTaskExecutionCompleted({
         taskType: this.worker.taskDefName,
-        taskId: task.taskId!,
+        taskId,
         workerId: workerID,
-        workflowInstanceId: task.workflowInstanceId,
+        workflowInstanceId,
         durationMs,
         outputSizeBytes,
         timestamp: new Date(),
@@ -393,10 +396,10 @@ export class TaskRunner {
 
       const nextTask = await this.updateTaskWithRetry(task, {
         ...merged,
-        workflowInstanceId: task.workflowInstanceId,
-        taskId: task.taskId,
+        workflowInstanceId,
+        taskId,
       });
-      this.logger.debug(`Task has executed successfully ${task.taskId}`);
+      this.logger.debug(`Task has executed successfully ${taskId}`);
       return nextTask;
     } catch (error: unknown) {
       const durationMs = Date.now() - startTime;
@@ -405,9 +408,9 @@ export class TaskRunner {
       // Publish TaskExecutionFailure event
       await this.eventDispatcher.publishTaskExecutionFailure({
         taskType: this.worker.taskDefName,
-        taskId: task.taskId!,
+        taskId,
         workerId: workerID,
-        workflowInstanceId: task.workflowInstanceId,
+        workflowInstanceId,
         cause: err,
         durationMs,
         timestamp: new Date(),
@@ -419,7 +422,7 @@ export class TaskRunner {
 
       if (isNonRetryable) {
         this.logger.error(
-          `Task ${task.taskId} failed with terminal error (no retry): ${err.message}`
+          `Task ${taskId} failed with terminal error (no retry): ${err.message}`
         );
       }
 
@@ -428,13 +431,13 @@ export class TaskRunner {
         {
           log: `${err.name}: ${err.message}${err.stack ? "\n" + err.stack : ""}`,
           createdTime: Date.now(),
-          taskId: task.taskId,
+          taskId,
         },
       ];
 
       const nextTask = await this.updateTaskWithRetry(task, {
-        workflowInstanceId: task.workflowInstanceId,
-        taskId: task.taskId,
+        workflowInstanceId,
+        taskId,
         reasonForIncompletion:
           (error as Record<string, string>)?.message ?? DEFAULT_ERROR_MESSAGE,
         status,
@@ -442,7 +445,7 @@ export class TaskRunner {
         logs: errorLogs,
       });
       this.errorHandler(err, task);
-      this.logger.error(`Error executing ${task.taskId}`, error);
+      this.logger.error(`Error executing ${taskId}`, error);
 
       // Even on failure, chain to next task — the failure was for THIS task
       return nextTask;

@@ -383,12 +383,12 @@ export class MetricsCollector implements TaskRunnerEventsListener {
     const lines: string[] = [];
 
     // ── Labelled counters ──
-    const labelledCounters: Array<{
+    const labelledCounters: {
       name: string;
       help: string;
       data: Map<string, number>;
       labelName: string;
-    }> = [
+    }[] = [
       {
         name: `${p}_task_poll_total`,
         help: "Total number of task polls",
@@ -457,11 +457,11 @@ export class MetricsCollector implements TaskRunnerEventsListener {
     }
 
     // ── Global counters (no labels) ──
-    const globalCounters: Array<{
+    const globalCounters: {
       name: string;
       help: string;
       value: number;
-    }> = [
+    }[] = [
       {
         name: `${p}_thread_uncaught_exceptions_total`,
         help: "Total uncaught exceptions",
@@ -487,12 +487,12 @@ export class MetricsCollector implements TaskRunnerEventsListener {
     }
 
     // ── Summaries with quantiles ──
-    const summaries: Array<{
+    const summaries: {
       name: string;
       help: string;
       data: Map<string, number[]>;
       labelName: string;
-    }> = [
+    }[] = [
       {
         name: `${p}_task_poll_time`,
         help: "Task poll duration in milliseconds",

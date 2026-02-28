@@ -61,12 +61,19 @@ npm run test:integration:orkes-v5
 
 After every code change, you **must** run the following before considering the work complete:
 
-1. **Unit tests** — all must pass:
+1. **Lint** — fix all lint errors in files you changed:
+   ```bash
+   npm run lint                          # Check all files
+   npx eslint --fix src/path/to/file.ts  # Auto-fix a specific file
+   ```
+   You must fix all lint errors in files you modified. Do not introduce new lint violations.
+
+2. **Unit tests** — all must pass:
    ```bash
    npm test
    ```
 
-2. **All examples** — each must complete successfully (requires a running Conductor server and `.env` credentials):
+3. **All examples** — each must complete successfully (requires a running Conductor server and `.env` credentials):
    ```bash
    export $(cat .env | xargs)
    npx ts-node -P tsconfig.json --transpile-only examples/helloworld.ts
