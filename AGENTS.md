@@ -57,6 +57,32 @@ ORKES_BACKEND_VERSION=5 \
 npm run test:integration:orkes-v5
 ```
 
+## Post-Change Verification (Required)
+
+After every code change, you **must** run the following before considering the work complete:
+
+1. **Unit tests** — all must pass:
+   ```bash
+   npm test
+   ```
+
+2. **All examples** — each must complete successfully (requires a running Conductor server and `.env` credentials):
+   ```bash
+   export $(cat .env | xargs)
+   npx ts-node -P tsconfig.json --transpile-only examples/helloworld.ts
+   npx ts-node -P tsconfig.json --transpile-only examples/quickstart.ts
+   npx ts-node -P tsconfig.json --transpile-only examples/kitchensink.ts
+   npx ts-node -P tsconfig.json --transpile-only examples/dynamic-workflow.ts
+   npx ts-node -P tsconfig.json --transpile-only examples/task-configure.ts
+   npx ts-node -P tsconfig.json --transpile-only examples/task-context.ts
+   npx ts-node -P tsconfig.json --transpile-only examples/worker-configuration.ts
+   npx ts-node -P tsconfig.json --transpile-only examples/workflow-ops.ts
+   npx ts-node -P tsconfig.json --transpile-only examples/workers-e2e.ts
+   npx ts-node -P tsconfig.json --transpile-only examples/perf-test.ts
+   ```
+
+Do not skip any example. If an example fails for reasons unrelated to your change (e.g., server down), note it explicitly.
+
 ## Critical Pitfalls
 
 These are real bugs that caused test failures during SDK development. Read before writing any code.

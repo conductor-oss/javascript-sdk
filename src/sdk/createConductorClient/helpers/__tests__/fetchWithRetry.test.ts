@@ -55,7 +55,8 @@ describe("fetchWithRetry", () => {
         .mockResolvedValueOnce(createMockResponse(200, "ok"));
 
       const promise = retryFetch("http://test.com", {}, mockFetch);
-      await jest.advanceTimersByTimeAsync(1001);
+      // Advance past max jittered delay (1000ms + 10% = 1100ms)
+      await jest.advanceTimersByTimeAsync(1200);
       const result = await promise;
 
       expect(result.status).toBe(200);

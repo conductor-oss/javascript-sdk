@@ -6,6 +6,7 @@ import type {
   TaskExecutionStarted,
   TaskExecutionCompleted,
   TaskExecutionFailure,
+  TaskUpdateCompleted,
   TaskUpdateFailure,
 } from "../../clients/worker/events";
 
@@ -65,6 +66,8 @@ export interface WorkerMetrics {
   pollDurationMs: Map<string, number[]>;
   /** Execution duration observations in ms by taskType */
   executionDurationMs: Map<string, number[]>;
+  /** Update duration observations in ms by taskType */
+  updateDurationMs: Map<string, number[]>;
   /** Output size observations in bytes by taskType */
   outputSizeBytes: Map<string, number[]>;
   /** Workflow input size observations in bytes */
@@ -177,6 +180,7 @@ export class MetricsCollector implements TaskRunnerEventsListener {
       externalPayloadUsedTotal: new Map(),
       pollDurationMs: new Map(),
       executionDurationMs: new Map(),
+      updateDurationMs: new Map(),
       outputSizeBytes: new Map(),
       workflowInputSizeBytes: new Map(),
       apiRequestDurationMs: new Map(),
@@ -256,6 +260,10 @@ export class MetricsCollector implements TaskRunnerEventsListener {
     const key = `${event.taskType}:${event.cause?.name ?? "Error"}`;
     this.incrementCounter(this.metrics.taskExecutionErrorTotal, key, "execute_error_total", "task_type");
     this.observeSummary(this.metrics.executionDurationMs, event.taskType, event.durationMs, "execute_time", "task_type");
+  }
+
+  onTaskUpdateCompleted(event: TaskUpdateCompleted): void {
+    this.observeSummary(this.metrics.updateDurationMs, event.taskType, event.durationMs, "update_time", "task_type");
   }
 
   onTaskUpdateFailure(event: TaskUpdateFailure): void {
@@ -495,6 +503,12 @@ export class MetricsCollector implements TaskRunnerEventsListener {
         name: `${p}_task_execute_time`,
         help: "Task execution duration in milliseconds",
         data: this.metrics.executionDurationMs,
+        labelName: "task_type",
+      },
+      {
+        name: `${p}_task_update_time`,
+        help: "Task update duration in milliseconds",
+        data: this.metrics.updateDurationMs,
         labelName: "task_type",
       },
       {

@@ -110,7 +110,29 @@ describe("MetricsCollector", () => {
     });
   });
 
-  describe("task update failure metrics", () => {
+  describe("task update metrics", () => {
+    it("should record update duration via onTaskUpdateCompleted", () => {
+      collector.onTaskUpdateCompleted({
+        taskType: "task_a",
+        taskId: "t1",
+        workerId: "w1",
+        workflowInstanceId: "wf1",
+        durationMs: 25,
+        timestamp: new Date(),
+      });
+      collector.onTaskUpdateCompleted({
+        taskType: "task_a",
+        taskId: "t2",
+        workerId: "w1",
+        workflowInstanceId: "wf2",
+        durationMs: 30,
+        timestamp: new Date(),
+      });
+
+      const metrics = collector.getMetrics();
+      expect(metrics.updateDurationMs.get("task_a")).toEqual([25, 30]);
+    });
+
     it("should count update failures via onTaskUpdateFailure", () => {
       collector.onTaskUpdateFailure({
         taskType: "task_a",
@@ -166,6 +188,7 @@ describe("MetricsCollector", () => {
       expect(metrics).toHaveProperty("taskUpdateFailureTotal");
       expect(metrics).toHaveProperty("pollDurationMs");
       expect(metrics).toHaveProperty("executionDurationMs");
+      expect(metrics).toHaveProperty("updateDurationMs");
       expect(metrics).toHaveProperty("outputSizeBytes");
     });
   });

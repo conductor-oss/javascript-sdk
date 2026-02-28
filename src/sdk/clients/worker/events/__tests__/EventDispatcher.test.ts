@@ -7,6 +7,7 @@ import type {
   TaskExecutionStarted,
   TaskExecutionCompleted,
   TaskExecutionFailure,
+  TaskUpdateCompleted,
   TaskUpdateFailure,
 } from "../types";
 
@@ -109,6 +110,29 @@ describe("EventDispatcher", () => {
     expect(workingListener.onPollStarted).toHaveBeenCalledWith(event);
   });
 
+  test("should log listener failures to provided logger", async () => {
+    const mockLogger = { error: jest.fn(), info: jest.fn(), debug: jest.fn(), log: jest.fn() };
+    const loggedDispatcher = new EventDispatcher(mockLogger as never);
+
+    const failingListener: TaskRunnerEventsListener = {
+      onPollStarted: jest.fn<() => Promise<void>>().mockRejectedValue(new Error("Listener error")),
+    };
+    loggedDispatcher.register(failingListener);
+
+    const event: PollStarted = {
+      taskType: "test-task",
+      workerId: "worker-1",
+      pollCount: 5,
+      timestamp: new Date(),
+    };
+
+    await loggedDispatcher.publishPollStarted(event);
+
+    expect(mockLogger.error).toHaveBeenCalledWith(
+      expect.stringContaining("Event listener failed for onPollStarted: Listener error")
+    );
+  });
+
   test("should handle all event types", async () => {
     const listener: TaskRunnerEventsListener = {
       onPollStarted: jest.fn<() => void>(),
@@ -117,6 +141,7 @@ describe("EventDispatcher", () => {
       onTaskExecutionStarted: jest.fn<() => void>(),
       onTaskExecutionCompleted: jest.fn<() => void>(),
       onTaskExecutionFailure: jest.fn<() => void>(),
+      onTaskUpdateCompleted: jest.fn<() => void>(),
       onTaskUpdateFailure: jest.fn<() => void>(),
     };
 
@@ -180,6 +205,18 @@ describe("EventDispatcher", () => {
     };
     await dispatcher.publishTaskExecutionFailure(execFailure);
     expect(listener.onTaskExecutionFailure).toHaveBeenCalledWith(execFailure);
+
+    // Test TaskUpdateCompleted
+    const updateCompleted: TaskUpdateCompleted = {
+      taskType: "test-task",
+      taskId: "task-1",
+      workerId: "worker-1",
+      workflowInstanceId: "workflow-1",
+      durationMs: 25,
+      timestamp: new Date(),
+    };
+    await dispatcher.publishTaskUpdateCompleted(updateCompleted);
+    expect(listener.onTaskUpdateCompleted).toHaveBeenCalledWith(updateCompleted);
 
     // Test TaskUpdateFailure
     const updateFailure: TaskUpdateFailure = {

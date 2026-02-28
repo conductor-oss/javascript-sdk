@@ -59,6 +59,12 @@ export const applyTimeout = (
   return { ...init, signal: controller.signal };
 };
 
+/** Add ±10% jitter to prevent thundering herd on retries */
+const withJitter = (delayMs: number): number => {
+  const jitter = delayMs * 0.1 * (2 * Math.random() - 1);
+  return Math.max(0, Math.round(delayMs + jitter));
+};
+
 export const retryFetch = async (
   input: Input,
   init: Init,
@@ -93,7 +99,7 @@ export const retryFetch = async (
       lastError = error;
       if (transportAttempt < maxTransportRetries) {
         await new Promise((resolve) =>
-          setTimeout(resolve, initialRetryDelay * (transportAttempt + 1))
+          setTimeout(resolve, withJitter(initialRetryDelay * (transportAttempt + 1)))
         );
         continue;
       }
@@ -105,7 +111,7 @@ export const retryFetch = async (
       let rateLimitResponse = response;
       let delay = initialRetryDelay;
       for (let rlAttempt = 0; rlAttempt < maxRateLimitRetries; rlAttempt++) {
-        await new Promise((resolve) => setTimeout(resolve, delay));
+        await new Promise((resolve) => setTimeout(resolve, withJitter(delay)));
         rateLimitResponse = await fetchFn(input, effectiveInit);
         if (rateLimitResponse.status !== 429) {
           return rateLimitResponse;

@@ -65,7 +65,7 @@ export class TaskRunner {
     this.errorHandler = errorHandler;
 
     // Initialize event dispatcher and register listeners
-    this.eventDispatcher = new EventDispatcher();
+    this.eventDispatcher = new EventDispatcher(this.logger);
     eventListeners.forEach((listener) => {
       this.eventDispatcher.register(listener);
     });
@@ -187,22 +187,36 @@ export class TaskRunner {
     }
   };
 
-  updateTaskWithRetry = async (task: Task, taskResult: TaskResult) => {
+  updateTaskWithRetry = async (
+    task: Task,
+    taskResult: TaskResult
+  ): Promise<Task | undefined> => {
     const { workerID } = this.options;
     let retryCount = 0;
     let lastError: Error | null = null;
 
     while (retryCount < this.maxRetries) {
       try {
-        await TaskResource.updateTask({
+        const updateStart = Date.now();
+        const { data: nextTask } = await TaskResource.updateTaskV2({
           client: this._client,
           body: {
             ...taskResult,
             workerId: workerID,
           },
         });
+        const updateDurationMs = Date.now() - updateStart;
 
-        return; // Success
+        await this.eventDispatcher.publishTaskUpdateCompleted({
+          taskType: this.worker.taskDefName,
+          taskId: taskResult.taskId ?? "",
+          workerId: workerID,
+          workflowInstanceId: taskResult.workflowInstanceId,
+          durationMs: updateDurationMs,
+          timestamp: new Date(),
+        });
+
+        return nextTask ?? undefined;
       } catch (error: unknown) {
         lastError = error as Error;
         this.errorHandler(lastError, task);
@@ -235,23 +249,62 @@ export class TaskRunner {
       taskResult,
       timestamp: new Date(),
     });
+
+    return undefined;
   };
 
-  private executeTask = async (task: Task) => {
-    if (!task.workflowInstanceId || !task.taskId) {
-      this.logger.error(
-        `Task missing required fields: workflowInstanceId=${task.workflowInstanceId}, taskId=${task.taskId}`
-      );
-      return;
-    }
+  private isValidTask(task: Task): boolean {
+    return !!(task.workflowInstanceId && task.taskId);
+  }
 
+  /**
+   * Entry point for task execution with V2 chaining.
+   *
+   * When updateTaskV2 returns a next task in its response, we immediately
+   * execute it without going back through the poll cycle. This eliminates
+   * one HTTP round-trip + sleep per task when there is a backlog.
+   */
+  private executeTask = async (task: Task) => {
+    let currentTask: Task | undefined = task;
+
+    while (currentTask) {
+      if (!this.isValidTask(currentTask)) {
+        this.logger.error(
+          `Task missing required fields: workflowInstanceId=${currentTask.workflowInstanceId}, taskId=${currentTask.taskId}`
+        );
+        return;
+      }
+
+      const nextTask = await this.executeOneTask(currentTask);
+
+      // Stop chaining if polling stopped or paused
+      if (!this.isPolling || this.isPaused) {
+        return;
+      }
+
+      // Yield to the event loop between chained tasks to prevent starvation
+      if (nextTask) {
+        this.logger.debug(
+          `Chaining to next task ${nextTask.taskId} from V2 response (skipping poll cycle)`
+        );
+        await new Promise<void>((resolve) => setTimeout(resolve, 0));
+      }
+
+      currentTask = nextTask;
+    }
+  };
+
+  /**
+   * Execute a single task and return the next task from V2 response (if any).
+   */
+  private executeOneTask = async (task: Task): Promise<Task | undefined> => {
     const { workerID } = this.options;
     const startTime = Date.now();
 
     // Publish TaskExecutionStarted event
     await this.eventDispatcher.publishTaskExecutionStarted({
       taskType: this.worker.taskDefName,
-      taskId: task.taskId,
+      taskId: task.taskId!,
       workerId: workerID,
       workflowInstanceId: task.workflowInstanceId,
       timestamp: new Date(),
@@ -272,7 +325,7 @@ export class TaskRunner {
       // Handle TaskInProgress return
       if (isTaskInProgress(result)) {
         const contextLogs = context.getLogs();
-        await this.updateTaskWithRetry(task, {
+        const nextTask = await this.updateTaskWithRetry(task, {
           workflowInstanceId: task.workflowInstanceId,
           taskId: task.taskId,
           status: "IN_PROGRESS",
@@ -285,7 +338,7 @@ export class TaskRunner {
         // Publish completion event for IN_PROGRESS
         await this.eventDispatcher.publishTaskExecutionCompleted({
           taskType: this.worker.taskDefName,
-          taskId: task.taskId,
+          taskId: task.taskId!,
           workerId: workerID,
           workflowInstanceId: task.workflowInstanceId,
           durationMs,
@@ -295,7 +348,7 @@ export class TaskRunner {
         this.logger.debug(
           `Task ${task.taskId} returned IN_PROGRESS, callback after ${result.callbackAfterSeconds}s`
         );
-        return;
+        return nextTask;
       }
 
       // Regular completion path — merge context data
@@ -330,7 +383,7 @@ export class TaskRunner {
       // Publish TaskExecutionCompleted event
       await this.eventDispatcher.publishTaskExecutionCompleted({
         taskType: this.worker.taskDefName,
-        taskId: task.taskId,
+        taskId: task.taskId!,
         workerId: workerID,
         workflowInstanceId: task.workflowInstanceId,
         durationMs,
@@ -338,12 +391,13 @@ export class TaskRunner {
         timestamp: new Date(),
       });
 
-      await this.updateTaskWithRetry(task, {
+      const nextTask = await this.updateTaskWithRetry(task, {
         ...merged,
         workflowInstanceId: task.workflowInstanceId,
         taskId: task.taskId,
       });
       this.logger.debug(`Task has executed successfully ${task.taskId}`);
+      return nextTask;
     } catch (error: unknown) {
       const durationMs = Date.now() - startTime;
       const err = error as Error;
@@ -351,7 +405,7 @@ export class TaskRunner {
       // Publish TaskExecutionFailure event
       await this.eventDispatcher.publishTaskExecutionFailure({
         taskType: this.worker.taskDefName,
-        taskId: task.taskId,
+        taskId: task.taskId!,
         workerId: workerID,
         workflowInstanceId: task.workflowInstanceId,
         cause: err,
@@ -378,7 +432,7 @@ export class TaskRunner {
         },
       ];
 
-      await this.updateTaskWithRetry(task, {
+      const nextTask = await this.updateTaskWithRetry(task, {
         workflowInstanceId: task.workflowInstanceId,
         taskId: task.taskId,
         reasonForIncompletion:
@@ -389,6 +443,9 @@ export class TaskRunner {
       });
       this.errorHandler(err, task);
       this.logger.error(`Error executing ${task.taskId}`, error);
+
+      // Even on failure, chain to next task — the failure was for THIS task
+      return nextTask;
     }
   };
 

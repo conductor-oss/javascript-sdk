@@ -121,6 +121,20 @@ export interface TaskUpdateFailure extends TaskRunnerEvent {
 }
 
 /**
+ * Event published when task update completes successfully.
+ */
+export interface TaskUpdateCompleted extends TaskRunnerEvent {
+  /** Unique identifier of the task instance */
+  taskId: string;
+  /** Identifier of the worker that executed the task */
+  workerId: string;
+  /** ID of the workflow instance this task belongs to */
+  workflowInstanceId?: string;
+  /** Time taken for the update API call in milliseconds */
+  durationMs: number;
+}
+
+/**
  * Union type of all task runner events.
  */
 export type TaskRunnerEventType =
@@ -130,4 +144,5 @@ export type TaskRunnerEventType =
   | TaskExecutionStarted
   | TaskExecutionCompleted
   | TaskExecutionFailure
+  | TaskUpdateCompleted
   | TaskUpdateFailure;
