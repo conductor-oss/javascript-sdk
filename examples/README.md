@@ -66,6 +66,7 @@ Require an LLM integration configured in Conductor. Set `LLM_PROVIDER` and `LLM_
 | **[advanced/sub-workflows.ts](advanced/sub-workflows.ts)** | Registered + inline sub-workflow composition | toSubWorkflowTask() |
 | **[advanced/rag-workflow.ts](advanced/rag-workflow.ts)** | RAG pipeline: index → search → LLM answer | Requires vector DB + LLM |
 | **[advanced/vector-db.ts](advanced/vector-db.ts)** | Embeddings: generate, store, search, index | Requires vector DB |
+| **[advanced/human-tasks.ts](advanced/human-tasks.ts)** | Human-in-the-loop: claim, update, complete | HumanExecutor API |
 
 ---
 
@@ -219,6 +220,47 @@ npx ts-node examples/api-journeys/schemas.ts
 
 ---
 
+### Application Journey
+
+| File | Description | APIs |
+|------|-------------|------|
+| **[api-journeys/applications.ts](api-journeys/applications.ts)** | Full application lifecycle | 20 API calls |
+
+**Scenario:** Create applications, manage access keys, assign roles, manage tags, clean up.
+
+**Features:**
+- Application CRUD (create, get, update, list, delete)
+- Access key management (create, list, toggle, delete)
+- Role management (add, remove)
+- Tag management (add, get, delete)
+
+```bash
+npx ts-node examples/api-journeys/applications.ts
+```
+
+---
+
+### Event Handler Journey
+
+| File | Description | APIs |
+|------|-------------|------|
+| **[api-journeys/event-handlers.ts](api-journeys/event-handlers.ts)** | Full event handler lifecycle | 18 API calls |
+
+**Scenario:** Create event handlers, update configuration, filter by event and status, manage tags, query queues, clean up.
+
+**Features:**
+- Event handler CRUD (add, get, update, list, delete)
+- Event handler filtering (by event, active only)
+- Tag management (add, get, delete)
+- Queue configuration (list queue names)
+- Event execution views
+
+```bash
+npx ts-node examples/api-journeys/event-handlers.ts
+```
+
+---
+
 ## :mortar_board: Learning Path
 
 Start simple and build up:
@@ -291,7 +333,9 @@ examples/
 │   ├── schedules.ts                 # Workflow schedules (13 calls)
 │   ├── secrets.ts                   # Secret management (12 calls)
 │   ├── integrations.ts              # Providers, APIs, tags (22 calls)
-│   └── schemas.ts                   # Schema definitions (10 calls)
+│   ├── schemas.ts                   # Schema definitions (10 calls)
+│   ├── applications.ts             # Applications, access keys, roles (20 calls)
+│   └── event-handlers.ts           # Event handlers, queues, tags (18 calls)
 │
 └── advanced/                        # Advanced workflow patterns
     ├── fork-join.ts                 # Parallel execution with join
@@ -300,7 +344,8 @@ examples/
     ├── wait-for-webhook.ts          # Webhook-driven workflows
     ├── sub-workflows.ts             # Workflow composition
     ├── rag-workflow.ts              # RAG pipeline (index → search → answer)
-    └── vector-db.ts                 # Vector DB operations
+    ├── vector-db.ts                 # Vector DB operations
+    └── human-tasks.ts              # Human-in-the-loop workflow
 ```
 
 ---

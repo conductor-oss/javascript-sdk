@@ -14,9 +14,10 @@ If you find [Conductor](https://github.com/conductor-oss/conductor) useful, plea
 * [Start Conductor server](#start-conductor-server)
 * [Install the SDK](#install-the-sdk)
 * [60-Second Quickstart](#60-second-quickstart)
+* [What You Can Build](#what-you-can-build)
 * [Workers](#workers)
 * [Monitoring Workers](#monitoring-workers)
-* [Workflows](#workflows)
+* [Managing Workflow Executions](#managing-workflow-executions)
 * [Troubleshooting](#troubleshooting)
 * [Examples](#examples)
 * [API Journey Examples](#api-journey-examples)
@@ -65,10 +66,10 @@ npm install @io-orkes/conductor-javascript
 Workflows are definitions that reference task types. We'll build a workflow called `greetings` that runs one worker task and returns its output.
 
 ```typescript
-import { ConductorWorkflow } from "@io-orkes/conductor-javascript";
+import { ConductorWorkflow, simpleTask } from "@io-orkes/conductor-javascript";
 
 const workflow = new ConductorWorkflow(executor, "greetings")
-  .add(greet({ task_ref_name: "greet_ref", name: workflow.input("name") }))
+  .add(simpleTask("greet_ref", "greet", { name: "${workflow.input.name}" }))
   .outputParameters({ result: "${greet_ref.output.result}" });
 
 await workflow.register();
@@ -160,6 +161,58 @@ npx ts-node quickstart.ts
 
 That's it — you defined a worker, built a workflow, and executed it. Open the Conductor UI (default: [http://localhost:8080](http://localhost:8080)) to see the execution.
 
+## What You Can Build
+
+The SDK provides typed builders for common orchestration patterns. Here's a taste of what you can wire together:
+
+**HTTP calls from workflows** — call any API without writing a worker ([kitchensink.ts](examples/kitchensink.ts)):
+
+```typescript
+httpTask("call_api", {
+  uri: "https://api.example.com/orders/${workflow.input.orderId}",
+  method: "POST",
+  body: { items: "${workflow.input.items}" },
+  headers: { "Authorization": "Bearer ${workflow.input.token}" },
+})
+```
+
+**Wait between tasks** — pause a workflow for a duration or until a timestamp ([kitchensink.ts](examples/kitchensink.ts)):
+
+```typescript
+.add(simpleTask("step1_ref", "process_order", {...}))
+.add(waitTaskDuration("cool_down", "10s"))        // wait 10 seconds
+.add(simpleTask("step2_ref", "send_confirmation", {...}))
+```
+
+**Parallel execution (fork/join)** — fan out to multiple branches and join ([fork-join.ts](examples/advanced/fork-join.ts)):
+
+```typescript
+workflow.fork([
+  [simpleTask("email_ref", "send_email", {})],
+  [simpleTask("sms_ref", "send_sms", {})],
+  [simpleTask("push_ref", "send_push", {})],
+])
+```
+
+**Conditional branching** — route based on input values ([kitchensink.ts](examples/kitchensink.ts)):
+
+```typescript
+switchTask("route_ref", "${workflow.input.tier}", {
+  premium: [simpleTask("fast_ref", "fast_track", {})],
+  standard: [simpleTask("normal_ref", "standard_process", {})],
+})
+```
+
+**Sub-workflows** — compose workflows from smaller workflows ([sub-workflows.ts](examples/advanced/sub-workflows.ts)):
+
+```typescript
+const child = new ConductorWorkflow(executor, "payment_flow").add(...);
+const parent = new ConductorWorkflow(executor, "order_flow")
+  .add(child.toSubWorkflowTask("pay_ref"));
+```
+
+All of these are type-safe, composable, and registered to the server as JSON — workers can be in any language.
+
 ## Workers
 
 Workers are TypeScript functions that execute Conductor tasks. Decorate any function with `@worker` to register it as a worker (auto-discovered by `TaskHandler`) and use it as a workflow task.
@@ -234,19 +287,26 @@ async function validateOrder(task: Task) {
 - `throw new Error()` → Task status: `FAILED` (will retry)
 - `throw new NonRetryableException()` → Task status: `FAILED_WITH_TERMINAL_ERROR` (no retry)
 
-**TaskContext** — access per-task context from anywhere in the async call stack:
+**Long-running tasks with TaskContext** — return `IN_PROGRESS` to keep a task alive while an external process completes. Conductor will call back after the specified interval ([task-context.ts](examples/task-context.ts)):
 
 ```typescript
-import { getTaskContext } from "@io-orkes/conductor-javascript";
+import { worker, getTaskContext } from "@io-orkes/conductor-javascript";
 
-@worker({ taskDefName: "process" })
-async function process(task: Task) {
+@worker({ taskDefName: "process_video" })
+async function processVideo(task: Task) {
   const ctx = getTaskContext();
-  ctx?.addLog("Processing started");
-  ctx?.setCallbackAfter(30); // re-queue after 30 seconds
-  return { status: "IN_PROGRESS", callbackAfterSeconds: 30 };
+  ctx?.addLog("Starting video processing...");
+
+  if (!isComplete(task.inputData)) {
+    ctx?.setCallbackAfter(30); // check again in 30 seconds
+    return { status: "IN_PROGRESS", callbackAfterSeconds: 30 };
+  }
+
+  return { status: "COMPLETED", outputData: { url: "..." } };
 }
 ```
+
+`TaskContext` is also available for one-shot workers — use `ctx?.addLog()` to stream logs visible in the Conductor UI.
 
 **Event listeners** for observability:
 
@@ -298,73 +358,39 @@ await handler.startWorkers();
 // GET http://localhost:9090/health  — {"status":"UP"}
 ```
 
-Collects 19 metric types: poll counts, execution durations, error rates, output sizes, and more — with p50/p75/p90/p95/p99 quantiles.
+Collects 18 metric types: poll counts, execution durations, error rates, output sizes, and more — with p50/p75/p90/p95/p99 quantiles. See [METRICS.md](METRICS.md) for the full reference.
 
-## Workflows
+## Managing Workflow Executions
 
-Define workflows in TypeScript using the `ConductorWorkflow` builder:
-
-```typescript
-import { ConductorWorkflow, simpleTask, httpTask } from "@io-orkes/conductor-javascript";
-
-const workflow = new ConductorWorkflow(executor, "order_flow")
-  .add(simpleTask("validate_ref", "validate_order", {
-    orderId: "${workflow.input.orderId}",
-  }))
-  .add(httpTask("inventory_ref", {
-    uri: "https://api.example.com/check",
-    method: "POST",
-    body: { productId: "${workflow.input.productId}" },
-  }))
-  .fork([
-    [simpleTask("email_ref", "send_email", {})],
-    [simpleTask("sms_ref", "send_sms", {})],
-  ])
-  .timeoutSeconds(3600)
-  .outputParameters({ orderId: "${workflow.input.orderId}" });
-
-await workflow.register();
-```
-
-**Execute workflows:**
-
-```typescript
-// Synchronous (waits for completion)
-const run = await workflow.execute({ orderId: "ORDER-123" });
-console.log(run.output);
-
-// Asynchronous (returns workflow ID immediately)
-const workflowId = await workflow.startWorkflow({ orderId: "ORDER-123" });
-
-// Or use WorkflowExecutor directly
-const executor = clients.getWorkflowClient();
-const id = await executor.startWorkflow({ name: "order_flow", version: 1, input: { orderId: "ORDER-123" } });
-```
-
-**Manage running workflows and send signals:**
+Once a workflow is registered (see [What You Can Build](#what-you-can-build)), you can run and manage it through the full lifecycle:
 
 ```typescript
 const executor = clients.getWorkflowClient();
 
+// Start (async — returns immediately)
+const workflowId = await executor.startWorkflow({
+  name: "order_flow",
+  input: { orderId: "ORDER-123" },
+});
+
+// Execute (sync — waits for completion)
+const result = await workflow.execute({ orderId: "123" });
+
+// Lifecycle management
 await executor.pause(workflowId);
 await executor.resume(workflowId);
-await executor.terminate(workflowId, "no longer needed");
-await executor.retry(workflowId, false);
-await executor.restart(workflowId, false);
+await executor.terminate(workflowId, "cancelled by user");
+await executor.restart(workflowId);
+await executor.retry(workflowId);
 
-// Signal a WAIT task to complete
-await executor.signal(workflowId, TaskResultStatusEnum.COMPLETED, { result: "approved" });
+// Signal a running WAIT task
+await executor.signal(workflowId, TaskResultStatusEnum.COMPLETED, { approved: true });
+
+// Search workflows
+const results = await executor.search("workflowType = 'order_flow' AND status = 'RUNNING'");
 ```
 
-**Compose workflows** with sub-workflows:
-
-```typescript
-const childWorkflow = new ConductorWorkflow(executor, "child_flow")
-  .add(simpleTask("step_ref", "child_step", {}));
-
-const parentWorkflow = new ConductorWorkflow(executor, "parent_flow")
-  .add(childWorkflow.toSubWorkflowTask("child_ref"));
-```
+See [workflow-ops.ts](examples/workflow-ops.ts) for a runnable example covering all lifecycle operations.
 
 ## Troubleshooting
 
@@ -388,6 +414,7 @@ See the [Examples Guide](examples/README.md) for the full catalog. Key examples:
 | [function-calling.ts](examples/agentic-workflows/function-calling.ts) | LLM dynamically picks which worker to call | `npx ts-node examples/agentic-workflows/function-calling.ts` |
 | [fork-join.ts](examples/advanced/fork-join.ts) | Parallel branches with join synchronization | `npx ts-node examples/advanced/fork-join.ts` |
 | [sub-workflows.ts](examples/advanced/sub-workflows.ts) | Workflow composition with sub-workflows | `npx ts-node examples/advanced/sub-workflows.ts` |
+| [human-tasks.ts](examples/advanced/human-tasks.ts) | Human-in-the-loop: claim, update, complete | `npx ts-node examples/advanced/human-tasks.ts` |
 
 ## API Journey Examples
 
@@ -402,6 +429,8 @@ End-to-end examples covering all APIs for each domain:
 | [secrets.ts](examples/api-journeys/secrets.ts) | Secret APIs (12 calls) | `npx ts-node examples/api-journeys/secrets.ts` |
 | [integrations.ts](examples/api-journeys/integrations.ts) | Integration APIs (22 calls) | `npx ts-node examples/api-journeys/integrations.ts` |
 | [schemas.ts](examples/api-journeys/schemas.ts) | Schema APIs (10 calls) | `npx ts-node examples/api-journeys/schemas.ts` |
+| [applications.ts](examples/api-journeys/applications.ts) | Application APIs (20 calls) | `npx ts-node examples/api-journeys/applications.ts` |
+| [event-handlers.ts](examples/api-journeys/event-handlers.ts) | Event Handler APIs (18 calls) | `npx ts-node examples/api-journeys/event-handlers.ts` |
 
 ## AI & LLM Workflows
 
@@ -466,6 +495,7 @@ See [examples/agentic-workflows/](examples/agentic-workflows/) for all examples.
 | Document | Description |
 |----------|-------------|
 | [SDK Development Guide](SDK_DEVELOPMENT.md) | Architecture, patterns, pitfalls, testing |
+| [Metrics Reference](METRICS.md) | All 18 Prometheus metrics with descriptions |
 | [Breaking Changes](BREAKING_CHANGES.md) | v3.x migration guide |
 | [Workflow Management](docs/api-reference/workflow-executor.md) | Start, pause, resume, terminate, retry, search, signal |
 | [Task Management](docs/api-reference/task-client.md) | Task operations, logs, queue management |

@@ -4,6 +4,23 @@ import { retryFetch, wrapFetchWithRetry, applyTimeout } from "../fetchWithRetry"
 const createMockResponse = (status: number, body = ""): Response =>
   new Response(body, { status, statusText: `Status ${status}` });
 
+/** Create a 401/403 response with a token error code in the JSON body */
+const createTokenErrorResponse = (
+  status: 401 | 403,
+  errorCode: "EXPIRED_TOKEN" | "INVALID_TOKEN"
+): Response =>
+  new Response(
+    JSON.stringify({ error: errorCode, message: `Token ${errorCode}` }),
+    { status, statusText: `Status ${status}`, headers: { "Content-Type": "application/json" } }
+  );
+
+/** Create a 401/403 response for a permission error (no token error code) */
+const createPermissionErrorResponse = (status: 401 | 403): Response =>
+  new Response(
+    JSON.stringify({ error: "ACCESS_DENIED", message: "Insufficient permissions" }),
+    { status, statusText: `Status ${status}`, headers: { "Content-Type": "application/json" } }
+  );
+
 describe("fetchWithRetry", () => {
   let mockFetch: jest.MockedFunction<typeof fetch>;
 
@@ -166,12 +183,12 @@ describe("fetchWithRetry", () => {
   // ─── Auth failure (401/403) retry ──────────────────────────────────
 
   describe("auth failure (401/403) retry", () => {
-    it("should retry 401 with refreshed token", async () => {
+    it("should retry 401 EXPIRED_TOKEN with refreshed token", async () => {
       const onAuthFailure = jest.fn<() => Promise<string | undefined>>()
         .mockResolvedValue("new-token");
 
       mockFetch
-        .mockResolvedValueOnce(createMockResponse(401))
+        .mockResolvedValueOnce(createTokenErrorResponse(401, "EXPIRED_TOKEN"))
         .mockResolvedValueOnce(createMockResponse(200, "ok"));
 
       const result = await retryFetch("http://test.com", {}, mockFetch, {
@@ -187,12 +204,12 @@ describe("fetchWithRetry", () => {
       expect(new Headers(retryInit?.headers).get("X-Authorization")).toBe("new-token");
     });
 
-    it("should retry 403 with refreshed token", async () => {
+    it("should retry 403 INVALID_TOKEN with refreshed token", async () => {
       const onAuthFailure = jest.fn<() => Promise<string | undefined>>()
         .mockResolvedValue("new-token");
 
       mockFetch
-        .mockResolvedValueOnce(createMockResponse(403))
+        .mockResolvedValueOnce(createTokenErrorResponse(403, "INVALID_TOKEN"))
         .mockResolvedValueOnce(createMockResponse(200, "ok"));
 
       const result = await retryFetch("http://test.com", {}, mockFetch, {
@@ -203,25 +220,91 @@ describe("fetchWithRetry", () => {
       expect(onAuthFailure).toHaveBeenCalledTimes(1);
     });
 
-    it("should only retry auth failure once (no infinite loop)", async () => {
+    it("should NOT retry 403 permission error (no token refresh)", async () => {
       const onAuthFailure = jest.fn<() => Promise<string | undefined>>()
         .mockResolvedValue("new-token");
 
-      // Both the original and retry return 401
-      mockFetch.mockResolvedValue(createMockResponse(401));
+      mockFetch.mockResolvedValueOnce(createPermissionErrorResponse(403));
 
       const result = await retryFetch("http://test.com", {}, mockFetch, {
         onAuthFailure,
       });
 
-      // Returns the 401 from the retry attempt (doesn't loop)
+      // Should return the 403 immediately without refreshing or retrying
+      expect(result.status).toBe(403);
+      expect(onAuthFailure).not.toHaveBeenCalled();
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
+
+    it("should NOT retry 401 permission error (non-token error code)", async () => {
+      const onAuthFailure = jest.fn<() => Promise<string | undefined>>()
+        .mockResolvedValue("new-token");
+
+      mockFetch.mockResolvedValueOnce(createPermissionErrorResponse(401));
+
+      const result = await retryFetch("http://test.com", {}, mockFetch, {
+        onAuthFailure,
+      });
+
+      // Should return the 401 immediately without refreshing or retrying
+      expect(result.status).toBe(401);
+      expect(onAuthFailure).not.toHaveBeenCalled();
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
+
+    it("should retry 401 with non-JSON body (fallback: assume token error)", async () => {
+      const onAuthFailure = jest.fn<() => Promise<string | undefined>>()
+        .mockResolvedValue("new-token");
+
+      // 401 with non-JSON body — isTokenError falls back to true for 401
+      mockFetch
+        .mockResolvedValueOnce(createMockResponse(401, "Unauthorized"))
+        .mockResolvedValueOnce(createMockResponse(200, "ok"));
+
+      const result = await retryFetch("http://test.com", {}, mockFetch, {
+        onAuthFailure,
+      });
+
+      expect(result.status).toBe(200);
+      expect(onAuthFailure).toHaveBeenCalledTimes(1);
+    });
+
+    it("should NOT retry 403 with non-JSON body (fallback: assume permission error)", async () => {
+      const onAuthFailure = jest.fn<() => Promise<string | undefined>>()
+        .mockResolvedValue("new-token");
+
+      // 403 with non-JSON body — isTokenError falls back to false for 403
+      mockFetch.mockResolvedValueOnce(createMockResponse(403, "Forbidden"));
+
+      const result = await retryFetch("http://test.com", {}, mockFetch, {
+        onAuthFailure,
+      });
+
+      expect(result.status).toBe(403);
+      expect(onAuthFailure).not.toHaveBeenCalled();
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
+
+    it("should only retry auth failure once (no infinite loop)", async () => {
+      const onAuthFailure = jest.fn<() => Promise<string | undefined>>()
+        .mockResolvedValue("new-token");
+
+      // Both the original and retry return 401 EXPIRED_TOKEN
+      mockFetch.mockResolvedValue(createTokenErrorResponse(401, "EXPIRED_TOKEN"));
+
+      const result = await retryFetch("http://test.com", {}, mockFetch, {
+        onAuthFailure,
+      });
+
+      // Returns the 401 from the retry attempt (doesn't loop — retry response
+      // has the same body but isTokenError is only checked on the first response)
       expect(result.status).toBe(401);
       expect(onAuthFailure).toHaveBeenCalledTimes(1);
       expect(mockFetch).toHaveBeenCalledTimes(2);
     });
 
     it("should not retry auth failure when no onAuthFailure callback", async () => {
-      mockFetch.mockResolvedValue(createMockResponse(401));
+      mockFetch.mockResolvedValue(createTokenErrorResponse(401, "EXPIRED_TOKEN"));
 
       const result = await retryFetch("http://test.com", {}, mockFetch);
       expect(result.status).toBe(401);
@@ -232,7 +315,7 @@ describe("fetchWithRetry", () => {
       const onAuthFailure = jest.fn<() => Promise<string | undefined>>()
         .mockResolvedValue(undefined);
 
-      mockFetch.mockResolvedValue(createMockResponse(401));
+      mockFetch.mockResolvedValue(createTokenErrorResponse(401, "EXPIRED_TOKEN"));
 
       const result = await retryFetch("http://test.com", {}, mockFetch, {
         onAuthFailure,
@@ -247,7 +330,7 @@ describe("fetchWithRetry", () => {
         .mockResolvedValue("new-token");
 
       mockFetch
-        .mockResolvedValueOnce(createMockResponse(401))
+        .mockResolvedValueOnce(createTokenErrorResponse(401, "EXPIRED_TOKEN"))
         .mockResolvedValueOnce(createMockResponse(200));
 
       await retryFetch(
@@ -423,7 +506,7 @@ describe("fetchWithRetry", () => {
         .mockResolvedValue("new-token");
 
       mockFetch
-        .mockResolvedValueOnce(createMockResponse(401))
+        .mockResolvedValueOnce(createTokenErrorResponse(401, "EXPIRED_TOKEN"))
         .mockResolvedValueOnce(createMockResponse(200));
 
       const wrappedFetch = wrapFetchWithRetry(mockFetch, { onAuthFailure });

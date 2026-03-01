@@ -455,6 +455,36 @@ describe("handleAuth", () => {
       expect(await result!.refreshToken()).toBe("initial-token");
     });
 
+    it("should respect backoff and return stale token during backoff window", async () => {
+      let callCount = 0;
+      mockedGenerateToken.mockImplementation(async () => {
+        callCount++;
+        if (callCount === 1) return mockSuccess("initial-token");
+        return mockFailure();
+      });
+
+      // Disable background refresh to isolate refreshToken behavior
+      const result = await handleAuth(
+        mockClient as any, "key-id", "key-secret", 0, mockLogger
+      );
+
+      // First refresh fails -> consecutiveFailures=1, backoff=1s
+      const t1 = await result!.refreshToken();
+      expect(t1).toBe("initial-token"); // fell back to stale token
+      expect(callCount).toBe(2); // initial + one failed refresh
+
+      // Immediately calling again should be skipped due to backoff
+      const t2 = await result!.refreshToken();
+      expect(t2).toBe("initial-token"); // stale token, no API call
+      expect(callCount).toBe(2); // unchanged -- backoff skipped the call
+
+      // After backoff elapses (>1s), should try again
+      jest.advanceTimersByTime(1001);
+      const t3 = await result!.refreshToken();
+      expect(t3).toBe("initial-token"); // still fails, but tried
+      expect(callCount).toBe(3); // new attempt was made
+    });
+
     it("should reset consecutive failures on success", async () => {
       let callCount = 0;
       mockedGenerateToken.mockImplementation(async () => {

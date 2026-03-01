@@ -465,10 +465,18 @@ describe("Worker Advanced Features", () => {
         timestamp: new Date(),
       });
 
-      // Wait for file write
-      await new Promise((r) => setTimeout(r, 1500));
-
-      const content = await readFile(filePath, "utf-8");
+      // Poll until the file has expected content (or timeout after 5s)
+      const deadline = Date.now() + 5000;
+      let content = "";
+      while (Date.now() < deadline) {
+        try {
+          content = await readFile(filePath, "utf-8");
+          if (content.includes("conductor_worker_task_poll_total")) break;
+        } catch {
+          /* file may not exist yet */
+        }
+        await new Promise((r) => setTimeout(r, 200));
+      }
       expect(content).toContain("conductor_worker_task_poll_total");
       expect(content).toContain("file_test");
 

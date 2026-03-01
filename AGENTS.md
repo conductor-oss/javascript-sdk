@@ -86,6 +86,9 @@ After every code change, you **must** run the following before considering the w
    npx ts-node -P tsconfig.json --transpile-only examples/workflow-ops.ts
    npx ts-node -P tsconfig.json --transpile-only examples/workers-e2e.ts
    npx ts-node -P tsconfig.json --transpile-only examples/perf-test.ts
+   npx ts-node -P tsconfig.json --transpile-only examples/advanced/human-tasks.ts
+   npx ts-node -P tsconfig.json --transpile-only examples/api-journeys/applications.ts
+   npx ts-node -P tsconfig.json --transpile-only examples/api-journeys/event-handlers.ts
    ```
 
 Do not skip any example. If an example fails for reasons unrelated to your change (e.g., server down), note it explicitly.
@@ -203,6 +206,23 @@ public async someMethod(args): Promise<T> {
 - Builder exports: `fooTask`, `fooBarTask` (camelCase + "Task" suffix)
 - Client classes: `FooClient` (PascalCase + "Client" suffix)
 - Enums from LLM types: `Role.USER`, `LLMProvider.OPEN_AI` (use enum values, not raw strings)
+
+## Documentation Maintenance
+
+### Metrics Documentation (METRICS.md)
+
+When adding, removing, or renaming metrics in `src/sdk/worker/metrics/MetricsCollector.ts`:
+1. Update `METRICS.md` to reflect the change (name, type, labels, description)
+2. Ensure both `MetricsCollector.toPrometheusText()` and `PrometheusRegistry.createMetrics()` are updated in sync — missing a summary/counter in either causes silent data loss
+3. Update the metric count in the METRICS.md overview section
+4. Add or update the corresponding direct recording method documentation if applicable
+
+### SDK_NEW_LANGUAGE_GUIDE.md
+
+When adding new client methods, builders, worker features, or examples:
+1. Update the relevant feature accounting table in `SDK_NEW_LANGUAGE_GUIDE.md` (Section 4)
+2. Update method/feature counts in the Phase 4 client inventory
+3. If adding a new metric, update Section 5.6 (Metrics Collector) tables
 
 ## Test Coverage
 

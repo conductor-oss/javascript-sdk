@@ -8,3 +8,8 @@ export interface PollIntervalOptions {
   pollInterval: number;
   maxPollTimes: number;
 }
+
+export interface ClaimTaskOptions {
+  overrideAssignment?: boolean;
+  withTemplate?: boolean;
+}

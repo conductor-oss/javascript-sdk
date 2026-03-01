@@ -150,14 +150,17 @@ export class MetricsCollector implements TaskRunnerEventsListener {
   }
 
   private startFileWriter(filePath: string, intervalMs: number): void {
-    this._fileTimer = setInterval(async () => {
+    const doWrite = async () => {
       try {
         const { writeFile } = await import("node:fs/promises");
         await writeFile(filePath, this.toPrometheusText(), "utf-8");
       } catch {
         // Silently ignore file write errors
       }
-    }, intervalMs);
+    };
+    // Immediate first write, then periodic
+    void doWrite();
+    this._fileTimer = setInterval(doWrite, intervalMs);
     // Unref so the timer doesn't prevent process exit
     if (typeof this._fileTimer === "object" && "unref" in this._fileTimer) {
       this._fileTimer.unref();

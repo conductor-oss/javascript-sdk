@@ -75,7 +75,7 @@ export class PrometheusRegistry {
     const Summary = promClient.Summary;
 
     // Labelled counters
-    const counterDefs: Array<{ key: string; name: string; help: string; labels: string[] }> = [
+    const counterDefs: { key: string; name: string; help: string; labels: string[] }[] = [
       { key: "poll_total", name: `${p}_task_poll_total`, help: "Total task polls", labels: ["task_type"] },
       { key: "poll_error_total", name: `${p}_task_poll_error_total`, help: "Total task poll errors", labels: ["task_type"] },
       { key: "execute_total", name: `${p}_task_execute_total`, help: "Total task executions", labels: ["task_type"] },
@@ -99,9 +99,10 @@ export class PrometheusRegistry {
     }
 
     // Summaries
-    const summaryDefs: Array<{ key: string; name: string; help: string; labels: string[] }> = [
+    const summaryDefs: { key: string; name: string; help: string; labels: string[] }[] = [
       { key: "poll_time", name: `${p}_task_poll_time`, help: "Task poll duration (ms)", labels: ["task_type"] },
       { key: "execute_time", name: `${p}_task_execute_time`, help: "Task execution duration (ms)", labels: ["task_type"] },
+      { key: "update_time", name: `${p}_task_update_time`, help: "Task update duration (ms)", labels: ["task_type"] },
       { key: "result_size", name: `${p}_task_result_size_bytes`, help: "Task result size (bytes)", labels: ["task_type"] },
       { key: "wf_input_size", name: `${p}_workflow_input_size_bytes`, help: "Workflow input size (bytes)", labels: ["workflow_type"] },
       { key: "api_request", name: `${p}_http_api_client_request`, help: "API request duration (ms)", labels: ["endpoint"] },

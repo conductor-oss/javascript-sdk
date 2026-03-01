@@ -100,6 +100,7 @@ export const handleAuth = async (
 
   const refreshToken = async (): Promise<string | undefined> => {
     if (isOss) return undefined;
+    if (shouldBackoff()) return token; // respect backoff, fall back to current token
     try {
       const newToken = await getNewTokenGuarded();
       consecutiveFailures = 0;

@@ -59,6 +59,36 @@ export const applyTimeout = (
   return { ...init, signal: controller.signal };
 };
 
+/**
+ * Check if a 401/403 response indicates a token problem (expired or invalid)
+ * vs a permission error that should NOT trigger a token refresh.
+ *
+ * The Conductor server returns error codes in the JSON body:
+ *   { "error": "EXPIRED_TOKEN", "message": "..." }  -> token problem, refresh
+ *   { "error": "INVALID_TOKEN", "message": "..." }  -> token problem, refresh
+ *   { "error": "...", "message": "..." }             -> permission denied, don't refresh
+ *
+ * Matches the Python SDK behavior: only refresh+retry for EXPIRED_TOKEN or INVALID_TOKEN.
+ */
+const TOKEN_ERROR_CODES = new Set(["EXPIRED_TOKEN", "INVALID_TOKEN"]);
+
+const isTokenError = async (response: Response): Promise<boolean> => {
+  try {
+    // Clone to avoid consuming the body for downstream callers
+    const body = await response.clone().json();
+    const errorCode =
+      body && typeof body === "object" && "error" in body
+        ? String(body.error)
+        : "";
+    return TOKEN_ERROR_CODES.has(errorCode);
+  } catch {
+    // If the body isn't JSON or can't be parsed, treat 401 as a likely token error
+    // (safe default: attempt one refresh). 403 without a parseable body is more
+    // likely a permission error, so don't retry.
+    return response.status === 401;
+  }
+};
+
 /** Add ±10% jitter to prevent thundering herd on retries */
 const withJitter = (delayMs: number): number => {
   const jitter = delayMs * 0.1 * (2 * Math.random() - 1);
@@ -121,8 +151,14 @@ export const retryFetch = async (
       return rateLimitResponse;
     }
 
-    // Auth failure retry (401/403) - retry once with refreshed token
-    if ((response.status === 401 || response.status === 403) && onAuthFailure) {
+    // Auth failure retry (401/403) - only refresh+retry when the error is a token
+    // problem (EXPIRED_TOKEN or INVALID_TOKEN). Permission errors should propagate
+    // immediately without wasting a token refresh + retry round-trip.
+    if (
+      (response.status === 401 || response.status === 403) &&
+      onAuthFailure &&
+      (await isTokenError(response))
+    ) {
       const newToken = await onAuthFailure();
       if (newToken) {
         // Clone request with updated auth header

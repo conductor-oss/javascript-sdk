@@ -72,7 +72,7 @@ export class AuthorizationClient {
       | "CLUSTER_CONFIG"
       | "WEBHOOK",
     id: string
-  ): Promise<{ [key: string]: unknown }> {
+  ): Promise<Record<string, unknown>> {
     try {
       const { data } = await AuthorizationResource.getPermissions({
         path: { type, id },
@@ -114,7 +114,7 @@ export class AuthorizationClient {
   public async upsertUser(
     id: string,
     request: UpsertUserRequest
-  ): Promise<{ [key: string]: unknown }> {
+  ): Promise<ExtendedConductorUser> {
     try {
       const { data } = await UserResource.upsertUser({
         path: { id },
@@ -122,7 +122,7 @@ export class AuthorizationClient {
         client: this._client,
         throwOnError: true,
       });
-      return data;
+      return data as ExtendedConductorUser;
     } catch (error: unknown) {
       handleSdkError(error, `Failed to upsert user '${id}'`);
     }
@@ -133,14 +133,14 @@ export class AuthorizationClient {
    * @param id - The user ID
    * @returns The user object
    */
-  public async getUser(id: string): Promise<{ [key: string]: unknown }> {
+  public async getUser(id: string): Promise<ExtendedConductorUser> {
     try {
       const { data } = await UserResource.getUser({
         path: { id },
         client: this._client,
         throwOnError: true,
       });
-      return data;
+      return data as ExtendedConductorUser;
     } catch (error: unknown) {
       handleSdkError(error, `Failed to get user '${id}'`);
     }
@@ -191,7 +191,7 @@ export class AuthorizationClient {
     userId: string,
     type: string,
     id: string
-  ): Promise<{ [key: string]: unknown }> {
+  ): Promise<Record<string, unknown>> {
     try {
       const { data } = await UserResource.checkPermissions({
         path: { userId },
@@ -215,14 +215,14 @@ export class AuthorizationClient {
    */
   public async getGrantedPermissionsForUser(
     userId: string
-  ): Promise<{ [key: string]: unknown }> {
+  ): Promise<GrantedAccessResponse> {
     try {
       const { data } = await UserResource.getGrantedPermissions({
         path: { userId },
         client: this._client,
         throwOnError: true,
       });
-      return data;
+      return data as GrantedAccessResponse;
     } catch (error: unknown) {
       handleSdkError(
         error,
@@ -242,7 +242,7 @@ export class AuthorizationClient {
   public async upsertGroup(
     id: string,
     request: UpsertGroupRequest
-  ): Promise<{ [key: string]: unknown }> {
+  ): Promise<ExtendedGroup> {
     try {
       const { data } = await GroupResource.upsertGroup({
         path: { id },
@@ -250,7 +250,7 @@ export class AuthorizationClient {
         client: this._client,
         throwOnError: true,
       });
-      return data;
+      return data as ExtendedGroup;
     } catch (error: unknown) {
       handleSdkError(error, `Failed to upsert group '${id}'`);
     }
@@ -261,14 +261,14 @@ export class AuthorizationClient {
    * @param id - The group ID
    * @returns The group object
    */
-  public async getGroup(id: string): Promise<{ [key: string]: unknown }> {
+  public async getGroup(id: string): Promise<ExtendedGroup> {
     try {
       const { data } = await GroupResource.getGroup({
         path: { id },
         client: this._client,
         throwOnError: true,
       });
-      return data;
+      return data as ExtendedGroup;
     } catch (error: unknown) {
       handleSdkError(error, `Failed to get group '${id}'`);
     }
@@ -357,14 +357,14 @@ export class AuthorizationClient {
    */
   public async getUsersInGroup(
     id: string
-  ): Promise<{ [key: string]: unknown }> {
+  ): Promise<ExtendedConductorUser[]> {
     try {
       const { data } = await GroupResource.getUsersInGroup({
         path: { id },
         client: this._client,
         throwOnError: true,
       });
-      return data;
+      return data as unknown as ExtendedConductorUser[];
     } catch (error: unknown) {
       handleSdkError(error, `Failed to get users in group '${id}'`);
     }

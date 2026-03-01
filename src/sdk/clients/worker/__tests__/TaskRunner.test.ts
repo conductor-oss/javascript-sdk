@@ -268,160 +268,171 @@ describe("NonRetryableException handling", () => {
 
 describe("Task update retry logic", () => {
   test("Should retry failed task updates with exponential backoff", async () => {
-    const mockClient = createMockClient();
-    const workerID = "worker-id";
-    const onError = jest.fn();
+    jest.useFakeTimers();
+    try {
+      const mockClient = createMockClient();
+      const workerID = "worker-id";
+      const onError = jest.fn();
 
-    const args: RunnerArgs = {
-      worker: {
-        taskDefName: "test",
-        execute: async ({ inputData }) => {
-          return {
-            outputData: inputData,
-            status: "COMPLETED",
-          };
+      const args: RunnerArgs = {
+        worker: {
+          taskDefName: "test",
+          execute: async ({ inputData }) => {
+            return {
+              outputData: inputData,
+              status: "COMPLETED",
+            };
+          },
         },
-      },
-      options: {
-        pollInterval: 10,
-        domain: "",
-        concurrency: 1,
-        workerID,
-      },
-      logger: mockLogger,
-      client: mockClient,
-      onError,
-      maxRetries: 2,
-    };
-
-    const workflowInstanceId = "fake-workflow-id";
-    const taskId = "fake-task-id";
-
-    const mockTask: Task = {
-      taskId,
-      workflowInstanceId,
-      status: "IN_PROGRESS",
-      inputData: {},
-    };
-
-    const mockBatchPoll = TaskResource.batchPoll as jest.MockedFunction<
-      typeof TaskResource.batchPoll
-    >;
-    // Return task once, then return empty array
-    mockBatchPoll
-      .mockResolvedValueOnce({
-        data: [mockTask],
-        request: {} as Request,
-        response: {} as Response,
-      } as Awaited<ReturnType<typeof TaskResource.batchPoll>>)
-      .mockResolvedValue({
-        data: [],
-        request: {} as Request,
-        response: {} as Response,
-      } as Awaited<ReturnType<typeof TaskResource.batchPoll>>);
-
-    const mockUpdateTask = TaskResource.updateTaskV2 as jest.MockedFunction<
-      typeof TaskResource.updateTaskV2
-    >;
-
-    // Fail first attempt, succeed on second (return null = no chained task)
-    mockUpdateTask
-      .mockRejectedValueOnce(new Error("Network error"))
-      .mockResolvedValue({ data: null } as Awaited<ReturnType<typeof TaskResource.updateTaskV2>>);
-
-    const runner = new TaskRunner(args);
-    activeRunners.push(runner);
-    runner.startPolling();
-
-    await new Promise((r) => setTimeout(() => r(true), 15000));
-    runner.stopPolling();
-
-    // Should have been called at least twice (1 failure + 1 success)
-    // May be called more if poller dispatches additional tasks during wait
-    expect(mockUpdateTask.mock.calls.length).toBeGreaterThanOrEqual(2);
-    expect(onError).toHaveBeenCalledTimes(1);
-  }, 20000);
-
-  test("Should publish TaskUpdateFailure event after all retries exhausted", async () => {
-    const mockClient = createMockClient();
-    const workerID = "worker-id";
-    const onTaskUpdateFailure = jest.fn<(event: TaskUpdateFailure) => void>();
-    const eventListener: TaskRunnerEventsListener = {
-      onTaskUpdateFailure,
-    };
-
-    const args: RunnerArgs = {
-      worker: {
-        taskDefName: "test",
-        execute: async ({ inputData }) => {
-          return {
-            outputData: inputData,
-            status: "COMPLETED",
-          };
+        options: {
+          pollInterval: 10,
+          domain: "",
+          concurrency: 1,
+          workerID,
         },
-      },
-      options: {
-        pollInterval: 10,
-        domain: "",
-        concurrency: 1,
-        workerID,
-      },
-      logger: mockLogger,
-      client: mockClient,
-      maxRetries: 2,
-      eventListeners: [eventListener],
-    };
+        logger: mockLogger,
+        client: mockClient,
+        onError,
+        maxRetries: 2,
+      };
 
-    const workflowInstanceId = "fake-workflow-id";
-    const taskId = "fake-task-id";
+      const workflowInstanceId = "fake-workflow-id";
+      const taskId = "fake-task-id";
 
-    const mockTask: Task = {
-      taskId,
-      workflowInstanceId,
-      status: "IN_PROGRESS",
-      inputData: {},
-    };
-
-    const mockBatchPoll = TaskResource.batchPoll as jest.MockedFunction<
-      typeof TaskResource.batchPoll
-    >;
-    // Return task once, then return empty array
-    mockBatchPoll
-      .mockResolvedValueOnce({
-        data: [mockTask],
-        request: {} as Request,
-        response: {} as Response,
-      } as Awaited<ReturnType<typeof TaskResource.batchPoll>>)
-      .mockResolvedValue({
-        data: [],
-        request: {} as Request,
-        response: {} as Response,
-      } as Awaited<ReturnType<typeof TaskResource.batchPoll>>);
-
-    const mockUpdateTask = TaskResource.updateTaskV2 as jest.MockedFunction<
-      typeof TaskResource.updateTaskV2
-    >;
-
-    // Fail all attempts
-    mockUpdateTask.mockRejectedValue(new Error("Persistent network error"));
-
-    const runner = new TaskRunner(args);
-    activeRunners.push(runner);
-    runner.startPolling();
-
-    await new Promise((r) => setTimeout(() => r(true), 25000));
-    runner.stopPolling();
-
-    // Should have tried at least maxRetries times (may be more if task re-polled)
-    expect(mockUpdateTask.mock.calls.length).toBeGreaterThanOrEqual(2);
-    expect(onTaskUpdateFailure).toHaveBeenCalledWith(
-      expect.objectContaining({
+      const mockTask: Task = {
         taskId,
         workflowInstanceId,
-        retryCount: 2,
-      })
-    );
-  }, 30000);
+        status: "IN_PROGRESS",
+        inputData: {},
+      };
+
+      const mockBatchPoll = TaskResource.batchPoll as jest.MockedFunction<
+        typeof TaskResource.batchPoll
+      >;
+      // Return task once, then return empty array
+      mockBatchPoll
+        .mockResolvedValueOnce({
+          data: [mockTask],
+          request: {} as Request,
+          response: {} as Response,
+        } as Awaited<ReturnType<typeof TaskResource.batchPoll>>)
+        .mockResolvedValue({
+          data: [],
+          request: {} as Request,
+          response: {} as Response,
+        } as Awaited<ReturnType<typeof TaskResource.batchPoll>>);
+
+      const mockUpdateTask = TaskResource.updateTaskV2 as jest.MockedFunction<
+        typeof TaskResource.updateTaskV2
+      >;
+
+      // Fail first attempt, succeed on second (return null = no chained task)
+      mockUpdateTask
+        .mockRejectedValueOnce(new Error("Network error"))
+        .mockResolvedValue({ data: null } as Awaited<ReturnType<typeof TaskResource.updateTaskV2>>);
+
+      const runner = new TaskRunner(args);
+      activeRunners.push(runner);
+      runner.startPolling();
+
+      // Advance fake timers to let polling, execution, retry backoff all complete
+      await jest.advanceTimersByTimeAsync(15000);
+      runner.stopPolling();
+
+      // Should have been called at least twice (1 failure + 1 success)
+      expect(mockUpdateTask.mock.calls.length).toBeGreaterThanOrEqual(2);
+      expect(onError).toHaveBeenCalledTimes(1);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  test("Should publish TaskUpdateFailure event after all retries exhausted", async () => {
+    jest.useFakeTimers();
+    try {
+      const mockClient = createMockClient();
+      const workerID = "worker-id";
+      const onTaskUpdateFailure = jest.fn<(event: TaskUpdateFailure) => void>();
+      const eventListener: TaskRunnerEventsListener = {
+        onTaskUpdateFailure,
+      };
+
+      const args: RunnerArgs = {
+        worker: {
+          taskDefName: "test",
+          execute: async ({ inputData }) => {
+            return {
+              outputData: inputData,
+              status: "COMPLETED",
+            };
+          },
+        },
+        options: {
+          pollInterval: 10,
+          domain: "",
+          concurrency: 1,
+          workerID,
+        },
+        logger: mockLogger,
+        client: mockClient,
+        maxRetries: 2,
+        eventListeners: [eventListener],
+      };
+
+      const workflowInstanceId = "fake-workflow-id";
+      const taskId = "fake-task-id";
+
+      const mockTask: Task = {
+        taskId,
+        workflowInstanceId,
+        status: "IN_PROGRESS",
+        inputData: {},
+      };
+
+      const mockBatchPoll = TaskResource.batchPoll as jest.MockedFunction<
+        typeof TaskResource.batchPoll
+      >;
+      // Return task once, then return empty array
+      mockBatchPoll
+        .mockResolvedValueOnce({
+          data: [mockTask],
+          request: {} as Request,
+          response: {} as Response,
+        } as Awaited<ReturnType<typeof TaskResource.batchPoll>>)
+        .mockResolvedValue({
+          data: [],
+          request: {} as Request,
+          response: {} as Response,
+        } as Awaited<ReturnType<typeof TaskResource.batchPoll>>);
+
+      const mockUpdateTask = TaskResource.updateTaskV2 as jest.MockedFunction<
+        typeof TaskResource.updateTaskV2
+      >;
+
+      // Fail all attempts
+      mockUpdateTask.mockRejectedValue(new Error("Persistent network error"));
+
+      const runner = new TaskRunner(args);
+      activeRunners.push(runner);
+      runner.startPolling();
+
+      // Advance fake timers enough for all retries (backoff: 0ms, 10s, 20s)
+      await jest.advanceTimersByTimeAsync(35000);
+      runner.stopPolling();
+
+      // Should have tried at least maxRetries times (may be more if task re-polled)
+      expect(mockUpdateTask.mock.calls.length).toBeGreaterThanOrEqual(2);
+      expect(onTaskUpdateFailure).toHaveBeenCalledWith(
+        expect.objectContaining({
+          taskId,
+          workflowInstanceId,
+          retryCount: 2,
+        })
+      );
+    } finally {
+      jest.useRealTimers();
+    }
+  });
 });
 
 describe("Multiple tasks handling", () => {

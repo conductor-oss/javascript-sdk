@@ -231,9 +231,9 @@ describe("createConductorClient integration", () => {
         const headers = new Headers(init?.headers);
         const authToken = headers.get("X-Authorization");
 
-        // First API call returns 401 (simulating expired token)
+        // First API call returns 401 with EXPIRED_TOKEN error code
         if (apiCallCount === 1 && authToken === "jwt-1") {
-          return jsonResponse({ message: "Token expired" }, 401);
+          return jsonResponse({ error: "EXPIRED_TOKEN", message: "Token expired" }, 401);
         }
 
         // After refresh, succeed
