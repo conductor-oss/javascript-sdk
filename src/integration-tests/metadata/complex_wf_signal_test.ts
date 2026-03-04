@@ -22,7 +22,7 @@ export const getComplexSignalTestWfDef = (date: number) => {
         forkTasks: [],
         startDelay: 0,
         joinOn: [],
-        optional: false,
+        optional: true, // optional so tests work without httpbin Docker service
         defaultExclusiveJoinTask: [],
         asyncComplete: false,
         loopOver: [],

@@ -110,7 +110,12 @@ async function main() {
   }
 
   const humanTaskEntry = pendingTasks[0];
-  const humanTaskId = humanTaskEntry.taskId!;
+  const humanTaskId = humanTaskEntry?.taskId;
+  if (!humanTaskId) {
+    console.log("  Human task has no taskId. Exiting.");
+    await handler.stopWorkers();
+    process.exit(1);
+  }
   console.log(`  Found human task: ${humanTaskId}`);
   console.log(`  State: ${humanTaskEntry.state}`);
   console.log(`  Display name: ${humanTaskEntry.humanTaskDef?.displayName}\n`);

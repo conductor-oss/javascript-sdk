@@ -27,6 +27,7 @@
       "name": "James Stuart Milne"
     }
   ],
+  "sideEffects": false,
   "engines": {
     "node": ">=18"
   },

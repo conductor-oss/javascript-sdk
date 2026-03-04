@@ -1,4 +1,4 @@
-import { expect, describe, it, beforeEach, afterEach } from "@jest/globals";
+import { expect, describe, it, beforeEach, afterEach, jest } from "@jest/globals";
 import { resolveOrkesConfig } from "../resolveOrkesConfig";
 import {
   DEFAULT_CONNECT_TIMEOUT_MS,
@@ -20,11 +20,14 @@ describe("resolveOrkesConfig", () => {
     "CONDUCTOR_TLS_KEY_PATH",
     "CONDUCTOR_TLS_CA_PATH",
     "CONDUCTOR_PROXY_URL",
+    "CONDUCTOR_TLS_INSECURE",
+    "CONDUCTOR_DISABLE_HTTP2",
   ];
 
   beforeEach(() => {
     for (const key of envKeys) {
       savedEnv[key] = process.env[key];
+      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
       delete process.env[key];
     }
   });
@@ -34,6 +37,7 @@ describe("resolveOrkesConfig", () => {
       if (savedEnv[key] !== undefined) {
         process.env[key] = savedEnv[key];
       } else {
+        // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
         delete process.env[key];
       }
     }
@@ -140,6 +144,8 @@ describe("resolveOrkesConfig", () => {
       expect(result.tlsKeyPath).toBeUndefined();
       expect(result.tlsCaPath).toBeUndefined();
       expect(result.proxyUrl).toBeUndefined();
+      expect(result.tlsInsecure).toBeUndefined();
+      expect(result.disableHttp2).toBeUndefined();
     });
   });
 
@@ -147,7 +153,7 @@ describe("resolveOrkesConfig", () => {
 
   describe("config passthrough", () => {
     it("should pass through logger from config", () => {
-      const logger = { info: () => {}, error: () => {}, debug: () => {} };
+      const logger = { info: jest.fn(), error: jest.fn(), debug: jest.fn() };
       const result = resolveOrkesConfig({ logger });
       expect(result.logger).toBe(logger);
     });
@@ -225,6 +231,68 @@ describe("resolveOrkesConfig", () => {
       process.env.CONDUCTOR_PROXY_URL = "http://env-proxy:8080";
       const result = resolveOrkesConfig({ proxyUrl: "http://config-proxy:8080" });
       expect(result.proxyUrl).toBe("http://env-proxy:8080");
+    });
+  });
+
+  // ─── Boolean env var parsing (tlsInsecure, disableHttp2) ──────────
+
+  describe("boolean env var parsing", () => {
+    it('should parse "true" as true for tlsInsecure', () => {
+      process.env.CONDUCTOR_TLS_INSECURE = "true";
+      expect(resolveOrkesConfig({}).tlsInsecure).toBe(true);
+    });
+
+    it('should parse "1" as true for tlsInsecure', () => {
+      process.env.CONDUCTOR_TLS_INSECURE = "1";
+      expect(resolveOrkesConfig({}).tlsInsecure).toBe(true);
+    });
+
+    it('should parse "TRUE" (case-insensitive) as true', () => {
+      process.env.CONDUCTOR_TLS_INSECURE = "TRUE";
+      expect(resolveOrkesConfig({}).tlsInsecure).toBe(true);
+    });
+
+    it('should parse "false" as false', () => {
+      process.env.CONDUCTOR_TLS_INSECURE = "false";
+      expect(resolveOrkesConfig({}).tlsInsecure).toBe(false);
+    });
+
+    it('should parse "0" as false', () => {
+      process.env.CONDUCTOR_TLS_INSECURE = "0";
+      expect(resolveOrkesConfig({}).tlsInsecure).toBe(false);
+    });
+
+    it("should fall back to config when env var is empty string", () => {
+      process.env.CONDUCTOR_TLS_INSECURE = "";
+      expect(resolveOrkesConfig({ tlsInsecure: true }).tlsInsecure).toBe(true);
+    });
+
+    it("should fall back to config when env var is not set", () => {
+      expect(resolveOrkesConfig({ tlsInsecure: true }).tlsInsecure).toBe(true);
+    });
+
+    it("should prefer env var over config for tlsInsecure", () => {
+      process.env.CONDUCTOR_TLS_INSECURE = "true";
+      expect(resolveOrkesConfig({ tlsInsecure: false }).tlsInsecure).toBe(true);
+    });
+
+    it('should parse "true" as true for disableHttp2', () => {
+      process.env.CONDUCTOR_DISABLE_HTTP2 = "true";
+      expect(resolveOrkesConfig({}).disableHttp2).toBe(true);
+    });
+
+    it('should parse "1" as true for disableHttp2', () => {
+      process.env.CONDUCTOR_DISABLE_HTTP2 = "1";
+      expect(resolveOrkesConfig({}).disableHttp2).toBe(true);
+    });
+
+    it("should resolve disableHttp2 from config", () => {
+      expect(resolveOrkesConfig({ disableHttp2: true }).disableHttp2).toBe(true);
+    });
+
+    it("should prefer env var over config for disableHttp2", () => {
+      process.env.CONDUCTOR_DISABLE_HTTP2 = "true";
+      expect(resolveOrkesConfig({ disableHttp2: false }).disableHttp2).toBe(true);
     });
   });
 });

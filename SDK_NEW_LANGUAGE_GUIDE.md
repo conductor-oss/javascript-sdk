@@ -5,11 +5,13 @@ Comprehensive, language-agnostic guide for building a Conductor SDK in any langu
 ## Table of Contents
 
 1. [Overview & Approach](#1-overview--approach)
-2. [Architecture](#2-architecture)
-3. [Implementation Phases](#3-implementation-phases)
-4. [Feature Accounting Table](#4-feature-accounting-table)
-5. [Key Design Decisions](#5-key-design-decisions)
+2. [Quick Start: Minimal Viable SDK](#2-quick-start-minimal-viable-sdk)
+3. [Architecture](#3-architecture)
+4. [Implementation Phases](#4-implementation-phases)
+5. [Feature Accounting Table](#5-feature-accounting-table)
 6. [Validation Criteria](#6-validation-criteria)
+7. [Appendix A: Key Design Decisions](#appendix-a-key-design-decisions)
+8. [Appendix B: Server Behavior Quirks](#appendix-b-server-behavior-quirks)
 
 ---
 
@@ -36,9 +38,62 @@ To extract requirements for your new SDK:
 3. **Python SDK** — Secondary reference for naming conventions and feature parity validation. The Python SDK uses snake_case equivalents of the TypeScript camelCase names.
 4. **Conductor Server** — Some APIs are not in the OpenAPI spec (e.g., rate limit API). Some server behaviors differ between OSS and Enterprise. Test against a real server.
 
+### OpenAPI Spec Location
+
+- **In the TypeScript SDK:** `src/open-api/spec/spec.json`
+- **From a running server:** `GET {serverUrl}/api/swagger.json` or `/api/openapi.json`
+- **Regeneration (TS SDK):** Config at `openapi-ts.config.ts`, run `npm run generate-openapi-layer`
+- **Coverage:** 272 operations across 192 endpoints. Some APIs (rate limits, V2 task update) are NOT in the spec — see Phase 4 for raw HTTP endpoints.
+
+### Implementation Order
+
+Each phase builds on the previous. The dependency chain is:
+
+```
+Phase 1 (Types) → Phase 2 (Transport) → Phase 3 (Factory) → Phase 4 (Clients)
+                                                                  ↓
+                                                    Phase 5 (Workers) + Phase 6 (Builders)
+                                                                  ↓
+                                              Phase 7 (Examples) + Phase 8 (Tests)
+                                                                  ↓
+                                                       Phase 9 (Packaging)
+```
+
 ---
 
-## 2. Architecture
+## 2. Quick Start: Minimal Viable SDK
+
+Before building the full SDK, get a working end-to-end loop. These 3 milestones give you a functional SDK skeleton that you can expand into the full implementation.
+
+### Milestone 1: First API Call
+
+1. Set up project structure and build tooling for your language
+2. Implement `OrkesApiConfig` with `serverUrl`, `keyId`, and `keySecret` fields
+3. Implement token generation: `POST /api/token` with `{ keyId, keySecret }` → JWT response
+4. Attach the token as `X-Authorization` header (NOT `Authorization`)
+5. Make a raw HTTP call: `GET /api/workflow/{workflowId}` to retrieve a workflow
+6. Verify you can successfully retrieve data from a running Conductor server
+
+### Milestone 2: First Worker
+
+1. Implement batch task polling: `GET /api/tasks/poll/batch/{taskType}?count=1&timeout=100`
+2. Implement task result update: `POST /api/tasks` with `TaskResult` body
+3. Write a simple poll loop: poll → execute user function → update result
+4. Register a task definition via `POST /api/metadata/taskdefs`, start a workflow, watch your worker complete it
+5. Verify the workflow completes with the expected output
+
+### Milestone 3: First Builder
+
+1. Implement `simpleTask(refName, taskDefName, inputParameters)` → `WorkflowTask` object
+2. Implement `ConductorWorkflow.add(task)` and `toWorkflowDef()` → `WorkflowDef` object
+3. Build a workflow programmatically, register it via `POST /api/metadata/workflow`, and execute it
+4. Verify the builder-created workflow runs identically to a hand-crafted one
+
+After these 3 milestones, proceed to the full implementation phases below.
+
+---
+
+## 3. Architecture
 
 ### Layered Architecture
 
@@ -48,7 +103,7 @@ To extract requirements for your new SDK:
 │  OrkesClients factory, createConductorClient, exports   │
 ├─────────────────────────────────────────────────────────┤
 │                    Builders Layer                        │
-│  ConductorWorkflow DSL, 47 task builders,               │
+│  ConductorWorkflow DSL, 41 task builders,               │
 │  workflow() + taskDefinition() factories                 │
 ├─────────────────────────────────────────────────────────┤
 │                  Worker Framework                        │
@@ -80,7 +135,7 @@ To extract requirements for your new SDK:
 
 ---
 
-## 3. Implementation Phases
+## 4. Implementation Phases
 
 Each phase builds on the previous. Implement in order.
 
@@ -170,13 +225,15 @@ Conductor OSS does not have the `/api/token` endpoint. When the SDK attempts to 
 5. **Return the client normally** — all API calls proceed without authentication
 
 ```
-Initial token request → POST /api/token
+Initial token request → POST /api/token (up to 3 attempts with backoff)
   ├─ 200 + token → Orkes Enterprise, proceed with auth
-  ├─ 404         → Conductor OSS, disable auth entirely
-  └─ Other error → Throw ConductorSdkError (fatal, cannot proceed)
+  ├─ 404         → Conductor OSS, disable auth entirely (no retry)
+  └─ Other error → Retry up to 3 times with exponential backoff (1s, 2s), then throw ConductorSdkError
 ```
 
-**CRITICAL:** The 404 check must happen on the initial token request during client creation. If the initial request fails with anything other than 404 (e.g., 500, network error), it is a fatal error — throw immediately, do not silently disable auth.
+**Initial token retry:** The initial token request retries up to 3 times with the same exponential backoff as background refresh (2^(n-1) × 1s). This handles transient network failures during startup. A 404 (OSS detection) is never retried — it immediately disables auth.
+
+**CRITICAL:** The 404 check must happen on the initial token request during client creation. If the initial request fails after all retries with anything other than 404 (e.g., 500, network error), it is a fatal error — throw immediately, do not silently disable auth.
 
 ##### 2.1.3 Token Caching and TTL
 
@@ -415,7 +472,7 @@ actual_delay = max(0, round(delay + jitter))
 
 #### 2.4 Environment Variables
 
-All 11 configuration variables. Env vars override config object values.
+All 13 configuration variables. Env vars override config object values.
 
 | Variable | Purpose | Default |
 |----------|---------|---------|
@@ -430,6 +487,36 @@ All 11 configuration variables. Env vars override config object values.
 | `CONDUCTOR_TLS_KEY_PATH` | Client TLS private key path | — |
 | `CONDUCTOR_TLS_CA_PATH` | CA bundle path | — |
 | `CONDUCTOR_PROXY_URL` | HTTP/HTTPS proxy URL | — |
+| `CONDUCTOR_TLS_INSECURE` | Disable TLS certificate verification (`true`/`1`) | `false` |
+| `CONDUCTOR_DISABLE_HTTP2` | Force HTTP/1.1 instead of HTTP/2 (`true`/`1`) | `false` |
+
+#### 2.5 Logger Interface
+
+The SDK uses a pluggable logger interface so users can integrate with any logging framework (pino, winston, log4j, slog, etc.).
+
+**Interface:**
+
+```
+ConductorLogger {
+  debug(...args): void
+  info(...args): void
+  warn(...args): void
+  error(...args): void
+}
+```
+
+**Implementations to provide:**
+
+| Implementation | Description |
+|----------------|-------------|
+| `DefaultLogger` | Console-based with configurable level (DEBUG, INFO, WARN, ERROR) and optional tags |
+| `noopLogger` | Silent no-op — all methods are empty. Useful for tests and silent operation |
+
+**Log levels:** DEBUG=10, INFO=30, WARN=40, ERROR=60. Only emit messages at or above the configured level.
+
+**Usage:** Logger is passed via config to `createConductorClient` and propagated to all components (auth handler, workers, metrics). Users can substitute any compatible logger.
+
+**Reference:** `src/sdk/helpers/logger.ts`
 
 ### Phase 3: Client Factory
 
@@ -467,7 +554,7 @@ Both resolve config from env vars + config object, set up auth, retry, and optio
 
 ### Phase 4: Domain Clients
 
-**Goal:** 14 typed client classes wrapping OpenAPI operations with error context. 200 total public methods.
+**Goal:** 14 typed client classes wrapping OpenAPI operations with error context. 199 total public methods.
 
 #### 4.1 Universal Client Method Pattern
 
@@ -496,22 +583,77 @@ Rules:
 
 #### 4.2 Error Handling
 
+**ConductorSdkError class:**
+- Extends the language's base Error/Exception class
+- Fields: `message` (string with combined context + original error), `cause` (original inner error)
+- Name prefix: `"[Conductor SDK Error]"`
+
+**handleSdkError function (two strategies):**
+
 ```
-ConductorSdkError {
-    message: "Failed to get workflow 'abc': 404 Not Found"
-    cause: original error
+// Strategy 1: throw (default) — return type is `never`
+handleSdkError(error, "Failed to get workflow 'abc'")
+// → throws ConductorSdkError("Failed to get workflow 'abc': 404 Not Found")
+
+// Strategy 2: log — return type is `void`
+handleSdkError(error, "Failed to get workflow 'abc'", "log")
+// → console.error("[Conductor SDK Error]: Failed to get workflow 'abc': 404 Not Found")
+```
+
+**Message composition:** `"${customMessage}: ${error.message}"` — the custom context is prepended to the original error message. If either part is absent, use whichever is available.
+
+**NonRetryableException:** Separate exception class thrown from worker functions to mark a task as `FAILED_WITH_TERMINAL_ERROR`. Conductor will NOT retry the task regardless of the task definition's retry settings. Use for permanent failures (bad input, resource not found, business rule violations).
+
+**Reference:** `src/sdk/helpers/errors.ts`
+
+#### 4.3 Raw HTTP Endpoints (Not in OpenAPI Spec)
+
+These APIs require direct HTTP calls — they are not in `spec.json` and cannot be generated from the OpenAPI spec:
+
+| Operation | Method | Path | Body | Response |
+|-----------|--------|------|------|----------|
+| Set workflow rate limit | PUT | `/api/metadata/workflow/{name}/rateLimit` | `ExtendedRateLimitConfig` JSON | 200 OK |
+| Get workflow rate limit | GET | `/api/metadata/workflow/{name}/rateLimit` | — | `ExtendedRateLimitConfig` or 404 |
+| Remove workflow rate limit | DELETE | `/api/metadata/workflow/{name}/rateLimit` | — | 200 OK |
+| V2 task update (with poll) | POST | `/api/tasks/{taskId}/v2` | TaskResult + poll params | Next task batch |
+
+**ExtendedRateLimitConfig type:**
+```json
+{
+  "rateLimitPerFrequency": 100,
+  "rateLimitFrequencyInSeconds": 60,
+  "concurrentExecLimit": 10
 }
 ```
 
-Two strategies:
-- `handleSdkError(error, context)` — throws (default). Return type is `never`.
-- `handleSdkError(error, context, "log")` — logs to stderr. Return type is `void`.
+The V2 task update endpoint combines the task result update with the next poll in a single HTTP round-trip. See Phase 5 (Worker Framework) for how this is used.
 
-#### 4.3 Client Method Inventory (200 methods)
+#### 4.4 Human Task Lifecycle
+
+Human tasks pause workflow execution until a human completes an action. The `HumanExecutor` client manages this lifecycle:
+
+**Flow:**
+```
+Workflow reaches HUMAN task → task becomes PENDING in human task queue
+  ├─ Search/poll for available tasks (getTasksByFilter, search, pollSearch)
+  ├─ Claim the task (locks it to prevent others from claiming)
+  │     ├─ claimTaskAsExternalUser(taskId, assignee) — for email-based external users
+  │     └─ claimTaskAsConductorUser(taskId) — for authenticated Conductor users
+  ├─ Review input, fill form, provide output (updateTaskOutput)
+  └─ Complete the task (completeTask) → workflow resumes
+```
+
+**Release:** If a claimed task cannot be completed, call `releaseTask(taskId)` to return it to the queue for others.
+
+**Templates:** Human tasks can reference form templates (via `TemplateClient.registerTemplate()`). Templates define the UI form structure for human task completion. Retrieve templates via `getTemplateByNameVersion()` or `getTemplateById()`.
+
+**Poll-search pattern:** For building human task UIs, use `pollSearch()` which combines search + long-poll for real-time task availability updates without constant polling.
+
+#### 4.5 Client Method Inventory (199 methods)
 
 | Client | Methods | Key Operations |
 |--------|---------|---------------|
-| **WorkflowExecutor** | 29 | register, start, execute, pause, resume, terminate, retry, restart, reRun, signal, search, getWorkflow, getExecution, getWorkflowStatus, updateTask, updateTaskByRefName, updateTaskSync, updateState, updateVariables, deleteWorkflow, getByCorrelationIds, testWorkflow, goBackToTask, goBackToFirstTaskMatchingType, startWorkflowByName, skipTasksFromWorkflow, signalAsync, startWorkflows, getTask |
+| **WorkflowExecutor** | 28 | register, start, execute, pause, resume, terminate, retry, restart, reRun, signal, search, getWorkflow, getExecution, getWorkflowStatus, updateTask, updateTaskByRefName, updateTaskSync, updateState, updateVariables, deleteWorkflow, getByCorrelationIds, testWorkflow, goBackToTask, goBackToFirstTaskMatchingType, startWorkflowByName, skipTasksFromWorkflow, signalAsync, getTask |
 | **TaskClient** | 8 | search, getTask, updateTaskResult, addTaskLog, getTaskLogs, getQueueSizeForTask, getTaskPollData, updateTaskSync |
 | **MetadataClient** | 21 | registerTask, registerTasks, updateTask, getTask, unregisterTask, getAllTaskDefs, registerWorkflowDef, getWorkflowDef, unregisterWorkflow, getAllWorkflowDefs, add/delete/get/setWorkflowTag(s), add/delete/get/setTaskTag(s), set/get/removeWorkflowRateLimit |
 | **SchedulerClient** | 14 | saveSchedule, search, getSchedule, pauseSchedule, resumeSchedule, deleteSchedule, getAllSchedules, getNextFewSchedules, pauseAllSchedules, resumeAllSchedules, requeueAllExecutionRecords, set/get/deleteSchedulerTags |
@@ -525,7 +667,7 @@ Two strategies:
 | **HumanExecutor** | 11 | getTasksByFilter, search, pollSearch, getTaskById, claimTaskAsExternalUser, claimTaskAsConductorUser, releaseTask, getTemplateByNameVersion, getTemplateById, updateTaskOutput, completeTask |
 | **TemplateClient** | 1 | registerTemplate |
 | **ServiceRegistryClient** | 14 | getRegisteredServices, removeService, getService, open/closeCircuitBreaker, getCircuitBreakerStatus, addOrUpdateService, addOrUpdateServiceMethod, removeMethod, get/set/deleteProtoData, getAllProtos, discover |
-| **Total** | **200** | |
+| **Total** | **199** | |
 
 ### Phase 5: Worker Framework
 
@@ -591,8 +733,10 @@ Poll for tasks (batch)
        │    ├─ NonRetryableException → FAILED_WITH_TERMINAL_ERROR
        │    ├─ Other exception → FAILED + reasonForIncompletion
        │    └─ IN_PROGRESS return → callback after N seconds
-       ├─ Update task via V2 endpoint (update + poll in one call)
-       └─ Dispatch events (execution completed/failed, update completed/failed)
+       ├─ Update task via V2 endpoint (with retry — see 5.13)
+       │    ├─ Success → Dispatch TaskUpdateCompleted event
+       │    └─ All retries failed → Dispatch TaskUpdateFailure event (includes taskResult for recovery)
+       └─ Dispatch events (execution completed/failed)
 ```
 
 **V2 Task Update:** Uses `POST /tasks/{taskId}/v2` which combines task result update with the next poll in a single round-trip. This reduces latency for sequential task execution.
@@ -1010,13 +1154,145 @@ Throw from a worker function to mark the task as `FAILED_WITH_TERMINAL_ERROR`. C
 throw NonRetryableException("Order not found - permanent failure")
 ```
 
+#### 5.12 Schema Validation
+
+Workers can define JSON schemas for input/output validation, enabling compile-time-like safety for task data contracts.
+
+**Decorator-based schema:**
+```
+@worker({
+    taskDefName: "my_task",
+    inputSchema: { type: "object", properties: { orderId: { type: "string" } }, required: ["orderId"] },
+    outputSchema: { type: "object", properties: { status: { type: "string" } } }
+})
+function myWorker(task: Task) → TaskResult
+```
+
+**Auto-generated schema:** Use a `@schemaField()` decorator (or language equivalent annotation) to auto-generate JSON schemas from typed class properties. This avoids manual schema writing.
+
+**Strict mode:** When `strictSchema: true`, the SDK validates task input against the schema before executing the worker function. Invalid input causes the task to fail immediately with a validation error, without running the worker code.
+
+**Task definition registration:** When `registerTaskDef: true` (or `overwriteTaskDef: true` by default), the SDK updates the task definition on the server with the input/output schema from the decorator on worker startup. This keeps schema definitions in code as the source of truth.
+
+**Reference:** `src/sdk/worker/schema/generateJsonSchema.ts`, `src/sdk/worker/schema/decorators.ts`
+
+#### 5.13 Task Update Failure Handling
+
+When a worker executes a task successfully but the result update to the server fails (network error, server down, timeout), the task result is at risk of being lost. The SDK MUST provide a robust failure handling pipeline with retry, event notification, and user-extensible recovery.
+
+**Update Failure Pipeline:**
+
+```
+Worker executes task → Build TaskResult
+  │
+  ├─ POST /tasks/{taskId}/v2 (attempt 1)
+  │     ├─ Success → Publish TaskUpdateCompleted event, continue
+  │     └─ Failure ↓
+  │
+  ├─ Retry with backoff (attempts 2..MAX_RETRIES)
+  │     ├─ Backoff: retryCount * 10,000ms (10s, 20s, 30s, 40s)
+  │     ├─ Success on any retry → Publish TaskUpdateCompleted, continue
+  │     └─ All retries exhausted ↓
+  │
+  ├─ Publish TaskUpdateFailure event (INCLUDES full taskResult for recovery)
+  ├─ Call onError callback (if registered)
+  ├─ Increment taskUpdateFailureTotal metric
+  └─ Log critical error and continue polling
+```
+
+**MAX_RETRIES:** 4 (configurable via TaskRunner constructor). Backoff formula: `retryCount * 10_000ms`.
+
+**CRITICAL: The TaskUpdateFailure event MUST include the full `taskResult` payload.** This is the only way for users to recover from a permanent update failure. Without the payload, the task result is irrecoverably lost — the worker did the work, but the server never received the result.
+
+**TaskUpdateFailure event fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `taskType` | string | Task definition name |
+| `taskId` | string | Task ID that failed to update |
+| `workerId` | string | Worker that executed the task |
+| `workflowInstanceId` | string? | Parent workflow ID |
+| `cause` | Error | The error from the last retry attempt |
+| `retryCount` | number | Total retry attempts made |
+| `taskResult` | TaskResult | **The full result payload** — enables recovery |
+| `timestamp` | Date | When the final failure occurred |
+
+**User-facing hooks (two levels):**
+
+1. **Event listener (full context):** Register a `TaskRunnerEventsListener` with an `onTaskUpdateFailure()` method. Receives the complete `TaskUpdateFailure` event including the `taskResult`. Use this for recovery (persist to DB, dead-letter queue, replay later).
+
+2. **Error callback (lightweight):** Register an `onError` callback on `TaskHandler`. Receives `(error, task)` but NOT the `taskResult`. Use this for logging/alerting only, not recovery.
+
+**Registration:**
+```
+listener = {
+    onTaskUpdateFailure(event):
+        // Handle the failure — persist result, alert, retry externally
+        persistToDatabase(event.taskId, event.taskResult)
+        alertOps("Task update failed", event)
+}
+
+handler = TaskHandler({
+    client,
+    eventListeners: [listener],   // Receives TaskUpdateFailure with full payload
+    onError: (error, task) => {   // Lightweight — no taskResult, just error + task
+        log.error("Worker error", error, task?.taskId)
+    }
+})
+```
+
+**Recovery patterns:**
+
+```
+// Pattern 1: Persist to database for manual recovery
+onTaskUpdateFailure(event):
+    db.insert({
+        taskId: event.taskId,
+        workflowId: event.workflowInstanceId,
+        result: event.taskResult,    // Full payload for replay
+        error: event.cause.message,
+        timestamp: event.timestamp
+    })
+    alertOps("Task update failed permanently", event)
+
+// Pattern 2: Write to local file (simple, no external deps)
+onTaskUpdateFailure(event):
+    appendToFile("/var/conductor/failed-updates.jsonl",
+        JSON.stringify({ taskId: event.taskId, result: event.taskResult }))
+
+// Pattern 3: Push to dead-letter queue for automated replay
+onTaskUpdateFailure(event):
+    deadLetterQueue.push({
+        endpoint: "/tasks/" + event.taskId,
+        body: event.taskResult,
+        retryAfter: 60_000  // Retry in 1 minute
+    })
+```
+
+**Why this matters in production:**
+
+Without update failure handling, a network blip between your worker and the Conductor server causes:
+1. Worker executed the task (possibly with side effects like sending an email)
+2. Result never reaches the server → server thinks the task is still in progress
+3. Server eventually times out the task → schedules it for retry
+4. Worker executes the task AGAIN → duplicate side effects (double email)
+
+With proper handling:
+1. Worker executes the task
+2. Update fails → SDK retries 4 times with backoff
+3. Still failing → `TaskUpdateFailure` event fires with the full result
+4. Your listener persists the result → ops team or automation can replay it
+5. No duplicate execution needed
+
+**Reference:** `src/sdk/clients/worker/TaskRunner.ts` (updateTaskWithRetry), `src/sdk/clients/worker/events/types.ts` (TaskUpdateFailure)
+
 ### Phase 6: Builders
 
 **Goal:** Fluent DSL for constructing workflows and tasks programmatically.
 
 #### 6.1 ConductorWorkflow Builder
 
-Fluent builder with 25 methods:
+Fluent builder with 26 methods:
 
 | Method | Description |
 |--------|-------------|
@@ -1050,7 +1326,7 @@ Fluent builder with 25 methods:
 
 **Important:** `ConductorWorkflow.register()` defaults to `overwrite=true`, but `MetadataClient.registerWorkflowDef()` defaults to `overwrite=false`.
 
-#### 6.2 Core Task Builders (22 functions from 18 files)
+#### 6.2 Core Task Builders (26 functions from 21 files)
 
 All builders follow the convention: **first argument is always `taskReferenceName`**.
 
@@ -1109,6 +1385,35 @@ All builders follow the convention: **first argument is always `taskReferenceNam
 |----------|-------------|
 | `workflow(name, tasks)` | Create a minimal WorkflowDef |
 | `taskDefinition(config)` | Create a TaskDef with sensible defaults |
+
+#### 6.5 Workflow Expression Syntax
+
+Conductor uses `${...}` expressions (dollar-brace, NOT JavaScript template literals) to reference data within workflow definitions:
+
+| Expression | Meaning |
+|------------|---------|
+| `${workflow.input.fieldName}` | Workflow input parameter |
+| `${workflow.output.fieldName}` | Workflow output parameter |
+| `${taskRefName.output.fieldName}` | Output from a completed task |
+| `${taskRefName.input.fieldName}` | Input that was passed to a task |
+
+**Builder helpers on ConductorWorkflow:**
+- `workflow.input("fieldName")` → returns the string `"${workflow.input.fieldName}"`
+- `workflow.output("fieldName")` → returns the string `"${workflow.output.fieldName}"`
+
+These helpers prevent typos in expression strings and make workflow definitions more readable.
+
+**Usage in task input parameters:**
+```
+const wf = new ConductorWorkflow(executor, "my_workflow")
+  .add(simpleTask("step1", "process_order", {
+    orderId: wf.input("orderId"),       // → "${workflow.input.orderId}"
+    config: wf.input("config")          // → "${workflow.input.config}"
+  }))
+  .add(simpleTask("step2", "send_email", {
+    result: "${step1.output.result}"     // Reference previous task output
+  }))
+```
 
 ### Phase 7: Examples
 
@@ -1186,7 +1491,7 @@ One per domain area, demonstrating complete CRUD lifecycle:
 
 #### 8.1 Unit Tests
 
-Co-located with source code in `__tests__/` directories. ~470 tests covering:
+Co-located with source code in `__tests__/` directories. Target ~470+ test cases covering:
 
 | Area | Test Files | Focus |
 |------|-----------|-------|
@@ -1245,13 +1550,70 @@ Against a real Conductor server. 22 test files:
 - Version gating: Skip tests for features not available on the server version
 - Error paths: Every client gets negative tests (not-found, invalid input)
 
+#### 8.5 CI/CD Setup
+
+**Test environments:**
+- **Unit tests:** Run locally, no server needed (mock HTTP calls)
+- **Integration tests:** Require a running Conductor server
+  - Env var `CONDUCTOR_SERVER_URL` for server address
+  - Env var `ORKES_BACKEND_VERSION` for version-gated tests (v4 vs v5)
+
+**CI pipeline stages:**
+1. Lint — static analysis and code style
+2. Unit tests — all `__tests__/` directories
+3. Build — compile and bundle
+4. Integration tests — against test server (may run in a separate pipeline)
+5. Publish — on release tags (npm, PyPI, Maven Central, etc.)
+
+**Resource naming in tests:** Use `sdktest_{thing}_{timestamp}` pattern (lowercase, underscores) for all created resources. The timestamp suffix prevents collisions when tests run in parallel or when cleanup from a previous run failed.
+
+**Cleanup pattern:** In teardown/afterAll, wrap each resource deletion in an individual try/catch so one failed deletion doesn't prevent cleanup of remaining resources:
+
+```
+afterAll:
+    try: deleteWorkflow(wfName)       catch: log warning
+    try: deleteTaskDef(taskName)      catch: log warning
+    try: deleteSchedule(schedName)    catch: log warning
+    // Each deletion is independent
+```
+
+### Phase 9: Packaging & Distribution
+
+**Goal:** Prepare the SDK for publication and consumption.
+
+#### 9.1 Module Structure
+
+- **Public API surface:** Single entry point (index file) re-exporting all clients, builders, types, worker utilities, and factory functions
+- **Internal modules:** HTTP layer, OpenAPI-generated code, and transport internals should NOT be part of the public API. Users should interact only through domain clients and builders
+- **Type exports:** All request/response types, enums, config interfaces, and error classes must be importable by users
+
+#### 9.2 Build Targets
+
+- Provide both ESM and CommonJS output (or your language's equivalent dual-format) if applicable
+- Target the minimum supported version of your language runtime (e.g., Node 18+, Python 3.9+, Java 11+)
+- Include source maps / debug symbols for development builds
+- Minification is generally NOT recommended for SDK packages — readability of stack traces matters
+
+#### 9.3 Documentation
+
+| Document | Purpose |
+|----------|---------|
+| `README.md` | Quick start, installation, basic usage examples |
+| `METRICS.md` | All Prometheus metrics with names, types, labels, and descriptions |
+| `CHANGELOG.md` | Version history with breaking changes highlighted |
+| API reference | Auto-generated from source (TypeDoc, Sphinx, Javadoc, etc.) |
+
+#### 9.4 Versioning
+
+Follow semantic versioning (semver). Breaking changes to the public API require a major version bump. New client methods, builders, or configuration options are minor version bumps.
+
 ---
 
-## 4. Feature Accounting Table
+## 5. Feature Accounting Table
 
 Track implementation progress with this checklist. Mark each feature as: `[ ]` Not started, `[~]` In progress, `[x]` Complete.
 
-### 4.1 HTTP Client Layer + Transport
+### 5.1 HTTP Client Layer + Transport
 
 | # | Feature | Status | Notes |
 |---|---------|--------|-------|
@@ -1290,8 +1652,10 @@ Track implementation progress with this checklist. Mark each feature as: `[ ]` N
 | T30 | 11 environment variables | [ ] | See table in Phase 2 |
 | T31 | Config object overrides env vars | [ ] | |
 | T32 | Server URL normalization (strip / and /api) | [ ] | |
+| T33 | Logger interface (ConductorLogger) | [ ] | debug, info, warn, error |
+| T34 | DefaultLogger + noopLogger implementations | [ ] | |
 
-### 4.2 Client Factory
+### 5.2 Client Factory
 
 | # | Feature | Status | Notes |
 |---|---------|--------|-------|
@@ -1300,41 +1664,40 @@ Track implementation progress with this checklist. Mark each feature as: `[ ]` N
 | F3 | `orkesConductorClient` alias | [ ] | Convention for tests |
 | F4 | 14 domain client getters on OrkesClients | [ ] | |
 
-### 4.3 Domain Clients — WorkflowExecutor (29 methods)
+### 5.3 Domain Clients — WorkflowExecutor (28 methods)
 
 | # | Method | Status | Notes |
 |---|--------|--------|-------|
 | WE1 | `registerWorkflow(override, workflow)` | [ ] | |
 | WE2 | `startWorkflow(workflowRequest)` | [ ] | |
 | WE3 | `executeWorkflow(request, name, version, requestId, waitUntilTaskRef?)` | [ ] | Synchronous execution |
-| WE4 | `startWorkflows(workflowsRequest)` | [ ] | Batch start |
-| WE5 | `goBackToTask(workflowId, taskFinderPredicate, overrides?)` | [ ] | |
-| WE6 | `goBackToFirstTaskMatchingType(workflowId, taskType)` | [ ] | |
-| WE7 | `getWorkflow(workflowId, includeTasks, retry?)` | [ ] | Built-in retry on 500/404/403 |
-| WE8 | `getWorkflowStatus(workflowId, includeOutput, includeVariables)` | [ ] | Lighter response |
-| WE9 | `getExecution(workflowId, includeTasks?)` | [ ] | No retry |
-| WE10 | `pause(workflowId)` | [ ] | |
-| WE11 | `reRun(workflowId, rerunRequest?)` | [ ] | |
-| WE12 | `restart(workflowId, useLatestDefinitions)` | [ ] | |
-| WE13 | `resume(workflowId)` | [ ] | |
-| WE14 | `retry(workflowId, resumeSubworkflowTasks)` | [ ] | |
-| WE15 | `search(start, size, query, freeText, sort?, skipCache?)` | [ ] | |
-| WE16 | `skipTasksFromWorkflow(workflowId, taskRefName, skipRequest)` | [ ] | |
-| WE17 | `terminate(workflowId, reason)` | [ ] | |
-| WE18 | `updateTask(taskId, workflowId, taskStatus, outputData)` | [ ] | |
-| WE19 | `updateTaskByRefName(taskRefName, workflowId, status, taskOutput)` | [ ] | |
-| WE20 | `getTask(taskId)` | [ ] | |
-| WE21 | `updateTaskSync(taskRefName, workflowId, status, taskOutput, workerId?)` | [ ] | |
-| WE22 | `signal(workflowId, status, taskOutput, returnStrategy?)` | [ ] | All 4 return strategies |
-| WE23 | `signalAsync(workflowId, status, taskOutput)` | [ ] | |
-| WE24 | `deleteWorkflow(workflowId, archiveWorkflow?)` | [ ] | |
-| WE25 | `getByCorrelationIds(request, includeClosed?, includeTasks?)` | [ ] | |
-| WE26 | `testWorkflow(testRequest)` | [ ] | |
-| WE27 | `updateVariables(workflowId, variables)` | [ ] | |
-| WE28 | `updateState(workflowId, updateRequest, requestId, waitUntilTaskRef?, waitForSeconds?)` | [ ] | |
-| WE29 | `startWorkflowByName(name, input, version?, correlationId?, priority?)` | [ ] | |
+| WE4 | `goBackToTask(workflowId, taskFinderPredicate, overrides?)` | [ ] | |
+| WE5 | `goBackToFirstTaskMatchingType(workflowId, taskType)` | [ ] | |
+| WE6 | `getWorkflow(workflowId, includeTasks, retry?)` | [ ] | Built-in retry on 500/404/403 |
+| WE7 | `getWorkflowStatus(workflowId, includeOutput, includeVariables)` | [ ] | Lighter response |
+| WE8 | `getExecution(workflowId, includeTasks?)` | [ ] | No retry |
+| WE9 | `pause(workflowId)` | [ ] | |
+| WE10 | `reRun(workflowId, rerunRequest?)` | [ ] | |
+| WE11 | `restart(workflowId, useLatestDefinitions)` | [ ] | |
+| WE12 | `resume(workflowId)` | [ ] | |
+| WE13 | `retry(workflowId, resumeSubworkflowTasks)` | [ ] | |
+| WE14 | `search(start, size, query, freeText, sort?, skipCache?)` | [ ] | |
+| WE15 | `skipTasksFromWorkflow(workflowId, taskRefName, skipRequest)` | [ ] | |
+| WE16 | `terminate(workflowId, reason)` | [ ] | |
+| WE17 | `updateTask(taskId, workflowId, taskStatus, outputData)` | [ ] | |
+| WE18 | `updateTaskByRefName(taskRefName, workflowId, status, taskOutput)` | [ ] | |
+| WE19 | `getTask(taskId)` | [ ] | |
+| WE20 | `updateTaskSync(taskRefName, workflowId, status, taskOutput, workerId?)` | [ ] | |
+| WE21 | `signal(workflowId, status, taskOutput, returnStrategy?)` | [ ] | All 4 return strategies |
+| WE22 | `signalAsync(workflowId, status, taskOutput)` | [ ] | |
+| WE23 | `deleteWorkflow(workflowId, archiveWorkflow?)` | [ ] | |
+| WE24 | `getByCorrelationIds(request, includeClosed?, includeTasks?)` | [ ] | |
+| WE25 | `testWorkflow(testRequest)` | [ ] | |
+| WE26 | `updateVariables(workflowId, variables)` | [ ] | |
+| WE27 | `updateState(workflowId, updateRequest, requestId, waitUntilTaskRef?, waitForSeconds?)` | [ ] | |
+| WE28 | `startWorkflowByName(name, input, version?, correlationId?, priority?)` | [ ] | |
 
-### 4.4 Domain Clients — TaskClient (8 methods)
+### 5.4 Domain Clients — TaskClient (8 methods)
 
 | # | Method | Status | Notes |
 |---|--------|--------|-------|
@@ -1347,7 +1710,7 @@ Track implementation progress with this checklist. Mark each feature as: `[ ]` N
 | TC7 | `getTaskPollData(taskType)` | [ ] | |
 | TC8 | `updateTaskSync(workflowId, taskRefName, status, output, workerId?)` | [ ] | |
 
-### 4.5 Domain Clients — MetadataClient (21 methods)
+### 5.5 Domain Clients — MetadataClient (21 methods)
 
 | # | Method | Status | Notes |
 |---|--------|--------|-------|
@@ -1373,7 +1736,7 @@ Track implementation progress with this checklist. Mark each feature as: `[ ]` N
 | MC20 | `getWorkflowRateLimit(name)` | [ ] | Raw HTTP |
 | MC21 | `removeWorkflowRateLimit(name)` | [ ] | Raw HTTP |
 
-### 4.6 Domain Clients — SchedulerClient (14 methods)
+### 5.6 Domain Clients — SchedulerClient (14 methods)
 
 | # | Method | Status | Notes |
 |---|--------|--------|-------|
@@ -1392,7 +1755,7 @@ Track implementation progress with this checklist. Mark each feature as: `[ ]` N
 | SC13 | `getSchedulerTags(name)` | [ ] | |
 | SC14 | `deleteSchedulerTags(tags, name)` | [ ] | |
 
-### 4.7 Domain Clients — AuthorizationClient (19 methods)
+### 5.7 Domain Clients — AuthorizationClient (19 methods)
 
 | # | Method | Status | Notes |
 |---|--------|--------|-------|
@@ -1416,7 +1779,7 @@ Track implementation progress with this checklist. Mark each feature as: `[ ]` N
 | AC18 | `removeUsersFromGroup(groupId, userIds)` | [ ] | |
 | AC19 | `getGrantedPermissionsForGroup(groupId)` | [ ] | |
 
-### 4.8 Domain Clients — SecretClient (9 methods)
+### 5.8 Domain Clients — SecretClient (9 methods)
 
 | # | Method | Status | Notes |
 |---|--------|--------|-------|
@@ -1430,7 +1793,7 @@ Track implementation progress with this checklist. Mark each feature as: `[ ]` N
 | SE8 | `getSecretTags(key)` | [ ] | |
 | SE9 | `deleteSecretTags(tags, key)` | [ ] | |
 
-### 4.9 Domain Clients — SchemaClient (6 methods)
+### 5.9 Domain Clients — SchemaClient (6 methods)
 
 | # | Method | Status | Notes |
 |---|--------|--------|-------|
@@ -1441,7 +1804,7 @@ Track implementation progress with this checklist. Mark each feature as: `[ ]` N
 | SH5 | `deleteSchema(name, version)` | [ ] | |
 | SH6 | `deleteSchemaByName(name)` | [ ] | |
 
-### 4.10 Domain Clients — IntegrationClient (20 methods)
+### 5.10 Domain Clients — IntegrationClient (20 methods)
 
 | # | Method | Status | Notes |
 |---|--------|--------|-------|
@@ -1466,7 +1829,7 @@ Track implementation progress with this checklist. Mark each feature as: `[ ]` N
 | IC19 | `getProviderTags(provider)` | [ ] | |
 | IC20 | `deleteProviderTags(provider, tags)` | [ ] | |
 
-### 4.11 Domain Clients — PromptClient (9 methods)
+### 5.11 Domain Clients — PromptClient (9 methods)
 
 | # | Method | Status | Notes |
 |---|--------|--------|-------|
@@ -1480,7 +1843,7 @@ Track implementation progress with this checklist. Mark each feature as: `[ ]` N
 | PC8 | `setPromptTags(name, tags)` | [ ] | |
 | PC9 | `deletePromptTags(name, tags)` | [ ] | |
 
-### 4.12 Domain Clients — ApplicationClient (17 methods)
+### 5.12 Domain Clients — ApplicationClient (17 methods)
 
 | # | Method | Status | Notes |
 |---|--------|--------|-------|
@@ -1502,7 +1865,7 @@ Track implementation progress with this checklist. Mark each feature as: `[ ]` N
 | AP16 | `addApplicationTags(applicationId, tags)` | [ ] | |
 | AP17 | `addApplicationTag(applicationId, tag)` | [ ] | |
 
-### 4.13 Domain Clients — EventClient (22 methods)
+### 5.13 Domain Clients — EventClient (22 methods)
 
 | # | Method | Status | Notes |
 |---|--------|--------|-------|
@@ -1529,7 +1892,7 @@ Track implementation progress with this checklist. Mark each feature as: `[ ]` N
 | EC21 | `getEventHandlersWithStats(from?)` | [ ] | |
 | EC22 | `getEventMessages(event, from?)` | [ ] | |
 
-### 4.14 Domain Clients — HumanExecutor (11 methods)
+### 5.14 Domain Clients — HumanExecutor (11 methods)
 
 | # | Method | Status | Notes |
 |---|--------|--------|-------|
@@ -1545,13 +1908,13 @@ Track implementation progress with this checklist. Mark each feature as: `[ ]` N
 | HE10 | `updateTaskOutput(taskId, requestBody)` | [ ] | |
 | HE11 | `completeTask(taskId, requestBody?)` | [ ] | |
 
-### 4.15 Domain Clients — TemplateClient (1 method)
+### 5.15 Domain Clients — TemplateClient (1 method)
 
 | # | Method | Status | Notes |
 |---|--------|--------|-------|
 | TM1 | `registerTemplate(template, asNewVersion?)` | [ ] | |
 
-### 4.16 Domain Clients — ServiceRegistryClient (14 methods)
+### 5.16 Domain Clients — ServiceRegistryClient (14 methods)
 
 | # | Method | Status | Notes |
 |---|--------|--------|-------|
@@ -1570,7 +1933,7 @@ Track implementation progress with this checklist. Mark each feature as: `[ ]` N
 | SR13 | `getAllProtos(registryName)` | [ ] | |
 | SR14 | `discover(name, create?)` | [ ] | |
 
-### 4.17 Worker Framework
+### 5.17 Worker Framework
 
 | # | Feature | Status | Notes |
 |---|---------|--------|-------|
@@ -1604,8 +1967,14 @@ Track implementation progress with this checklist. Mark each feature as: `[ ]` N
 | W27 | Empty string domain → null normalization | [ ] | CRITICAL — see 5.8 |
 | W28 | Multi-domain workers (same taskDefName, different domains) | [ ] | Registry keyed by name:domain |
 | W29 | Domain via env var (`CONDUCTOR_WORKER_<NAME>_DOMAIN`) | [ ] | |
+| W30 | Schema validation (input/output) | [ ] | See 5.12 |
+| W31 | Strict schema enforcement mode | [ ] | |
+| W32 | Task update retry with backoff (MAX_RETRIES=4, 10s intervals) | [ ] | See 5.13 |
+| W33 | TaskUpdateFailure event includes full taskResult payload | [ ] | CRITICAL for recovery |
+| W34 | onError callback on TaskHandler | [ ] | Lightweight error notification |
+| W35 | Recovery pattern: persist failed results for replay | [ ] | Via event listener |
 
-### 4.18 Event System
+### 5.18 Event System
 
 | # | Event Type | Status | Notes |
 |---|-----------|--------|-------|
@@ -1620,7 +1989,7 @@ Track implementation progress with this checklist. Mark each feature as: `[ ]` N
 | EV9 | EventDispatcher (register/unregister/publish) | [ ] | |
 | EV10 | Isolated dispatch (errors caught, not propagated) | [ ] | |
 
-### 4.19 Metrics
+### 5.19 Metrics
 
 | # | Metric | Type | Status | Notes |
 |---|--------|------|--------|-------|
@@ -1647,7 +2016,7 @@ Track implementation progress with this checklist. Mark each feature as: `[ ]` N
 | M21 | Optional prom-client bridge | — | [ ] | Language-specific |
 | M22 | Sliding window (default 1000) | — | [ ] | |
 
-### 4.20 Builders — ConductorWorkflow
+### 5.20 Builders — ConductorWorkflow
 
 | # | Feature | Status | Notes |
 |---|---------|--------|-------|
@@ -1666,7 +2035,7 @@ Track implementation progress with this checklist. Mark each feature as: `[ ]` N
 | B13 | execute(input?, ...) — synchronous | [ ] | |
 | B14 | startWorkflow(input?, ...) — asynchronous | [ ] | |
 
-### 4.21 Builders — Core Tasks
+### 5.21 Builders — Core Tasks
 
 | # | Builder | Status | Notes |
 |---|---------|--------|-------|
@@ -1697,7 +2066,7 @@ Track implementation progress with this checklist. Mark each feature as: `[ ]` N
 | BT25 | jsonJqTask | [ ] | |
 | BT26 | getDocumentTask | [ ] | |
 
-### 4.22 Builders — LLM Tasks
+### 5.22 Builders — LLM Tasks
 
 | # | Builder | Status | Notes |
 |---|---------|--------|-------|
@@ -1717,14 +2086,14 @@ Track implementation progress with this checklist. Mark each feature as: `[ ]` N
 | BL14 | withPromptVariable (helper) | [ ] | |
 | BL15 | withPromptVariables (helper) | [ ] | |
 
-### 4.23 Builders — Factories
+### 5.23 Builders — Factories
 
 | # | Builder | Status | Notes |
 |---|---------|--------|-------|
 | BF1 | workflow(name, tasks) | [ ] | |
 | BF2 | taskDefinition(config) | [ ] | |
 
-### 4.24 Examples
+### 5.24 Examples
 
 | # | Example | Status | Notes |
 |---|---------|--------|-------|
@@ -1765,7 +2134,7 @@ Track implementation progress with this checklist. Mark each feature as: `[ ]` N
 | EX35 | api-journeys/applications | [ ] | Applications, access keys, roles |
 | EX36 | api-journeys/event-handlers | [ ] | Event handlers, queues, tags |
 
-### 4.25 Tests
+### 5.25 Tests
 
 | # | Feature | Status | Notes |
 |---|---------|--------|-------|
@@ -1795,10 +2164,10 @@ Track implementation progress with this checklist. Mark each feature as: `[ ]` N
 
 | Category | Items |
 |----------|-------|
-| HTTP client + transport + token management | 35 |
+| HTTP client + transport + token management + logger | 36 |
 | Client factory | 4 |
-| Domain client methods | 200 |
-| Worker framework features (incl. config, domains) | 30 |
+| Domain client methods | 199 |
+| Worker framework features (incl. config, domains, schema, update failure) | 35 |
 | Event types + dispatcher | 10 |
 | Metrics | 22 |
 | ConductorWorkflow methods | 14 |
@@ -1807,41 +2176,7 @@ Track implementation progress with this checklist. Mark each feature as: `[ ]` N
 | Factory functions | 2 |
 | Examples | 36 |
 | Test categories (incl. domain + config + thread-safety) | 21 |
-| **Total trackable items** | **415** |
-
----
-
-## 5. Key Design Decisions
-
-### 5.1 V2 Task Update with Chaining
-
-The Conductor server supports a V2 task update endpoint (`POST /tasks/{taskId}/v2`) that combines the task result update with the next poll in a single HTTP round-trip. This is critical for worker throughput — instead of update + poll being two serial requests, they become one.
-
-**Implementation:** After executing a task, the TaskRunner posts the result to the V2 endpoint. The response includes the next batch of tasks to execute, eliminating the separate poll call.
-
-### 5.2 Adaptive Backoff
-
-When no tasks are available, the poller uses exponential backoff (1ms → 1024ms) to reduce server load. This matches the Python SDK's behavior and prevents unnecessary polling during idle periods. The backoff resets immediately when tasks are received.
-
-### 5.3 Retry Jitter
-
-All retry delays include ±10% jitter to prevent thundering herd. When many workers retry simultaneously after a server hiccup, jitter spreads the retry attempts across time, preventing a second overload.
-
-### 5.4 Event System Design
-
-The event system uses optional interface methods (not required) so listeners can subscribe to only the events they care about. Event dispatch errors are caught and logged — they never affect task execution. When no listeners are registered, dispatch is a no-op with zero overhead.
-
-### 5.5 Metrics with Sliding-Window Quantiles
-
-Histogram metrics (duration, size) maintain a sliding window of the last N observations (default 1000). Quantiles (p50, p90, p99) are computed from this window on-demand when `toPrometheusText()` is called, rather than using reservoir sampling. This gives accurate recent percentiles without unbounded memory growth.
-
-### 5.6 Auth Token Mutex
-
-The token refresh uses a mutex/promise-coalescing pattern so that concurrent requests that all discover an expired token only trigger one refresh. Without this, N concurrent requests would each try to refresh, causing N-1 redundant token API calls. In async/event-loop languages (JS, Python), use promise coalescing (a shared in-flight promise). In thread-based languages (Java, Go), use a mutex with a double-check pattern. See Phase 2, section 2.1.5 for implementation details in both models.
-
-### 5.7 Error Wrapping
-
-Every domain client method wraps errors with human-readable context: `"Failed to get workflow 'abc': 404 Not Found"`. This chains the original error as the cause, preserving the stack trace while adding domain context. The dual-strategy design (`throw` vs `log`) lets callers choose between strict error propagation and lenient logging.
+| **Total trackable items** | **420** |
 
 ---
 
@@ -1856,17 +2191,17 @@ Before release, the SDK must have unit tests for:
 - Metrics: all 18 metric types recorded correctly, Prometheus text format valid
 - Events: all 8 event types dispatched to listeners
 
-**Target:** ~470+ unit tests (matching TypeScript SDK)
+**Target:** ~470+ unit test cases (matching TypeScript SDK)
 
 ### 6.2 Integration Test Coverage
 
 Against a real Conductor server:
-- Every domain client method called successfully (200 methods)
+- Every domain client method called successfully (199 methods)
 - ConductorWorkflow: build, register, execute, verify
 - Worker E2E: poll, execute, update, verify output
 - Error paths: not-found, invalid input, permission denied
 
-**Target:** ~190+ integration tests across 22+ test files
+**Target:** ~190+ integration test cases across 22+ test files
 
 ### 6.3 Example Verification
 
@@ -1883,7 +2218,7 @@ Every example must:
 |---------|--------|----------|--------|
 | OrkesClients factory | `OrkesClients` | | |
 | 14 domain clients | All | | |
-| ~200 client methods | All | | |
+| ~199 client methods | All | | |
 | ConductorWorkflow DSL | `ConductorWorkflow` | | |
 | Worker decorator | `@worker_task` | | |
 | Task context | `get_task_context()` | | |
@@ -1908,7 +2243,43 @@ Measure and document:
 
 ---
 
-## Appendix: Server Behavior Quirks
+## Appendix A: Key Design Decisions
+
+These document the reasoning behind specific implementation choices. Reference these when making trade-offs in your language.
+
+### A.1 V2 Task Update with Chaining
+
+The Conductor server supports a V2 task update endpoint (`POST /tasks/{taskId}/v2`) that combines the task result update with the next poll in a single HTTP round-trip. This is critical for worker throughput — instead of update + poll being two serial requests, they become one.
+
+**Implementation:** After executing a task, the TaskRunner posts the result to the V2 endpoint. The response includes the next batch of tasks to execute, eliminating the separate poll call.
+
+### A.2 Adaptive Backoff
+
+When no tasks are available, the poller uses exponential backoff (1ms → 1024ms) to reduce server load. This matches the Python SDK's behavior and prevents unnecessary polling during idle periods. The backoff resets immediately when tasks are received.
+
+### A.3 Retry Jitter
+
+All retry delays include ±10% jitter to prevent thundering herd. When many workers retry simultaneously after a server hiccup, jitter spreads the retry attempts across time, preventing a second overload.
+
+### A.4 Event System Design
+
+The event system uses optional interface methods (not required) so listeners can subscribe to only the events they care about. Event dispatch errors are caught and logged — they never affect task execution. When no listeners are registered, dispatch is a no-op with zero overhead.
+
+### A.5 Metrics with Sliding-Window Quantiles
+
+Histogram metrics (duration, size) maintain a sliding window of the last N observations (default 1000). Quantiles (p50, p90, p99) are computed from this window on-demand when `toPrometheusText()` is called, rather than using reservoir sampling. This gives accurate recent percentiles without unbounded memory growth.
+
+### A.6 Auth Token Mutex
+
+The token refresh uses a mutex/promise-coalescing pattern so that concurrent requests that all discover an expired token only trigger one refresh. Without this, N concurrent requests would each try to refresh, causing N-1 redundant token API calls. In async/event-loop languages (JS, Python), use promise coalescing (a shared in-flight promise). In thread-based languages (Java, Go), use a mutex with a double-check pattern. See Phase 2, section 2.1.5 for implementation details in both models.
+
+### A.7 Error Wrapping
+
+Every domain client method wraps errors with human-readable context: `"Failed to get workflow 'abc': 404 Not Found"`. This chains the original error as the cause, preserving the stack trace while adding domain context. The dual-strategy design (`throw` vs `log`) lets callers choose between strict error propagation and lenient logging.
+
+---
+
+## Appendix B: Server Behavior Quirks
 
 These are behaviors discovered during TypeScript SDK development that apply to all language implementations:
 

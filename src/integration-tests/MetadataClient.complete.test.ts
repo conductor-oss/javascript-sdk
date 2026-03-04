@@ -34,7 +34,7 @@ describe("MetadataClient Complete Coverage", () => {
 
   let metadataClient: MetadataClient;
   let schedulerClient: SchedulerClient;
-  let executor: WorkflowExecutor;
+  let _executor: WorkflowExecutor;
 
   const suffix = Date.now();
   const taskName1 = `jsSdkTest-batch-task1-${suffix}`;
@@ -51,7 +51,7 @@ describe("MetadataClient Complete Coverage", () => {
     const clients = new OrkesClients(client);
     metadataClient = clients.getMetadataClient();
     schedulerClient = clients.getSchedulerClient();
-    executor = clients.getWorkflowClient();
+    _executor = clients.getWorkflowClient();
 
     // Register a workflow for tag and rate limit tests
     await metadataClient.registerWorkflowDef(

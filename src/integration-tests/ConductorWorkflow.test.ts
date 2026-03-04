@@ -8,7 +8,6 @@ import {
 } from "@jest/globals";
 import {
   TaskType,
-  type WorkflowDef,
   type Client,
 } from "../open-api";
 import {
@@ -16,7 +15,6 @@ import {
   MetadataClient,
   WorkflowExecutor,
   orkesConductorClient,
-  simpleTask,
   setVariableTask,
   llmChatCompleteTask,
   Role,

@@ -32,6 +32,8 @@ export const createConductorClient = async (
     tlsKeyPath,
     tlsCaPath,
     proxyUrl,
+    tlsInsecure,
+    disableHttp2,
   } = resolveOrkesConfig(config);
 
   if (!serverUrl) throw new Error("Conductor server URL is not set");
@@ -43,6 +45,8 @@ export const createConductorClient = async (
     tlsKeyPath,
     tlsCaPath,
     proxyUrl,
+    tlsInsecure,
+    disableHttp2,
   });
 
   // Start with retry + timeout on fetch (no auth failure callback yet)

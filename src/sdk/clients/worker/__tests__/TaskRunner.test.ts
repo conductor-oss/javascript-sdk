@@ -1253,7 +1253,7 @@ describe("V2 task chaining", () => {
       worker: {
         taskDefName: "test",
         execute: async (task) => {
-          executionOrder.push(task.taskId!);
+          executionOrder.push(task.taskId as string);
           return { outputData: { id: task.taskId }, status: "COMPLETED" };
         },
       },
@@ -1301,7 +1301,7 @@ describe("V2 task chaining", () => {
       worker: {
         taskDefName: "test",
         execute: async (task) => {
-          executionOrder.push(task.taskId!);
+          executionOrder.push(task.taskId as string);
           return { outputData: {}, status: "COMPLETED" };
         },
       },
@@ -1405,7 +1405,7 @@ describe("V2 task chaining", () => {
       worker: {
         taskDefName: "test",
         execute: async (task) => {
-          executionOrder.push(task.taskId!);
+          executionOrder.push(task.taskId as string);
           if (task.taskId === "task-1") {
             throw new Error("Task 1 failed");
           }

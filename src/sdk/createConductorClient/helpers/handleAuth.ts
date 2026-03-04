@@ -6,6 +6,7 @@ import {
   TOKEN_TTL_MS,
   MAX_AUTH_FAILURES,
   MAX_AUTH_BACKOFF_MS,
+  MAX_INITIAL_TOKEN_RETRIES,
 } from "../constants";
 
 export interface HandleAuthResult {
@@ -112,14 +113,27 @@ export const handleAuth = async (
     }
   };
 
-  // Initial auth (no mutex needed -- nothing else is running yet)
-  try {
-    await getNewToken();
-  } catch (e) {
-    if (isOss) {
-      return undefined;
+  // Initial auth with retry (no mutex needed -- nothing else is running yet)
+  for (let attempt = 1; attempt <= MAX_INITIAL_TOKEN_RETRIES; attempt++) {
+    try {
+      await getNewToken();
+      break;
+    } catch (e) {
+      if (isOss) {
+        return undefined;
+      }
+      if (attempt < MAX_INITIAL_TOKEN_RETRIES) {
+        const backoffMs = getBackoffMs(attempt);
+        logger?.warn?.(
+          `Initial token request failed (attempt ${attempt}/${MAX_INITIAL_TOKEN_RETRIES}), ` +
+            `retrying in ${backoffMs}ms`
+        );
+        await new Promise((resolve) => setTimeout(resolve, backoffMs));
+      } else {
+        logger?.error("Initial token generation failed after all retries", e);
+        throw e;
+      }
     }
-    throw e;
   }
 
   if (isOss) {

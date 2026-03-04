@@ -5,7 +5,6 @@ import {
   jest,
   beforeAll,
   afterEach,
-  afterAll,
 } from "@jest/globals";
 import type { Task } from "../open-api";
 import {
@@ -38,13 +37,13 @@ describe("Worker Advanced Features", () => {
 
   const clientPromise = orkesConductorClient();
   let executor: WorkflowExecutor;
-  let metadataClient: MetadataClient;
+  let _metadataClient: MetadataClient;
   let taskClient: TaskClient;
 
   beforeAll(async () => {
     const client = await clientPromise;
     executor = new WorkflowExecutor(client);
-    metadataClient = new MetadataClient(client);
+    _metadataClient = new MetadataClient(client);
     taskClient = new TaskClient(client);
   });
 
@@ -282,7 +281,7 @@ describe("Worker Advanced Features", () => {
       } = { available: false };
 
       worker({ taskDefName: taskName, pollInterval: 100 })(
-        async function contextWorker(task: Task) {
+        async function contextWorker(_task: Task) {
           const ctx = getTaskContext();
           if (ctx) {
             captured.available = true;
@@ -506,7 +505,8 @@ describe("Worker Advanced Features", () => {
       const metrics = collector.getMetrics();
       const observations = metrics.pollDurationMs.get("window_test");
       expect(observations).toBeDefined();
-      expect(observations!.length).toBeLessThanOrEqual(5);
+      if (!observations) throw new Error("Expected observations for window_test");
+      expect(observations.length).toBeLessThanOrEqual(5);
 
       // Should contain only the last 5 values
       expect(observations).toEqual([50, 60, 70, 80, 90]);

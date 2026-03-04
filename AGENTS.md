@@ -45,7 +45,7 @@ src/integration-tests/           # E2E tests against real Conductor server
 ## Commands
 
 ```bash
-npm test                           # Unit tests (469 tests)
+npm test                           # Unit tests (482+ tests)
 npm run build                      # tsup (ESM + CJS dual output)
 npm run lint                       # ESLint
 npm run generate-openapi-layer     # Regenerate from OpenAPI spec
@@ -61,12 +61,12 @@ npm run test:integration:orkes-v5
 
 After every code change, you **must** run the following before considering the work complete:
 
-1. **Lint** — fix all lint errors in files you changed:
+1. **Lint** — **MANDATORY at the end of every session**. Run the linter and fix ALL errors before finishing:
    ```bash
-   npm run lint                          # Check all files
+   npm run lint                          # Check all files — must show 0 errors
    npx eslint --fix src/path/to/file.ts  # Auto-fix a specific file
    ```
-   You must fix all lint errors in files you modified. Do not introduce new lint violations.
+   You must fix all lint errors in files you modified. Do not introduce new lint violations. **Do not end a session with lint errors remaining.**
 
 2. **Unit tests** — all must pass:
    ```bash
@@ -232,4 +232,4 @@ When adding new client methods, builders, worker features, or examples:
 | ConductorWorkflow DSL | Yes | 100% | |
 | Worker + Metrics + Context | Yes | 100% | |
 | Error paths | - | 35 tests | |
-| **Total** | **469** | **191** | **660** |
+| **Total** | **482+** | **191** | **673+** |

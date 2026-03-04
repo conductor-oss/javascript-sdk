@@ -54,9 +54,10 @@ export class MetricsServer {
       }
     );
 
+    const server = this._server;
     return new Promise<void>((resolve, reject) => {
-      this._server!.on("error", reject);
-      this._server!.listen(this._port, () => resolve());
+      server.on("error", reject);
+      server.listen(this._port, () => resolve());
     });
   }
 
@@ -64,8 +65,9 @@ export class MetricsServer {
   async stop(): Promise<void> {
     if (!this._server) return;
 
+    const server = this._server;
     return new Promise<void>((resolve, reject) => {
-      this._server!.close((err) => {
+      server.close((err) => {
         this._server = undefined;
         if (err) reject(err);
         else resolve();

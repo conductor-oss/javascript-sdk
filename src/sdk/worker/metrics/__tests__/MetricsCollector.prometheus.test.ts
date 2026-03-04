@@ -171,7 +171,7 @@ describe("MetricsCollector - Prometheus features", () => {
       for (let i = 0; i < 10; i++) {
         small.onPollCompleted({ taskType: "t", workerId: "w", durationMs: i, pollCount: i, taskCount: 1, timestamp: new Date() });
       }
-      const vals = small.getMetrics().pollDurationMs.get("t")!;
+      const vals = small.getMetrics().pollDurationMs.get("t") as number[];
       expect(vals).toHaveLength(5);
       expect(vals).toEqual([5, 6, 7, 8, 9]);
     });

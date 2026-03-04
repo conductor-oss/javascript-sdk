@@ -329,13 +329,13 @@ export interface ExtendedConductorApplication
 
 /** Extended ConductorUser with fields present in Python SDK but missing from OpenAPI spec */
 export interface ExtendedConductorUser extends OpenApiConductorUser {
-  contactInformation?: { [key: string]: string };
+  contactInformation?: Record<string, string>;
   namespace?: string;
 }
 
 /** Extended Group with fields present in Python SDK but missing from OpenAPI spec */
 export interface ExtendedGroup extends OpenApiGroup {
-  contactInformation?: { [key: string]: string };
+  contactInformation?: Record<string, string>;
 }
 
 /** Extended IntegrationApiUpdate with fields present in Python SDK but missing from OpenAPI spec */

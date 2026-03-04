@@ -15,6 +15,11 @@ const parseEnvNumber = (value: string | undefined): number | undefined => {
   return Number.isNaN(num) ? undefined : num;
 };
 
+const parseEnvBoolean = (value: string | undefined): boolean | undefined => {
+  if (value === undefined || value === "") return undefined;
+  return value.toLowerCase() === "true" || value === "1";
+};
+
 export const resolveOrkesConfig = (config?: Partial<OrkesApiConfig>) => {
   let serverUrl = process.env.CONDUCTOR_SERVER_URL || config?.serverUrl;
   if (serverUrl?.endsWith("/")) serverUrl = serverUrl.slice(0, -1);
@@ -44,5 +49,11 @@ export const resolveOrkesConfig = (config?: Partial<OrkesApiConfig>) => {
     tlsKeyPath: process.env.CONDUCTOR_TLS_KEY_PATH || config?.tlsKeyPath,
     tlsCaPath: process.env.CONDUCTOR_TLS_CA_PATH || config?.tlsCaPath,
     proxyUrl: process.env.CONDUCTOR_PROXY_URL || config?.proxyUrl,
+    tlsInsecure:
+      parseEnvBoolean(process.env.CONDUCTOR_TLS_INSECURE) ??
+      config?.tlsInsecure,
+    disableHttp2:
+      parseEnvBoolean(process.env.CONDUCTOR_DISABLE_HTTP2) ??
+      config?.disableHttp2,
   };
 };

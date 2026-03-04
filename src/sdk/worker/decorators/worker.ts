@@ -285,12 +285,12 @@ export function worker(options: WorkerOptions) {
         );
       }
       // Normal execution mode
-      return (executeFunction as Function).apply(this, args);
+      return (executeFunction as (...args: unknown[]) => unknown).apply(this, args);
     };
 
     // Preserve original function name
     Object.defineProperty(dualModeFunction, "name", {
-      value: (executeFunction as Function).name,
+      value: (executeFunction as (...args: unknown[]) => unknown).name,
       configurable: true,
     });
 

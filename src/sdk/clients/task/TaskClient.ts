@@ -148,7 +148,7 @@ export class TaskClient {
    */
   public async getQueueSizeForTask(
     taskType?: string[]
-  ): Promise<{ [key: string]: number }> {
+  ): Promise<Record<string, number>> {
     try {
       const { data } = await TaskResource.size({
         query: { taskType },

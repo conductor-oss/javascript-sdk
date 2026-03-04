@@ -45,7 +45,7 @@ describe("WorkflowExecutor Complete Coverage", () => {
   let client: Client;
   let executor: WorkflowExecutor;
   let metadataClient: MetadataClient;
-  let taskClient: TaskClient;
+  let _taskClient: TaskClient;
 
   const suffix = Date.now();
 
@@ -64,7 +64,7 @@ describe("WorkflowExecutor Complete Coverage", () => {
     client = await orkesConductorClient();
     executor = new WorkflowExecutor(client);
     metadataClient = new MetadataClient(client);
-    taskClient = new TaskClient(client);
+    _taskClient = new TaskClient(client);
 
     // Register task definition for SIMPLE tasks
     await metadataClient.registerTask({
@@ -220,7 +220,8 @@ describe("WorkflowExecutor Complete Coverage", () => {
       expect(execution.workflowId).toEqual(workflowId);
       expect(execution.status).toEqual("COMPLETED");
       expect(execution.tasks).toBeDefined();
-      expect(execution.tasks!.length).toBeGreaterThan(0);
+      if (!execution.tasks) throw new Error("Expected tasks in execution");
+      expect(execution.tasks.length).toBeGreaterThan(0);
     });
 
     test("getWorkflowStatus should return status summary", async () => {
@@ -418,8 +419,10 @@ describe("WorkflowExecutor Complete Coverage", () => {
 
       expect(waitTask?.taskId).toBeDefined();
 
+      if (!waitTask?.taskId) throw new Error("Expected wait task with taskId");
+
       const result = await executor.updateTask(
-        waitTask!.taskId!,
+        waitTask.taskId,
         waitWfId2,
         "COMPLETED",
         { output: "completed_by_id" }

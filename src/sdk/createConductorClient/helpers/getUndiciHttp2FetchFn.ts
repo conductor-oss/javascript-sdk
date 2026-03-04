@@ -15,6 +15,8 @@ export interface UndiciHttp2Options {
   tlsKeyPath?: string;
   tlsCaPath?: string;
   proxyUrl?: string;
+  tlsInsecure?: boolean;
+  disableHttp2?: boolean;
 }
 
 export const getUndiciHttp2FetchFn = async (
@@ -27,6 +29,8 @@ export const getUndiciHttp2FetchFn = async (
     tlsKeyPath,
     tlsCaPath,
     proxyUrl,
+    tlsInsecure,
+    disableHttp2,
   } = options;
 
   // eslint-disable-next-line
@@ -48,10 +52,15 @@ export const getUndiciHttp2FetchFn = async (
     if (tlsCaPath) connectOptions.ca = readFileSync(tlsCaPath);
   }
 
+  // Disable TLS certificate verification (for self-signed certs in dev/staging)
+  if (tlsInsecure) {
+    connectOptions.rejectUnauthorized = false;
+  }
+
   // Create the appropriate dispatcher (Agent or ProxyAgent)
   let dispatcher: InstanceType<typeof undici.Agent>;
   const agentOptions = {
-    allowH2: true,
+    allowH2: !disableHttp2,
     connections: maxHttpConnections,
     connect: Object.keys(connectOptions).length > 0 ? connectOptions : undefined,
   };

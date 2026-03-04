@@ -695,7 +695,7 @@ export class WorkflowExecutor {
     request: CorrelationIdsSearchRequest,
     includeClosed = false,
     includeTasks = false
-  ): Promise<{ [key: string]: Workflow[] }> {
+  ): Promise<Record<string, Workflow[]>> {
     try {
       const { data } = await WorkflowResource.getWorkflows1({
         body: request,
@@ -737,7 +737,7 @@ export class WorkflowExecutor {
    */
   public async updateVariables(
     workflowId: string,
-    variables: { [key: string]: unknown }
+    variables: Record<string, unknown>
   ): Promise<Workflow> {
     try {
       const { data } = await WorkflowResource.updateWorkflowState({
@@ -799,7 +799,7 @@ export class WorkflowExecutor {
    */
   public async startWorkflowByName(
     name: string,
-    input: { [key: string]: unknown },
+    input: Record<string, unknown>,
     version?: number,
     correlationId?: string,
     priority?: number

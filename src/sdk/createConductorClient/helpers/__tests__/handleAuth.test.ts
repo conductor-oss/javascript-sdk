@@ -1,8 +1,10 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { jest, expect, describe, it, beforeEach, afterEach } from "@jest/globals";
 import { handleAuth } from "../handleAuth";
 import { TokenResource } from "../../../../open-api/generated";
+import type { Client } from "../../../../open-api/generated/client/types.gen";
 import type { ConductorLogger } from "../../../helpers/logger";
-import { TOKEN_TTL_MS, MAX_AUTH_FAILURES } from "../../constants";
+import { TOKEN_TTL_MS, MAX_AUTH_FAILURES, MAX_INITIAL_TOKEN_RETRIES } from "../../constants";
 
 // Mock TokenResource.generateToken
 jest.mock("../../../../open-api/generated", () => ({
@@ -47,7 +49,7 @@ const mockSuccess = (token: string) =>
     error: undefined,
     response: { status: 200 } as Response,
     request: {} as Request,
-  }) as any;
+  }) as unknown as Awaited<ReturnType<typeof TokenResource.generateToken>>;
 
 const mockFailure = (status = 500, message = "Server error") =>
   ({
@@ -55,7 +57,7 @@ const mockFailure = (status = 500, message = "Server error") =>
     error: { message },
     response: { status } as Response,
     request: {} as Request,
-  }) as any;
+  }) as unknown as Awaited<ReturnType<typeof TokenResource.generateToken>>;
 
 const mock404 = () =>
   ({
@@ -63,15 +65,15 @@ const mock404 = () =>
     error: undefined,
     response: { status: 404 } as Response,
     request: {} as Request,
-  }) as any;
+  }) as unknown as Awaited<ReturnType<typeof TokenResource.generateToken>>;
 
 /** Helper to extract the auth callback that handleAuth sets on the client */
 const getAuthCallback = (mockClient: ReturnType<typeof createMockClient>) => {
   const call = mockClient.setConfig.mock.calls.find(
-    (c: any) => c[0]?.auth
+    (c: unknown[]) => (c[0] as Record<string, unknown>)?.auth
   );
   if (!call) throw new Error("auth callback was never set");
-  return (call[0] as any).auth as () => Promise<string | undefined>;
+  return (call[0] as Record<string, unknown>).auth as () => Promise<string | undefined>;
 };
 
 describe("handleAuth", () => {
@@ -95,23 +97,59 @@ describe("handleAuth", () => {
       mockedGenerateToken.mockResolvedValue(mockSuccess("test-token-123"));
 
       const result = await handleAuth(
-        mockClient as any, "key-id", "key-secret", 3600000, mockLogger
+        mockClient as unknown as Client, "key-id", "key-secret", 3600000, mockLogger
       );
 
       expect(result).toBeDefined();
-      expect(result!.refreshToken).toBeInstanceOf(Function);
-      expect(result!.stopBackgroundRefresh).toBeInstanceOf(Function);
+      if (!result) throw new Error("expected result to be defined");
+      expect(result.refreshToken).toBeInstanceOf(Function);
+      expect(result.stopBackgroundRefresh).toBeInstanceOf(Function);
       expect(mockClient.setConfig).toHaveBeenCalledWith(
         expect.objectContaining({ auth: expect.any(Function) })
       );
     });
 
-    it("should throw on initial auth failure", async () => {
+    it("should throw on initial auth failure after retries", async () => {
       mockedGenerateToken.mockResolvedValue(mockFailure(401, "Unauthorized"));
 
-      await expect(
-        handleAuth(mockClient as any, "key-id", "key-secret", 3600000, mockLogger)
+      // Set up rejection handler BEFORE advancing timers to avoid unhandled rejection
+      const assertion = expect(
+        handleAuth(mockClient as unknown as Client, "key-id", "key-secret", 3600000, mockLogger)
       ).rejects.toThrow("Failed to generate authorization token");
+
+      // Advance past all retry backoff delays (1s + 2s = 3s)
+      await jest.advanceTimersByTimeAsync(3000);
+      await assertion;
+
+      expect(mockedGenerateToken).toHaveBeenCalledTimes(MAX_INITIAL_TOKEN_RETRIES);
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        expect.stringContaining("Initial token request failed")
+      );
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        expect.stringContaining("Initial token generation failed after all retries"),
+        expect.anything()
+      );
+    });
+
+    it("should succeed on retry after transient failure", async () => {
+      let callCount = 0;
+      mockedGenerateToken.mockImplementation(async () => {
+        callCount++;
+        if (callCount < 3) return mockFailure(500, "Server error");
+        return mockSuccess("recovered-token");
+      });
+
+      const p = handleAuth(mockClient as unknown as Client, "key-id", "key-secret", 3600000, mockLogger);
+
+      // Advance past retry backoff delays
+      await jest.advanceTimersByTimeAsync(3000);
+
+      const result = await p;
+      expect(result).toBeDefined();
+      expect(callCount).toBe(3); // 2 failures + 1 success
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        expect.stringContaining("Initial token request failed")
+      );
     });
 
     it("should log auth error code when present in response (EXPIRED_TOKEN)", async () => {
@@ -120,11 +158,14 @@ describe("handleAuth", () => {
         error: { message: "Token expired", error: "EXPIRED_TOKEN" },
         response: { status: 401 } as Response,
         request: {} as Request,
-      } as any);
+      } as unknown as Awaited<ReturnType<typeof TokenResource.generateToken>>);
 
-      await expect(
-        handleAuth(mockClient as any, "key-id", "key-secret", 3600000, mockLogger)
+      const assertion = expect(
+        handleAuth(mockClient as unknown as Client, "key-id", "key-secret", 3600000, mockLogger)
       ).rejects.toThrow("Failed to generate authorization token");
+
+      await jest.advanceTimersByTimeAsync(3000);
+      await assertion;
 
       expect(mockLogger.debug).toHaveBeenCalledWith(
         expect.stringContaining("EXPIRED_TOKEN")
@@ -137,11 +178,14 @@ describe("handleAuth", () => {
         error: { message: "Invalid token", error: "INVALID_TOKEN" },
         response: { status: 403 } as Response,
         request: {} as Request,
-      } as any);
+      } as unknown as Awaited<ReturnType<typeof TokenResource.generateToken>>);
 
-      await expect(
-        handleAuth(mockClient as any, "key-id", "key-secret", 3600000, mockLogger)
+      const assertion = expect(
+        handleAuth(mockClient as unknown as Client, "key-id", "key-secret", 3600000, mockLogger)
       ).rejects.toThrow("Failed to generate authorization token");
+
+      await jest.advanceTimersByTimeAsync(3000);
+      await assertion;
 
       expect(mockLogger.debug).toHaveBeenCalledWith(
         expect.stringContaining("INVALID_TOKEN")
@@ -156,7 +200,7 @@ describe("handleAuth", () => {
       mockedGenerateToken.mockResolvedValue(mock404());
 
       const result = await handleAuth(
-        mockClient as any, "key-id", "key-secret", 3600000, mockLogger
+        mockClient as unknown as Client, "key-id", "key-secret", 3600000, mockLogger
       );
 
       expect(result).toBeUndefined();
@@ -168,11 +212,11 @@ describe("handleAuth", () => {
     it("should not set auth callback or start background refresh for OSS", async () => {
       mockedGenerateToken.mockResolvedValue(mock404());
 
-      await handleAuth(mockClient as any, "key-id", "key-secret", 60000, mockLogger);
+      await handleAuth(mockClient as unknown as Client, "key-id", "key-secret", 60000, mockLogger);
 
       // setConfig should NOT have been called with an auth callback
       const authCalls = mockClient.setConfig.mock.calls.filter(
-        (c: any) => c[0]?.auth
+        (c: unknown[]) => (c[0] as Record<string, unknown>)?.auth
       );
       expect(authCalls).toHaveLength(0);
 
@@ -189,7 +233,7 @@ describe("handleAuth", () => {
     it("should return current token when TTL has not elapsed", async () => {
       mockedGenerateToken.mockResolvedValue(mockSuccess("token-1"));
 
-      await handleAuth(mockClient as any, "key-id", "key-secret", 3600000, mockLogger);
+      await handleAuth(mockClient as unknown as Client, "key-id", "key-secret", 3600000, mockLogger);
       const authCallback = getAuthCallback(mockClient);
 
       const token = await authCallback();
@@ -206,7 +250,7 @@ describe("handleAuth", () => {
       });
 
       // Disable background refresh so only inline TTL path is tested
-      await handleAuth(mockClient as any, "key-id", "key-secret", 0, mockLogger);
+      await handleAuth(mockClient as unknown as Client, "key-id", "key-secret", 0, mockLogger);
       const authCallback = getAuthCallback(mockClient);
 
       // First call -- not expired
@@ -229,7 +273,7 @@ describe("handleAuth", () => {
       });
 
       // Disable background refresh so only inline TTL path is tested
-      await handleAuth(mockClient as any, "key-id", "key-secret", 0, mockLogger);
+      await handleAuth(mockClient as unknown as Client, "key-id", "key-secret", 0, mockLogger);
       const authCallback = getAuthCallback(mockClient);
 
       jest.advanceTimersByTime(TOKEN_TTL_MS + 1);
@@ -250,7 +294,7 @@ describe("handleAuth", () => {
       });
 
       // Disable background refresh so only inline TTL path is tested
-      await handleAuth(mockClient as any, "key-id", "key-secret", 0, mockLogger);
+      await handleAuth(mockClient as unknown as Client, "key-id", "key-secret", 0, mockLogger);
       const authCallback = getAuthCallback(mockClient);
 
       jest.advanceTimersByTime(TOKEN_TTL_MS + 1);
@@ -282,7 +326,7 @@ describe("handleAuth", () => {
         return mockFailure();
       });
 
-      await handleAuth(mockClient as any, "key-id", "key-secret", 10_000, mockLogger);
+      await handleAuth(mockClient as unknown as Client, "key-id", "key-secret", 10_000, mockLogger);
 
       // Advance through several intervals
       for (let i = 0; i < 4; i++) {
@@ -303,7 +347,7 @@ describe("handleAuth", () => {
       });
 
       // Use a very short interval to avoid large time advances
-      await handleAuth(mockClient as any, "key-id", "key-secret", 1000, mockLogger);
+      await handleAuth(mockClient as unknown as Client, "key-id", "key-secret", 1000, mockLogger);
 
       // Need enough intervals for MAX_AUTH_FAILURES (5) to accumulate.
       // With backoff, some ticks will be skipped, so advance generously.
@@ -325,7 +369,7 @@ describe("handleAuth", () => {
       });
 
       // interval = 500ms for fast testing
-      await handleAuth(mockClient as any, "key-id", "key-secret", 500, mockLogger);
+      await handleAuth(mockClient as unknown as Client, "key-id", "key-secret", 500, mockLogger);
 
       // First tick fires at 500ms -- fails, consecutiveFailures=1, backoff=1s
       await jest.advanceTimersByTimeAsync(501);
@@ -349,7 +393,7 @@ describe("handleAuth", () => {
         return mockSuccess("recovered-token"); // then success
       });
 
-      await handleAuth(mockClient as any, "key-id", "key-secret", 500, mockLogger);
+      await handleAuth(mockClient as unknown as Client, "key-id", "key-secret", 500, mockLogger);
 
       // Advance enough for failures + backoff + eventual success
       for (let i = 0; i < 20; i++) {
@@ -376,7 +420,7 @@ describe("handleAuth", () => {
 
       // Pass a huge refresh interval -- should be capped
       const result = await handleAuth(
-        mockClient as any, "key-id", "key-secret", 999_999_999, mockLogger
+        mockClient as unknown as Client, "key-id", "key-secret", 999_999_999, mockLogger
       );
       expect(result).toBeDefined();
 
@@ -399,7 +443,7 @@ describe("handleAuth", () => {
       });
 
       const result = await handleAuth(
-        mockClient as any, "key-id", "key-secret", 1000, mockLogger
+        mockClient as unknown as Client, "key-id", "key-secret", 1000, mockLogger
       );
 
       // Stop background refresh
@@ -414,7 +458,7 @@ describe("handleAuth", () => {
       mockedGenerateToken.mockResolvedValue(mockSuccess("token"));
 
       const result = await handleAuth(
-        mockClient as any, "key-id", "key-secret", 1000, mockLogger
+        mockClient as unknown as Client, "key-id", "key-secret", 1000, mockLogger
       );
 
       // Should not throw
@@ -434,7 +478,7 @@ describe("handleAuth", () => {
       });
 
       const result = await handleAuth(
-        mockClient as any, "key-id", "key-secret", 3600000, mockLogger
+        mockClient as unknown as Client, "key-id", "key-secret", 3600000, mockLogger
       );
 
       expect(await result!.refreshToken()).toBe("token-2");
@@ -449,7 +493,7 @@ describe("handleAuth", () => {
       });
 
       const result = await handleAuth(
-        mockClient as any, "key-id", "key-secret", 3600000, mockLogger
+        mockClient as unknown as Client, "key-id", "key-secret", 3600000, mockLogger
       );
 
       expect(await result!.refreshToken()).toBe("initial-token");
@@ -465,7 +509,7 @@ describe("handleAuth", () => {
 
       // Disable background refresh to isolate refreshToken behavior
       const result = await handleAuth(
-        mockClient as any, "key-id", "key-secret", 0, mockLogger
+        mockClient as unknown as Client, "key-id", "key-secret", 0, mockLogger
       );
 
       // First refresh fails -> consecutiveFailures=1, backoff=1s
@@ -494,7 +538,7 @@ describe("handleAuth", () => {
 
       // Disable background refresh to isolate inline behavior
       const result = await handleAuth(
-        mockClient as any, "key-id", "key-secret", 0, mockLogger
+        mockClient as unknown as Client, "key-id", "key-secret", 0, mockLogger
       );
 
       // refreshToken succeeds -> consecutiveFailures should be 0
@@ -515,7 +559,7 @@ describe("handleAuth", () => {
 
       // Should not throw even without a logger
       const result = await handleAuth(
-        mockClient as any, "key-id", "key-secret", 3600000
+        mockClient as unknown as Client, "key-id", "key-secret", 3600000
       );
       expect(result).toBeDefined();
     });
@@ -524,7 +568,7 @@ describe("handleAuth", () => {
       mockedGenerateToken.mockResolvedValue(mockSuccess("test-token"));
 
       const result = await handleAuth(
-        mockClient as any, "key-id", "key-secret", 0, mockLogger
+        mockClient as unknown as Client, "key-id", "key-secret", 0, mockLogger
       );
 
       expect(result).toBeDefined();
@@ -555,7 +599,7 @@ describe("handleAuth", () => {
 
       // Disable background refresh
       const result = await handleAuth(
-        mockClient as any, "key-id", "key-secret", 0, mockLogger
+        mockClient as unknown as Client, "key-id", "key-secret", 0, mockLogger
       );
 
       // Fire two concurrent refreshToken calls
@@ -584,7 +628,7 @@ describe("handleAuth", () => {
 
       // Disable background refresh
       const result = await handleAuth(
-        mockClient as any, "key-id", "key-secret", 0, mockLogger
+        mockClient as unknown as Client, "key-id", "key-secret", 0, mockLogger
       );
 
       // First refresh

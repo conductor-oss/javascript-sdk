@@ -415,7 +415,7 @@ describe("fetchWithRetry", () => {
       const controller = new AbortController();
       controller.abort("test reason");
       const result = applyTimeout({ signal: controller.signal }, 5000) as RequestInit;
-      expect(result.signal!.aborted).toBe(true);
+      expect((result.signal as AbortSignal).aborted).toBe(true);
     });
 
     it("should preserve other init properties", () => {

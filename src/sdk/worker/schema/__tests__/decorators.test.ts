@@ -113,6 +113,7 @@ describe("@schemaField() decorator", () => {
 
   describe("empty and multiple classes", () => {
     it("should return empty schema for class with no decorated fields", () => {
+      // eslint-disable-next-line @typescript-eslint/no-extraneous-class
       class EmptyClass {}
       const schema = generateSchemaFromClass(EmptyClass);
       expect(schema).toEqual({

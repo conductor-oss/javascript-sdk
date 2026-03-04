@@ -14,7 +14,7 @@ function createMockExecutor() {
       .fn<() => Promise<string>>()
       .mockResolvedValue("wf-id-123"),
     executeWorkflow: jest
-      .fn<() => Promise<any>>()
+      .fn<() => Promise<unknown>>()
       .mockResolvedValue({ workflowId: "wf-123" }),
   } as unknown as WorkflowExecutor;
 }
@@ -399,7 +399,7 @@ describe("ConductorWorkflow", () => {
       expect(mockExecutor.registerWorkflow).toHaveBeenCalledTimes(1);
       const [overwrite, def] = (
         mockExecutor.registerWorkflow as jest.Mock
-      ).mock.calls[0] as [boolean, any];
+      ).mock.calls[0] as [boolean, Record<string, unknown>];
       expect(overwrite).toBe(true);
       expect(def.name).toBe("register_wf");
       expect(def.version).toBe(2);
@@ -418,7 +418,7 @@ describe("ConductorWorkflow", () => {
       expect(result).toBe("wf-id-123");
       expect(mockExecutor.startWorkflow).toHaveBeenCalledTimes(1);
       const [request] = (mockExecutor.startWorkflow as jest.Mock).mock
-        .calls[0] as [any];
+        .calls[0] as [Record<string, unknown>];
       expect(request.name).toBe("start_wf");
       expect(request.version).toBe(3);
       expect(request.input).toEqual({ orderId: "abc" });
@@ -435,7 +435,7 @@ describe("ConductorWorkflow", () => {
       expect(result).toEqual({ workflowId: "wf-123" });
       expect(mockExecutor.executeWorkflow).toHaveBeenCalledTimes(1);
       const args = (mockExecutor.executeWorkflow as jest.Mock).mock
-        .calls[0] as any[];
+        .calls[0] as unknown[];
       // First arg is the StartWorkflowRequest
       expect(args[0].name).toBe("exec_wf");
       expect(args[0].version).toBe(2);

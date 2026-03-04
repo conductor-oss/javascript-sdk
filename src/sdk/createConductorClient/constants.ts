@@ -5,6 +5,7 @@ export const MAX_HTTP2_CONNECTIONS = 10;
 export const TOKEN_TTL_MS = 2_700_000; // 45 minutes - refresh token before it expires
 export const MAX_AUTH_FAILURES = 5; // stop logging errors after this many consecutive failures
 export const MAX_AUTH_BACKOFF_MS = 60_000; // 60s cap on exponential backoff
+export const MAX_INITIAL_TOKEN_RETRIES = 3; // retry initial token request on transient failures
 
 // Fetch retry
 export const MAX_TRANSPORT_RETRIES = 3;

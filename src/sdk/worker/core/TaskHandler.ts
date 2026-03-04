@@ -468,8 +468,10 @@ export class TaskHandler {
 
   private checkWorkerHealth(): void {
     for (let i = 0; i < this.taskRunners.length; i++) {
-      const runner = this.taskRunners[i]!;
-      const { worker } = this.resolvedWorkers[i]!;
+      const runner = this.taskRunners[i];
+      const resolved = this.resolvedWorkers[i];
+      if (!runner || !resolved) continue;
+      const { worker } = resolved;
 
       if (!runner.isPolling && this.isRunning) {
         const attempts = this.restartAttempts.get(i) ?? 0;
@@ -538,8 +540,9 @@ export class TaskHandler {
     ];
 
     for (let i = 0; i < this.resolvedWorkers.length; i++) {
-      const { worker, registered, resolvedWorkerId } =
-        this.resolvedWorkers[i]!;
+      const entry = this.resolvedWorkers[i];
+      if (!entry) continue;
+      const { worker, registered, resolvedWorkerId } = entry;
       const runner = this.taskRunners[i];
       const status = runner?.isPolling
         ? "POLLING"
@@ -587,14 +590,14 @@ export class TaskHandler {
    * Get detailed status of each worker.
    * Matches Python SDK's get_worker_process_status().
    */
-  getWorkerStatus(): Array<{
+  getWorkerStatus(): {
     taskDefName: string;
     domain?: string;
     polling: boolean;
     paused: boolean;
     workerId: string;
     restartCount: number;
-  }> {
+  }[] {
     return this.resolvedWorkers.map(
       ({ worker, resolvedWorkerId }, i) => {
         const runner = this.taskRunners[i];

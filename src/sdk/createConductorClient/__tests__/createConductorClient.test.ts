@@ -112,7 +112,7 @@ const tokenSuccess = (token: string) =>
     error: undefined,
     response: { status: 200 } as Response,
     request: {} as Request,
-  }) as any;
+  }) as unknown as Awaited<ReturnType<typeof TokenResource.generateToken>>;
 
 const token404 = () =>
   ({
@@ -120,7 +120,7 @@ const token404 = () =>
     error: undefined,
     response: { status: 404 } as Response,
     request: {} as Request,
-  }) as any;
+  }) as unknown as Awaited<ReturnType<typeof TokenResource.generateToken>>;
 
 const tokenFailure = (message = "Server error") =>
   ({
@@ -128,7 +128,7 @@ const tokenFailure = (message = "Server error") =>
     error: { message },
     response: { status: 500 } as Response,
     request: {} as Request,
-  }) as any;
+  }) as unknown as Awaited<ReturnType<typeof TokenResource.generateToken>>;
 
 describe("createConductorClient integration", () => {
   let mockLogger: ReturnType<typeof createMockLogger>;
@@ -289,7 +289,7 @@ describe("createConductorClient integration", () => {
         customFetch
       );
 
-      const response = await client.request({
+      const _response = await client.request({
         url: "/api/workflow",
         method: "GET",
       });

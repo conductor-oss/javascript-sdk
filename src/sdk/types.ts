@@ -18,4 +18,6 @@ export interface OrkesApiConfig {
   tlsKeyPath?: string; // path to TLS client key (for mTLS)
   tlsCaPath?: string; // path to TLS CA certificate bundle
   proxyUrl?: string; // HTTP/HTTPS proxy URL
+  tlsInsecure?: boolean; // disable TLS certificate verification (for self-signed certs)
+  disableHttp2?: boolean; // force HTTP/1.1 instead of HTTP/2
 }

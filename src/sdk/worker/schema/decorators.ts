@@ -3,6 +3,7 @@ import type { JsonSchemaOutput, JsonSchemaType } from "./generateJsonSchema.js";
 // Augment Reflect with metadata methods from reflect-metadata
 // (available at runtime when reflect-metadata is imported by the consumer)
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Reflect {
     function getMetadata(key: unknown, target: object, propertyKey?: string): unknown;
     function getOwnMetadata(key: unknown, target: object): unknown;

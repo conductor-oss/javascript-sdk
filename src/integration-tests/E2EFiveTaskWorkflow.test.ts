@@ -47,7 +47,7 @@ describe("E2E: 5-task workflow × 50 executions", () => {
 
         worker({ taskDefName: taskName, pollInterval: 100, concurrency: 5 })(
           async function taskWorker(task: Task) {
-            executionCounts[taskName]!++;
+            executionCounts[taskName] = (executionCounts[taskName] ?? 0) + 1;
             return {
               status: "COMPLETED" as const,
               outputData: {
@@ -121,7 +121,8 @@ describe("E2E: 5-task workflow × 50 executions", () => {
       expect(results.length).toBe(WORKFLOW_COUNT);
 
       for (let w = 0; w < results.length; w++) {
-        const wf = results[w]!;
+        const wf = results[w];
+        if (!wf) throw new Error(`Expected result at index ${w}`);
         expect(wf.status).toBe("COMPLETED");
 
         // Each workflow should have exactly 5 tasks
@@ -129,7 +130,10 @@ describe("E2E: 5-task workflow × 50 executions", () => {
 
         // Validate each task's output
         for (let t = 0; t < TASK_COUNT; t++) {
-          const task = wf.tasks![t]!;
+          const tasks = wf.tasks;
+          if (!tasks) throw new Error(`Expected tasks for workflow at index ${w}`);
+          const task = tasks[t];
+          if (!task) throw new Error(`Expected task at index ${t}`);
           expect(task.status).toBe("COMPLETED");
           expect(task.outputData?.taskNumber).toBe(t + 1);
           expect(task.outputData?.message).toBe(

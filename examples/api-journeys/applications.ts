@@ -26,7 +26,8 @@ async function main() {
 
     // Create application
     const app = await appClient.createApplication(appName);
-    applicationId = app.id!;
+    if (!app.id) throw new Error("Expected application id");
+    applicationId = app.id;
     console.log(`1. Created application: ${app.name} (id: ${applicationId})`);
 
     // Get application
