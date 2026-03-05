@@ -115,21 +115,11 @@ export const retryFetch = async (
 
   let lastError: unknown;
 
-  // Helper to create a fresh request for each attempt
-  const createRequest = async (): Promise<[Input, Init]> => {
-    // If input is a Request object, clone it to get a fresh body stream
-    if (input instanceof Request) {
-      return [input.clone(), effectiveInit];
-    }
-    return [input, effectiveInit];
-  };
-
   // Transport retry loop
   for (let transportAttempt = 0; transportAttempt <= maxTransportRetries; transportAttempt++) {
     let response: Response;
     try {
-      const [freshInput, freshInit] = await createRequest();
-      response = await fetchFn(freshInput, freshInit);
+      response = await fetchFn(input, effectiveInit);
     } catch (error) {
       // Timeout/abort errors should NOT be retried
       if (isTimeoutError(error)) {
@@ -152,8 +142,7 @@ export const retryFetch = async (
       let delay = initialRetryDelay;
       for (let rlAttempt = 0; rlAttempt < maxRateLimitRetries; rlAttempt++) {
         await new Promise((resolve) => setTimeout(resolve, withJitter(delay)));
-        const [freshInput, freshInit] = await createRequest();
-        rateLimitResponse = await fetchFn(freshInput, freshInit);
+        rateLimitResponse = await fetchFn(input, effectiveInit);
         if (rateLimitResponse.status !== 429) {
           return rateLimitResponse;
         }
@@ -172,14 +161,13 @@ export const retryFetch = async (
     ) {
       const newToken = await onAuthFailure();
       if (newToken) {
-        // Create fresh request with updated auth header
-        const [freshInput, freshInit] = await createRequest();
+        // Clone request with updated auth header
         const retryInit = {
-          ...freshInit,
-          headers: new Headers(freshInit?.headers),
+          ...effectiveInit,
+          headers: new Headers(effectiveInit?.headers),
         };
         retryInit.headers.set("X-Authorization", newToken);
-        return await fetchFn(freshInput, retryInit);
+        return await fetchFn(input, retryInit);
       }
     }
 
