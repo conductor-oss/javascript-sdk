@@ -18,7 +18,7 @@ function isNotFoundError(e: unknown): boolean {
 export async function cleanupWorkflowsAndTasks(
   metadataClient: MetadataClient,
   options: {
-    workflows?: Array<{ name: string; version: number }>;
+    workflows?: { name: string; version: number }[];
     tasks?: string[];
   }
 ): Promise<void> {

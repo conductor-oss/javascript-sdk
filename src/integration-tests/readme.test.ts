@@ -15,7 +15,7 @@ import { waitForWorkflowStatus } from "./utils/waitForWorkflowStatus";
 describe("TaskManager", () => {
   const clientPromise = orkesConductorClient();
   let metadataClient: MetadataClient;
-  const workflowsToCleanup: Array<{ name: string; version: number }> = [];
+  const workflowsToCleanup: { name: string; version: number }[] = [];
   const tasksToCleanup: string[] = [];
 
   beforeAll(async () => {

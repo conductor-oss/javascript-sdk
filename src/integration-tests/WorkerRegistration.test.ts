@@ -26,7 +26,7 @@ describe("SDK Worker Registration", () => {
   const clientPromise = orkesConductorClient();
   let executor: WorkflowExecutor;
   let metadataClient: MetadataClient;
-  const workflowsToCleanup: Array<{ name: string; version: number }> = [];
+  const workflowsToCleanup: { name: string; version: number }[] = [];
   const tasksToCleanup: string[] = [];
 
   beforeAll(async () => {

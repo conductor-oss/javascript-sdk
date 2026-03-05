@@ -41,7 +41,7 @@ describe("Worker Advanced Features", () => {
   let executor: WorkflowExecutor;
   let metadataClient: MetadataClient;
   let taskClient: TaskClient;
-  const workflowsToCleanup: Array<{ name: string; version: number }> = [];
+  const workflowsToCleanup: { name: string; version: number }[] = [];
   const tasksToCleanup: string[] = [];
 
   beforeAll(async () => {
