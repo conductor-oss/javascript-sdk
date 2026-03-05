@@ -1,5 +1,5 @@
 import { afterEach, beforeAll, describe, expect, test } from "@jest/globals";
-import type { Task } from "../open-api";
+import type { Client, Task } from "../open-api";
 import {
   TaskHandler,
   WorkflowExecutor,
@@ -11,7 +11,7 @@ import {
 import { waitForWorkflowStatus } from "./utils/waitForWorkflowStatus";
 
 describe("E2E: 5-task workflow × 50 executions", () => {
-  const clientPromise = orkesConductorClient();
+  const clientPromise: Promise<Client> = orkesConductorClient();
   let executor: WorkflowExecutor;
   let handler: TaskHandler | undefined;
 
