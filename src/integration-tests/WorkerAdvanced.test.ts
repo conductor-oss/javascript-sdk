@@ -16,10 +16,12 @@ import {
   MetadataClient,
   clearWorkerRegistry,
   getTaskContext,
+  OrkesClients,
   orkesConductorClient,
   simpleTask,
   worker,
 } from "../sdk";
+import { cleanupWorkflowsAndTasks } from "./utils/cleanup";
 import { waitForWorkflowStatus } from "./utils/waitForWorkflowStatus";
 import { executeWorkflowWithRetry } from "./utils/executeWorkflowWithRetry";
 
@@ -37,17 +39,25 @@ describe("Worker Advanced Features", () => {
 
   const clientPromise = orkesConductorClient();
   let executor: WorkflowExecutor;
-  let _metadataClient: MetadataClient;
+  let metadataClient: MetadataClient;
   let taskClient: TaskClient;
+  const workflowsToCleanup: Array<{ name: string; version: number }> = [];
+  const tasksToCleanup: string[] = [];
 
   beforeAll(async () => {
     const client = await clientPromise;
     executor = new WorkflowExecutor(client);
-    _metadataClient = new MetadataClient(client);
+    metadataClient = new OrkesClients(client).getMetadataClient();
     taskClient = new TaskClient(client);
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    await cleanupWorkflowsAndTasks(metadataClient, {
+      workflows: workflowsToCleanup,
+      tasks: tasksToCleanup,
+    });
+    workflowsToCleanup.length = 0;
+    tasksToCleanup.length = 0;
     clearWorkerRegistry();
   });
 
@@ -89,6 +99,8 @@ describe("Worker Advanced Features", () => {
         outputParameters: {},
         timeoutSeconds: 0,
       });
+      workflowsToCleanup.push({ name: workflowName, version: 1 });
+      tasksToCleanup.push(taskName);
 
       const { workflowId } = await executeWorkflowWithRetry(
         executor,
@@ -337,6 +349,8 @@ describe("Worker Advanced Features", () => {
         outputParameters: {},
         timeoutSeconds: 0,
       });
+      workflowsToCleanup.push({ name: workflowName, version: 1 });
+      tasksToCleanup.push(taskName);
 
       const { workflowId } = await executeWorkflowWithRetry(
         executor,

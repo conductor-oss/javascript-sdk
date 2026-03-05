@@ -4,10 +4,12 @@ import {
   TaskHandler,
   WorkflowExecutor,
   clearWorkerRegistry,
+  OrkesClients,
   orkesConductorClient,
   simpleTask,
   worker,
 } from "../sdk";
+import { cleanupWorkflowsAndTasks } from "./utils/cleanup";
 import { waitForWorkflowStatus } from "./utils/waitForWorkflowStatus";
 
 describe("E2E: 5-task workflow × 50 executions", () => {
@@ -149,6 +151,14 @@ describe("E2E: 5-task workflow × 50 executions", () => {
         const taskName = `e2e_task_${i}_${testId}`;
         expect(executionCounts[taskName]).toBe(WORKFLOW_COUNT);
       }
+
+      // Clean up workflow and task definitions from the server
+      const metadataClient = new OrkesClients(client).getMetadataClient();
+      const taskNames = Array.from({ length: TASK_COUNT }, (_, i) => `e2e_task_${i + 1}_${testId}`);
+      await cleanupWorkflowsAndTasks(metadataClient, {
+        workflows: [{ name: workflowName, version: 1 }],
+        tasks: taskNames,
+      });
     },
     330_000 // 5.5 minute timeout for the entire test
   );

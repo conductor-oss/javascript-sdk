@@ -2,9 +2,11 @@ import { expect, describe, test, jest } from "@jest/globals";
 import {
   TaskRunner,
   WorkflowExecutor,
+  OrkesClients,
   simpleTask,
   orkesConductorClient,
 } from "../sdk";
+import { cleanupWorkflowsAndTasks } from "./utils/cleanup";
 import { waitForWorkflowStatus } from "./utils/waitForWorkflowStatus";
 
 describe("TaskRunner", () => {
@@ -84,5 +86,11 @@ describe("TaskRunner", () => {
     expect(taskRunner.isPolling).toEqual(false);
     const taskDetails = await executor.getTask(firstTask?.taskId || "");
     expect(taskDetails?.status).toEqual("COMPLETED");
+
+    const metadataClient = new OrkesClients(client).getMetadataClient();
+    await cleanupWorkflowsAndTasks(metadataClient, {
+      workflows: [{ name: workflowName, version: 1 }],
+      tasks: [taskName],
+    });
   });
 });

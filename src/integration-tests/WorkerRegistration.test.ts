@@ -1,11 +1,13 @@
 import { afterEach, beforeAll, describe, expect, test } from "@jest/globals";
 import type { Task } from "../open-api";
 import {
+  MetadataClient,
   NonRetryableException,
   TaskHandler,
   WorkflowExecutor,
   clearWorkerRegistry,
   getRegisteredWorkers,
+  OrkesClients,
   orkesConductorClient,
   simpleTask,
   worker
@@ -16,20 +18,30 @@ import type {
   TaskExecutionCompleted,
   TaskExecutionStarted,
 } from "../sdk/clients/worker/events/types";
+import { cleanupWorkflowsAndTasks } from "./utils/cleanup";
 import { waitForWorkflowStatus } from "./utils/waitForWorkflowStatus";
 import { executeWorkflowWithRetry } from "./utils/executeWorkflowWithRetry";
 
 describe("SDK Worker Registration", () => {
   const clientPromise = orkesConductorClient();
   let executor: WorkflowExecutor;
+  let metadataClient: MetadataClient;
+  const workflowsToCleanup: Array<{ name: string; version: number }> = [];
+  const tasksToCleanup: string[] = [];
 
   beforeAll(async () => {
     const client = await clientPromise;
     executor = new WorkflowExecutor(client);
+    metadataClient = new OrkesClients(client).getMetadataClient();
   });
 
-  afterEach(() => {
-    // Clean up worker registry after each test to prevent conflicts
+  afterEach(async () => {
+    await cleanupWorkflowsAndTasks(metadataClient, {
+      workflows: workflowsToCleanup,
+      tasks: tasksToCleanup,
+    });
+    workflowsToCleanup.length = 0;
+    tasksToCleanup.length = 0;
     clearWorkerRegistry();
   });
 
@@ -98,6 +110,8 @@ describe("SDK Worker Registration", () => {
       outputParameters: {},
       timeoutSeconds: 0,
     });
+    workflowsToCleanup.push({ name: workflowName, version: 1 });
+    tasksToCleanup.push(taskName);
     expect(handler.running).toBe(true);
     expect(handler.runningWorkerCount).toBe(1);
 
@@ -195,6 +209,8 @@ describe("SDK Worker Registration", () => {
       outputParameters: {},
       timeoutSeconds: 0,
     });
+    workflowsToCleanup.push({ name: workflowName, version: 1 });
+    tasksToCleanup.push(taskName);
 
     // Execute workflow with retry on transient failures
     const { workflowId } = await executeWorkflowWithRetry(
@@ -303,6 +319,8 @@ describe("SDK Worker Registration", () => {
       outputParameters: {},
       timeoutSeconds: 0,
     });
+    workflowsToCleanup.push({ name: workflowName, version: 1 });
+    tasksToCleanup.push(taskName);
 
     // Execute workflow with shouldFail flag and retry on transient failures
     const { workflowId } = await executeWorkflowWithRetry(
@@ -392,6 +410,8 @@ describe("SDK Worker Registration", () => {
       outputParameters: {},
       timeoutSeconds: 0,
     });
+    workflowsToCleanup.push({ name: workflowName, version: 1 });
+    tasksToCleanup.push(taskName);
 
     // Execute workflow with retry on transient failures
     const { workflowId } = await executeWorkflowWithRetry(
@@ -475,6 +495,8 @@ describe("SDK Worker Registration", () => {
       outputParameters: {},
       timeoutSeconds: 0,
     });
+    workflowsToCleanup.push({ name: workflowName, version: 1 });
+    tasksToCleanup.push(taskName1, taskName2);
     expect(handler.runningWorkerCount).toBe(2);
 
     // Execute workflow with retry on transient failures

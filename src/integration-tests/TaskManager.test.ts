@@ -1,6 +1,7 @@
-import { expect, describe, test, jest } from "@jest/globals";
+import { afterEach, beforeAll, expect, describe, test, jest } from "@jest/globals";
 import {
   MetadataClient,
+  OrkesClients,
   simpleTask,
   taskDefinition,
   WorkflowExecutor,
@@ -8,12 +9,30 @@ import {
   TaskManager,
   ConductorWorker,
 } from "../sdk";
+import { cleanupWorkflowsAndTasks } from "./utils/cleanup";
 import { mockLogger } from "./utils/mockLogger";
 import { waitForWorkflowCompletion } from "./utils/waitForWorkflowCompletion";
 
 const BASE_TIME = 1000;
 describe("TaskManager", () => {
   const clientPromise = orkesConductorClient();
+  let metadataClient: MetadataClient;
+  const workflowsToCleanup: Array<{ name: string; version: number }> = [];
+  const tasksToCleanup: string[] = [];
+
+  beforeAll(async () => {
+    const client = await clientPromise;
+    metadataClient = new OrkesClients(client).getMetadataClient();
+  });
+
+  afterEach(async () => {
+    await cleanupWorkflowsAndTasks(metadataClient, {
+      workflows: workflowsToCleanup,
+      tasks: tasksToCleanup,
+    });
+    workflowsToCleanup.length = 0;
+    tasksToCleanup.length = 0;
+  });
 
   jest.setTimeout(30000);
 
@@ -49,6 +68,8 @@ describe("TaskManager", () => {
       outputParameters: {},
       timeoutSeconds: 0,
     });
+    workflowsToCleanup.push({ name: workflowName, version: 1 });
+    tasksToCleanup.push(taskName);
 
     const executionId = await executor.startWorkflow({
       name: workflowName,
@@ -94,6 +115,7 @@ describe("TaskManager", () => {
         retryCount: 0,
       })
     );
+    tasksToCleanup.push(taskName);
 
     const manager = new TaskManager(client, [worker], {
       options: { pollInterval: BASE_TIME },
@@ -111,6 +133,7 @@ describe("TaskManager", () => {
       outputParameters: {},
       timeoutSeconds: 0,
     });
+    workflowsToCleanup.push({ name: workflowName, version: 1 });
 
     const status = await executor.startWorkflow({
       name: workflowName,
@@ -155,6 +178,7 @@ describe("TaskManager", () => {
         retryCount: 0,
       })
     );
+    tasksToCleanup.push(taskName);
 
     const manager = new TaskManager(client, [worker], {
       options: { pollInterval: BASE_TIME },
@@ -171,6 +195,7 @@ describe("TaskManager", () => {
       outputParameters: {},
       timeoutSeconds: 0,
     });
+    workflowsToCleanup.push({ name: workflowName, version: 1 });
 
     const executionId = await executor.startWorkflow({
       name: workflowName,
@@ -239,6 +264,8 @@ describe("TaskManager", () => {
       outputParameters: {},
       timeoutSeconds: 0,
     });
+    workflowsToCleanup.push({ name: workflowName, version: 1 });
+    tasksToCleanup.push(...workerNames);
 
     //Start workflow
     const executionId = await executor.startWorkflow({
@@ -373,6 +400,8 @@ describe("TaskManager", () => {
       outputParameters: {},
       timeoutSeconds: 0,
     });
+    workflowsToCleanup.push({ name: workflowName, version: 1 });
+    tasksToCleanup.push(...workerNames);
 
     //Start workflow
     const executionId = await executor.startWorkflow({

@@ -4,8 +4,8 @@ import {
   test,
   jest,
   beforeAll,
-  afterEach,
   afterAll,
+  afterEach,
 } from "@jest/globals";
 import { v4 as uuidv4 } from "uuid";
 import {
@@ -24,6 +24,7 @@ import {
   WorkflowExecutor,
   orkesConductorClient,
 } from "../sdk";
+import { cleanupWorkflowsAndTasks } from "./utils/cleanup";
 import { waitForWorkflowStatus } from "./utils/waitForWorkflowStatus";
 import { getComplexSignalTestWfDef } from "./metadata/complex_wf_signal_test";
 import { getComplexSignalTestSubWf1Def } from "./metadata/complex_wf_signal_test_subworkflow_1";
@@ -38,10 +39,21 @@ describe("WorkflowExecutor", () => {
 
   const name = `jsSdkTest-Workflow-${Date.now()}`;
   const version = 1;
+  let metadataClient: MetadataClient;
+
+  beforeAll(async () => {
+    metadataClient = new MetadataClient((await clientPromise));
+  });
+
+  afterAll(async () => {
+    await cleanupWorkflowsAndTasks(metadataClient, {
+      workflows: [{ name, version }],
+    });
+  });
+
   test("Should be able to register a workflow", async () => {
     const client = await clientPromise;
     const executor = new WorkflowExecutor(client);
-    const metadataClient = new MetadataClient(client);
 
     const workflowDefinition: WorkflowDef = {
       name,
@@ -208,6 +220,11 @@ describe("WorkflowExecutor", () => {
     );
 
     expect(workflowStatusAfter.tasks?.[0]?.status).toEqual("COMPLETED");
+
+    await cleanupWorkflowsAndTasks(metadataClient, {
+      workflows: [{ name: workflowName, version: 1 }],
+      tasks: [taskName],
+    });
   });
 
   test("Should run workflow with an optional http task", async () => {
@@ -250,6 +267,11 @@ describe("WorkflowExecutor", () => {
     expect(["FAILED", "COMPLETED_WITH_ERRORS"]).toContain(
       workflowStatus.tasks?.[0]?.status
     );
+
+    await cleanupWorkflowsAndTasks(metadataClient, {
+      workflows: [{ name: workflowName, version: 1 }],
+      tasks: [taskName],
+    });
   });
 
   describeForOrkesV5("Execute with Return Strategy and Consistency", () => {
