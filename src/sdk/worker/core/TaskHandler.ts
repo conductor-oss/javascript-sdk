@@ -1,21 +1,21 @@
 import os from "os";
-import type { Client, ExtendedTaskDef } from "../../../open-api";
+import type { Client } from "../../../open-api";
 import { MetadataResource } from "../../../open-api/generated";
-import type { ConductorLogger } from "../../helpers/logger";
-import { DefaultLogger } from "../../helpers/logger";
-import type { TaskRunnerEventsListener } from "../../clients/worker/events";
-import type { ConductorWorker, HealthMonitorConfig } from "../../clients/worker/types";
-import { TaskRunner } from "../../clients/worker/TaskRunner";
-import { getRegisteredWorkers, type RegisteredWorker } from "../decorators/registry";
-import {
-  resolveWorkerConfig,
-  getWorkerConfigOneline,
-} from "../config/WorkerConfig";
 import {
   HEALTH_CHECK_INTERVAL_MS,
   RESTART_BACKOFF_BASE_MS,
   RESTART_BACKOFF_MAX_MS,
 } from "../../clients/worker/constants";
+import type { TaskRunnerEventsListener } from "../../clients/worker/events";
+import { TaskRunner } from "../../clients/worker/TaskRunner";
+import type { ConductorWorker, HealthMonitorConfig } from "../../clients/worker/types";
+import type { ConductorLogger } from "../../helpers/logger";
+import { DefaultLogger } from "../../helpers/logger";
+import {
+  getWorkerConfigOneline,
+  resolveWorkerConfig,
+} from "../config/WorkerConfig";
+import { getRegisteredWorkers, type RegisteredWorker } from "../decorators/registry";
 
 /**
  * Configuration for TaskHandler.
@@ -164,8 +164,7 @@ export class TaskHandler {
             error instanceof Error ? error.message : error
           );
           throw new Error(
-            `Failed to import worker module "${modulePath}": ${
-              error instanceof Error ? error.message : String(error)
+            `Failed to import worker module "${modulePath}": ${error instanceof Error ? error.message : String(error)
             }`
           );
         }
@@ -308,8 +307,7 @@ export class TaskHandler {
         this.taskRunners.push(runner);
 
         this.logger.info(
-          `Started worker: ${worker.taskDefName}${
-            worker.domain ? ` (domain: ${worker.domain})` : ""
+          `Started worker: ${worker.taskDefName}${worker.domain ? ` (domain: ${worker.domain})` : ""
           }${isPaused ? " [PAUSED]" : ""}`
         );
       } catch (error) {
@@ -382,13 +380,23 @@ export class TaskHandler {
 
       try {
         // Build task definition from template or create minimal one
-        const taskDef: ExtendedTaskDef = registered.taskDef
-          ? { ...registered.taskDef, name: worker.taskDefName }
+        const baseTaskDef = registered.taskDef
+          ? {
+            ...registered.taskDef,
+            name: worker.taskDefName
+          }
           : {
-              name: worker.taskDefName,
-              timeoutSeconds: 3600,
-              totalTimeoutSeconds: 0,
-            };
+            name: worker.taskDefName,
+            timeoutSeconds: 3600,
+            totalTimeoutSeconds: 0,
+          };
+
+        // Ensure required fields are present for API call
+        const taskDef = {
+          ...baseTaskDef,
+          timeoutSeconds: baseTaskDef.timeoutSeconds ?? 3600,
+          totalTimeoutSeconds: baseTaskDef.totalTimeoutSeconds ?? 0,
+        };
 
         const overwrite = registered.overwriteTaskDef !== false; // default true
 
@@ -425,8 +433,7 @@ export class TaskHandler {
       } catch (error) {
         // Non-fatal: log warning but continue — worker can still poll
         this.logger.error(
-          `Failed to register task definition for ${worker.taskDefName}: ${
-            error instanceof Error ? error.message : String(error)
+          `Failed to register task definition for ${worker.taskDefName}: ${error instanceof Error ? error.message : String(error)
           }`
         );
       }

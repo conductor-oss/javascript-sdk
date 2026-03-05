@@ -35,7 +35,6 @@ export class PrometheusRegistry {
 
   async initialize(prefix: string): Promise<boolean> {
     try {
-      // @ts-expect-error prom-client is an optional peer dependency
       const promClient = await import("prom-client");
       this._registry = promClient.register;
       this.createMetrics(promClient, prefix);

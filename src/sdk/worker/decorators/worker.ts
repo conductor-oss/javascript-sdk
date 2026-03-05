@@ -265,7 +265,7 @@ export function worker(options: WorkerOptions) {
     registerWorker(registeredWorker);
 
     // Create dual-mode wrapper that supports both execution and workflow builder mode
-    const dualModeFunction = function (...args: unknown[]) {
+    const dualModeFunction = function (this: unknown, ...args: unknown[]) {
       // Check if called in workflow builder mode:
       //   myWorker({ taskRefName: "step_1", inputParameters: { ... } })
       if (
