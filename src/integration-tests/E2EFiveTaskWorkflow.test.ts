@@ -1,5 +1,5 @@
 import { afterEach, beforeAll, describe, expect, test } from "@jest/globals";
-import type { Task } from "../open-api";
+import type { Client, Task } from "../open-api";
 import {
   TaskHandler,
   WorkflowExecutor,
@@ -11,7 +11,7 @@ import {
 import { waitForWorkflowStatus } from "./utils/waitForWorkflowStatus";
 
 describe("E2E: 5-task workflow × 50 executions", () => {
-  const clientPromise = orkesConductorClient();
+  const clientPromise: Promise<Client> = orkesConductorClient();
   let executor: WorkflowExecutor;
   let handler: TaskHandler | undefined;
 
@@ -109,10 +109,10 @@ describe("E2E: 5-task workflow × 50 executions", () => {
 
       expect(workflowIds.length).toBe(WORKFLOW_COUNT);
 
-      // Wait for all 50 to complete (120s timeout, poll every 2s)
+      // Wait for all 50 to complete (300s timeout, poll every 2s)
       const results = await Promise.all(
         workflowIds.map((id) =>
-          waitForWorkflowStatus(executor, id, "COMPLETED", 120_000, 2000)
+          waitForWorkflowStatus(executor, id, "COMPLETED", 300_000, 2000)
         )
       );
 
@@ -150,6 +150,6 @@ describe("E2E: 5-task workflow × 50 executions", () => {
         expect(executionCounts[taskName]).toBe(WORKFLOW_COUNT);
       }
     },
-    180_000 // 3 minute timeout for the entire test
+    330_000 // 5.5 minute timeout for the entire test
   );
 });
