@@ -10,7 +10,7 @@ export const getComplexSignalTestSubWf1Def = (date: number) => {
         name: "http",
         taskReferenceName: "http_ref",
         inputParameters: {
-          uri: "http://httpbin:8081/api/hello?name=test1",
+          uri: "http://httpbin-server:8081/api/hello?name=test1",
           method: "GET",
           accept: "application/json",
           contentType: "application/json",
