@@ -38,6 +38,18 @@ describe("EventClient", () => {
   const createUniqueName = (prefix: string) =>
     `${TEST_HANDLER_NAME_PREFIX}${prefix}:${Date.now()}`;
 
+  // Safe cleanup: remove handler if it exists; never throw (so cleanup never fails the test)
+  const tryRemoveEventHandler = async (
+    eventClient: InstanceType<typeof EventClient>,
+    name: string
+  ): Promise<void> => {
+    try {
+      await eventClient.removeEventHandler(name);
+    } catch {
+      // Handler may already have been removed (e.g. by afterEach or server)
+    }
+  };
+
   // Helper function to create a test event handler
   const createEventHandler = (
     name: string,
@@ -121,7 +133,7 @@ describe("EventClient", () => {
       });
 
       // Cleanup
-      await eventClient.removeEventHandler(handlerName);
+      await tryRemoveEventHandler(eventClient, handlerName);
     });
 
     test("Should add multiple event handlers", async () => {
@@ -148,8 +160,8 @@ describe("EventClient", () => {
       expect(addedHandlers.length).toBeGreaterThanOrEqual(2);
 
       // Cleanup
-      await eventClient.removeEventHandler(handlerName1);
-      await eventClient.removeEventHandler(handlerName2);
+      await tryRemoveEventHandler(eventClient, handlerName1);
+      await tryRemoveEventHandler(eventClient, handlerName2);
     });
 
     test("Should update an event handler", async () => {
@@ -181,7 +193,7 @@ describe("EventClient", () => {
       expect(retrievedHandler.description).toEqual("Updated description");
 
       // Cleanup
-      await eventClient.removeEventHandler(handlerName);
+      await tryRemoveEventHandler(eventClient, handlerName);
     });
 
     test("Should get all event handlers", async () => {
@@ -208,7 +220,7 @@ describe("EventClient", () => {
       expect(retrievedHandler.event).toEqual(eventName);
 
       // Cleanup
-      await eventClient.removeEventHandler(handlerName);
+      await tryRemoveEventHandler(eventClient, handlerName);
     });
 
     test("Should get event handlers for a specific event", async () => {
@@ -234,7 +246,7 @@ describe("EventClient", () => {
       expect(Array.isArray(activeHandlers)).toBe(true);
 
       // Cleanup
-      await eventClient.removeEventHandler(handlerName);
+      await tryRemoveEventHandler(eventClient, handlerName);
     });
 
     test("Should remove an event handler", async () => {
@@ -303,7 +315,7 @@ describe("EventClient", () => {
       });
 
       // Cleanup
-      await eventClient.removeEventHandler(handlerName);
+      await tryRemoveEventHandler(eventClient, handlerName);
     });
 
     test("Should put tags for an event handler", async () => {
@@ -344,7 +356,7 @@ describe("EventClient", () => {
       });
 
       // Cleanup
-      await eventClient.removeEventHandler(handlerName);
+      await tryRemoveEventHandler(eventClient, handlerName);
     });
 
     test("Should delete tags for an event handler", async () => {
@@ -402,7 +414,7 @@ describe("EventClient", () => {
       expect(foundRemainingTag?.value).toEqual(remainingTag.value);
 
       // Cleanup
-      await eventClient.removeEventHandler(handlerName);
+      await tryRemoveEventHandler(eventClient, handlerName);
     });
   });
 
@@ -583,7 +595,7 @@ describe("EventClient", () => {
         expect(ourExecution.name).toEqual(handlerName);
       }
 
-      await eventClient.removeEventHandler(handlerName);
+      await tryRemoveEventHandler(eventClient, handlerName);
     });
   });
 
@@ -640,7 +652,7 @@ describe("EventClient", () => {
       expect(foundHandler?.event).toBe(eventName);
       expect(foundHandler?.active).toBe(true);
 
-      await eventClient.removeEventHandler(handlerName);
+      await tryRemoveEventHandler(eventClient, handlerName);
     });
 
     test("Should get event executions for a handler", async () => {
@@ -704,7 +716,7 @@ describe("EventClient", () => {
       expect(typeof ourExecution?.created).toBe("number");
       expect(ourExecution?.action).toBe("start_workflow");
 
-      await eventClient.removeEventHandler(handlerName);
+      await tryRemoveEventHandler(eventClient, handlerName);
     });
 
     test("Should get event handlers with statistics", async () => {
@@ -769,7 +781,7 @@ describe("EventClient", () => {
       expect(typeof foundHandler?.numberOfActions).toBe("number");
       expect(typeof foundHandler?.numberOfMessages).toBe("number");
 
-      await eventClient.removeEventHandler(handlerName);
+      await tryRemoveEventHandler(eventClient, handlerName);
     });
 
     test("Should get event messages for an event", async () => {
@@ -819,7 +831,7 @@ describe("EventClient", () => {
       expect(ourMessage?.fullPayload?.source).toBe("integration-test");
       expect(ourMessage?.fullPayload?.message).toBe("test event");
 
-      await eventClient.removeEventHandler(handlerName);
+      await tryRemoveEventHandler(eventClient, handlerName);
     });
   });
 });
