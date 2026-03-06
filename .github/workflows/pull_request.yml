@@ -28,7 +28,7 @@ jobs:
       fail-fast: false
       matrix:
         node-version: [20, 22, 24]
-        test: ["unit", "integration:orkes-v5", "integration:orkes-v4"]
+        test: ["unit", "integration:v5", "integration:v4"]
     name: Node.js v${{ matrix.node-version }} - ${{ matrix.test }} tests
     steps:
       - name: Checkout
@@ -43,9 +43,9 @@ jobs:
         id: tests
         run: npm run test:${{ matrix.test }} -- --ci --coverage --reporters=default --reporters=github-actions --reporters=jest-junit
         env:
-          CONDUCTOR_SERVER_URL: ${{ matrix.test == 'integration:orkes-v4' && vars.SERVER_URL_V4 || vars.SERVER_URL }}
-          CONDUCTOR_AUTH_KEY: ${{ matrix.test == 'integration:orkes-v4' && secrets.AUTH_KEY_V4 || secrets.AUTH_KEY }}
-          CONDUCTOR_AUTH_SECRET: ${{ matrix.test == 'integration:orkes-v4' && secrets.AUTH_SECRET_V4 || secrets.AUTH_SECRET }}
+          CONDUCTOR_SERVER_URL: ${{ matrix.test == 'integration:v4' && vars.SERVER_URL_V4 || vars.SERVER_URL }}
+          CONDUCTOR_AUTH_KEY: ${{ matrix.test == 'integration:v4' && secrets.AUTH_KEY_V4 || secrets.AUTH_KEY }}
+          CONDUCTOR_AUTH_SECRET: ${{ matrix.test == 'integration:v4' && secrets.AUTH_SECRET_V4 || secrets.AUTH_SECRET }}
           JEST_JUNIT_OUTPUT_NAME: ${{ matrix.test }}-test-results.xml
       - name: Publish ${{ matrix.test }} Test Results
         uses: dorny/test-reporter@v2
