@@ -1,4 +1,4 @@
-import { describe, expect, jest, test } from "@jest/globals";
+import { afterEach, describe, expect, jest, test } from "@jest/globals";
 import type {
   Action,
   ConnectivityTestInput,
@@ -8,12 +8,35 @@ import type {
 import { EventClient, orkesConductorClient } from "../sdk";
 import { describeForOrkesV5 } from "./utils/customJestDescribe";
 
+const TEST_HANDLER_NAME_PREFIX = "jsSdkTest:";
+
 describe("EventClient", () => {
   jest.setTimeout(60000);
 
+  // Clean up any event handlers created by tests (runs even when a test fails)
+  afterEach(async () => {
+    try {
+      const eventClient = new EventClient(await orkesConductorClient());
+      const handlers = await eventClient.getAllEventHandlers();
+      const toRemove = handlers.filter(
+        (h) => h.name?.startsWith(TEST_HANDLER_NAME_PREFIX)
+      );
+      for (const h of toRemove) {
+        if (!h.name) continue;
+        try {
+          await eventClient.removeEventHandler(h.name);
+        } catch {
+          // Handler may already have been removed by the test
+        }
+      }
+    } catch {
+      // Ignore cleanup failures (e.g. no server, auth issues)
+    }
+  });
+
   // Helper function to create unique names
   const createUniqueName = (prefix: string) =>
-    `jsSdkTest:${prefix}:${Date.now()}`;
+    `${TEST_HANDLER_NAME_PREFIX}${prefix}:${Date.now()}`;
 
   // Helper function to create a test event handler
   const createEventHandler = (
