@@ -1,16 +1,29 @@
-import { expect, describe, test, jest } from "@jest/globals";
+import { expect, describe, test, jest, afterAll } from "@jest/globals";
 import {
   TaskRunner,
   WorkflowExecutor,
   simpleTask,
   orkesConductorClient,
+  MetadataClient,
 } from "../sdk";
 import { waitForWorkflowStatus } from "./utils/waitForWorkflowStatus";
 
 describe("TaskRunner", () => {
   const clientPromise = orkesConductorClient();
+  const workflowsToCleanup: { name: string; version: number }[] = [];
 
   jest.setTimeout(30000);
+
+  afterAll(async () => {
+    const client = await clientPromise;
+    const metadataClient = new MetadataClient(client);
+    await Promise.allSettled(
+      workflowsToCleanup.map((w) =>
+        metadataClient.unregisterWorkflow(w.name, w.version)
+      )
+    );
+  });
+
   test("worker example ", async () => {
     const client = await clientPromise;
     const executor = new WorkflowExecutor(client);
@@ -50,6 +63,7 @@ describe("TaskRunner", () => {
       outputParameters: {},
       timeoutSeconds: 0,
     });
+    workflowsToCleanup.push({ name: workflowName, version: 1 });
 
     const { workflowId: executionId } = await executor.executeWorkflow(
       {

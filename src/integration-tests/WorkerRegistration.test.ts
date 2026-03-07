@@ -1,6 +1,7 @@
-import { afterEach, beforeAll, describe, expect, test } from "@jest/globals";
+import { afterAll, afterEach, beforeAll, describe, expect, test } from "@jest/globals";
 import type { Task } from "../open-api";
 import {
+  MetadataClient,
   NonRetryableException,
   TaskHandler,
   WorkflowExecutor,
@@ -22,6 +23,7 @@ import { executeWorkflowWithRetry } from "./utils/executeWorkflowWithRetry";
 describe("SDK Worker Registration", () => {
   const clientPromise = orkesConductorClient();
   let executor: WorkflowExecutor;
+  const workflowsToCleanup: { name: string; version: number }[] = [];
 
   beforeAll(async () => {
     const client = await clientPromise;
@@ -31,6 +33,16 @@ describe("SDK Worker Registration", () => {
   afterEach(() => {
     // Clean up worker registry after each test to prevent conflicts
     clearWorkerRegistry();
+  });
+
+  afterAll(async () => {
+    const client = await clientPromise;
+    const metadataClient = new MetadataClient(client);
+    await Promise.allSettled(
+      workflowsToCleanup.map((w) =>
+        metadataClient.unregisterWorkflow(w.name, w.version)
+      )
+    );
   });
 
   test("worker() function registers workers in global registry", async () => {
@@ -98,6 +110,7 @@ describe("SDK Worker Registration", () => {
       outputParameters: {},
       timeoutSeconds: 0,
     });
+    workflowsToCleanup.push({ name: workflowName, version: 1 });
     expect(handler.running).toBe(true);
     expect(handler.runningWorkerCount).toBe(1);
 
@@ -195,6 +208,7 @@ describe("SDK Worker Registration", () => {
       outputParameters: {},
       timeoutSeconds: 0,
     });
+    workflowsToCleanup.push({ name: workflowName, version: 1 });
 
     // Execute workflow with retry on transient failures
     const { workflowId } = await executeWorkflowWithRetry(
@@ -303,6 +317,7 @@ describe("SDK Worker Registration", () => {
       outputParameters: {},
       timeoutSeconds: 0,
     });
+    workflowsToCleanup.push({ name: workflowName, version: 1 });
 
     // Execute workflow with shouldFail flag and retry on transient failures
     const { workflowId } = await executeWorkflowWithRetry(
@@ -392,6 +407,7 @@ describe("SDK Worker Registration", () => {
       outputParameters: {},
       timeoutSeconds: 0,
     });
+    workflowsToCleanup.push({ name: workflowName, version: 1 });
 
     // Execute workflow with retry on transient failures
     const { workflowId } = await executeWorkflowWithRetry(
@@ -475,6 +491,7 @@ describe("SDK Worker Registration", () => {
       outputParameters: {},
       timeoutSeconds: 0,
     });
+    workflowsToCleanup.push({ name: workflowName, version: 1 });
     expect(handler.runningWorkerCount).toBe(2);
 
     // Execute workflow with retry on transient failures
