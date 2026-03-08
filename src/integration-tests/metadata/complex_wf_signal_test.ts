@@ -10,7 +10,7 @@ export const getComplexSignalTestWfDef = (date: number) => {
         name: "http",
         taskReferenceName: "http_ref",
         inputParameters: {
-          uri: "http://httpbin:8081/api/hello?name=test1",
+          uri: "https://orkes-api-tester.orkesconductor.com/api",
           method: "GET",
           accept: "application/json",
           contentType: "application/json",
@@ -22,7 +22,7 @@ export const getComplexSignalTestWfDef = (date: number) => {
         forkTasks: [],
         startDelay: 0,
         joinOn: [],
-        optional: true, // optional so tests work without httpbin Docker service
+        optional: false,
         defaultExclusiveJoinTask: [],
         asyncComplete: false,
         loopOver: [],
