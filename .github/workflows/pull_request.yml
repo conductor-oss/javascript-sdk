@@ -26,7 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      # Integration tests run on a single Node version with one worker to mimic local (avoid 503s and shared-state flakes).
+      # Integration tests use one worker to reduce 503s and shared-state flakes.
       matrix:
         include:
           - node-version: 20
@@ -35,9 +35,17 @@ jobs:
             test: unit
           - node-version: 24
             test: unit
-          - node-version: 22
+          - node-version: 20
             test: integration:v5
           - node-version: 22
+            test: integration:v5
+          - node-version: 24
+            test: integration:v5
+          - node-version: 20
+            test: integration:v4
+          - node-version: 22
+            test: integration:v4
+          - node-version: 24
             test: integration:v4
     name: Node.js v${{ matrix.node-version }} - ${{ matrix.test }} tests
     steps:
