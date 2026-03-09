@@ -41,8 +41,9 @@ jobs:
         run: npm ci
       - name: Run ${{ matrix.test }} Tests and Add Annotations
         id: tests
-        run: npm run test:${{ matrix.test }} -- --ci --coverage --reporters=default --reporters=github-actions --reporters=jest-junit
+        run: npm run test:${{ matrix.test }} -- --ci --coverage --reporters=default --reporters=github-actions --reporters=jest-junit ${{ (matrix.test == 'integration:v4' || matrix.test == 'integration:v5') && '--maxWorkers=4' || '' }}
         env:
+          ORKES_BACKEND_VERSION: ${{ matrix.test == 'integration:v4' && '4' || (matrix.test == 'integration:v5' && '5' || '') }}
           CONDUCTOR_SERVER_URL: ${{ matrix.test == 'integration:v4' && vars.SERVER_URL_V4 || vars.SERVER_URL }}
           CONDUCTOR_AUTH_KEY: ${{ matrix.test == 'integration:v4' && secrets.AUTH_KEY_V4 || secrets.AUTH_KEY }}
           CONDUCTOR_AUTH_SECRET: ${{ matrix.test == 'integration:v4' && secrets.AUTH_SECRET_V4 || secrets.AUTH_SECRET }}
@@ -63,4 +64,3 @@ jobs:
           flags: ${{ matrix.test }}
           name: codecov-${{ matrix.test }}-node-${{ matrix.node-version }}
           fail_ci_if_error: false
-          
