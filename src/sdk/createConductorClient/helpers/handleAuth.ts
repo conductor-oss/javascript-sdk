@@ -54,10 +54,14 @@ export const handleAuth = async (
         logger?.debug(`Auth error code from server: ${errorCode}`);
       }
 
+      const statusHint =
+        response?.status != null ? ` (HTTP ${response.status})` : "";
       const message =
         error && typeof error === "object" && "message" in error
-          ? String((error as { message: unknown }).message)
-          : "Unknown error";
+          ? String((error as { message: unknown }).message) + statusHint
+          : error && typeof error === "object" && "error" in error
+            ? String((error as { error: unknown }).error) + statusHint
+            : `Unknown error${statusHint}`;
       throw new ConductorSdkError(
         `Failed to generate authorization token: ${message}`,
         error instanceof Error ? error : undefined

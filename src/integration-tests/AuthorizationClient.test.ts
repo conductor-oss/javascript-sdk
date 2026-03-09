@@ -15,7 +15,6 @@ import {
 describe("AuthorizationClient", () => {
   jest.setTimeout(60000);
 
-  const clientPromise = orkesConductorClient();
   const suffix = Date.now();
 
   let authClient: AuthorizationClient;
@@ -31,8 +30,19 @@ describe("AuthorizationClient", () => {
   const groupsToCleanup: string[] = [];
 
   beforeAll(async () => {
-    const client = await clientPromise;
-    const clients = new OrkesClients(client);
+    // Retry client creation to handle transient auth failures in CI
+    const maxAttempts = 3;
+    let client;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        client = await orkesConductorClient();
+        break;
+      } catch (e) {
+        if (attempt === maxAttempts) throw e;
+        await new Promise((r) => setTimeout(r, 2000 * attempt));
+      }
+    }
+    const clients = new OrkesClients(client!);
     authClient = clients.getAuthorizationClient();
     metadataClient = clients.getMetadataClient();
 
@@ -57,6 +67,8 @@ describe("AuthorizationClient", () => {
   });
 
   afterAll(async () => {
+    // Skip cleanup if beforeAll failed (e.g. auth error in CI) and clients were never set
+    if (!authClient || !metadataClient) return;
     // Cleanup groups first (they reference users)
     for (const gid of groupsToCleanup) {
       try {
