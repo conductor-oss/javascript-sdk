@@ -51,7 +51,7 @@
     "test:integration:base": "jest --force-exit --detectOpenHandles --testMatch='**/src/integration-tests/*.test.[jt]s?(x)'",
     "test:integration:v5": "cross-env ORKES_BACKEND_VERSION=5 npm run test:integration:base --",
     "test:integration:v4": "cross-env ORKES_BACKEND_VERSION=4 npm run test:integration:base --",
-    "test:integration:v5:batch": "cross-env ORKES_BACKEND_VERSION=5 node scripts/run-integration-batch.js",
+    "test:integration:v5:batch": "cross-env ORKES_BACKEND_VERSION=5 node scripts/run-integration-batch.mjs",
     "ci": "npm run lint && npm run test",
     "build": "tsup index.ts",
     "generate-openapi-layer": "openapi-ts",

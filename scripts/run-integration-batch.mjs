@@ -1,15 +1,17 @@
 #!/usr/bin/env node
-"use strict";
 /**
  * Runs one batch of integration tests (by file count). Splits src/integration-tests/*.test.* into 5 batches.
- * Usage: node scripts/run-integration-batch.js <batchIndex 0-4> [-- jest args...]
+ * Usage: node scripts/run-integration-batch.mjs <batchIndex 0-4> [-- jest args...]
  * Example: npm run test:integration:v5:batch -- 0
  * Example: npm run test:integration:v5:batch -- 2 -- --ci --coverage
  */
 
-const fs = require("fs");
-const path = require("path");
-const { spawnSync } = require("child_process");
+import fs from "fs";
+import path from "path";
+import { spawnSync } from "child_process";
+import { fileURLToPath } from "url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const INTEGRATION_DIR = path.join(__dirname, "..", "src", "integration-tests");
 const TOTAL_BATCHES = 5;
@@ -34,7 +36,7 @@ function getPatternForBatch(batchIndex) {
 const raw = process.argv[2];
 const batchIndex = raw === undefined ? 0 : parseInt(raw, 10);
 if (Number.isNaN(batchIndex) || batchIndex < 0 || batchIndex >= TOTAL_BATCHES) {
-  console.error(`Usage: run-integration-batch.js <batchIndex 0-${TOTAL_BATCHES - 1}> [-- jest args...]`);
+  console.error(`Usage: run-integration-batch.mjs <batchIndex 0-${TOTAL_BATCHES - 1}> [-- jest args...]`);
   console.error(`Example: npm run test:integration:v5:batch -- 0`);
   console.error(`Example: npm run test:integration:v5:batch -- 2 -- --ci --coverage`);
   process.exit(1);
