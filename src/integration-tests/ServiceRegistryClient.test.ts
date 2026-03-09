@@ -10,7 +10,7 @@ import { describeForOrkesV5 } from "./utils/customJestDescribe";
 // when testing against a remote cluster (e.g. a public Swagger URL it can reach).
 const TEST_SERVICE_URI =
   process.env.CONDUCTOR_TEST_SERVICE_URI ??
-  "https://orkes-api-tester.orkesconductor.com/api";
+  "http://httpbin-server:8081/api-docs";
 
 describeForOrkesV5("ServiceRegistryClient", () => {
   const clientPromise = orkesConductorClient();
