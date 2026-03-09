@@ -17,7 +17,17 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
+          cache: "npm"
+      - name: Cache node_modules
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: npm-22-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            npm-22-
       - name: Install Dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
         run: npm ci
       - name: Run Linter
         run: npm run lint
@@ -55,8 +65,26 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
+          cache: "npm"
+      - name: Cache node_modules
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: npm-${{ matrix.node-version }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            npm-${{ matrix.node-version }}-
       - name: Install Dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
         run: npm ci
+      - name: Stagger integration start (reduce auth/server thundering)
+        if: ${{ matrix.test == 'integration:v5:batch' }}
+        run: |
+          # Spread 15 integration jobs over ~30s so token endpoint isn't hammered
+          case "${{ matrix.node-version }}" in 20) n=0;; 22) n=1;; 24) n=2;; *) n=0;; esac
+          delay=$(( ${{ matrix.batch-index }} * 6 + n * 2 ))
+          echo "Staggering ${delay}s before running tests (batch ${{ matrix.batch-index }}, node ${{ matrix.node-version }})"
+          sleep "$delay"
       - name: Run ${{ matrix.test }} Tests and Add Annotations
         id: tests
         run: |
