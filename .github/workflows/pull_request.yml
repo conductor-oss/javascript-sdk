@@ -26,9 +26,19 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
+      # Integration tests run on a single Node version with one worker to mimic local (avoid 503s and shared-state flakes).
       matrix:
-        node-version: [20, 22, 24]
-        test: ["unit", "integration:v5", "integration:v4"]
+        include:
+          - node-version: 20
+            test: unit
+          - node-version: 22
+            test: unit
+          - node-version: 24
+            test: unit
+          - node-version: 22
+            test: integration:v5
+          - node-version: 22
+            test: integration:v4
     name: Node.js v${{ matrix.node-version }} - ${{ matrix.test }} tests
     steps:
       - name: Checkout
@@ -41,12 +51,13 @@ jobs:
         run: npm ci
       - name: Run ${{ matrix.test }} Tests and Add Annotations
         id: tests
-        run: npm run test:${{ matrix.test }} -- --ci --coverage --reporters=default --reporters=github-actions --reporters=jest-junit ${{ (matrix.test == 'integration:v4' || matrix.test == 'integration:v5') && '--maxWorkers=4' || '' }}
+        run: npm run test:${{ matrix.test }} -- --ci --coverage --reporters=default --reporters=github-actions --reporters=jest-junit ${{ (matrix.test == 'integration:v4' || matrix.test == 'integration:v5') && '--maxWorkers=1' || '' }}
         env:
           ORKES_BACKEND_VERSION: ${{ matrix.test == 'integration:v4' && '4' || (matrix.test == 'integration:v5' && '5' || '') }}
           CONDUCTOR_SERVER_URL: ${{ matrix.test == 'integration:v4' && vars.SERVER_URL_V4 || vars.SERVER_URL }}
           CONDUCTOR_AUTH_KEY: ${{ matrix.test == 'integration:v4' && secrets.AUTH_KEY_V4 || secrets.AUTH_KEY }}
           CONDUCTOR_AUTH_SECRET: ${{ matrix.test == 'integration:v4' && secrets.AUTH_SECRET_V4 || secrets.AUTH_SECRET }}
+          CONDUCTOR_SDK_INITIAL_TOKEN_STAGGER_MS: ${{ (matrix.test == 'integration:v4' || matrix.test == 'integration:v5') && '2000' || '' }}
           JEST_JUNIT_OUTPUT_NAME: ${{ matrix.test }}-test-results.xml
       - name: Publish ${{ matrix.test }} Test Results
         uses: dorny/test-reporter@v2
