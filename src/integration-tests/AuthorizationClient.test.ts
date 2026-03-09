@@ -42,7 +42,8 @@ describe("AuthorizationClient", () => {
         await new Promise((r) => setTimeout(r, 2000 * attempt));
       }
     }
-    const clients = new OrkesClients(client!);
+    if (client == null) throw new Error("Failed to create Conductor client");
+    const clients = new OrkesClients(client);
     authClient = clients.getAuthorizationClient();
     metadataClient = clients.getMetadataClient();
 
