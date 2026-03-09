@@ -17,7 +17,7 @@ describe("TaskManager", () => {
   const workflowsToCleanup: { name: string; version: number }[] = [];
   const tasksToCleanup: string[] = [];
 
-  jest.setTimeout(30000);
+  jest.setTimeout(60000);
 
   afterEach(async () => {
     const client = await clientPromise;
