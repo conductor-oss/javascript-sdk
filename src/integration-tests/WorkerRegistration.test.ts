@@ -7,7 +7,6 @@ import {
   WorkflowExecutor,
   clearWorkerRegistry,
   getRegisteredWorkers,
-  orkesConductorClient,
   simpleTask,
   worker
 } from "../sdk";
@@ -19,9 +18,10 @@ import type {
 } from "../sdk/clients/worker/events/types";
 import { waitForWorkflowStatus } from "./utils/waitForWorkflowStatus";
 import { executeWorkflowWithRetry } from "./utils/executeWorkflowWithRetry";
+import { createClientWithRetry } from "./utils/createClientWithRetry";
 
 describe("SDK Worker Registration", () => {
-  const clientPromise = orkesConductorClient();
+  const clientPromise = createClientWithRetry();
   let executor: WorkflowExecutor;
   const workflowsToCleanup: { name: string; version: number }[] = [];
 

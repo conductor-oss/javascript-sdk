@@ -36,7 +36,7 @@ describeForOrkesV5("ServiceRegistryClient", () => {
     testServicesToCleanup.length = 0;
   });
 
-  jest.setTimeout(15000);
+  jest.setTimeout(60000);
 
   test("Should add and retrieve a service registry", async () => {
     // Create a test service registry

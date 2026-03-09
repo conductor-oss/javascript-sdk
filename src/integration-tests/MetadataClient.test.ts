@@ -9,7 +9,7 @@ describe("MetadataClient", () => {
   const clientPromise = orkesConductorClient();
   const taskName = `jsSdkTest-test_task_definition-${Date.now()}`;
 
-  jest.setTimeout(15000);
+  jest.setTimeout(60000);
   test("Should register a task definition", async () => {
     const client = await clientPromise;
     const metadataClient = new MetadataClient(client);

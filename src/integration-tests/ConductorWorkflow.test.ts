@@ -14,12 +14,12 @@ import {
   ConductorWorkflow,
   MetadataClient,
   WorkflowExecutor,
-  orkesConductorClient,
   setVariableTask,
   llmChatCompleteTask,
   Role,
 } from "../sdk";
 import { waitForWorkflowStatus } from "./utils/waitForWorkflowStatus";
+import { createClientWithRetry } from "./utils/createClientWithRetry";
 
 /**
  * E2E Integration Tests for ConductorWorkflow DSL
@@ -46,7 +46,7 @@ describe("ConductorWorkflow DSL", () => {
   const executionsToCleanup: string[] = [];
 
   beforeAll(async () => {
-    client = await orkesConductorClient();
+    client = await createClientWithRetry();
     executor = new WorkflowExecutor(client);
     metadataClient = new MetadataClient(client);
   });

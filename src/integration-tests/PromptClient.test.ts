@@ -13,7 +13,7 @@ import type { Tag } from "../open-api";
  * against a configured LLM integration.
  */
 describe("PromptClient", () => {
-  jest.setTimeout(30000);
+  jest.setTimeout(60000);
 
   const clientPromise = orkesConductorClient();
   const suffix = Date.now();

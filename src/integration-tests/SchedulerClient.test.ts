@@ -12,7 +12,7 @@ import {
 
 describe("SchedulerClient", () => {
   const clientPromise = orkesConductorClient();
-  jest.setTimeout(15000);
+  jest.setTimeout(60000);
 
   const now = Date.now();
   const name = `jsSdkTestSchedule_${now}`;

@@ -150,6 +150,15 @@ describe("TaskManager", () => {
     );
 
     expect(workflowStatus.status).toEqual("FAILED");
+
+    // Error handler is invoked after updateTaskWithRetry resolves, so it may run
+    // after we observe FAILED. Wait for it with a short poll to avoid flakiness.
+    const handlerWaitMs = 5000;
+    const pollMs = 100;
+    const deadline = Date.now() + handlerWaitMs;
+    while (mockErrorHandler.mock.calls.length < 1 && Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, pollMs));
+    }
     expect(mockErrorHandler).toHaveBeenCalledTimes(1);
     await manager.stopPolling();
   });

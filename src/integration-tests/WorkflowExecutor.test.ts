@@ -686,12 +686,32 @@ describe("WorkflowExecutor", () => {
           if (!workflowId) {
             throw new Error("workflowId is undefined");
           }
-          await executor.signal(workflowId, TaskResultStatusEnum.COMPLETED, {
-            result: "signal1",
-          });
-          await executor.signal(workflowId, TaskResultStatusEnum.COMPLETED, {
-            result: "signal2",
-          });
+          // Allow workflow to reach WAIT task before signaling (avoids "Failed to signal" on slow CI)
+          await new Promise((r) => setTimeout(r, 2000));
+          const signalWithRetry = async (
+            output: Record<string, unknown>,
+            maxAttempts = 3
+          ) => {
+            let lastErr: unknown;
+            for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+              try {
+                await executor.signal(
+                  workflowId,
+                  TaskResultStatusEnum.COMPLETED,
+                  output
+                );
+                return;
+              } catch (e) {
+                lastErr = e;
+                if (attempt < maxAttempts) {
+                  await new Promise((r) => setTimeout(r, 1000 * attempt));
+                }
+              }
+            }
+            throw lastErr;
+          };
+          await signalWithRetry({ result: "signal1" });
+          await signalWithRetry({ result: "signal2" });
 
           await waitForWorkflowStatus(
             executor,

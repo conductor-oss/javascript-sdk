@@ -50,8 +50,10 @@ export class WorkflowExecutor {
     workflow: WorkflowDef
   ): Promise<void> {
     try {
+      // Clone so the HTTP client never receives a body it may have already read/locked
+      // (avoids "Response body object should not be disturbed or locked" in some environments).
       await MetadataResource.create({
-        body: workflow,
+        body: JSON.parse(JSON.stringify(workflow)) as WorkflowDef,
         query: { overwrite: override },
         client: this._client,
         throwOnError: true,

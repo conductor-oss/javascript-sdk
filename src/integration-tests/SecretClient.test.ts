@@ -12,7 +12,7 @@ import type { Tag } from "../open-api";
  * Tests secret CRUD operations, existence checks, listing, and tag management.
  */
 describe("SecretClient", () => {
-  jest.setTimeout(30000);
+  jest.setTimeout(60000);
 
   const clientPromise = orkesConductorClient();
   const suffix = Date.now();

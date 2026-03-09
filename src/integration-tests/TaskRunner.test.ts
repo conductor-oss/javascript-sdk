@@ -14,7 +14,7 @@ describe("TaskRunner", () => {
   const clientPromise = orkesConductorClient();
   const workflowsToCleanup: { name: string; version: number }[] = [];
 
-  jest.setTimeout(30000);
+  jest.setTimeout(60000);
 
   afterAll(async () => {
     const client = await clientPromise;

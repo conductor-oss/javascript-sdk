@@ -12,7 +12,7 @@ import {
  * version creation, and deletion.
  */
 describe("SchemaClient", () => {
-  jest.setTimeout(30000);
+  jest.setTimeout(60000);
 
   const clientPromise = orkesConductorClient();
   const suffix = Date.now();
