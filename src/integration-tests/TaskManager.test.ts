@@ -105,13 +105,22 @@ describe("TaskManager", () => {
       },
     };
 
-    await metadataClient.registerTask(
-      taskDefinition({
-        name: taskName,
-        timeoutSeconds: 0,
-        retryCount: 0,
-      })
-    );
+    // Let previous test's cleanup settle on the server; retry register in case of transient failure
+    await new Promise((r) => setTimeout(r, 1500));
+    const taskDef = taskDefinition({
+      name: taskName,
+      timeoutSeconds: 0,
+      retryCount: 0,
+    });
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        await metadataClient.registerTask(taskDef);
+        break;
+      } catch (e) {
+        if (attempt === 3) throw e;
+        await new Promise((r) => setTimeout(r, 1000 * attempt));
+      }
+    }
     tasksToCleanup.push(taskName);
 
     const manager = new TaskManager(client, [worker], {

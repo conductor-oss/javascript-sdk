@@ -26,7 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      # Integration tests use one worker to reduce 503s and shared-state flakes.
+      # Unit on all Node versions; v5 integration in batches on all Node versions; v4 full suite on 22.
       matrix:
         include:
           - node-version: 20
@@ -36,11 +36,35 @@ jobs:
           - node-version: 24
             test: unit
           - node-version: 20
-            test: integration:v5
+            test: integration:v5:batch1
           - node-version: 22
-            test: integration:v5
+            test: integration:v5:batch1
           - node-version: 24
-            test: integration:v5
+            test: integration:v5:batch1
+          - node-version: 20
+            test: integration:v5:batch2
+          - node-version: 22
+            test: integration:v5:batch2
+          - node-version: 24
+            test: integration:v5:batch2
+          - node-version: 20
+            test: integration:v5:batch3
+          - node-version: 22
+            test: integration:v5:batch3
+          - node-version: 24
+            test: integration:v5:batch3
+          - node-version: 20
+            test: integration:v5:batch4
+          - node-version: 22
+            test: integration:v5:batch4
+          - node-version: 24
+            test: integration:v5:batch4
+          - node-version: 20
+            test: integration:v5:batch5
+          - node-version: 22
+            test: integration:v5:batch5
+          - node-version: 24
+            test: integration:v5:batch5
           - node-version: 20
             test: integration:v4
           - node-version: 22
@@ -59,20 +83,20 @@ jobs:
         run: npm ci
       - name: Run ${{ matrix.test }} Tests and Add Annotations
         id: tests
-        run: npm run test:${{ matrix.test }} -- --ci --coverage --reporters=default --reporters=github-actions --reporters=jest-junit ${{ (matrix.test == 'integration:v4' || matrix.test == 'integration:v5') && '--maxWorkers=1' || '' }}
+        run: npm run test:${{ matrix.test }} -- --ci --coverage --reporters=default --reporters=github-actions --reporters=jest-junit
         env:
-          ORKES_BACKEND_VERSION: ${{ matrix.test == 'integration:v4' && '4' || (matrix.test == 'integration:v5' && '5' || '') }}
-          CONDUCTOR_SERVER_URL: ${{ matrix.test == 'integration:v4' && vars.SERVER_URL_V4 || vars.SERVER_URL }}
-          CONDUCTOR_AUTH_KEY: ${{ matrix.test == 'integration:v4' && secrets.AUTH_KEY_V4 || secrets.AUTH_KEY }}
-          CONDUCTOR_AUTH_SECRET: ${{ matrix.test == 'integration:v4' && secrets.AUTH_SECRET_V4 || secrets.AUTH_SECRET }}
-          CONDUCTOR_SDK_INITIAL_TOKEN_STAGGER_MS: ${{ (matrix.test == 'integration:v4' || matrix.test == 'integration:v5') && '2000' || '' }}
-          JEST_JUNIT_OUTPUT_NAME: ${{ matrix.test }}-test-results.xml
+          ORKES_BACKEND_VERSION: ${{ matrix.test == 'integration:v4' && '4' || (contains(matrix.test, 'integration:v5') && '5' || '') }}
+          CONDUCTOR_SERVER_URL: ${{ matrix.test == 'integration:v4' && vars.SERVER_URL_V4 || (contains(matrix.test, 'integration') && vars.SERVER_URL || '') }}
+          CONDUCTOR_AUTH_KEY: ${{ matrix.test == 'integration:v4' && secrets.AUTH_KEY_V4 || (contains(matrix.test, 'integration') && secrets.AUTH_KEY || '') }}
+          CONDUCTOR_AUTH_SECRET: ${{ matrix.test == 'integration:v4' && secrets.AUTH_SECRET_V4 || (contains(matrix.test, 'integration') && secrets.AUTH_SECRET || '') }}
+          CONDUCTOR_SDK_INITIAL_TOKEN_STAGGER_MS: ${{ (matrix.test == 'integration:v4' || contains(matrix.test, 'integration')) && '2000' || '' }}
+          JEST_JUNIT_OUTPUT_NAME: ${{ matrix.test }}-node-${{ matrix.node-version }}-test-results.xml
       - name: Publish ${{ matrix.test }} Test Results
         uses: dorny/test-reporter@v2
         if: ${{ !cancelled() }}
         with:
-          name: ${{ matrix.test }} Test Report
-          path: reports/${{ matrix.test }}-test-results.xml
+          name: ${{ matrix.test }} (Node ${{ matrix.node-version }})
+          path: reports/${{ matrix.test }}-node-${{ matrix.node-version }}-test-results.xml
           reporter: jest-junit
       - name: Upload coverage to Codecov
         if: always()
