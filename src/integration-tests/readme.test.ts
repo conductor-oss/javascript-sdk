@@ -1,38 +1,31 @@
-import { afterEach, beforeAll, expect, describe, test, jest } from "@jest/globals";
+import { expect, describe, test, jest, afterAll } from "@jest/globals";
 import {
-  MetadataClient,
   orkesConductorClient,
   TaskRunner,
   WorkflowExecutor,
-  OrkesClients,
   simpleTask,
   generate,
+  MetadataClient,
 } from "../sdk";
 import { TaskType } from "../open-api";
-import { cleanupWorkflowsAndTasks } from "./utils/cleanup";
 import { waitForWorkflowStatus } from "./utils/waitForWorkflowStatus";
 
 describe("TaskManager", () => {
   const clientPromise = orkesConductorClient();
-  let metadataClient: MetadataClient;
   const workflowsToCleanup: { name: string; version: number }[] = [];
-  const tasksToCleanup: string[] = [];
-
-  beforeAll(async () => {
-    const client = await clientPromise;
-    metadataClient = new OrkesClients(client).getMetadataClient();
-  });
-
-  afterEach(async () => {
-    await cleanupWorkflowsAndTasks(metadataClient, {
-      workflows: workflowsToCleanup,
-      tasks: tasksToCleanup,
-    });
-    workflowsToCleanup.length = 0;
-    tasksToCleanup.length = 0;
-  });
 
   jest.setTimeout(30000);
+
+  afterAll(async () => {
+    const client = await clientPromise;
+    const metadataClient = new MetadataClient(client);
+    await Promise.allSettled(
+      workflowsToCleanup.map((w) =>
+        metadataClient.unregisterWorkflow(w.name, w.version)
+      )
+    );
+  });
+
   test("worker example ", async () => {
     const client = await clientPromise;
     const executor = new WorkflowExecutor(client);
@@ -71,7 +64,6 @@ describe("TaskManager", () => {
       timeoutSeconds: 0,
     });
     workflowsToCleanup.push({ name: workflowName, version: 1 });
-    tasksToCleanup.push(taskName);
 
     const executionId = await executor.startWorkflow({
       name: workflowName,
@@ -107,7 +99,10 @@ describe("TaskManager", () => {
       tasks: [{ type: TaskType.WAIT, taskReferenceName: waitTaskReference }],
     });
     await executor.registerWorkflow(true, workflowWithWaitTask);
-    workflowsToCleanup.push({ name: workflowWithWaitTask.name, version: 1 });
+    workflowsToCleanup.push({
+      name: workflowWithWaitTask.name,
+      version: workflowWithWaitTask.version ?? 1,
+    });
 
     const { workflowId: executionId } = await executor.executeWorkflow(
       {
@@ -196,7 +191,10 @@ describe("TaskManager", () => {
     });
 
     await executor.registerWorkflow(true, sumTwoNumbers);
-    workflowsToCleanup.push({ name: workflowName, version: 1 });
+    workflowsToCleanup.push({
+      name: sumTwoNumbers.name,
+      version: sumTwoNumbers.version ?? 1,
+    });
 
     const { workflowId: executionId } = await executor.executeWorkflow(
       {

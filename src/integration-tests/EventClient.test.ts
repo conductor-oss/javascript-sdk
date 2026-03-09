@@ -103,6 +103,7 @@ describe("EventClient", () => {
       const retrievedHandler = await eventClient.getEventHandlerByName(
         handlerName
       );
+      if (!retrievedHandler) throw new Error("Expected handler to exist");
       expect(retrievedHandler.name).toEqual(handlerName);
       expect(retrievedHandler.event).toEqual(eventName);
       expect(retrievedHandler.active).toEqual(true);
@@ -189,6 +190,7 @@ describe("EventClient", () => {
       const retrievedHandler = await eventClient.getEventHandlerByName(
         handlerName
       );
+      if (!retrievedHandler) throw new Error("Expected handler to exist");
       expect(retrievedHandler.active).toEqual(false);
       expect(retrievedHandler.description).toEqual("Updated description");
 
@@ -215,7 +217,7 @@ describe("EventClient", () => {
       const retrievedHandler = await eventClient.getEventHandlerByName(
         handlerName
       );
-
+      if (!retrievedHandler) throw new Error("Expected handler to exist");
       expect(retrievedHandler.name).toEqual(handlerName);
       expect(retrievedHandler.event).toEqual(eventName);
 
@@ -262,6 +264,7 @@ describe("EventClient", () => {
       const retrievedHandler = await eventClient.getEventHandlerByName(
         handlerName
       );
+      if (!retrievedHandler) throw new Error("Expected handler to exist");
       expect(retrievedHandler.name).toEqual(handlerName);
 
       // Remove it
@@ -428,13 +431,18 @@ describe("EventClient", () => {
   });
 
   describe("Error Handling", () => {
-    test("Should throw error when getting non-existent event handler", async () => {
+    test("Should return null or throw when getting non-existent event handler", async () => {
       const eventClient = new EventClient(await orkesConductorClient());
       const nonExistentName = createUniqueName("non-existent-handler");
 
-      await expect(
-        eventClient.getEventHandlerByName(nonExistentName)
-      ).rejects.toThrow();
+      try {
+        const result = await eventClient.getEventHandlerByName(nonExistentName);
+        // V5: server may return null or 200 with empty/non-JSON body (e.g. stream)
+        expect(result == null || typeof (result as EventHandler)?.name !== "string").toBe(true);
+      } catch {
+        // V4: server returns 200 with empty body and SDK throws (e.g. "Response is empty")
+        expect(true).toBe(true);
+      }
     });
 
     test("Should throw error when removing non-existent handler", async () => {
@@ -541,6 +549,7 @@ describe("EventClient", () => {
       const retrievedHandler = await eventClient.getEventHandlerByName(
         handlerName
       );
+      if (!retrievedHandler) throw new Error("Expected handler to exist");
       expect(retrievedHandler.name).toEqual(handlerName);
       expect(retrievedHandler.event).toEqual(eventName);
       expect(retrievedHandler.active).toBe(true);
@@ -563,6 +572,7 @@ describe("EventClient", () => {
       const handlerAfterEvent = await eventClient.getEventHandlerByName(
         handlerName
       );
+      if (!handlerAfterEvent) throw new Error("Expected handler to exist");
       expect(handlerAfterEvent.active).toBe(true);
       expect(handlerAfterEvent.event).toEqual(eventName);
 

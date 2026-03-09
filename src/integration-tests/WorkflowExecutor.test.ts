@@ -194,17 +194,22 @@ describe("WorkflowExecutor", () => {
       throw new Error("Execution ID is undefined");
     }
 
-    const workflowStatusBefore = await waitForWorkflowStatus(
-      executor,
-      executionId,
-      "RUNNING"
-    );
+    await waitForWorkflowStatus(executor, executionId, "RUNNING");
 
-    await new Promise((resolve) => setTimeout(resolve, 5000));
-
-    expect(["IN_PROGRESS", "SCHEDULED"]).toContain(
-      workflowStatusBefore.tasks?.[0]?.status
-    );
+    // Wait for the task to be IN_PROGRESS before updating (V4 may take longer; server requires "running" task)
+    const taskReadyTimeout = 60000;
+    const pollInterval = 1000;
+    const taskReadyStart = Date.now();
+    let taskStatus: string | undefined;
+    while (Date.now() - taskReadyStart < taskReadyTimeout) {
+      const wf = await executor.getWorkflow(executionId, true);
+      taskStatus = wf?.tasks?.[0]?.status;
+      if (taskStatus === "IN_PROGRESS") break;
+      if (taskStatus === "FAILED" || taskStatus === "COMPLETED")
+        throw new Error(`Task ended in unexpected state: ${taskStatus}`);
+      await new Promise((resolve) => setTimeout(resolve, pollInterval));
+    }
+    expect(taskStatus).toEqual("IN_PROGRESS");
 
     const taskClient = new TaskClient(client);
     await taskClient.updateTaskResult(executionId, taskName, "COMPLETED", {

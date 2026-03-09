@@ -13,6 +13,7 @@ export const waitForWorkflowStatus = async (
 ): Promise<Workflow> => {
   const startTime = Date.now();
 
+  let lastError: unknown;
   while (Date.now() - startTime < maxWaitTimeMs) {
     try {
       const workflow = await workflowClient.getWorkflow(workflowId, true);
@@ -27,10 +28,17 @@ export const waitForWorkflowStatus = async (
         );
       }
 
+      lastError = undefined;
       await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
     } catch (error) {
-      throw new Error(`Failed to get workflow status: ${error}`);
+      lastError = error;
+      // Retry on transient errors (e.g. workflow not visible yet after start)
+      await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
     }
+  }
+
+  if (lastError) {
+    throw new Error(`Failed to get workflow status: ${lastError}`);
   }
 
   throw new Error(

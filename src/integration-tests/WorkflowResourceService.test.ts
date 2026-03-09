@@ -1,4 +1,4 @@
-import { expect, describe, test, jest } from "@jest/globals";
+import { expect, describe, test, jest, afterEach } from "@jest/globals";
 import { MetadataClient } from "../sdk";
 import { simpleTask, workflow } from "../sdk/builders";
 import { orkesConductorClient } from "../sdk/createConductorClient";
@@ -8,6 +8,18 @@ import { cleanupWorkflowsAndTasks } from "./utils/cleanup";
 
 describe("WorkflowResourceService", () => {
   jest.setTimeout(120000);
+  const workflowsToCleanup: { name: string; version: number }[] = [];
+
+  afterEach(async () => {
+    const client = await orkesConductorClient();
+    const metadataClient = new MetadataClient(client);
+    await Promise.allSettled(
+      workflowsToCleanup.map((w) =>
+        metadataClient.unregisterWorkflow(w.name, w.version)
+      )
+    );
+    workflowsToCleanup.length = 0;
+  });
 
   test("Should test a workflow", async () => {
     const client = await orkesConductorClient();
@@ -20,6 +32,10 @@ describe("WorkflowResourceService", () => {
     const wfDef = workflow(`jsSdkTest-test_wf-${Date.now()}`, tasks);
     wfDef.outputParameters = { message: "${simple_ref.output.message}" };
     await metadataClient.registerWorkflowDef(wfDef, true);
+    workflowsToCleanup.push({
+      name: wfDef.name,
+      version: wfDef.version ?? 1,
+    });
 
     try {
       const status = "COMPLETED";

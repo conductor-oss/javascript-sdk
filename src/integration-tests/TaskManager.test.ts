@@ -1,7 +1,6 @@
-import { afterEach, beforeAll, expect, describe, test, jest } from "@jest/globals";
+import { expect, describe, test, jest, afterEach } from "@jest/globals";
 import {
   MetadataClient,
-  OrkesClients,
   simpleTask,
   taskDefinition,
   WorkflowExecutor,
@@ -9,32 +8,31 @@ import {
   TaskManager,
   ConductorWorker,
 } from "../sdk";
-import { cleanupWorkflowsAndTasks } from "./utils/cleanup";
 import { mockLogger } from "./utils/mockLogger";
 import { waitForWorkflowCompletion } from "./utils/waitForWorkflowCompletion";
 
 const BASE_TIME = 1000;
 describe("TaskManager", () => {
   const clientPromise = orkesConductorClient();
-  let metadataClient: MetadataClient;
   const workflowsToCleanup: { name: string; version: number }[] = [];
   const tasksToCleanup: string[] = [];
 
-  beforeAll(async () => {
-    const client = await clientPromise;
-    metadataClient = new OrkesClients(client).getMetadataClient();
-  });
+  jest.setTimeout(30000);
 
   afterEach(async () => {
-    await cleanupWorkflowsAndTasks(metadataClient, {
-      workflows: workflowsToCleanup,
-      tasks: tasksToCleanup,
-    });
+    const client = await clientPromise;
+    const metadataClient = new MetadataClient(client);
+    await Promise.allSettled(
+      workflowsToCleanup.map((w) =>
+        metadataClient.unregisterWorkflow(w.name, w.version)
+      )
+    );
+    await Promise.allSettled(
+      tasksToCleanup.map((t) => metadataClient.unregisterTask(t))
+    );
     workflowsToCleanup.length = 0;
     tasksToCleanup.length = 0;
   });
-
-  jest.setTimeout(30000);
 
   test("Should run workflow with worker", async () => {
     const client = await clientPromise;
@@ -69,7 +67,6 @@ describe("TaskManager", () => {
       timeoutSeconds: 0,
     });
     workflowsToCleanup.push({ name: workflowName, version: 1 });
-    tasksToCleanup.push(taskName);
 
     const executionId = await executor.startWorkflow({
       name: workflowName,
@@ -265,7 +262,6 @@ describe("TaskManager", () => {
       timeoutSeconds: 0,
     });
     workflowsToCleanup.push({ name: workflowName, version: 1 });
-    tasksToCleanup.push(...workerNames);
 
     //Start workflow
     const executionId = await executor.startWorkflow({
@@ -401,7 +397,6 @@ describe("TaskManager", () => {
       timeoutSeconds: 0,
     });
     workflowsToCleanup.push({ name: workflowName, version: 1 });
-    tasksToCleanup.push(...workerNames);
 
     //Start workflow
     const executionId = await executor.startWorkflow({

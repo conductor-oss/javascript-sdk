@@ -1,4 +1,4 @@
-import { afterEach, beforeAll, describe, expect, test } from "@jest/globals";
+import { afterAll, afterEach, beforeAll, describe, expect, test } from "@jest/globals";
 import type { Task } from "../open-api";
 import {
   MetadataClient,
@@ -7,7 +7,6 @@ import {
   WorkflowExecutor,
   clearWorkerRegistry,
   getRegisteredWorkers,
-  OrkesClients,
   orkesConductorClient,
   simpleTask,
   worker
@@ -18,31 +17,32 @@ import type {
   TaskExecutionCompleted,
   TaskExecutionStarted,
 } from "../sdk/clients/worker/events/types";
-import { cleanupWorkflowsAndTasks } from "./utils/cleanup";
 import { waitForWorkflowStatus } from "./utils/waitForWorkflowStatus";
 import { executeWorkflowWithRetry } from "./utils/executeWorkflowWithRetry";
 
 describe("SDK Worker Registration", () => {
   const clientPromise = orkesConductorClient();
   let executor: WorkflowExecutor;
-  let metadataClient: MetadataClient;
   const workflowsToCleanup: { name: string; version: number }[] = [];
-  const tasksToCleanup: string[] = [];
 
   beforeAll(async () => {
     const client = await clientPromise;
     executor = new WorkflowExecutor(client);
-    metadataClient = new OrkesClients(client).getMetadataClient();
   });
 
-  afterEach(async () => {
-    await cleanupWorkflowsAndTasks(metadataClient, {
-      workflows: workflowsToCleanup,
-      tasks: tasksToCleanup,
-    });
-    workflowsToCleanup.length = 0;
-    tasksToCleanup.length = 0;
+  afterEach(() => {
+    // Clean up worker registry after each test to prevent conflicts
     clearWorkerRegistry();
+  });
+
+  afterAll(async () => {
+    const client = await clientPromise;
+    const metadataClient = new MetadataClient(client);
+    await Promise.allSettled(
+      workflowsToCleanup.map((w) =>
+        metadataClient.unregisterWorkflow(w.name, w.version)
+      )
+    );
   });
 
   test("worker() function registers workers in global registry", async () => {
@@ -93,7 +93,7 @@ describe("SDK Worker Registration", () => {
     expect(handler.running).toBe(false);
 
     // Start workers BEFORE registering workflow
-    await handler.startWorkers();
+    handler.startWorkers();
 
     // Wait a bit for workers to start polling
     await new Promise(resolve => setTimeout(resolve, 100));
@@ -111,7 +111,6 @@ describe("SDK Worker Registration", () => {
       timeoutSeconds: 0,
     });
     workflowsToCleanup.push({ name: workflowName, version: 1 });
-    tasksToCleanup.push(taskName);
     expect(handler.running).toBe(true);
     expect(handler.runningWorkerCount).toBe(1);
 
@@ -190,7 +189,7 @@ describe("SDK Worker Registration", () => {
     });
 
     // Start workers BEFORE registering workflow
-    await handler.startWorkers();
+    handler.startWorkers();
 
     // Wait a bit for workers to start polling
     await new Promise(resolve => setTimeout(resolve, 100));
@@ -210,7 +209,6 @@ describe("SDK Worker Registration", () => {
       timeoutSeconds: 0,
     });
     workflowsToCleanup.push({ name: workflowName, version: 1 });
-    tasksToCleanup.push(taskName);
 
     // Execute workflow with retry on transient failures
     const { workflowId } = await executeWorkflowWithRetry(
@@ -266,7 +264,7 @@ describe("SDK Worker Registration", () => {
     expect(registeredWorkers[0]?.domain).toBe(domain);
 
     // Start workers and verify they start properly
-    await handler.startWorkers();
+    handler.startWorkers();
     expect(handler.running).toBe(true);
 
     // Wait a bit for workers to initialize
@@ -302,7 +300,7 @@ describe("SDK Worker Registration", () => {
     });
 
     // Start workers BEFORE registering workflow (important!)
-    await handler.startWorkers();
+    handler.startWorkers();
 
     // Wait a bit for workers to start polling
     await new Promise(resolve => setTimeout(resolve, 100));
@@ -320,7 +318,6 @@ describe("SDK Worker Registration", () => {
       timeoutSeconds: 0,
     });
     workflowsToCleanup.push({ name: workflowName, version: 1 });
-    tasksToCleanup.push(taskName);
 
     // Execute workflow with shouldFail flag and retry on transient failures
     const { workflowId } = await executeWorkflowWithRetry(
@@ -395,7 +392,7 @@ describe("SDK Worker Registration", () => {
     });
 
     // Start workers BEFORE registering workflow
-    await handler.startWorkers();
+    handler.startWorkers();
 
     // Wait a bit for workers to start polling
     await new Promise(resolve => setTimeout(resolve, 100));
@@ -411,7 +408,6 @@ describe("SDK Worker Registration", () => {
       timeoutSeconds: 0,
     });
     workflowsToCleanup.push({ name: workflowName, version: 1 });
-    tasksToCleanup.push(taskName);
 
     // Execute workflow with retry on transient failures
     const { workflowId } = await executeWorkflowWithRetry(
@@ -477,7 +473,7 @@ describe("SDK Worker Registration", () => {
     expect(handler.workerCount).toBe(2);
 
     // Start workers BEFORE registering workflow
-    await handler.startWorkers();
+    handler.startWorkers();
 
     // Wait a bit for workers to start polling
     await new Promise(resolve => setTimeout(resolve, 100));
@@ -496,7 +492,6 @@ describe("SDK Worker Registration", () => {
       timeoutSeconds: 0,
     });
     workflowsToCleanup.push({ name: workflowName, version: 1 });
-    tasksToCleanup.push(taskName1, taskName2);
     expect(handler.runningWorkerCount).toBe(2);
 
     // Execute workflow with retry on transient failures
@@ -552,12 +547,12 @@ describe("SDK Worker Registration", () => {
     expect(handler.runningWorkerCount).toBe(0);
 
     // Start workers
-    await handler.startWorkers();
+    handler.startWorkers();
     expect(handler.running).toBe(true);
     expect(handler.runningWorkerCount).toBe(1);
 
     // Starting again should be idempotent
-    await handler.startWorkers();
+    handler.startWorkers();
     expect(handler.running).toBe(true);
     expect(handler.runningWorkerCount).toBe(1);
 
@@ -572,7 +567,7 @@ describe("SDK Worker Registration", () => {
     expect(handler.runningWorkerCount).toBe(0);
 
     // Can restart after stopping
-    await handler.startWorkers();
+    handler.startWorkers();
     expect(handler.running).toBe(true);
     expect(handler.runningWorkerCount).toBe(1);
 
@@ -612,7 +607,7 @@ describe("SDK Worker Registration", () => {
 
     expect(handler.workerCount).toBe(2);
 
-    await handler.startWorkers();
+    handler.startWorkers();
     expect(handler.runningWorkerCount).toBe(2);
 
     await handler.stopWorkers();

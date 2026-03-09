@@ -4,6 +4,13 @@ on:
   release:
     types: [published]
 
+# Required for npm Trusted Publishing (OIDC). Configure the trusted publisher
+# on npm: package → Settings → Trusted publishing → GitHub Actions →
+# workflow filename: release.yml, then your repo owner and repo name.
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   build-package-and-publish-release:
     runs-on: ubuntu-latest
@@ -15,6 +22,8 @@ jobs:
         with:
           node-version: "22"
           registry-url: "https://registry.npmjs.org"
+      - name: Ensure npm supports trusted publishing
+        run: npm install -g npm@latest
       - name: Bump version to release
         run: sed -i "s/v0.0.0/$RELEASE_VERSION/" ./package.json
         env:
@@ -25,5 +34,3 @@ jobs:
         run: npm run build
       - name: Publish package
         run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
