@@ -93,7 +93,7 @@ describe("SDK Worker Registration", () => {
     expect(handler.running).toBe(false);
 
     // Start workers BEFORE registering workflow
-    handler.startWorkers();
+    await handler.startWorkers();
 
     // Wait a bit for workers to start polling
     await new Promise(resolve => setTimeout(resolve, 100));
@@ -189,7 +189,7 @@ describe("SDK Worker Registration", () => {
     });
 
     // Start workers BEFORE registering workflow
-    handler.startWorkers();
+    await handler.startWorkers();
 
     // Wait a bit for workers to start polling
     await new Promise(resolve => setTimeout(resolve, 100));
@@ -264,7 +264,7 @@ describe("SDK Worker Registration", () => {
     expect(registeredWorkers[0]?.domain).toBe(domain);
 
     // Start workers and verify they start properly
-    handler.startWorkers();
+    await handler.startWorkers();
     expect(handler.running).toBe(true);
 
     // Wait a bit for workers to initialize
@@ -300,7 +300,7 @@ describe("SDK Worker Registration", () => {
     });
 
     // Start workers BEFORE registering workflow (important!)
-    handler.startWorkers();
+    await handler.startWorkers();
 
     // Wait a bit for workers to start polling
     await new Promise(resolve => setTimeout(resolve, 100));
@@ -392,7 +392,7 @@ describe("SDK Worker Registration", () => {
     });
 
     // Start workers BEFORE registering workflow
-    handler.startWorkers();
+    await handler.startWorkers();
 
     // Wait a bit for workers to start polling
     await new Promise(resolve => setTimeout(resolve, 100));
@@ -473,7 +473,7 @@ describe("SDK Worker Registration", () => {
     expect(handler.workerCount).toBe(2);
 
     // Start workers BEFORE registering workflow
-    handler.startWorkers();
+    await handler.startWorkers();
 
     // Wait a bit for workers to start polling
     await new Promise(resolve => setTimeout(resolve, 100));
@@ -547,12 +547,12 @@ describe("SDK Worker Registration", () => {
     expect(handler.runningWorkerCount).toBe(0);
 
     // Start workers
-    handler.startWorkers();
+    await handler.startWorkers();
     expect(handler.running).toBe(true);
     expect(handler.runningWorkerCount).toBe(1);
 
     // Starting again should be idempotent
-    handler.startWorkers();
+    await handler.startWorkers();
     expect(handler.running).toBe(true);
     expect(handler.runningWorkerCount).toBe(1);
 
@@ -567,7 +567,7 @@ describe("SDK Worker Registration", () => {
     expect(handler.runningWorkerCount).toBe(0);
 
     // Can restart after stopping
-    handler.startWorkers();
+    await handler.startWorkers();
     expect(handler.running).toBe(true);
     expect(handler.runningWorkerCount).toBe(1);
 
@@ -607,7 +607,7 @@ describe("SDK Worker Registration", () => {
 
     expect(handler.workerCount).toBe(2);
 
-    handler.startWorkers();
+    await handler.startWorkers();
     expect(handler.runningWorkerCount).toBe(2);
 
     await handler.stopWorkers();
