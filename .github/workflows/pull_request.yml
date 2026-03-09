@@ -26,52 +26,28 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      # Unit on all Node versions; v5 integration in batches on all Node versions; v4 full suite on 22.
       matrix:
-        include:
-          - node-version: 20
-            test: unit
-          - node-version: 22
-            test: unit
-          - node-version: 24
-            test: unit
-          - node-version: 20
-            test: integration:v5:batch1
-          - node-version: 22
-            test: integration:v5:batch1
-          - node-version: 24
-            test: integration:v5:batch1
-          - node-version: 20
-            test: integration:v5:batch2
-          - node-version: 22
-            test: integration:v5:batch2
-          - node-version: 24
-            test: integration:v5:batch2
-          - node-version: 20
-            test: integration:v5:batch3
-          - node-version: 22
-            test: integration:v5:batch3
-          - node-version: 24
-            test: integration:v5:batch3
-          - node-version: 20
-            test: integration:v5:batch4
-          - node-version: 22
-            test: integration:v5:batch4
-          - node-version: 24
-            test: integration:v5:batch4
-          - node-version: 20
-            test: integration:v5:batch5
-          - node-version: 22
-            test: integration:v5:batch5
-          - node-version: 24
-            test: integration:v5:batch5
-          - node-version: 20
-            test: integration:v4
-          - node-version: 22
-            test: integration:v4
-          - node-version: 24
-            test: integration:v4
-    name: Node.js v${{ matrix.node-version }} - ${{ matrix.test }} tests
+        node-version: [20, 22, 24]
+        test: [unit, integration:v4, integration:v5:batch]
+        batch-index: [0, 1, 2, 3, 4]
+        exclude:
+          - test: unit
+            batch-index: 1
+          - test: unit
+            batch-index: 2
+          - test: unit
+            batch-index: 3
+          - test: unit
+            batch-index: 4
+          - test: integration:v4
+            batch-index: 1
+          - test: integration:v4
+            batch-index: 2
+          - test: integration:v4
+            batch-index: 3
+          - test: integration:v4
+            batch-index: 4
+    name: Node.js v${{ matrix.node-version }} - ${{ matrix.test == 'integration:v5:batch' && format('{0}{1}', matrix.test, matrix.batch-index) || matrix.test }} tests
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -83,20 +59,25 @@ jobs:
         run: npm ci
       - name: Run ${{ matrix.test }} Tests and Add Annotations
         id: tests
-        run: npm run test:${{ matrix.test }} -- --ci --coverage --reporters=default --reporters=github-actions --reporters=jest-junit
+        run: |
+          if [ "${{ matrix.test }}" = "integration:v5:batch" ]; then
+            npm run test:integration:v5:batch -- ${{ matrix.batch-index }} -- --ci --coverage --reporters=default --reporters=github-actions --reporters=jest-junit
+          else
+            npm run test:${{ matrix.test }} -- --ci --coverage --reporters=default --reporters=github-actions --reporters=jest-junit
+          fi
         env:
           ORKES_BACKEND_VERSION: ${{ matrix.test == 'integration:v4' && '4' || (contains(matrix.test, 'integration:v5') && '5' || '') }}
           CONDUCTOR_SERVER_URL: ${{ matrix.test == 'integration:v4' && vars.SERVER_URL_V4 || (contains(matrix.test, 'integration') && vars.SERVER_URL || '') }}
           CONDUCTOR_AUTH_KEY: ${{ matrix.test == 'integration:v4' && secrets.AUTH_KEY_V4 || (contains(matrix.test, 'integration') && secrets.AUTH_KEY || '') }}
           CONDUCTOR_AUTH_SECRET: ${{ matrix.test == 'integration:v4' && secrets.AUTH_SECRET_V4 || (contains(matrix.test, 'integration') && secrets.AUTH_SECRET || '') }}
           CONDUCTOR_SDK_INITIAL_TOKEN_STAGGER_MS: ${{ (matrix.test == 'integration:v4' || contains(matrix.test, 'integration')) && '2000' || '' }}
-          JEST_JUNIT_OUTPUT_NAME: ${{ matrix.test }}-node-${{ matrix.node-version }}-test-results.xml
-      - name: Publish ${{ matrix.test }} Test Results
+          JEST_JUNIT_OUTPUT_NAME: ${{ matrix.test == 'integration:v5:batch' && format('{0}{1}-node-{2}-test-results.xml', matrix.test, matrix.batch-index, matrix.node-version) || format('{0}-node-{1}-test-results.xml', matrix.test, matrix.node-version) }}
+      - name: Publish Test Results
         uses: dorny/test-reporter@v2
         if: ${{ !cancelled() }}
         with:
-          name: ${{ matrix.test }} (Node ${{ matrix.node-version }})
-          path: reports/${{ matrix.test }}-node-${{ matrix.node-version }}-test-results.xml
+          name: ${{ matrix.test == 'integration:v5:batch' && format('{0}{1} (Node {2})', matrix.test, matrix.batch-index, matrix.node-version) || format('{0} (Node {1})', matrix.test, matrix.node-version) }}
+          path: reports/${{ matrix.test == 'integration:v5:batch' && format('{0}{1}-node-{2}-test-results.xml', matrix.test, matrix.batch-index, matrix.node-version) || format('{0}-node-{1}-test-results.xml', matrix.test, matrix.node-version) }}
           reporter: jest-junit
       - name: Upload coverage to Codecov
         if: always()
