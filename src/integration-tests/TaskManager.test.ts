@@ -16,10 +16,20 @@ describe("TaskManager", () => {
   const clientPromise = orkesConductorClient();
   const workflowsToCleanup: { name: string; version: number }[] = [];
   const tasksToCleanup: string[] = [];
+  const activeManagers: TaskManager[] = [];
 
   jest.setTimeout(60000);
 
   afterEach(async () => {
+    for (const m of activeManagers) {
+      try {
+        await m.stopPolling();
+      } catch {
+        // ignore
+      }
+    }
+    activeManagers.length = 0;
+
     const client = await clientPromise;
     const metadataClient = new MetadataClient(client);
     await Promise.allSettled(
@@ -56,6 +66,7 @@ describe("TaskManager", () => {
       options: { pollInterval: BASE_TIME },
     });
     manager.startPolling();
+    activeManagers.push(manager);
 
     await executor.registerWorkflow(true, {
       name: workflowName,
@@ -129,6 +140,7 @@ describe("TaskManager", () => {
     });
 
     manager.startPolling();
+    activeManagers.push(manager);
 
     await executor.registerWorkflow(true, {
       name: workflowName,
@@ -200,6 +212,7 @@ describe("TaskManager", () => {
     });
 
     manager.startPolling();
+    activeManagers.push(manager);
 
     await executor.registerWorkflow(true, {
       name: workflowName,
@@ -261,6 +274,7 @@ describe("TaskManager", () => {
     });
     // start polling
     manager.startPolling();
+    activeManagers.push(manager);
 
     expect(manager.isPolling).toBeTruthy();
 
@@ -388,6 +402,7 @@ describe("TaskManager", () => {
     });
     // start polling
     manager.startPolling();
+    activeManagers.push(manager);
 
     expect(manager.isPolling).toBeTruthy();
 

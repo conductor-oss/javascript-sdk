@@ -1,22 +1,37 @@
-import { afterEach, describe, expect, jest, test } from "@jest/globals";
+import {
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  jest,
+  test,
+} from "@jest/globals";
 import type {
   Action,
   ConnectivityTestInput,
   EventHandler,
   Tag,
 } from "../open-api";
-import { EventClient, orkesConductorClient } from "../sdk";
+import { EventClient } from "../sdk";
+import { createClientWithRetry } from "./utils/createClientWithRetry";
 import { describeForOrkesV5 } from "./utils/customJestDescribe";
 
 const TEST_HANDLER_NAME_PREFIX = "jsSdkTest:";
 
 describe("EventClient", () => {
-  jest.setTimeout(60000);
+  jest.setTimeout(30000);
+
+  let eventClient: EventClient;
+
+  beforeAll(async () => {
+    const client = await createClientWithRetry();
+    eventClient = new EventClient(client);
+  });
 
   // Clean up any event handlers created by tests (runs even when a test fails)
   afterEach(async () => {
     try {
-      const eventClient = new EventClient(await orkesConductorClient());
+      if (!eventClient) return;
       const handlers = await eventClient.getAllEventHandlers();
       const toRemove = handlers.filter(
         (h) => h.name?.startsWith(TEST_HANDLER_NAME_PREFIX)
@@ -65,7 +80,6 @@ describe("EventClient", () => {
 
   describe("Event Handler Management", () => {
     test("Should add a single event handler", async () => {
-      const eventClient = new EventClient(await orkesConductorClient());
       const handlerName = createUniqueName("event-handler");
       const eventName = createUniqueName("event");
 
@@ -138,7 +152,6 @@ describe("EventClient", () => {
     });
 
     test("Should add multiple event handlers", async () => {
-      const eventClient = new EventClient(await orkesConductorClient());
       const handlerName1 = createUniqueName("event-handler-1");
       const handlerName2 = createUniqueName("event-handler-2");
       const eventName1 = createUniqueName("event-1");
@@ -166,7 +179,6 @@ describe("EventClient", () => {
     });
 
     test("Should update an event handler", async () => {
-      const eventClient = new EventClient(await orkesConductorClient());
       const handlerName = createUniqueName("event-handler");
       const eventName = createUniqueName("event");
 
@@ -199,14 +211,12 @@ describe("EventClient", () => {
     });
 
     test("Should get all event handlers", async () => {
-      const eventClient = new EventClient(await orkesConductorClient());
       const handlers = await eventClient.getAllEventHandlers();
 
       expect(Array.isArray(handlers)).toBe(true);
     });
 
     test("Should get event handler by name", async () => {
-      const eventClient = new EventClient(await orkesConductorClient());
       const handlerName = createUniqueName("event-handler");
       const eventName = createUniqueName("event");
 
@@ -226,7 +236,6 @@ describe("EventClient", () => {
     });
 
     test("Should get event handlers for a specific event", async () => {
-      const eventClient = new EventClient(await orkesConductorClient());
       const handlerName = createUniqueName("event-handler");
       const eventName = createUniqueName("event");
 
@@ -252,7 +261,6 @@ describe("EventClient", () => {
     });
 
     test("Should remove an event handler", async () => {
-      const eventClient = new EventClient(await orkesConductorClient());
       const handlerName = createUniqueName("event-handler");
       const eventName = createUniqueName("event");
 
@@ -281,7 +289,6 @@ describe("EventClient", () => {
 
   describe("Tag Management", () => {
     test("Should get tags for an event handler", async () => {
-      const eventClient = new EventClient(await orkesConductorClient());
       const handlerName = createUniqueName("event-handler");
       const eventName = createUniqueName("event");
 
@@ -322,7 +329,6 @@ describe("EventClient", () => {
     });
 
     test("Should put tags for an event handler", async () => {
-      const eventClient = new EventClient(await orkesConductorClient());
       const handlerName = createUniqueName("event-handler");
       const eventName = createUniqueName("event");
 
@@ -363,7 +369,6 @@ describe("EventClient", () => {
     });
 
     test("Should delete tags for an event handler", async () => {
-      const eventClient = new EventClient(await orkesConductorClient());
       const handlerName = createUniqueName("event-handler");
       const eventName = createUniqueName("event");
 
@@ -423,7 +428,6 @@ describe("EventClient", () => {
 
   describe("Test Endpoint", () => {
     test("Should call test endpoint", async () => {
-      const eventClient = new EventClient(await orkesConductorClient());
 
       const result = await eventClient.test();
       expect(result).toBeDefined();
@@ -432,7 +436,6 @@ describe("EventClient", () => {
 
   describe("Error Handling", () => {
     test("Should return null or throw when getting non-existent event handler", async () => {
-      const eventClient = new EventClient(await orkesConductorClient());
       const nonExistentName = createUniqueName("non-existent-handler");
 
       try {
@@ -446,7 +449,6 @@ describe("EventClient", () => {
     });
 
     test("Should throw error when removing non-existent handler", async () => {
-      const eventClient = new EventClient(await orkesConductorClient());
       const nonExistentName = createUniqueName("non-existent-handler");
 
       await expect(
@@ -455,7 +457,6 @@ describe("EventClient", () => {
     });
 
     test("Should throw error when updating non-existent event handler", async () => {
-      const eventClient = new EventClient(await orkesConductorClient());
       const nonExistentName = createUniqueName("non-existent-handler");
       const eventName = createUniqueName("event");
 
@@ -473,7 +474,6 @@ describe("EventClient", () => {
     });
 
     test("Should throw error when getting queue config for non-existent queue", async () => {
-      const eventClient = new EventClient(await orkesConductorClient());
       const nonExistentQueueType = createUniqueName("non-existent-type");
       const nonExistentQueueName = createUniqueName("non-existent-queue");
 
@@ -483,7 +483,6 @@ describe("EventClient", () => {
     });
 
     test("Should throw error when adding event handler with invalid data", async () => {
-      const eventClient = new EventClient(await orkesConductorClient());
 
       const invalidHandler = {
         name: "",
@@ -498,7 +497,6 @@ describe("EventClient", () => {
     });
 
     test("Should handle error when testing connectivity with invalid input", async () => {
-      const eventClient = new EventClient(await orkesConductorClient());
 
       const invalidInput: ConnectivityTestInput = {
         sink: "",
@@ -511,7 +509,6 @@ describe("EventClient", () => {
     });
 
     test("Should handle error when handling incoming event with invalid data", async () => {
-      const eventClient = new EventClient(await orkesConductorClient());
 
       const invalidEventData: Record<string, string> = {};
 
@@ -523,7 +520,6 @@ describe("EventClient", () => {
 
   describeForOrkesV5("Event Processing", () => {
     test("Should handle incoming event", async () => {
-      const eventClient = new EventClient(await orkesConductorClient());
       const handlerName = createUniqueName("event-handler");
       const eventName = createUniqueName("event");
 
@@ -611,7 +607,6 @@ describe("EventClient", () => {
 
   describeForOrkesV5("Event Executions and Statistics", () => {
     test("Should get all active event handlers (execution view)", async () => {
-      const eventClient = new EventClient(await orkesConductorClient());
 
       const handlerName = createUniqueName("event-handler");
       const eventName = createUniqueName("event");
@@ -666,7 +661,6 @@ describe("EventClient", () => {
     });
 
     test("Should get event executions for a handler", async () => {
-      const eventClient = new EventClient(await orkesConductorClient());
       const handlerName = createUniqueName("event-handler");
       const eventName = createUniqueName("event");
       const workflowName = createUniqueName("test-workflow");
@@ -730,7 +724,6 @@ describe("EventClient", () => {
     });
 
     test("Should get event handlers with statistics", async () => {
-      const eventClient = new EventClient(await orkesConductorClient());
       const handlerName = createUniqueName("event-handler");
       const eventName = createUniqueName("event");
       const workflowName = createUniqueName("test-workflow");
@@ -795,7 +788,6 @@ describe("EventClient", () => {
     });
 
     test("Should get event messages for an event", async () => {
-      const eventClient = new EventClient(await orkesConductorClient());
       const handlerName = createUniqueName("event-handler");
       const eventName = createUniqueName("event");
       const workflowName = createUniqueName("test-workflow");
