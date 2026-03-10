@@ -82,23 +82,28 @@ jobs:
   integration-tests:
     runs-on: ubuntu-latest
     timeout-minutes: 25
-    name: Node.js 22 - integration tests (v5)
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        node-version: [20, 22, 24]
+    name: Node.js v${{ matrix.node-version }} - integration tests (v5)
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: ${{ matrix.node-version }}
           cache: "npm"
       - name: Cache node_modules
         id: cache
         uses: actions/cache@v4
         with:
           path: node_modules
-          key: npm-22-${{ hashFiles('package-lock.json') }}
+          key: npm-${{ matrix.node-version }}-${{ hashFiles('package-lock.json') }}
           restore-keys: |
-            npm-22-
+            npm-${{ matrix.node-version }}-
       - name: Install Dependencies
         if: steps.cache.outputs.cache-hit != 'true'
         run: npm ci
@@ -110,13 +115,13 @@ jobs:
           CONDUCTOR_AUTH_KEY: ${{ secrets.AUTH_KEY }}
           CONDUCTOR_AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
           CONDUCTOR_REQUEST_TIMEOUT_MS: "120000"
-          JEST_JUNIT_OUTPUT_NAME: integration-v5-node-22-test-results.xml
+          JEST_JUNIT_OUTPUT_NAME: integration-v5-node-${{ matrix.node-version }}-test-results.xml
       - name: Publish Test Results
         uses: dorny/test-reporter@v2
         if: ${{ !cancelled() }}
         with:
-          name: integration tests v5 (Node 22)
-          path: reports/integration-v5-node-22-test-results.xml
+          name: integration tests v5 (Node ${{ matrix.node-version }})
+          path: reports/integration-v5-node-${{ matrix.node-version }}-test-results.xml
           reporter: jest-junit
       - name: Upload coverage to Codecov
         if: always()
@@ -125,5 +130,5 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage/lcov.info
           flags: integration-v5
-          name: codecov-integration-v5-node-22
+          name: codecov-integration-v5-node-${{ matrix.node-version }}
           fail_ci_if_error: false
