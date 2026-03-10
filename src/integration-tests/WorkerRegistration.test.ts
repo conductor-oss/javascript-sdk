@@ -19,6 +19,7 @@ import type {
 import { waitForWorkflowStatus } from "./utils/waitForWorkflowStatus";
 import { executeWorkflowWithRetry } from "./utils/executeWorkflowWithRetry";
 import { createClientWithRetry } from "./utils/createClientWithRetry";
+import { describeForOrkesV5 } from "./utils/customJestDescribe";
 
 describe("SDK Worker Registration", () => {
   const clientPromise = createClientWithRetry();
@@ -63,6 +64,8 @@ describe("SDK Worker Registration", () => {
     expect(registeredWorkers[0]?.taskDefName).toBe(taskName);
   });
 
+  // These tests run workflows and have workers report task results; they need POST /api/tasks/update-v2 (v5 only).
+  describeForOrkesV5("Worker execution (requires update-v2)", () => {
   test("TaskHandler auto-discovers and executes decorated workers", async () => {
     const client = await clientPromise;
     const taskName = `sdk_test_auto_discover_${Date.now()}`;
@@ -238,6 +241,7 @@ describe("SDK Worker Registration", () => {
 
     await handler.stopWorkers();
   }, 90000);
+  });
 
   test("worker with domain isolation", async () => {
     const client = await clientPromise;
@@ -274,6 +278,7 @@ describe("SDK Worker Registration", () => {
     expect(handler.running).toBe(false);
   });
 
+  describeForOrkesV5("Worker execution (requires update-v2)", () => {
   test("NonRetryableException marks task as terminal failure", async () => {
     const client = await clientPromise;
     const taskName = `sdk_test_non_retryable_${Date.now()}`;
@@ -523,6 +528,7 @@ describe("SDK Worker Registration", () => {
 
     await handler.stopWorkers();
   }, 90000);
+  });
 
   test("TaskHandler lifecycle - start and stop multiple times", async () => {
     const client = await clientPromise;
