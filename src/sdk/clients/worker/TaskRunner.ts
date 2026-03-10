@@ -197,11 +197,6 @@ export class TaskRunner {
 
     while (retryCount < this.maxRetries) {
       try {
-        if (process.env.CI) {
-          console.log(
-            `[TaskRunner] Submitting task result taskId=${taskResult.taskId} workflowId=${taskResult.workflowInstanceId} taskType=${this.worker.taskDefName} attempt=${retryCount + 1}/${this.maxRetries}`
-          );
-        }
         const updateStart = Date.now();
         const { data: nextTask } = await TaskResource.updateTaskV2({
           client: this._client,
@@ -211,12 +206,6 @@ export class TaskRunner {
           },
         });
         const updateDurationMs = Date.now() - updateStart;
-
-        if (process.env.CI) {
-          console.log(
-            `[TaskRunner] Task result accepted taskId=${taskResult.taskId} durationMs=${updateDurationMs}`
-          );
-        }
 
         await this.eventDispatcher.publishTaskUpdateCompleted({
           taskType: this.worker.taskDefName,
@@ -314,12 +303,6 @@ export class TaskRunner {
     const taskId = task.taskId as string;
     const workflowInstanceId = task.workflowInstanceId as string;
     const startTime = Date.now();
-
-    if (process.env.CI) {
-      console.log(
-        `[TaskRunner] Executing task taskId=${taskId} workflowId=${workflowInstanceId} taskType=${this.worker.taskDefName}`
-      );
-    }
 
     // Publish TaskExecutionStarted event
     await this.eventDispatcher.publishTaskExecutionStarted({
