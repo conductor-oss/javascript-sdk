@@ -13,12 +13,14 @@ export interface RetryFetchOptions {
 /** HTTP status codes that are retried as transient gateway/upstream errors (e.g. in CI) */
 const GATEWAY_RETRY_STATUSES = [502, 503, 504];
 
-/** Clone only at return so the caller gets a fresh body stream (avoids "body disturbed or locked" in CI). One clone per request. */
-const responseWithFreshBody = (response: Response): Response => {
+/** Clone response so the caller (and our own code) never sees a disturbed body. Used immediately after fetch and at return. */
+const cloneResponse = (response: Response): Response => {
   try {
     return response.clone();
-  } catch {
-    return response;
+  } catch (e) {
+    throw new Error(
+      `Response body could not be cloned (body may already be consumed). ${e instanceof Error ? e.message : String(e)}`
+    );
   }
 };
 
@@ -133,7 +135,7 @@ export const retryFetch = async (
   for (let transportAttempt = 0; transportAttempt <= maxTransportRetries; transportAttempt++) {
     let response: Response;
     try {
-      response = await fetchFn(input, getInit());
+      response = cloneResponse(await fetchFn(input, getInit()));
     } catch (error) {
       // Timeout/abort errors should NOT be retried
       if (isTimeoutError(error)) {
@@ -156,7 +158,7 @@ export const retryFetch = async (
       await new Promise((resolve) =>
         setTimeout(resolve, withJitter(initialRetryDelay * (gwAttempt + 1)))
       );
-      response = await fetchFn(input, getInit());
+      response = cloneResponse(await fetchFn(input, getInit()));
     }
 
     // Rate limit retry (429)
@@ -165,13 +167,13 @@ export const retryFetch = async (
       let delay = initialRetryDelay;
       for (let rlAttempt = 0; rlAttempt < maxRateLimitRetries; rlAttempt++) {
         await new Promise((resolve) => setTimeout(resolve, withJitter(delay)));
-        rateLimitResponse = await fetchFn(input, getInit());
+        rateLimitResponse = cloneResponse(await fetchFn(input, getInit()));
         if (rateLimitResponse.status !== 429) {
-          return responseWithFreshBody(rateLimitResponse);
+          return rateLimitResponse;
         }
         delay *= 2;
       }
-      return responseWithFreshBody(rateLimitResponse);
+      return rateLimitResponse;
     }
 
     // Auth failure retry (401/403) - only refresh+retry when the error is a token
@@ -189,12 +191,11 @@ export const retryFetch = async (
           headers: new Headers(init?.headers),
         };
         retryInit.headers.set("X-Authorization", newToken);
-        return responseWithFreshBody(await fetchFn(input, retryInit));
+        return cloneResponse(await fetchFn(input, retryInit));
       }
     }
 
-    // Single clone only when returning — gives caller a fresh body stream and avoids "disturbed or locked" in CI
-    return responseWithFreshBody(response);
+    return response;
   }
 
   // Should not reach here, but just in case
