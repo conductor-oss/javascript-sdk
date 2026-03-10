@@ -4,14 +4,16 @@ import {
   OrkesClients,
   SchemaClient,
 } from "../sdk";
+import { describeForOrkesV5 } from "./utils/customJestDescribe";
 
 /**
  * E2E Integration Tests for SchemaClient
  *
  * Tests schema registration, retrieval (by name, by name+version), listing,
- * version creation, and deletion.
+ * version creation, and deletion. Gated to v5: GET /api/schema/{name} is not
+ * supported on older backends (returns "Method 'GET' is not supported").
  */
-describe("SchemaClient", () => {
+describeForOrkesV5("SchemaClient", () => {
   jest.setTimeout(60000);
 
   const clientPromise = orkesConductorClient();
@@ -39,7 +41,10 @@ describe("SchemaClient", () => {
     try {
       await schemaClient.deleteSchemaByName(schemaName);
     } catch (e) {
-      console.debug(`Cleanup schema '${schemaName}' failed:`, e);
+      const msg = e instanceof Error ? e.message : String(e);
+      if (!msg.includes("No schema found") && !msg.includes("not found")) {
+        console.debug(`Cleanup schema '${schemaName}' failed:`, e);
+      }
     }
   });
 
