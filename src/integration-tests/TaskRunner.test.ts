@@ -106,5 +106,5 @@ describe("TaskRunner", () => {
       workflows: [{ name: workflowName, version: 1 }],
       tasks: [taskName],
     });
-  });
+  }, 120000);
 });

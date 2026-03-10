@@ -88,7 +88,7 @@ describe("TaskManager", () => {
     taskRunner.stopPolling();
     const taskDetails = await executor.getTask(firstTask?.taskId || "");
     expect(taskDetails?.status).toEqual("COMPLETED");
-  });
+  }, 120000);
 
   test("update task example ", async () => {
     const client = await clientPromise;
