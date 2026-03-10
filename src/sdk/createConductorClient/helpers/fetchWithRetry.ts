@@ -6,8 +6,21 @@ export interface RetryFetchOptions {
   requestTimeoutMs?: number;
   maxRateLimitRetries?: number; // default 5
   maxTransportRetries?: number; // default 3
+  maxGatewayRetries?: number; // default 2 (502/503/504)
   initialRetryDelay?: number; // default 1000ms
 }
+
+/** HTTP status codes that are retried as transient gateway/upstream errors (e.g. in CI) */
+const GATEWAY_RETRY_STATUSES = [502, 503, 504];
+
+/** Return a clone of the response so the caller gets a fresh body stream; avoids "body disturbed or locked" in CI. */
+const responseWithFreshBody = (response: Response): Response => {
+  try {
+    return response.clone();
+  } catch {
+    return response;
+  }
+};
 
 const isTimeoutError = (error: unknown): boolean => {
   if (error instanceof DOMException && error.name === "AbortError") return true;
@@ -106,12 +119,13 @@ export const retryFetch = async (
     requestTimeoutMs,
     maxRateLimitRetries = 5,
     maxTransportRetries = 3,
+    maxGatewayRetries = 2,
     initialRetryDelay = 1000,
   } = options;
 
-  const effectiveInit = requestTimeoutMs
-    ? applyTimeout(init, requestTimeoutMs)
-    : init;
+  /** Fresh init with new timeout signal per request — reusing init with aborted signal causes "body disturbed or locked" in CI */
+  const getInit = (): Init =>
+    requestTimeoutMs ? applyTimeout(init, requestTimeoutMs) : init ?? {};
 
   let lastError: unknown;
 
@@ -119,7 +133,7 @@ export const retryFetch = async (
   for (let transportAttempt = 0; transportAttempt <= maxTransportRetries; transportAttempt++) {
     let response: Response;
     try {
-      response = await fetchFn(input, effectiveInit);
+      response = await fetchFn(input, getInit());
     } catch (error) {
       // Timeout/abort errors should NOT be retried
       if (isTimeoutError(error)) {
@@ -136,19 +150,28 @@ export const retryFetch = async (
       throw error;
     }
 
+    // Transient gateway/upstream retry (502, 503, 504) — common in CI due to network path or proxy timeouts
+    for (let gwAttempt = 0; gwAttempt < maxGatewayRetries; gwAttempt++) {
+      if (!GATEWAY_RETRY_STATUSES.includes(response.status)) break;
+      await new Promise((resolve) =>
+        setTimeout(resolve, withJitter(initialRetryDelay * (gwAttempt + 1)))
+      );
+      response = await fetchFn(input, getInit());
+    }
+
     // Rate limit retry (429)
     if (response.status === 429) {
       let rateLimitResponse = response;
       let delay = initialRetryDelay;
       for (let rlAttempt = 0; rlAttempt < maxRateLimitRetries; rlAttempt++) {
         await new Promise((resolve) => setTimeout(resolve, withJitter(delay)));
-        rateLimitResponse = await fetchFn(input, effectiveInit);
+        rateLimitResponse = await fetchFn(input, getInit());
         if (rateLimitResponse.status !== 429) {
-          return rateLimitResponse;
+          return responseWithFreshBody(rateLimitResponse);
         }
         delay *= 2;
       }
-      return rateLimitResponse;
+      return responseWithFreshBody(rateLimitResponse);
     }
 
     // Auth failure retry (401/403) - only refresh+retry when the error is a token
@@ -161,17 +184,16 @@ export const retryFetch = async (
     ) {
       const newToken = await onAuthFailure();
       if (newToken) {
-        // Clone request with updated auth header
         const retryInit = {
-          ...effectiveInit,
-          headers: new Headers(effectiveInit?.headers),
+          ...getInit(),
+          headers: new Headers(init?.headers),
         };
         retryInit.headers.set("X-Authorization", newToken);
-        return await fetchFn(input, retryInit);
+        return responseWithFreshBody(await fetchFn(input, retryInit));
       }
     }
 
-    return response;
+    return responseWithFreshBody(response);
   }
 
   // Should not reach here, but just in case
