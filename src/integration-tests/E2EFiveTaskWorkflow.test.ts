@@ -1,4 +1,11 @@
-import { afterEach, beforeAll, describe, expect, test } from "@jest/globals";
+import {
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  jest,
+  test,
+} from "@jest/globals";
 import type { Client, Task } from "../open-api";
 import {
   TaskHandler,
@@ -16,6 +23,8 @@ describe("E2E: 5-task workflow × 50 executions", () => {
   const clientPromise: Promise<Client> = orkesConductorClient();
   let executor: WorkflowExecutor;
   let handler: TaskHandler | undefined;
+
+  jest.setTimeout(700_000); // 50 workflows × 5 tasks; CI can be slow (poll timeouts)
 
   beforeAll(async () => {
     const client = await clientPromise;
@@ -111,10 +120,10 @@ describe("E2E: 5-task workflow × 50 executions", () => {
 
       expect(workflowIds.length).toBe(WORKFLOW_COUNT);
 
-      // Wait for all 50 to complete (300s timeout, poll every 2s)
+      // Wait for all 50 to complete (600s in CI-friendly timeout, poll every 2s)
       const results = await Promise.all(
         workflowIds.map((id) =>
-          waitForWorkflowStatus(executor, id, "COMPLETED", 300_000, 2000)
+          waitForWorkflowStatus(executor, id, "COMPLETED", 600_000, 2000)
         )
       );
 

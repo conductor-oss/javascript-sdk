@@ -109,6 +109,7 @@ jobs:
           CONDUCTOR_SERVER_URL: ${{ vars.SERVER_URL }}
           CONDUCTOR_AUTH_KEY: ${{ secrets.AUTH_KEY }}
           CONDUCTOR_AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+          CONDUCTOR_REQUEST_TIMEOUT_MS: "120000"
           JEST_JUNIT_OUTPUT_NAME: integration-v5-node-22-test-results.xml
       - name: Publish Test Results
         uses: dorny/test-reporter@v2
