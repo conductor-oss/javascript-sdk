@@ -13,7 +13,7 @@ export interface RetryFetchOptions {
 /** HTTP status codes that are retried as transient gateway/upstream errors (e.g. in CI) */
 const GATEWAY_RETRY_STATUSES = [502, 503, 504];
 
-/** Return a clone of the response so the caller gets a fresh body stream; avoids "body disturbed or locked" in CI. */
+/** Clone only at return so the caller gets a fresh body stream (avoids "body disturbed or locked" in CI). One clone per request. */
 const responseWithFreshBody = (response: Response): Response => {
   try {
     return response.clone();
@@ -193,6 +193,7 @@ export const retryFetch = async (
       }
     }
 
+    // Single clone only when returning — gives caller a fresh body stream and avoids "disturbed or locked" in CI
     return responseWithFreshBody(response);
   }
 

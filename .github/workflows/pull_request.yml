@@ -86,7 +86,7 @@ jobs:
     timeout-minutes: 25
     strategy:
       fail-fast: false
-      max-parallel: 1
+      max-parallel: 2
       matrix:
         node-version: [20, 22, 24]
         shard: [1, 2, 3]
@@ -142,7 +142,7 @@ jobs:
     timeout-minutes: 25
     strategy:
       fail-fast: false
-      max-parallel: 1
+      max-parallel: 2
       matrix:
         node-version: [20, 22, 24]
         shard: [1, 2, 3]
