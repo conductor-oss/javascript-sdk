@@ -8,6 +8,8 @@ import type { OrkesApiConfig } from "../types";
 import { createClient } from "../../open-api/generated/client";
 import { addResourcesBackwardCompatibility } from "./helpers/addResourcesBackwardCompatibility";
 
+let hasLoggedServerUrl = false;
+
 /**
  * Creates a Conductor client with authentication and configuration
  *
@@ -37,6 +39,11 @@ export const createConductorClient = async (
   } = resolveOrkesConfig(config);
 
   if (!serverUrl) throw new Error("Conductor server URL is not set");
+
+  if (!hasLoggedServerUrl) {
+    hasLoggedServerUrl = true;
+    console.log("[Conductor SDK] serverUrl:", serverUrl);
+  }
 
   const baseFetchFn = await resolveFetchFn(customFetch, {
     maxHttpConnections: maxHttp2Connections,
