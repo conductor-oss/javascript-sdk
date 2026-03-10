@@ -35,7 +35,7 @@ export function handleSdkError(
 
   const messageFromError =
     error && typeof error === "object" && "message" in error
-      ? String(error.message)
+      ? String((error as { message: unknown }).message)
       : undefined;
 
   const fullMessage =

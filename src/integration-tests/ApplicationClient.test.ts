@@ -6,7 +6,8 @@ import {
   beforeAll,
   afterEach,
 } from "@jest/globals";
-import { orkesConductorClient, ApplicationClient } from "../sdk";
+import { ApplicationClient } from "../sdk";
+import { createClientWithRetry } from "./utils/createClientWithRetry";
 import type { Tag } from "../open-api";
 
 describe("ApplicationClient", () => {
@@ -16,7 +17,7 @@ describe("ApplicationClient", () => {
   const testAppsToCleanup: string[] = [];
 
   beforeAll(async () => {
-    applicationClient = new ApplicationClient(await orkesConductorClient());
+    applicationClient = new ApplicationClient(await createClientWithRetry());
   });
 
   afterEach(async () => {

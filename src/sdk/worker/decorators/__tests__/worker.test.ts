@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { afterEach, beforeEach, describe, expect, jest, test } from "@jest/globals";
 import type { Task } from "../../../../open-api";
 import {

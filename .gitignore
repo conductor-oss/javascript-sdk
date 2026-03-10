@@ -84,3 +84,4 @@ fabric.properties
 .env.development
 .env.development.local
 
+/.idea

@@ -1,79 +1,96 @@
-import { expect, describe, test, jest } from "@jest/globals";
+import { expect, describe, test, jest, afterAll } from "@jest/globals";
 import {
   orkesConductorClient,
   TaskRunner,
   WorkflowExecutor,
   simpleTask,
   generate,
+  MetadataClient,
 } from "../sdk";
 import { TaskType } from "../open-api";
 import { waitForWorkflowStatus } from "./utils/waitForWorkflowStatus";
+import { describeForOrkesV5 } from "./utils/customJestDescribe";
 
 describe("TaskManager", () => {
   const clientPromise = orkesConductorClient();
+  const workflowsToCleanup: { name: string; version: number }[] = [];
 
-  jest.setTimeout(30000);
-  test("worker example ", async () => {
+  jest.setTimeout(60000);
+
+  afterAll(async () => {
     const client = await clientPromise;
-    const executor = new WorkflowExecutor(client);
-    const workflowName = `jsSdkTest-my_first_js_wf-${Date.now()}`;
-    const taskName = `jsSdkTest-taskmanager-test-${Date.now()}`;
-
-    const taskRunner = new TaskRunner({
-      client: client,
-      worker: {
-        taskDefName: taskName,
-        execute: async () => {
-          return {
-            outputData: {
-              hello: "From your worker",
-            },
-            status: "COMPLETED",
-          };
-        },
-      },
-      options: {
-        pollInterval: 10,
-        domain: undefined,
-        concurrency: 1,
-        workerID: "",
-      },
-    });
-    taskRunner.startPolling();
-
-    await executor.registerWorkflow(true, {
-      name: workflowName,
-      version: 1,
-      ownerEmail: "developers@orkes.io",
-      tasks: [simpleTask(taskName, taskName, {})],
-      inputParameters: [],
-      outputParameters: {},
-      timeoutSeconds: 0,
-    });
-
-    const executionId = await executor.startWorkflow({
-      name: workflowName,
-      input: {},
-      version: 1,
-    });
-
-    if (!executionId) {
-      throw new Error("Execution ID is undefined");
-    }
-
-    const workflowStatus = await waitForWorkflowStatus(
-      executor,
-      executionId,
-      "COMPLETED"
+    const metadataClient = new MetadataClient(client);
+    await Promise.allSettled(
+      workflowsToCleanup.map((w) =>
+        metadataClient.unregisterWorkflow(w.name, w.version)
+      )
     );
+  });
 
-    const [firstTask] = workflowStatus.tasks || [];
-    expect(firstTask?.taskType).toEqual(taskName);
-    expect(workflowStatus.status).toEqual("COMPLETED");
+  describeForOrkesV5("worker example (requires update-v2)", () => {
+    test("worker example ", async () => {
+      const client = await clientPromise;
+      const executor = new WorkflowExecutor(client);
+      const workflowName = `jsSdkTest-my_first_js_wf-${Date.now()}`;
+      const taskName = `jsSdkTest-taskmanager-test-${Date.now()}`;
 
-    taskRunner.stopPolling();
-    const taskDetails = await executor.getTask(firstTask?.taskId || "");
-    expect(taskDetails?.status).toEqual("COMPLETED");
+      const taskRunner = new TaskRunner({
+        client: client,
+        worker: {
+          taskDefName: taskName,
+          execute: async () => {
+            return {
+              outputData: {
+                hello: "From your worker",
+              },
+              status: "COMPLETED",
+            };
+          },
+        },
+        options: {
+          pollInterval: 10,
+          domain: undefined,
+          concurrency: 1,
+          workerID: "",
+        },
+      });
+      taskRunner.startPolling();
+
+      await executor.registerWorkflow(true, {
+        name: workflowName,
+        version: 1,
+        ownerEmail: "developers@orkes.io",
+        tasks: [simpleTask(taskName, taskName, {})],
+        inputParameters: [],
+        outputParameters: {},
+        timeoutSeconds: 0,
+      });
+      workflowsToCleanup.push({ name: workflowName, version: 1 });
+
+      const executionId = await executor.startWorkflow({
+        name: workflowName,
+        input: {},
+        version: 1,
+      });
+
+      if (!executionId) {
+        throw new Error("Execution ID is undefined");
+      }
+
+      const workflowStatus = await waitForWorkflowStatus(
+        executor,
+        executionId,
+        "COMPLETED"
+      );
+
+      const [firstTask] = workflowStatus.tasks || [];
+      expect(firstTask?.taskType).toEqual(taskName);
+      expect(workflowStatus.status).toEqual("COMPLETED");
+
+      taskRunner.stopPolling();
+      const taskDetails = await executor.getTask(firstTask?.taskId || "");
+      expect(taskDetails?.status).toEqual("COMPLETED");
+    }, 120000);
   });
 
   test("update task example ", async () => {
@@ -85,6 +102,10 @@ describe("TaskManager", () => {
       tasks: [{ type: TaskType.WAIT, taskReferenceName: waitTaskReference }],
     });
     await executor.registerWorkflow(true, workflowWithWaitTask);
+    workflowsToCleanup.push({
+      name: workflowWithWaitTask.name,
+      version: workflowWithWaitTask.version ?? 1,
+    });
 
     const { workflowId: executionId } = await executor.executeWorkflow(
       {
@@ -173,6 +194,10 @@ describe("TaskManager", () => {
     });
 
     await executor.registerWorkflow(true, sumTwoNumbers);
+    workflowsToCleanup.push({
+      name: sumTwoNumbers.name,
+      version: sumTwoNumbers.version ?? 1,
+    });
 
     const { workflowId: executionId } = await executor.executeWorkflow(
       {

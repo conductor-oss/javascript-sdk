@@ -25,20 +25,57 @@ export const createConductorClient = async (
     keySecret,
     maxHttp2Connections,
     refreshTokenInterval,
+    logger,
+    requestTimeoutMs,
+    connectTimeoutMs,
+    tlsCertPath,
+    tlsKeyPath,
+    tlsCaPath,
+    proxyUrl,
+    tlsInsecure,
+    disableHttp2,
   } = resolveOrkesConfig(config);
 
   if (!serverUrl) throw new Error("Conductor server URL is not set");
 
+  const baseFetchFn = await resolveFetchFn(customFetch, {
+    maxHttpConnections: maxHttp2Connections,
+    connectTimeoutMs,
+    tlsCertPath,
+    tlsKeyPath,
+    tlsCaPath,
+    proxyUrl,
+    tlsInsecure,
+    disableHttp2,
+  });
+
+  // Start with retry + timeout on fetch (no auth failure callback yet)
   const openApiClient = createClient({
     baseUrl: serverUrl,
-    fetch: wrapFetchWithRetry(
-      await resolveFetchFn(customFetch, maxHttp2Connections)
-    ),
+    fetch: wrapFetchWithRetry(baseFetchFn, { requestTimeoutMs }),
     throwOnError: true,
   });
 
+  let authResult: Awaited<ReturnType<typeof handleAuth>> | undefined;
   if (keyId && keySecret) {
-    await handleAuth(openApiClient, keyId, keySecret, refreshTokenInterval);
+    authResult = await handleAuth(
+      openApiClient,
+      keyId,
+      keySecret,
+      refreshTokenInterval,
+      logger
+    );
+  }
+
+  // Upgrade fetch with auth failure callback now that auth is set up.
+  // This replaces the initial wrapper, adding onAuthFailure for 401/403 retry.
+  if (authResult) {
+    openApiClient.setConfig({
+      fetch: wrapFetchWithRetry(baseFetchFn, {
+        onAuthFailure: authResult.refreshToken,
+        requestTimeoutMs,
+      }),
+    });
   }
 
   // Legacy compatibility: Adds resource-based API methods for backward compatibility.

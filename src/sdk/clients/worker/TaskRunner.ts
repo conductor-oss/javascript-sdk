@@ -14,10 +14,12 @@ import {
   TaskRunnerOptions,
   RunnerArgs,
   ConductorWorker,
+  isTaskInProgress,
 } from "./types";
 import { noopErrorHandler, optionEquals } from "./helpers";
 import { EventDispatcher } from "./events/EventDispatcher";
 import { NonRetryableException } from "./exceptions";
+import { runWithTaskContext } from "../../worker/context";
 
 const defaultRunnerOptions: Required<TaskRunnerOptions> = {
   workerID: "",
@@ -61,13 +63,13 @@ export class TaskRunner {
     this.worker = worker;
     this.options = { ...defaultRunnerOptions, ...options };
     this.errorHandler = errorHandler;
-    
+
     // Initialize event dispatcher and register listeners
-    this.eventDispatcher = new EventDispatcher();
+    this.eventDispatcher = new EventDispatcher(this.logger);
     eventListeners.forEach((listener) => {
       this.eventDispatcher.register(listener);
     });
-    
+
     this.poller = new Poller(
       worker.taskDefName,
       this.batchPoll,
@@ -115,6 +117,18 @@ export class TaskRunner {
     }
 
     this.options = newOptions;
+  }
+
+  /** Pause or unpause the worker's polling */
+  setPaused(paused: boolean): void {
+    this.poller.updateOptions({ paused });
+    this.logger.info(
+      `Worker ${this.worker.taskDefName} ${paused ? "paused" : "resumed"}`
+    );
+  }
+
+  get isPaused(): boolean {
+    return this.poller.options.paused ?? false;
   }
 
   get getOptions(): TaskRunnerOptions {
@@ -173,22 +187,36 @@ export class TaskRunner {
     }
   };
 
-  updateTaskWithRetry = async (task: Task, taskResult: TaskResult) => {
+  updateTaskWithRetry = async (
+    task: Task,
+    taskResult: TaskResult
+  ): Promise<Task | undefined> => {
     const { workerID } = this.options;
     let retryCount = 0;
     let lastError: Error | null = null;
 
     while (retryCount < this.maxRetries) {
       try {
-        await TaskResource.updateTask({
+        const updateStart = Date.now();
+        const { data: nextTask } = await TaskResource.updateTaskV2({
           client: this._client,
           body: {
             ...taskResult,
             workerId: workerID,
           },
         });
+        const updateDurationMs = Date.now() - updateStart;
 
-        return; // Success
+        await this.eventDispatcher.publishTaskUpdateCompleted({
+          taskType: this.worker.taskDefName,
+          taskId: taskResult.taskId ?? "",
+          workerId: workerID,
+          workflowInstanceId: taskResult.workflowInstanceId,
+          durationMs: updateDurationMs,
+          timestamp: new Date(),
+        });
+
+        return nextTask ?? undefined;
       } catch (error: unknown) {
         lastError = error as Error;
         this.errorHandler(lastError, task);
@@ -221,54 +249,158 @@ export class TaskRunner {
       taskResult,
       timestamp: new Date(),
     });
+
+    return undefined;
   };
 
-  private executeTask = async (task: Task) => {
-    if (!task.workflowInstanceId || !task.taskId) {
-      this.logger.error(
-        `Task missing required fields: workflowInstanceId=${task.workflowInstanceId}, taskId=${task.taskId}`
-      );
-      return;
-    }
+  private isValidTask(task: Task): boolean {
+    return !!(task.workflowInstanceId && task.taskId);
+  }
 
+  /**
+   * Entry point for task execution with V2 chaining.
+   *
+   * When updateTaskV2 returns a next task in its response, we immediately
+   * execute it without going back through the poll cycle. This eliminates
+   * one HTTP round-trip + sleep per task when there is a backlog.
+   */
+  private executeTask = async (task: Task) => {
+    let currentTask: Task | undefined = task;
+
+    while (currentTask) {
+      if (!this.isValidTask(currentTask)) {
+        this.logger.error(
+          `Task missing required fields: workflowInstanceId=${currentTask.workflowInstanceId}, taskId=${currentTask.taskId}`
+        );
+        return;
+      }
+
+      const nextTask = await this.executeOneTask(currentTask);
+
+      // Stop chaining if polling stopped or paused
+      if (!this.isPolling || this.isPaused) {
+        return;
+      }
+
+      // Yield to the event loop between chained tasks to prevent starvation
+      if (nextTask) {
+        this.logger.debug(
+          `Chaining to next task ${nextTask.taskId} from V2 response (skipping poll cycle)`
+        );
+        await new Promise<void>((resolve) => setTimeout(resolve, 0));
+      }
+
+      currentTask = nextTask;
+    }
+  };
+
+  /**
+   * Execute a single task and return the next task from V2 response (if any).
+   */
+  private executeOneTask = async (task: Task): Promise<Task | undefined> => {
     const { workerID } = this.options;
+    // Safe: caller (executeTask) already validated these via isValidTask()
+    const taskId = task.taskId as string;
+    const workflowInstanceId = task.workflowInstanceId as string;
     const startTime = Date.now();
 
     // Publish TaskExecutionStarted event
     await this.eventDispatcher.publishTaskExecutionStarted({
       taskType: this.worker.taskDefName,
-      taskId: task.taskId,
+      taskId,
       workerId: workerID,
-      workflowInstanceId: task.workflowInstanceId,
+      workflowInstanceId,
       timestamp: new Date(),
     });
 
     try {
-      const result = await this.worker.execute(task);
+      // Wrap execution in TaskContext (AsyncLocalStorage)
+      const { result, context } = await runWithTaskContext(
+        task,
+        async (ctx) => {
+          const r = await this.worker.execute(task);
+          return { result: r, context: ctx };
+        }
+      );
+
       const durationMs = Date.now() - startTime;
 
+      // Handle TaskInProgress return
+      if (isTaskInProgress(result)) {
+        const contextLogs = context.getLogs();
+        const nextTask = await this.updateTaskWithRetry(task, {
+          workflowInstanceId,
+          taskId,
+          status: "IN_PROGRESS",
+          callbackAfterSeconds: result.callbackAfterSeconds,
+          outputData:
+            result.outputData ?? context.getOutput() ?? {},
+          logs: contextLogs.length > 0 ? contextLogs : undefined,
+        });
+
+        // Publish completion event for IN_PROGRESS
+        await this.eventDispatcher.publishTaskExecutionCompleted({
+          taskType: this.worker.taskDefName,
+          taskId,
+          workerId: workerID,
+          workflowInstanceId,
+          durationMs,
+          timestamp: new Date(),
+        });
+
+        this.logger.debug(
+          `Task ${taskId} returned IN_PROGRESS, callback after ${result.callbackAfterSeconds}s`
+        );
+        return nextTask;
+      }
+
+      // Regular completion path — merge context data
+      const merged = { ...result };
+
+      // Merge context logs
+      const contextLogs = context.getLogs();
+      if (contextLogs.length > 0) {
+        merged.logs = [...(merged.logs ?? []), ...contextLogs];
+      }
+
+      // Merge context callbackAfterSeconds
+      const ctxCallback = context.getCallbackAfterSeconds();
+      if (
+        ctxCallback !== undefined &&
+        merged.callbackAfterSeconds === undefined
+      ) {
+        merged.callbackAfterSeconds = ctxCallback;
+      }
+
+      // Merge context output (context output is base, result output overrides)
+      const ctxOutput = context.getOutput();
+      if (ctxOutput !== undefined) {
+        merged.outputData = { ...ctxOutput, ...merged.outputData };
+      }
+
       // Calculate output size if possible
-      const outputSizeBytes = result.outputData
-        ? JSON.stringify(result.outputData).length
+      const outputSizeBytes = merged.outputData
+        ? JSON.stringify(merged.outputData).length
         : undefined;
 
       // Publish TaskExecutionCompleted event
       await this.eventDispatcher.publishTaskExecutionCompleted({
         taskType: this.worker.taskDefName,
-        taskId: task.taskId,
+        taskId,
         workerId: workerID,
-        workflowInstanceId: task.workflowInstanceId,
+        workflowInstanceId,
         durationMs,
         outputSizeBytes,
         timestamp: new Date(),
       });
 
-      await this.updateTaskWithRetry(task, {
-        ...result,
-        workflowInstanceId: task.workflowInstanceId,
-        taskId: task.taskId,
+      const nextTask = await this.updateTaskWithRetry(task, {
+        ...merged,
+        workflowInstanceId,
+        taskId,
       });
-      this.logger.debug(`Task has executed successfully ${task.taskId}`);
+      this.logger.debug(`Task has executed successfully ${taskId}`);
+      return nextTask;
     } catch (error: unknown) {
       const durationMs = Date.now() - startTime;
       const err = error as Error;
@@ -276,9 +408,9 @@ export class TaskRunner {
       // Publish TaskExecutionFailure event
       await this.eventDispatcher.publishTaskExecutionFailure({
         taskType: this.worker.taskDefName,
-        taskId: task.taskId,
+        taskId,
         workerId: workerID,
-        workflowInstanceId: task.workflowInstanceId,
+        workflowInstanceId,
         cause: err,
         durationMs,
         timestamp: new Date(),
@@ -290,20 +422,33 @@ export class TaskRunner {
 
       if (isNonRetryable) {
         this.logger.error(
-          `Task ${task.taskId} failed with terminal error (no retry): ${err.message}`
+          `Task ${taskId} failed with terminal error (no retry): ${err.message}`
         );
       }
 
-      await this.updateTaskWithRetry(task, {
-        workflowInstanceId: task.workflowInstanceId,
-        taskId: task.taskId,
+      // Include error stack trace in task logs for debugging in Conductor UI
+      const errorLogs = [
+        {
+          log: `${err.name}: ${err.message}${err.stack ? "\n" + err.stack : ""}`,
+          createdTime: Date.now(),
+          taskId,
+        },
+      ];
+
+      const nextTask = await this.updateTaskWithRetry(task, {
+        workflowInstanceId,
+        taskId,
         reasonForIncompletion:
           (error as Record<string, string>)?.message ?? DEFAULT_ERROR_MESSAGE,
         status,
         outputData: {},
+        logs: errorLogs,
       });
       this.errorHandler(err, task);
-      this.logger.error(`Error executing ${task.taskId}`, error);
+      this.logger.error(`Error executing ${taskId}`, error);
+
+      // Even on failure, chain to next task — the failure was for THIS task
+      return nextTask;
     }
   };
 

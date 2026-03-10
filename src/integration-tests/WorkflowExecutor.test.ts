@@ -4,8 +4,8 @@ import {
   test,
   jest,
   beforeAll,
-  afterEach,
   afterAll,
+  afterEach,
 } from "@jest/globals";
 import { v4 as uuidv4 } from "uuid";
 import {
@@ -24,6 +24,7 @@ import {
   WorkflowExecutor,
   orkesConductorClient,
 } from "../sdk";
+import { cleanupWorkflowsAndTasks } from "./utils/cleanup";
 import { waitForWorkflowStatus } from "./utils/waitForWorkflowStatus";
 import { getComplexSignalTestWfDef } from "./metadata/complex_wf_signal_test";
 import { getComplexSignalTestSubWf1Def } from "./metadata/complex_wf_signal_test_subworkflow_1";
@@ -38,10 +39,21 @@ describe("WorkflowExecutor", () => {
 
   const name = `jsSdkTest-Workflow-${Date.now()}`;
   const version = 1;
+  let metadataClient: MetadataClient;
+
+  beforeAll(async () => {
+    metadataClient = new MetadataClient((await clientPromise));
+  });
+
+  afterAll(async () => {
+    await cleanupWorkflowsAndTasks(metadataClient, {
+      workflows: [{ name, version }],
+    });
+  });
+
   test("Should be able to register a workflow", async () => {
     const client = await clientPromise;
     const executor = new WorkflowExecutor(client);
-    const metadataClient = new MetadataClient(client);
 
     const workflowDefinition: WorkflowDef = {
       name,
@@ -182,17 +194,22 @@ describe("WorkflowExecutor", () => {
       throw new Error("Execution ID is undefined");
     }
 
-    const workflowStatusBefore = await waitForWorkflowStatus(
-      executor,
-      executionId,
-      "RUNNING"
-    );
+    await waitForWorkflowStatus(executor, executionId, "RUNNING");
 
-    await new Promise((resolve) => setTimeout(resolve, 5000));
-
-    expect(["IN_PROGRESS", "SCHEDULED"]).toContain(
-      workflowStatusBefore.tasks?.[0]?.status
-    );
+    // Wait for the task to be IN_PROGRESS before updating (V4 may take longer; server requires "running" task)
+    const taskReadyTimeout = 60000;
+    const pollInterval = 1000;
+    const taskReadyStart = Date.now();
+    let taskStatus: string | undefined;
+    while (Date.now() - taskReadyStart < taskReadyTimeout) {
+      const wf = await executor.getWorkflow(executionId, true);
+      taskStatus = wf?.tasks?.[0]?.status;
+      if (taskStatus === "IN_PROGRESS") break;
+      if (taskStatus === "FAILED" || taskStatus === "COMPLETED")
+        throw new Error(`Task ended in unexpected state: ${taskStatus}`);
+      await new Promise((resolve) => setTimeout(resolve, pollInterval));
+    }
+    expect(taskStatus).toEqual("IN_PROGRESS");
 
     const taskClient = new TaskClient(client);
     await taskClient.updateTaskResult(executionId, taskName, "COMPLETED", {
@@ -208,6 +225,11 @@ describe("WorkflowExecutor", () => {
     );
 
     expect(workflowStatusAfter.tasks?.[0]?.status).toEqual("COMPLETED");
+
+    await cleanupWorkflowsAndTasks(metadataClient, {
+      workflows: [{ name: workflowName, version: 1 }],
+      tasks: [taskName],
+    });
   });
 
   test("Should run workflow with an optional http task", async () => {
@@ -250,6 +272,11 @@ describe("WorkflowExecutor", () => {
     expect(["FAILED", "COMPLETED_WITH_ERRORS"]).toContain(
       workflowStatus.tasks?.[0]?.status
     );
+
+    await cleanupWorkflowsAndTasks(metadataClient, {
+      workflows: [{ name: workflowName, version: 1 }],
+      tasks: [taskName],
+    });
   });
 
   describeForOrkesV5("Execute with Return Strategy and Consistency", () => {
@@ -659,12 +686,32 @@ describe("WorkflowExecutor", () => {
           if (!workflowId) {
             throw new Error("workflowId is undefined");
           }
-          await executor.signal(workflowId, TaskResultStatusEnum.COMPLETED, {
-            result: "signal1",
-          });
-          await executor.signal(workflowId, TaskResultStatusEnum.COMPLETED, {
-            result: "signal2",
-          });
+          // Allow workflow to reach WAIT task before signaling (avoids "Failed to signal" on slow CI)
+          await new Promise((r) => setTimeout(r, 2000));
+          const signalWithRetry = async (
+            output: Record<string, unknown>,
+            maxAttempts = 3
+          ) => {
+            let lastErr: unknown;
+            for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+              try {
+                await executor.signal(
+                  workflowId,
+                  TaskResultStatusEnum.COMPLETED,
+                  output
+                );
+                return;
+              } catch (e) {
+                lastErr = e;
+                if (attempt < maxAttempts) {
+                  await new Promise((r) => setTimeout(r, 1000 * attempt));
+                }
+              }
+            }
+            throw lastErr;
+          };
+          await signalWithRetry({ result: "signal1" });
+          await signalWithRetry({ result: "signal2" });
 
           await waitForWorkflowStatus(
             executor,

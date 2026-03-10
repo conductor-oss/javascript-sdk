@@ -6,6 +6,12 @@ import * as fs from "fs";
 import * as path from "path";
 import { describeForOrkesV5 } from "./utils/customJestDescribe";
 
+// Conductor must be able to fetch this URL for discovery; use CONDUCTOR_TEST_SERVICE_URI
+// when testing against a remote cluster (e.g. a public Swagger URL it can reach).
+const TEST_SERVICE_URI =
+  process.env.CONDUCTOR_TEST_SERVICE_URI ??
+  "http://httpbin-server:8081/api-docs";
+
 describeForOrkesV5("ServiceRegistryClient", () => {
   const clientPromise = orkesConductorClient();
   let serviceRegistryClient: ServiceRegistryClient;
@@ -30,14 +36,14 @@ describeForOrkesV5("ServiceRegistryClient", () => {
     testServicesToCleanup.length = 0;
   });
 
-  jest.setTimeout(15000);
+  jest.setTimeout(60000);
 
   test("Should add and retrieve a service registry", async () => {
     // Create a test service registry
     const testServiceRegistry = {
       name: `jsSdkTest-test_service_registry${Date.now()}`,
       type: ServiceType.HTTP,
-      serviceURI: "http://httpbin:8081/api-docs",
+      serviceURI: TEST_SERVICE_URI,
       config: {
         circuitBreakerConfig: {
           failureRateThreshold: 50.0,
@@ -114,7 +120,7 @@ describeForOrkesV5("ServiceRegistryClient", () => {
     const testServiceRegistry = {
       name: `jsSdkTest-test_service_registry_to_remove-${Date.now()}`,
       type: ServiceType.HTTP,
-      serviceURI: "http://httpbin:8081/api-docs",
+      serviceURI: TEST_SERVICE_URI,
     };
 
     // Register the service registry
@@ -143,7 +149,7 @@ describeForOrkesV5("ServiceRegistryClient", () => {
     const testServiceRegistry = {
       name: `jsSdkTest-test_service_registry_with_method-${Date.now()}`,
       type: ServiceType.HTTP,
-      serviceURI: "http://httpbin:8081/api-docs",
+      serviceURI: TEST_SERVICE_URI,
     };
 
     // Add service to cleanup list
@@ -202,7 +208,7 @@ describeForOrkesV5("ServiceRegistryClient", () => {
     const testServiceRegistry = {
       name: `jsSdkTest-test_service_registry_discovery-${Date.now()}`,
       type: ServiceType.HTTP,
-      serviceURI: "http://httpbin:8081/api-docs",
+      serviceURI: TEST_SERVICE_URI,
     };
 
     // Add service to cleanup list

@@ -1,12 +1,12 @@
-import { afterEach, beforeAll, describe, expect, test } from "@jest/globals";
+import { afterAll, afterEach, beforeAll, describe, expect, test } from "@jest/globals";
 import type { Task } from "../open-api";
 import {
+  MetadataClient,
   NonRetryableException,
   TaskHandler,
   WorkflowExecutor,
   clearWorkerRegistry,
   getRegisteredWorkers,
-  orkesConductorClient,
   simpleTask,
   worker
 } from "../sdk";
@@ -18,10 +18,13 @@ import type {
 } from "../sdk/clients/worker/events/types";
 import { waitForWorkflowStatus } from "./utils/waitForWorkflowStatus";
 import { executeWorkflowWithRetry } from "./utils/executeWorkflowWithRetry";
+import { createClientWithRetry } from "./utils/createClientWithRetry";
+import { describeForOrkesV5 } from "./utils/customJestDescribe";
 
 describe("SDK Worker Registration", () => {
-  const clientPromise = orkesConductorClient();
+  const clientPromise = createClientWithRetry();
   let executor: WorkflowExecutor;
+  const workflowsToCleanup: { name: string; version: number }[] = [];
 
   beforeAll(async () => {
     const client = await clientPromise;
@@ -31,6 +34,16 @@ describe("SDK Worker Registration", () => {
   afterEach(() => {
     // Clean up worker registry after each test to prevent conflicts
     clearWorkerRegistry();
+  });
+
+  afterAll(async () => {
+    const client = await clientPromise;
+    const metadataClient = new MetadataClient(client);
+    await Promise.allSettled(
+      workflowsToCleanup.map((w) =>
+        metadataClient.unregisterWorkflow(w.name, w.version)
+      )
+    );
   });
 
   test("worker() function registers workers in global registry", async () => {
@@ -51,6 +64,8 @@ describe("SDK Worker Registration", () => {
     expect(registeredWorkers[0]?.taskDefName).toBe(taskName);
   });
 
+  // These tests run workflows and have workers report task results; they need POST /api/tasks/update-v2 (v5 only).
+  describeForOrkesV5("Worker execution (requires update-v2)", () => {
   test("TaskHandler auto-discovers and executes decorated workers", async () => {
     const client = await clientPromise;
     const taskName = `sdk_test_auto_discover_${Date.now()}`;
@@ -81,7 +96,7 @@ describe("SDK Worker Registration", () => {
     expect(handler.running).toBe(false);
 
     // Start workers BEFORE registering workflow
-    handler.startWorkers();
+    await handler.startWorkers();
 
     // Wait a bit for workers to start polling
     await new Promise(resolve => setTimeout(resolve, 100));
@@ -98,6 +113,7 @@ describe("SDK Worker Registration", () => {
       outputParameters: {},
       timeoutSeconds: 0,
     });
+    workflowsToCleanup.push({ name: workflowName, version: 1 });
     expect(handler.running).toBe(true);
     expect(handler.runningWorkerCount).toBe(1);
 
@@ -176,7 +192,7 @@ describe("SDK Worker Registration", () => {
     });
 
     // Start workers BEFORE registering workflow
-    handler.startWorkers();
+    await handler.startWorkers();
 
     // Wait a bit for workers to start polling
     await new Promise(resolve => setTimeout(resolve, 100));
@@ -195,6 +211,7 @@ describe("SDK Worker Registration", () => {
       outputParameters: {},
       timeoutSeconds: 0,
     });
+    workflowsToCleanup.push({ name: workflowName, version: 1 });
 
     // Execute workflow with retry on transient failures
     const { workflowId } = await executeWorkflowWithRetry(
@@ -224,6 +241,7 @@ describe("SDK Worker Registration", () => {
 
     await handler.stopWorkers();
   }, 90000);
+  });
 
   test("worker with domain isolation", async () => {
     const client = await clientPromise;
@@ -250,7 +268,7 @@ describe("SDK Worker Registration", () => {
     expect(registeredWorkers[0]?.domain).toBe(domain);
 
     // Start workers and verify they start properly
-    handler.startWorkers();
+    await handler.startWorkers();
     expect(handler.running).toBe(true);
 
     // Wait a bit for workers to initialize
@@ -260,6 +278,7 @@ describe("SDK Worker Registration", () => {
     expect(handler.running).toBe(false);
   });
 
+  describeForOrkesV5("Worker execution (requires update-v2)", () => {
   test("NonRetryableException marks task as terminal failure", async () => {
     const client = await clientPromise;
     const taskName = `sdk_test_non_retryable_${Date.now()}`;
@@ -286,7 +305,7 @@ describe("SDK Worker Registration", () => {
     });
 
     // Start workers BEFORE registering workflow (important!)
-    handler.startWorkers();
+    await handler.startWorkers();
 
     // Wait a bit for workers to start polling
     await new Promise(resolve => setTimeout(resolve, 100));
@@ -303,6 +322,7 @@ describe("SDK Worker Registration", () => {
       outputParameters: {},
       timeoutSeconds: 0,
     });
+    workflowsToCleanup.push({ name: workflowName, version: 1 });
 
     // Execute workflow with shouldFail flag and retry on transient failures
     const { workflowId } = await executeWorkflowWithRetry(
@@ -377,7 +397,7 @@ describe("SDK Worker Registration", () => {
     });
 
     // Start workers BEFORE registering workflow
-    handler.startWorkers();
+    await handler.startWorkers();
 
     // Wait a bit for workers to start polling
     await new Promise(resolve => setTimeout(resolve, 100));
@@ -392,6 +412,7 @@ describe("SDK Worker Registration", () => {
       outputParameters: {},
       timeoutSeconds: 0,
     });
+    workflowsToCleanup.push({ name: workflowName, version: 1 });
 
     // Execute workflow with retry on transient failures
     const { workflowId } = await executeWorkflowWithRetry(
@@ -457,7 +478,7 @@ describe("SDK Worker Registration", () => {
     expect(handler.workerCount).toBe(2);
 
     // Start workers BEFORE registering workflow
-    handler.startWorkers();
+    await handler.startWorkers();
 
     // Wait a bit for workers to start polling
     await new Promise(resolve => setTimeout(resolve, 100));
@@ -475,6 +496,7 @@ describe("SDK Worker Registration", () => {
       outputParameters: {},
       timeoutSeconds: 0,
     });
+    workflowsToCleanup.push({ name: workflowName, version: 1 });
     expect(handler.runningWorkerCount).toBe(2);
 
     // Execute workflow with retry on transient failures
@@ -506,6 +528,7 @@ describe("SDK Worker Registration", () => {
 
     await handler.stopWorkers();
   }, 90000);
+  });
 
   test("TaskHandler lifecycle - start and stop multiple times", async () => {
     const client = await clientPromise;
@@ -530,12 +553,12 @@ describe("SDK Worker Registration", () => {
     expect(handler.runningWorkerCount).toBe(0);
 
     // Start workers
-    handler.startWorkers();
+    await handler.startWorkers();
     expect(handler.running).toBe(true);
     expect(handler.runningWorkerCount).toBe(1);
 
     // Starting again should be idempotent
-    handler.startWorkers();
+    await handler.startWorkers();
     expect(handler.running).toBe(true);
     expect(handler.runningWorkerCount).toBe(1);
 
@@ -550,7 +573,7 @@ describe("SDK Worker Registration", () => {
     expect(handler.runningWorkerCount).toBe(0);
 
     // Can restart after stopping
-    handler.startWorkers();
+    await handler.startWorkers();
     expect(handler.running).toBe(true);
     expect(handler.runningWorkerCount).toBe(1);
 
@@ -590,7 +613,7 @@ describe("SDK Worker Registration", () => {
 
     expect(handler.workerCount).toBe(2);
 
-    handler.startWorkers();
+    await handler.startWorkers();
     expect(handler.runningWorkerCount).toBe(2);
 
     await handler.stopWorkers();

@@ -1,3 +1,4 @@
+import type { ConductorLogger } from "../../../helpers/logger";
 import type {
   TaskRunnerEvent,
   PollStarted,
@@ -6,6 +7,7 @@ import type {
   TaskExecutionStarted,
   TaskExecutionCompleted,
   TaskExecutionFailure,
+  TaskUpdateCompleted,
   TaskUpdateFailure,
 } from "./types";
 
@@ -49,6 +51,11 @@ export interface TaskRunnerEventsListener {
   onTaskExecutionFailure?(event: TaskExecutionFailure): void | Promise<void>;
 
   /**
+   * Called when task update completes successfully.
+   */
+  onTaskUpdateCompleted?(event: TaskUpdateCompleted): void | Promise<void>;
+
+  /**
    * Called when task update fails after all retry attempts.
    * This is a CRITICAL event that may require operational intervention.
    */
@@ -63,6 +70,11 @@ export interface TaskRunnerEventsListener {
  */
 export class EventDispatcher {
   private listeners: TaskRunnerEventsListener[] = [];
+  private logger?: ConductorLogger;
+
+  constructor(logger?: ConductorLogger) {
+    this.logger = logger;
+  }
 
   /**
    * Register an event listener.
@@ -134,6 +146,13 @@ export class EventDispatcher {
   }
 
   /**
+   * Publish a TaskUpdateCompleted event.
+   */
+  async publishTaskUpdateCompleted(event: TaskUpdateCompleted): Promise<void> {
+    await this.publishEvent("onTaskUpdateCompleted", event);
+  }
+
+  /**
    * Publish a TaskUpdateFailure event.
    */
   async publishTaskUpdateFailure(event: TaskUpdateFailure): Promise<void> {
@@ -164,10 +183,12 @@ export class EventDispatcher {
           }
         } catch (error) {
           // Isolate listener failures - don't affect task execution
-          console.error(
-            `Event listener failed for ${method}:`,
-            error instanceof Error ? error.message : error
-          );
+          const msg = `Event listener failed for ${method}: ${error instanceof Error ? error.message : error}`;
+          if (this.logger) {
+            this.logger.error(msg);
+          } else {
+            console.error(msg);
+          }
         }
       });
 

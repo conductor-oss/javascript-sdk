@@ -1,4 +1,4 @@
-import { expect, describe, test, jest } from "@jest/globals";
+import { expect, describe, test, jest, afterAll } from "@jest/globals";
 import {
   ExtendedWorkflowDef,
   SaveScheduleRequest,
@@ -12,7 +12,7 @@ import {
 
 describe("SchedulerClient", () => {
   const clientPromise = orkesConductorClient();
-  jest.setTimeout(15000);
+  jest.setTimeout(60000);
 
   const now = Date.now();
   const name = `jsSdkTestSchedule_${now}`;
@@ -20,6 +20,25 @@ describe("SchedulerClient", () => {
 
   const workflowName = `jsSdkTestScheduleWf_${now}`;
   const workflowVersion = 1;
+
+  afterAll(async () => {
+    const client = await clientPromise;
+    const schedulerClient = new SchedulerClient(client);
+    const metadataClient = new MetadataClient(client);
+    try {
+      await schedulerClient.deleteSchedule(name);
+    } catch (e) {
+      console.debug(`Failed to cleanup schedule ${name}:`, e);
+    }
+    try {
+      await metadataClient.unregisterWorkflow(workflowName, workflowVersion);
+    } catch (e) {
+      console.debug(
+        `Failed to cleanup workflow ${workflowName}:`,
+        e
+      );
+    }
+  });
 
   test("Should be able to register a workflow and retrieve it", async () => {
     const client = await clientPromise;

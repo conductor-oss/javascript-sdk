@@ -1,6 +1,8 @@
 import type { Task, TaskResult } from "../../../open-api";
 import type { TaskDef } from "../../../open-api/generated";
 import { registerWorker, type RegisteredWorker } from "./registry";
+import { simpleTask } from "../../builders/tasks/simple";
+import { generateSchemaFromClass } from "../schema/decorators";
 
 /**
  * Options for the @worker decorator.
@@ -90,6 +92,36 @@ export interface WorkerOptions {
    * - Can be overridden via env: CONDUCTOR_WORKER_<NAME>_STRICT_SCHEMA=true
    */
   strictSchema?: boolean;
+
+  /**
+   * JSON Schema for task input validation.
+   * - Registered alongside the task definition when registerTaskDef=true
+   * - Use the `jsonSchema()` helper to generate from field descriptors
+   */
+  inputSchema?: Record<string, unknown>;
+
+  /**
+   * JSON Schema for task output validation.
+   * - Registered alongside the task definition when registerTaskDef=true
+   * - Use the `jsonSchema()` helper to generate from field descriptors
+   */
+  outputSchema?: Record<string, unknown>;
+
+  /**
+   * Class decorated with `@schemaField()` for auto-generating input schema.
+   * - Alternative to `inputSchema` — schema is generated from class metadata
+   * - Takes precedence over `inputSchema` if both are set
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  inputType?: new (...args: any[]) => unknown;
+
+  /**
+   * Class decorated with `@schemaField()` for auto-generating output schema.
+   * - Alternative to `outputSchema` — schema is generated from class metadata
+   * - Takes precedence over `outputSchema` if both are set
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  outputType?: new (...args: any[]) => unknown;
 }
 
 /**
@@ -201,6 +233,17 @@ export function worker(options: WorkerOptions) {
       );
     }
 
+    // Auto-generate schemas from inputType/outputType if provided
+    let resolvedInputSchema = options.inputSchema;
+    let resolvedOutputSchema = options.outputSchema;
+
+    if (options.inputType) {
+      resolvedInputSchema = generateSchemaFromClass(options.inputType) as unknown as Record<string, unknown>;
+    }
+    if (options.outputType) {
+      resolvedOutputSchema = generateSchemaFromClass(options.outputType) as unknown as Record<string, unknown>;
+    }
+
     // Create registered worker metadata
     const registeredWorker: RegisteredWorker = {
       taskDefName: options.taskDefName,
@@ -214,13 +257,47 @@ export function worker(options: WorkerOptions) {
       taskDef: options.taskDef,
       overwriteTaskDef: options.overwriteTaskDef,
       strictSchema: options.strictSchema,
+      inputSchema: resolvedInputSchema,
+      outputSchema: resolvedOutputSchema,
     };
 
     // Register in global registry for auto-discovery
     registerWorker(registeredWorker);
 
-    // Return original descriptor/target unchanged
-    // This allows the function to be called normally
-    return descriptor || target;
+    // Create dual-mode wrapper that supports both execution and workflow builder mode
+    const dualModeFunction = function (this: unknown, ...args: unknown[]) {
+      // Check if called in workflow builder mode:
+      //   myWorker({ taskRefName: "step_1", inputParameters: { ... } })
+      if (
+        args.length === 1 &&
+        args[0] &&
+        typeof args[0] === "object" &&
+        "taskRefName" in (args[0] as Record<string, unknown>)
+      ) {
+        const builderArgs = args[0] as {
+          taskRefName: string;
+          inputParameters?: Record<string, unknown>;
+        };
+        return simpleTask(
+          builderArgs.taskRefName,
+          options.taskDefName,
+          builderArgs.inputParameters ?? {}
+        );
+      }
+      // Normal execution mode
+      return (executeFunction as (...args: unknown[]) => unknown).apply(this, args);
+    };
+
+    // Preserve original function name
+    Object.defineProperty(dualModeFunction, "name", {
+      value: (executeFunction as (...args: unknown[]) => unknown).name,
+      configurable: true,
+    });
+
+    if (descriptor) {
+      descriptor.value = dualModeFunction;
+      return descriptor;
+    }
+    return dualModeFunction;
   };
 }

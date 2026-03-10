@@ -7,7 +7,7 @@ import type {
 import { HumanTask } from "../../../open-api/generated";
 import { handleSdkError } from "../../helpers/errors";
 import { DEFAULT_POLL_INTERVAL, EMPTY_SEARCH } from "./constants";
-import { PollIntervalOptions, UserType } from "./types";
+import { ClaimTaskOptions, PollIntervalOptions, UserType } from "./types";
 
 export class HumanExecutor {
   public readonly _client: Client;
@@ -154,7 +154,7 @@ export class HumanExecutor {
   public async claimTaskAsExternalUser(
     taskId: string,
     assignee: string,
-    options?: Record<string, boolean>
+    options?: ClaimTaskOptions
   ): Promise<HumanTaskEntry> {
     try {
       const { data } = await HumanTask.assignAndClaim({
@@ -183,7 +183,7 @@ export class HumanExecutor {
    */
   public async claimTaskAsConductorUser(
     taskId: string,
-    options?: Record<string, boolean>
+    options?: ClaimTaskOptions
   ): Promise<HumanTaskEntry> {
     try {
       const { data } = await HumanTask.claimTask({

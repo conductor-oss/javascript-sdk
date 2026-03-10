@@ -65,6 +65,10 @@ export class ServiceRegistryClient {
         throwOnError: true,
       });
 
+      // OpenAPI client returns response.body (ReadableStream) when response has no Content-Type (e.g. 200 empty)
+      if (data != null && typeof (data as ReadableStream).getReader === "function") {
+        return undefined;
+      }
       if (typeof data === "object") {
         return Object.keys(data).length ? data : undefined;
       }
