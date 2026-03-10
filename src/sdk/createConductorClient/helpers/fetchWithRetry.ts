@@ -129,13 +129,19 @@ export const retryFetch = async (
   const getInit = (): Init =>
     requestTimeoutMs ? applyTimeout(init, requestTimeoutMs) : init ?? {};
 
+  /** Fresh request per attempt — reusing a Request whose body was already consumed causes "body disturbed or locked" on retry (e.g. 502/503/504 in CI). */
+  const getRequest = (): Input =>
+    typeof input === "object" && input !== null && "clone" in input && typeof (input as Request).clone === "function"
+      ? (input as Request).clone()
+      : input;
+
   let lastError: unknown;
 
   // Transport retry loop
   for (let transportAttempt = 0; transportAttempt <= maxTransportRetries; transportAttempt++) {
     let response: Response;
     try {
-      response = cloneResponse(await fetchFn(input, getInit()));
+      response = cloneResponse(await fetchFn(getRequest(), getInit()));
     } catch (error) {
       // Timeout/abort errors should NOT be retried
       if (isTimeoutError(error)) {
@@ -158,7 +164,7 @@ export const retryFetch = async (
       await new Promise((resolve) =>
         setTimeout(resolve, withJitter(initialRetryDelay * (gwAttempt + 1)))
       );
-      response = cloneResponse(await fetchFn(input, getInit()));
+      response = cloneResponse(await fetchFn(getRequest(), getInit()));
     }
 
     // Rate limit retry (429)
@@ -167,7 +173,7 @@ export const retryFetch = async (
       let delay = initialRetryDelay;
       for (let rlAttempt = 0; rlAttempt < maxRateLimitRetries; rlAttempt++) {
         await new Promise((resolve) => setTimeout(resolve, withJitter(delay)));
-        rateLimitResponse = cloneResponse(await fetchFn(input, getInit()));
+        rateLimitResponse = cloneResponse(await fetchFn(getRequest(), getInit()));
         if (rateLimitResponse.status !== 429) {
           return rateLimitResponse;
         }
@@ -191,7 +197,7 @@ export const retryFetch = async (
           headers: new Headers(init?.headers),
         };
         retryInit.headers.set("X-Authorization", newToken);
-        return cloneResponse(await fetchFn(input, retryInit));
+        return cloneResponse(await fetchFn(getRequest(), retryInit));
       }
     }
 

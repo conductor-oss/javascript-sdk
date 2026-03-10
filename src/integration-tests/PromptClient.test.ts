@@ -5,14 +5,15 @@ import {
   PromptClient,
 } from "../sdk";
 import type { Tag } from "../open-api";
+import { describeForOrkesV5 } from "./utils/customJestDescribe";
 
 /**
- * E2E Integration Tests for PromptClient
+ * E2E Integration Tests for PromptClient (v5 only).
  *
  * Tests prompt CRUD, tag management, and (optionally) prompt testing
  * against a configured LLM integration.
  */
-describe("PromptClient", () => {
+describeForOrkesV5("PromptClient", () => {
   jest.setTimeout(60000);
 
   const clientPromise = orkesConductorClient();

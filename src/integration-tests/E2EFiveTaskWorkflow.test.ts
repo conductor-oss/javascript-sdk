@@ -1,7 +1,6 @@
 import {
   afterEach,
   beforeAll,
-  describe,
   expect,
   jest,
   test,
@@ -18,8 +17,9 @@ import {
 } from "../sdk";
 import { cleanupWorkflowsAndTasks } from "./utils/cleanup";
 import { waitForWorkflowStatus } from "./utils/waitForWorkflowStatus";
+import { describeForOrkesV5 } from "./utils/customJestDescribe";
 
-describe("E2E: 5-task workflow × 50 executions", () => {
+describeForOrkesV5("E2E: 5-task workflow × 50 executions", () => {
   const clientPromise: Promise<Client> = orkesConductorClient();
   let executor: WorkflowExecutor;
   let handler: TaskHandler | undefined;

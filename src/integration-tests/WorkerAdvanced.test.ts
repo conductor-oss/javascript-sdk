@@ -24,9 +24,10 @@ import {
 import { cleanupWorkflowsAndTasks } from "./utils/cleanup";
 import { waitForWorkflowStatus } from "./utils/waitForWorkflowStatus";
 import { executeWorkflowWithRetry } from "./utils/executeWorkflowWithRetry";
+import { describeForOrkesV5 } from "./utils/customJestDescribe";
 
 /**
- * E2E Integration Tests for Advanced Worker Features
+ * E2E Integration Tests for Advanced Worker Features (v5 only).
  *
  * Tests features not covered in WorkerRegistration.test.ts:
  * - MetricsCollector — verify metrics collected during workflow execution
@@ -34,7 +35,7 @@ import { executeWorkflowWithRetry } from "./utils/executeWorkflowWithRetry";
  * - TaskContext — getTaskContext(), addLog(), verify logs via getTaskLogs()
  * - Worker with paused option
  */
-describe("Worker Advanced Features", () => {
+describeForOrkesV5("Worker Advanced Features", () => {
   jest.setTimeout(120000);
 
   const clientPromise = orkesConductorClient();
