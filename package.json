@@ -6,7 +6,7 @@
   "homepage": "https://orkes.io",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/conductor-oss/javascript-sdk.git"
+    "url": "https://github.com/conductor-oss/javascript-sdk"
   },
   "keywords": [
     "conductor",
