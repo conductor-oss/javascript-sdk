@@ -10,6 +10,7 @@ import {
 } from "../sdk";
 import { mockLogger } from "./utils/mockLogger";
 import { waitForWorkflowCompletion } from "./utils/waitForWorkflowCompletion";
+import { describeForOrkesV5 } from "./utils/customJestDescribe";
 
 const BASE_TIME = 1000;
 describe("TaskManager", () => {
@@ -44,7 +45,49 @@ describe("TaskManager", () => {
     tasksToCleanup.length = 0;
   });
 
-  test("Should run workflow with worker", async () => {
+  // Client-side validation only; no workflow execution or updateTaskV2 — runs on v4 and v5
+  test("Should not be able to startPolling if TaskManager has no workers", async () => {
+    const client = await clientPromise;
+    const manager = new TaskManager(client, [], {
+      options: { pollInterval: BASE_TIME, concurrency: 2 },
+    });
+    expect(() => manager.startPolling()).toThrow(
+      "No workers supplied to TaskManager"
+    );
+  });
+
+  test("Should not be able to startPolling if duplicate workers", async () => {
+    const client = await clientPromise;
+    const workerName = `jsSdkTest-worker-name-${Date.now()}`;
+
+    const workerNames: string[] = Array.from({ length: 3 })
+      .fill(0)
+      .map(() => workerName);
+
+    // names to actual workers
+    const workers: ConductorWorker[] = workerNames.map((name) => ({
+      taskDefName: name,
+      execute: async () => {
+        return {
+          outputData: {
+            hello: "From your worker",
+          },
+          status: "COMPLETED",
+        };
+      },
+    }));
+
+    const manager = new TaskManager(client, workers, {
+      options: { pollInterval: BASE_TIME, concurrency: 2 },
+    });
+    expect(() => manager.startPolling()).toThrow(
+      `Duplicate worker taskDefName: ${workerName}`
+    );
+  });
+
+  // Workflow execution uses updateTaskV2 (v5 only)
+  describeForOrkesV5("TaskManager workflow execution", () => {
+    test("Should run workflow with worker", async () => {
     const client = await clientPromise;
     const executor = new WorkflowExecutor(client);
     const taskName = `jsSdkTest-taskmanager-test-${Date.now()}`;
@@ -324,46 +367,7 @@ describe("TaskManager", () => {
     expect(manager.options.pollInterval).toBe(BASE_TIME);
   });
 
-  test("Should not be able to startPolling if TaskManager has no workers", async () => {
-    const client = await clientPromise;
-    const manager = new TaskManager(client, [], {
-      options: { pollInterval: BASE_TIME, concurrency: 2 },
-    });
-    expect(() => manager.startPolling()).toThrow(
-      "No workers supplied to TaskManager"
-    );
-  });
-
-  test("Should not be able to startPolling if duplicate workers", async () => {
-    const client = await clientPromise;
-    const workerName = `jsSdkTest-worker-name-${Date.now()}`;
-
-    const workerNames: string[] = Array.from({ length: 3 })
-      .fill(0)
-      .map(() => workerName);
-
-    // names to actual workers
-    const workers: ConductorWorker[] = workerNames.map((name) => ({
-      taskDefName: name,
-      execute: async () => {
-        return {
-          outputData: {
-            hello: "From your worker",
-          },
-          status: "COMPLETED",
-        };
-      },
-    }));
-
-    const manager = new TaskManager(client, workers, {
-      options: { pollInterval: BASE_TIME, concurrency: 2 },
-    });
-    expect(() => manager.startPolling()).toThrow(
-      `Duplicate worker taskDefName: ${workerName}`
-    );
-  });
-
-  test("Updates single worker properties", async () => {
+    test("Updates single worker properties", async () => {
     const client = await clientPromise;
 
     const executor = new WorkflowExecutor(client);
@@ -464,5 +468,6 @@ describe("TaskManager", () => {
     expect(mockLogger.info).toHaveBeenCalledWith(
       `TaskWorker ${candidateWorkerUpdate} configuration updated with concurrency of ${updatedWorkerOptions.concurrency} and poll interval of ${updatedWorkerOptions.pollInterval}`
     );
+  });
   });
 });
