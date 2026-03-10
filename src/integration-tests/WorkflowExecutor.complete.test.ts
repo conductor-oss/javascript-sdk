@@ -61,13 +61,7 @@ describe("WorkflowExecutor Complete Coverage", () => {
   const executionsToCleanup: string[] = [];
 
   beforeAll(async () => {
-    const t0 = Date.now();
-    const log = (step: string) => {
-      console.log(`[WorkflowExecutor.complete beforeAll] ${step} (+${Date.now() - t0}ms total)`);
-    };
-
     client = await createClientWithRetry();
-    log("createClientWithRetry");
     executor = new WorkflowExecutor(client);
     metadataClient = new MetadataClient(client);
     _taskClient = new TaskClient(client);
@@ -82,7 +76,6 @@ describe("WorkflowExecutor Complete Coverage", () => {
       retryLogic: "FIXED",
       retryDelaySeconds: 0,
     });
-    log("registerTask");
 
     // Register WAIT workflow (blocks until signal)
     const waitWfDef: WorkflowDef = {
@@ -101,7 +94,6 @@ describe("WorkflowExecutor Complete Coverage", () => {
     };
     await executor.registerWorkflow(true, waitWfDef);
     workflowsToCleanup.push({ name: waitWfName, version: 1 });
-    log("registerWorkflow(waitWf)");
 
     // Register SET_VARIABLE workflow (completes instantly)
     const simpleWfDef: WorkflowDef = {
@@ -122,7 +114,6 @@ describe("WorkflowExecutor Complete Coverage", () => {
     };
     await executor.registerWorkflow(true, simpleWfDef);
     workflowsToCleanup.push({ name: simpleWfName, version: 1 });
-    log("registerWorkflow(simpleWf)");
 
     // Register SIMPLE task workflow (blocks on task poll)
     const taskWfDef: WorkflowDef = {
@@ -138,8 +129,7 @@ describe("WorkflowExecutor Complete Coverage", () => {
     };
     await executor.registerWorkflow(true, taskWfDef);
     workflowsToCleanup.push({ name: taskWfName, version: 1 });
-    log("registerWorkflow(taskWf)");
-  }, 300000);
+  });
 
   afterEach(async () => {
     for (const execId of executionsToCleanup) {
