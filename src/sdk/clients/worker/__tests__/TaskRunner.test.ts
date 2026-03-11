@@ -22,7 +22,11 @@ import { mockLogger } from "@test-utils/mockLogger";
 jest.mock("@open-api/generated", () => ({
   TaskResource: {
     batchPoll: jest.fn(),
-    updateTaskV2: jest.fn(),
+    updateTaskV2: jest.fn().mockResolvedValue({
+      data: null,
+      error: undefined,
+      response: { status: 200, ok: true },
+    }),
   },
 }));
 
@@ -61,6 +65,9 @@ afterEach(async () => {
 
   // Wait for async operations to complete
   await new Promise(resolve => setTimeout(resolve, 50));
+
+  // Reset static capability cache so each test starts with a clean probe state
+  (TaskRunner as unknown as { updateV2Available: boolean | null }).updateV2Available = null;
 
   jest.clearAllMocks();
 });
@@ -131,6 +138,7 @@ test("polls tasks", async () => {
   expect(TaskResource.updateTaskV2).toHaveBeenCalledWith({
     client: mockClient,
     body: expected,
+    throwOnError: false,
   });
 });
 
@@ -197,6 +205,7 @@ test("Should set the task as failed if the task has an error", async () => {
         }),
       ]),
     }),
+    throwOnError: false,
   });
 });
 
@@ -262,6 +271,7 @@ describe("NonRetryableException handling", () => {
           }),
         ]),
       }),
+      throwOnError: false,
     });
   });
 });
@@ -329,7 +339,7 @@ describe("Task update retry logic", () => {
       // Fail first attempt, succeed on second (return null = no chained task)
       mockUpdateTask
         .mockRejectedValueOnce(new Error("Network error"))
-        .mockResolvedValue({ data: null } as Awaited<ReturnType<typeof TaskResource.updateTaskV2>>);
+        .mockResolvedValue({ data: null, error: undefined, response: { status: 200, ok: true } } as Awaited<ReturnType<typeof TaskResource.updateTaskV2>>);
 
       const runner = new TaskRunner(args);
       activeRunners.push(runner);
@@ -828,7 +838,7 @@ describe("Event listeners", () => {
     const mockUpdateTask = TaskResource.updateTaskV2 as jest.MockedFunction<
       typeof TaskResource.updateTaskV2
     >;
-    mockUpdateTask.mockResolvedValue({} as Awaited<ReturnType<typeof TaskResource.updateTaskV2>>);
+    mockUpdateTask.mockResolvedValue({ data: null, error: undefined, response: { status: 200, ok: true } } as Awaited<ReturnType<typeof TaskResource.updateTaskV2>>);
 
     const runner = new TaskRunner(args);
     activeRunners.push(runner);
@@ -1077,7 +1087,7 @@ describe("Error handling", () => {
       typeof TaskResource.updateTaskV2
     >;
     // Ensure updateTask succeeds for this test
-    mockUpdateTask.mockResolvedValue({} as Awaited<ReturnType<typeof TaskResource.updateTaskV2>>);
+    mockUpdateTask.mockResolvedValue({ data: null, error: undefined, response: { status: 200, ok: true } } as Awaited<ReturnType<typeof TaskResource.updateTaskV2>>);
 
     const runner = new TaskRunner(args);
     activeRunners.push(runner);
@@ -1217,8 +1227,8 @@ describe("Polling state", () => {
     (TaskResource.updateTaskV2 as jest.MockedFunction<typeof TaskResource.updateTaskV2>)
       .mockResolvedValue({ 
         data: null,
-        request: {} as Request,
-        response: {} as Response,
+        error: undefined,
+        response: { status: 200, ok: true },
       } as Awaited<ReturnType<typeof TaskResource.updateTaskV2>>);
 
     const runner = new TaskRunner(args);
@@ -1278,9 +1288,9 @@ describe("V2 task chaining", () => {
 
     const mockUpdateTask = TaskResource.updateTaskV2 as jest.MockedFunction<typeof TaskResource.updateTaskV2>;
     mockUpdateTask
-      .mockResolvedValueOnce({ data: task2 } as Awaited<ReturnType<typeof TaskResource.updateTaskV2>>)
-      .mockResolvedValueOnce({ data: task3 } as Awaited<ReturnType<typeof TaskResource.updateTaskV2>>)
-      .mockResolvedValueOnce({ data: null } as Awaited<ReturnType<typeof TaskResource.updateTaskV2>>);
+      .mockResolvedValueOnce({ data: task2, error: undefined, response: { status: 200, ok: true } } as Awaited<ReturnType<typeof TaskResource.updateTaskV2>>)
+      .mockResolvedValueOnce({ data: task3, error: undefined, response: { status: 200, ok: true } } as Awaited<ReturnType<typeof TaskResource.updateTaskV2>>)
+      .mockResolvedValueOnce({ data: null, error: undefined, response: { status: 200, ok: true } } as Awaited<ReturnType<typeof TaskResource.updateTaskV2>>);
 
     const runner = new TaskRunner(args);
     activeRunners.push(runner);
@@ -1326,7 +1336,7 @@ describe("V2 task chaining", () => {
 
     const mockUpdateTask = TaskResource.updateTaskV2 as jest.MockedFunction<typeof TaskResource.updateTaskV2>;
     // V2 returns null both times — no chaining, must fall back to polling
-    mockUpdateTask.mockResolvedValue({ data: null } as Awaited<ReturnType<typeof TaskResource.updateTaskV2>>);
+    mockUpdateTask.mockResolvedValue({ data: null, error: undefined, response: { status: 200, ok: true } } as Awaited<ReturnType<typeof TaskResource.updateTaskV2>>);
 
     const runner = new TaskRunner(args);
     activeRunners.push(runner);
@@ -1379,8 +1389,8 @@ describe("V2 task chaining", () => {
 
     const mockUpdateTask = TaskResource.updateTaskV2 as jest.MockedFunction<typeof TaskResource.updateTaskV2>;
     mockUpdateTask
-      .mockResolvedValueOnce({ data: task2 } as Awaited<ReturnType<typeof TaskResource.updateTaskV2>>)
-      .mockResolvedValueOnce({ data: null } as Awaited<ReturnType<typeof TaskResource.updateTaskV2>>);
+      .mockResolvedValueOnce({ data: task2, error: undefined, response: { status: 200, ok: true } } as Awaited<ReturnType<typeof TaskResource.updateTaskV2>>)
+      .mockResolvedValueOnce({ data: null, error: undefined, response: { status: 200, ok: true } } as Awaited<ReturnType<typeof TaskResource.updateTaskV2>>);
 
     const runner = new TaskRunner(args);
     activeRunners.push(runner);
@@ -1433,8 +1443,8 @@ describe("V2 task chaining", () => {
     const mockUpdateTask = TaskResource.updateTaskV2 as jest.MockedFunction<typeof TaskResource.updateTaskV2>;
     // task-1 fails, but V2 still returns task-2 as the next task
     mockUpdateTask
-      .mockResolvedValueOnce({ data: task2 } as Awaited<ReturnType<typeof TaskResource.updateTaskV2>>)
-      .mockResolvedValueOnce({ data: null } as Awaited<ReturnType<typeof TaskResource.updateTaskV2>>);
+      .mockResolvedValueOnce({ data: task2, error: undefined, response: { status: 200, ok: true } } as Awaited<ReturnType<typeof TaskResource.updateTaskV2>>)
+      .mockResolvedValueOnce({ data: null, error: undefined, response: { status: 200, ok: true } } as Awaited<ReturnType<typeof TaskResource.updateTaskV2>>);
 
     const runner = new TaskRunner(args);
     activeRunners.push(runner);
