@@ -4,6 +4,7 @@ import {
   MetadataClient,
   NonRetryableException,
   TaskHandler,
+  TaskRunner,
   WorkflowExecutor,
   clearWorkerRegistry,
   getRegisteredWorkers,
@@ -667,5 +668,57 @@ describe("SDK Worker Registration", () => {
     clearWorkerRegistry();
 
     expect(getRegisteredWorkers().length).toBe(0);
+  });
+
+  describeForOrkesV5("update-v2 endpoint verification", () => {
+    test("SDK detects and uses /api/tasks/update-v2 on v5 server", async () => {
+      const client = await clientPromise;
+      const taskName = `sdk_test_update_v2_verify_${Date.now()}`;
+      const workflowName = `sdk_test_update_v2_verify_wf_${Date.now()}`;
+
+      // Reset the static probe so this test measures a live response from the server,
+      // regardless of what earlier tests in this shard may have set.
+      (TaskRunner as unknown as { updateV2Available: boolean | null }).updateV2Available = null;
+
+      const taskRunner = new TaskRunner({
+        client,
+        worker: {
+          taskDefName: taskName,
+          execute: async () => ({ outputData: {}, status: "COMPLETED" }),
+        },
+        options: { pollInterval: 100, concurrency: 1, workerID: "" },
+      });
+      taskRunner.startPolling();
+
+      await executor.registerWorkflow(true, {
+        name: workflowName,
+        version: 1,
+        ownerEmail: "developers@orkes.io",
+        tasks: [simpleTask(taskName, taskName, {})],
+        inputParameters: [],
+        outputParameters: {},
+        timeoutSeconds: 0,
+      });
+      workflowsToCleanup.push({ name: workflowName, version: 1 });
+
+      const executionId = await executor.startWorkflow({
+        name: workflowName,
+        input: {},
+        version: 1,
+      });
+
+      if (!executionId) throw new Error("Execution ID is undefined");
+
+      await waitForWorkflowStatus(executor, executionId, "COMPLETED");
+      taskRunner.stopPolling();
+
+      // The workflow only reaches COMPLETED if a task update was accepted.
+      // This assertion verifies the SDK used /api/tasks/update-v2 (not the v4
+      // legacy /api/tasks fallback) — if update-v2 broke silently and the SDK
+      // fell back, this would be false.
+      expect(
+        (TaskRunner as unknown as { updateV2Available: boolean | null }).updateV2Available
+      ).toBe(true);
+    }, 60000);
   });
 });
