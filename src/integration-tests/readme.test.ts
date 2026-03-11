@@ -9,7 +9,6 @@ import {
 } from "../sdk";
 import { TaskType } from "../open-api";
 import { waitForWorkflowStatus } from "./utils/waitForWorkflowStatus";
-import { describeForOrkesV5 } from "./utils/customJestDescribe";
 
 describe("TaskManager", () => {
   const clientPromise = orkesConductorClient();
@@ -27,71 +26,69 @@ describe("TaskManager", () => {
     );
   });
 
-  describeForOrkesV5("worker example (requires update-v2)", () => {
-    test("worker example ", async () => {
-      const client = await clientPromise;
-      const executor = new WorkflowExecutor(client);
-      const workflowName = `jsSdkTest-my_first_js_wf-${Date.now()}`;
-      const taskName = `jsSdkTest-taskmanager-test-${Date.now()}`;
+  test("worker example ", async () => {
+    const client = await clientPromise;
+    const executor = new WorkflowExecutor(client);
+    const workflowName = `jsSdkTest-my_first_js_wf-${Date.now()}`;
+    const taskName = `jsSdkTest-taskmanager-test-${Date.now()}`;
 
-      const taskRunner = new TaskRunner({
-        client: client,
-        worker: {
-          taskDefName: taskName,
-          execute: async () => {
-            return {
-              outputData: {
-                hello: "From your worker",
-              },
-              status: "COMPLETED",
-            };
-          },
+    const taskRunner = new TaskRunner({
+      client: client,
+      worker: {
+        taskDefName: taskName,
+        execute: async () => {
+          return {
+            outputData: {
+              hello: "From your worker",
+            },
+            status: "COMPLETED",
+          };
         },
-        options: {
-          pollInterval: 10,
-          domain: undefined,
-          concurrency: 1,
-          workerID: "",
-        },
-      });
-      taskRunner.startPolling();
+      },
+      options: {
+        pollInterval: 10,
+        domain: undefined,
+        concurrency: 1,
+        workerID: "",
+      },
+    });
+    taskRunner.startPolling();
 
-      await executor.registerWorkflow(true, {
-        name: workflowName,
-        version: 1,
-        ownerEmail: "developers@orkes.io",
-        tasks: [simpleTask(taskName, taskName, {})],
-        inputParameters: [],
-        outputParameters: {},
-        timeoutSeconds: 0,
-      });
-      workflowsToCleanup.push({ name: workflowName, version: 1 });
+    await executor.registerWorkflow(true, {
+      name: workflowName,
+      version: 1,
+      ownerEmail: "developers@orkes.io",
+      tasks: [simpleTask(taskName, taskName, {})],
+      inputParameters: [],
+      outputParameters: {},
+      timeoutSeconds: 0,
+    });
+    workflowsToCleanup.push({ name: workflowName, version: 1 });
 
-      const executionId = await executor.startWorkflow({
-        name: workflowName,
-        input: {},
-        version: 1,
-      });
+    const executionId = await executor.startWorkflow({
+      name: workflowName,
+      input: {},
+      version: 1,
+    });
 
-      if (!executionId) {
-        throw new Error("Execution ID is undefined");
-      }
+    if (!executionId) {
+      throw new Error("Execution ID is undefined");
+    }
 
-      const workflowStatus = await waitForWorkflowStatus(
-        executor,
-        executionId,
-        "COMPLETED"
-      );
+    const workflowStatus = await waitForWorkflowStatus(
+      executor,
+      executionId,
+      "COMPLETED"
+    );
 
-      const [firstTask] = workflowStatus.tasks || [];
-      expect(firstTask?.taskType).toEqual(taskName);
-      expect(workflowStatus.status).toEqual("COMPLETED");
+    const [firstTask] = workflowStatus.tasks || [];
+    expect(firstTask?.taskType).toEqual(taskName);
+    expect(workflowStatus.status).toEqual("COMPLETED");
 
-      taskRunner.stopPolling();
-      const taskDetails = await executor.getTask(firstTask?.taskId || "");
-      expect(taskDetails?.status).toEqual("COMPLETED");
-    }, 120000);
-  });
+    taskRunner.stopPolling();
+    const taskDetails = await executor.getTask(firstTask?.taskId || "");
+    expect(taskDetails?.status).toEqual("COMPLETED");
+  }, 120000);
 
   test("update task example ", async () => {
     const client = await clientPromise;

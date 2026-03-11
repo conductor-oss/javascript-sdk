@@ -187,6 +187,12 @@ export class TaskRunner {
     }
   };
 
+  /**
+   * Probed once per process. null = unknown, true = v2 endpoint available,
+   * false = legacy server (no /api/tasks/update-v2 endpoint).
+   */
+  private static updateV2Available: boolean | null = null;
+
   updateTaskWithRetry = async (
     task: Task,
     taskResult: TaskResult
@@ -197,16 +203,100 @@ export class TaskRunner {
 
     while (retryCount < this.maxRetries) {
       try {
+        if (process.env.CI) {
+          console.log(
+            `[TaskRunner] Submitting task result taskId=${taskResult.taskId} workflowId=${taskResult.workflowInstanceId} taskType=${this.worker.taskDefName} attempt=${retryCount + 1}/${this.maxRetries}`
+          );
+        }
         const updateStart = Date.now();
-        const { data: nextTask } = await TaskResource.updateTaskV2({
-          client: this._client,
-          body: {
-            ...taskResult,
-            workerId: workerID,
-          },
-        });
-        const updateDurationMs = Date.now() - updateStart;
 
+        if (TaskRunner.updateV2Available === false) {
+          // Already detected a legacy server — skip the probe, call legacy directly.
+          await TaskResource.updateTask({
+            client: this._client,
+            body: { ...taskResult, workerId: workerID },
+            throwOnError: true,
+          });
+          const updateDurationMs = Date.now() - updateStart;
+          if (process.env.CI) {
+            console.log(
+              `[TaskRunner] Task result accepted (legacy) taskId=${taskResult.taskId} durationMs=${updateDurationMs}`
+            );
+          }
+          await this.eventDispatcher.publishTaskUpdateCompleted({
+            taskType: this.worker.taskDefName,
+            taskId: taskResult.taskId ?? "",
+            workerId: workerID,
+            workflowInstanceId: taskResult.workflowInstanceId,
+            durationMs: updateDurationMs,
+            timestamp: new Date(),
+          });
+          // Legacy /api/tasks does not return a next task for chaining.
+          return undefined;
+        }
+
+        // Try v2 endpoint (preferred: supports task chaining).
+        // Use throwOnError: false so we can inspect the HTTP status directly
+        // and fall back on 404/405 without consuming a retry slot.
+        const {
+          data: nextTask,
+          error,
+          response,
+        } = await TaskResource.updateTaskV2({
+          client: this._client,
+          body: { ...taskResult, workerId: workerID },
+          throwOnError: false,
+        });
+
+        if (response.status === 404 || response.status === 405) {
+          // Endpoint absent or wrong method — switch to legacy for all future calls.
+          if (TaskRunner.updateV2Available === null) {
+            console.log(
+              `[TaskRunner] /api/tasks/update-v2 not available (HTTP ${response.status}), ` +
+                `falling back to legacy /api/tasks endpoint`
+            );
+            TaskRunner.updateV2Available = false;
+          }
+          // Immediately fall back without counting this as a retry failure.
+          await TaskResource.updateTask({
+            client: this._client,
+            body: { ...taskResult, workerId: workerID },
+            throwOnError: true,
+          });
+          const updateDurationMs = Date.now() - updateStart;
+          if (process.env.CI) {
+            console.log(
+              `[TaskRunner] Task result accepted (legacy) taskId=${taskResult.taskId} durationMs=${updateDurationMs}`
+            );
+          }
+          await this.eventDispatcher.publishTaskUpdateCompleted({
+            taskType: this.worker.taskDefName,
+            taskId: taskResult.taskId ?? "",
+            workerId: workerID,
+            workflowInstanceId: taskResult.workflowInstanceId,
+            durationMs: updateDurationMs,
+            timestamp: new Date(),
+          });
+          return undefined;
+        }
+
+        if (!response.ok) {
+          throw (
+            (error as Error | undefined) ??
+            new Error(`Task update failed with HTTP ${response.status}`)
+          );
+        }
+
+        // v2 success — record capability on first probe
+        if (TaskRunner.updateV2Available === null) {
+          TaskRunner.updateV2Available = true;
+        }
+        const updateDurationMs = Date.now() - updateStart;
+        if (process.env.CI) {
+          console.log(
+            `[TaskRunner] Task result accepted taskId=${taskResult.taskId} durationMs=${updateDurationMs}`
+          );
+        }
         await this.eventDispatcher.publishTaskUpdateCompleted({
           taskType: this.worker.taskDefName,
           taskId: taskResult.taskId ?? "",
@@ -215,7 +305,6 @@ export class TaskRunner {
           durationMs: updateDurationMs,
           timestamp: new Date(),
         });
-
         return nextTask ?? undefined;
       } catch (error: unknown) {
         lastError = error as Error;
@@ -223,6 +312,9 @@ export class TaskRunner {
         this.logger.error(
           `Error updating task ${taskResult.taskId} on retry ${retryCount + 1}/${this.maxRetries}`,
           error
+        );
+        console.log(
+          `[TaskRunner] Task update failed taskId=${taskResult.taskId} attempt=${retryCount + 1}/${this.maxRetries} error=${(lastError as Error)?.message ?? String(error)}`
         );
         retryCount++;
 
