@@ -220,6 +220,111 @@ describe("@worker decorator", () => {
   });
 });
 
+describe("@worker decorator - New API (TypeScript 5.0+ Stage 3 decorators)", () => {
+  beforeEach(() => {
+    clearWorkerRegistry();
+  });
+
+  afterEach(() => {
+    clearWorkerRegistry();
+  });
+
+  test("should register when called with new decorator signature (value, context)", () => {
+    async function greetMethod(task: Task) {
+      return {
+        status: "COMPLETED" as const,
+        outputData: { result: `Hello ${(task.inputData as Record<string, string>)?.name ?? "World"}` },
+      };
+    }
+
+    // Simulate new decorator API: decorator(value, context) where context has kind
+    const decorator = worker({ taskDefName: "new_api_greet" });
+    decorator(greetMethod, { kind: "method", name: "greet" });
+
+    const workers = getRegisteredWorkers();
+    expect(workers).toHaveLength(1);
+    expect(workers[0].taskDefName).toBe("new_api_greet");
+    expect(workers[0].executeFunction).toBe(greetMethod);
+  });
+
+  test("should return replacement function for new API (replaces class method)", () => {
+    async function originalMethod(task: Task) {
+      return {
+        status: "COMPLETED" as const,
+        outputData: { value: (task.inputData as Record<string, number>).x + 1 },
+      };
+    }
+
+    const decorator = worker({ taskDefName: "new_api_replace" });
+    const replacement = decorator(originalMethod, { kind: "method", name: "compute" });
+
+    expect(typeof replacement).toBe("function");
+    expect(replacement).not.toBe(originalMethod);
+
+    // Replacement should execute the original when called normally
+    const result = (replacement as (task: Task) => Promise<{ status: string; outputData: unknown }>)(
+      { inputData: { x: 10 } } as Task
+    );
+    return expect(result).resolves.toEqual({
+      status: "COMPLETED",
+      outputData: { value: 11 },
+    });
+  });
+
+  test("should support dual-mode (workflow builder) when using new API", () => {
+    async function processTask(_task: Task) {
+      return { status: "COMPLETED" as const, outputData: { done: true } };
+    }
+
+    const decorator = worker({ taskDefName: "new_api_dual" });
+    const replacement = decorator(processTask, { kind: "method", name: "process" }) as (
+      arg: { taskRefName: string; inputParameters?: Record<string, unknown> }
+    ) => unknown;
+
+    const taskDef = replacement({
+      taskRefName: "step_1",
+      inputParameters: { key: "value" },
+    });
+
+    expect(taskDef).toMatchObject({
+      name: "new_api_dual",
+      taskReferenceName: "step_1",
+      inputParameters: { key: "value" },
+    });
+  });
+
+  test("should register with options when using new API", () => {
+    async function workerFn(_task: Task) {
+      return { status: "COMPLETED" as const, outputData: {} };
+    }
+
+    const decorator = worker({
+      taskDefName: "new_api_options",
+      concurrency: 5,
+      pollInterval: 300,
+      domain: "staging",
+    });
+    decorator(workerFn, { kind: "method", name: "workerFn" });
+
+    const registered = getRegisteredWorker("new_api_options", "staging");
+    expect(registered).toBeDefined();
+    expect(registered?.concurrency).toBe(5);
+    expect(registered?.pollInterval).toBe(300);
+    expect(registered?.domain).toBe("staging");
+  });
+
+  test("should throw if taskDefName missing with new API", () => {
+    async function fn(_task: Task) {
+      return { status: "COMPLETED" as const, outputData: {} };
+    }
+
+    const decorator = worker({} as { taskDefName: string });
+    expect(() => {
+      decorator(fn, { kind: "method", name: "fn" });
+    }).toThrow("requires 'taskDefName'");
+  });
+});
+
 describe("Worker Registry", () => {
   beforeEach(() => {
     clearWorkerRegistry();

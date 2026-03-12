@@ -77,7 +77,7 @@ await workflow.register();
 
 **Step 2: Write a worker**
 
-Workers are TypeScript functions decorated with `@worker` that poll Conductor for tasks and execute them.
+Workers are TypeScript functions decorated with `@worker` that poll Conductor for tasks and execute them. The example below uses the legacy decorator style (standalone function). See [Workers](#workers) for the new TypeScript 5.0+ decorator style (class methods).
 
 ```typescript
 import { worker } from "@io-orkes/conductor-javascript";
@@ -215,30 +215,77 @@ All of these are type-safe, composable, and registered to the server as JSON —
 
 ## Workers
 
-Workers are TypeScript functions that execute Conductor tasks. Decorate any function with `@worker` to register it as a worker (auto-discovered by `TaskHandler`) and use it as a workflow task.
+Workers are TypeScript functions that execute Conductor tasks. Decorate functions with `@worker` to register them as workers (auto-discovered by `TaskHandler`) and use them as workflow tasks.
+
+The SDK supports **both** decorator styles:
+
+### Option 1: New decorators (TypeScript 5.0+)
+
+Use class methods with the new Stage 3 decorators. No `experimentalDecorators` needed — remove it from your `tsconfig.json`.
 
 ```typescript
 import { worker, TaskHandler } from "@io-orkes/conductor-javascript";
+import type { Task } from "@io-orkes/conductor-javascript";
+
+class Workers {
+  @worker({ taskDefName: "greet", concurrency: 5, pollInterval: 100 })
+  async greet(task: Task) {
+    return {
+      status: "COMPLETED" as const,
+      outputData: { result: `Hello ${task.inputData?.name ?? "World"}` },
+    };
+  }
+
+  @worker({ taskDefName: "process_payment", domain: "payments" })
+  async processPayment(task: Task) {
+    const result = await paymentGateway.charge(task.inputData.customerId, task.inputData.amount);
+    return { status: "COMPLETED" as const, outputData: { transactionId: result.id } };
+  }
+}
+
+// Class definition triggers decorators — workers are registered
+void new Workers();
+
+const handler = new TaskHandler({ client, scanForDecorated: true });
+await handler.startWorkers();
+```
+
+### Option 2: Legacy decorators (experimentalDecorators)
+
+Use standalone functions. Add `"experimentalDecorators": true` to your `tsconfig.json`.
+
+```typescript
+import { worker, TaskHandler } from "@io-orkes/conductor-javascript";
+import type { Task } from "@io-orkes/conductor-javascript";
 
 @worker({ taskDefName: "greet", concurrency: 5, pollInterval: 100 })
 async function greet(task: Task) {
   return {
-    status: "COMPLETED",
-    outputData: { result: `Hello ${task.inputData.name}` },
+    status: "COMPLETED" as const,
+    outputData: { result: `Hello ${task.inputData?.name ?? "World"}` },
   };
 }
 
 @worker({ taskDefName: "process_payment", domain: "payments" })
 async function processPayment(task: Task) {
   const result = await paymentGateway.charge(task.inputData.customerId, task.inputData.amount);
-  return { status: "COMPLETED", outputData: { transactionId: result.id } };
+  return { status: "COMPLETED" as const, outputData: { transactionId: result.id } };
 }
 
-// Auto-discover and start all decorated workers
 const handler = new TaskHandler({ client, scanForDecorated: true });
 await handler.startWorkers();
+```
 
-// Graceful shutdown
+### tsconfig setup
+
+| Decorator style | tsconfig.json |
+|-----------------|---------------|
+| **New** (TypeScript 5.0+) | Omit `experimentalDecorators` — use class methods |
+| **Legacy** | `"experimentalDecorators": true` — use standalone functions |
+
+**Graceful shutdown:**
+
+```typescript
 process.on("SIGTERM", async () => {
   await handler.stopWorkers();
   process.exit(0);
