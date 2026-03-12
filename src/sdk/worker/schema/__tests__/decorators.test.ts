@@ -174,4 +174,89 @@ describe("@schemaField() decorator", () => {
       expect(address.required).toEqual(["street"]);
     });
   });
+
+  describe("Stage 3 (TypeScript 5.0+) decorator API", () => {
+    it("should register fields when called with new decorator signature (value, context)", () => {
+      class TestClass {
+        name = "";
+      }
+      // Simulate new decorator API: decorator(value, context) returns initializer
+      const decorator = schemaField({ type: "string" });
+      const initializer = decorator(undefined, {
+        kind: "field",
+        name: "name",
+      }) as (initialValue: unknown) => unknown;
+      expect(typeof initializer).toBe("function");
+
+      // Initializer runs when instance is created; bind instance as `this`
+      const instance = new TestClass();
+      initializer.call(instance, "");
+
+      const schema = generateSchemaFromClass(TestClass);
+      expect(schema.properties).toEqual({ name: { type: "string" } });
+    });
+
+    it("should support required fields with new API", () => {
+      class TestClass {
+        id = "";
+        count = 0;
+      }
+      const initId = schemaField({ type: "string", required: true })(
+        undefined,
+        { kind: "field", name: "id" }
+      ) as (v: unknown) => unknown;
+      const initCount = schemaField({ type: "number" })(
+        undefined,
+        { kind: "field", name: "count" }
+      ) as (v: unknown) => unknown;
+
+      const instance = new TestClass();
+      initId.call(instance, "");
+      initCount.call(instance, 0);
+
+      const schema = generateSchemaFromClass(TestClass);
+      expect(schema.properties).toEqual({
+        id: { type: "string" },
+        count: { type: "number" },
+      });
+      expect(schema.required).toEqual(["id"]);
+    });
+
+    it("should not duplicate metadata when initializer runs multiple times", () => {
+      class TestClass {
+        value = "";
+      }
+      const initializer = schemaField({ type: "string" })(
+        undefined,
+        { kind: "field", name: "value" }
+      ) as (v: unknown) => unknown;
+
+      const i1 = new TestClass();
+      const i2 = new TestClass();
+      const i3 = new TestClass();
+      initializer.call(i1, "");
+      initializer.call(i2, "");
+      initializer.call(i3, "");
+
+      const schema = generateSchemaFromClass(TestClass);
+      expect(schema.properties).toEqual({ value: { type: "string" } });
+      expect(Object.keys(schema.properties)).toHaveLength(1);
+    });
+
+    it("should work with explicit type when design:type unavailable (new API)", () => {
+      class TestClass {
+        count = 0;
+      }
+      const initializer = schemaField({
+        type: "integer",
+        description: "Count",
+      })(undefined, { kind: "field", name: "count" }) as (v: unknown) => unknown;
+      initializer.call(new TestClass(), 0);
+
+      const schema = generateSchemaFromClass(TestClass);
+      expect(schema.properties).toEqual({
+        count: { type: "integer", description: "Count" },
+      });
+    });
+  });
 });

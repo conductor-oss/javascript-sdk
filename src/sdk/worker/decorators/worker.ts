@@ -230,7 +230,7 @@ export function worker(options: WorkerOptions) {
       | string
       | { kind: string; name: string | symbol },
     descriptor?: PropertyDescriptor
-  ): T | PropertyDescriptor | void {
+  ): T | PropertyDescriptor | undefined {
     // Detect decorator API: new (Stage 3) vs legacy (experimentalDecorators)
     let executeFunction: (task: Task) => Promise<Omit<TaskResult, "workflowInstanceId" | "taskId">>;
     let isNewApi = false;
@@ -343,6 +343,6 @@ export function worker(options: WorkerOptions) {
       descriptor.value = dualModeFunction;
       return descriptor;
     }
-    return dualModeFunction;
+    return dualModeFunction as unknown as T;
   };
 }

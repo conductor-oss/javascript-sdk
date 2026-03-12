@@ -39,14 +39,56 @@ interface StoredFieldMeta extends SchemaFieldOptions {
 }
 
 /**
+ * Type guard for Stage 3 (TypeScript 5.0+) decorator context.
+ * New decorators pass (value, context) where context has a `kind` property.
+ */
+function isNewDecoratorContext(
+  arg: unknown
+): arg is { kind: string; name: string | symbol } {
+  return (
+    typeof arg === "object" &&
+    arg !== null &&
+    "kind" in arg &&
+    typeof (arg as { kind: string }).kind === "string"
+  );
+}
+
+/**
+ * Track (class, propertyKey) pairs already stored to avoid duplicates when
+ * the initializer runs on each instance (Stage 3 decorator API).
+ */
+const schemaFieldProcessed = new WeakMap<object, Set<string>>();
+
+function storeSchemaFieldMetadata(
+  cls: object,
+  propertyKey: string,
+  options: SchemaFieldOptions,
+  designType?: unknown
+): void {
+  const existing: StoredFieldMeta[] =
+    (Reflect.getOwnMetadata(SCHEMA_METADATA_KEY, cls) as StoredFieldMeta[] | undefined) ?? [];
+
+  existing.push({
+    ...options,
+    propertyKey,
+    designType,
+  });
+
+  Reflect.defineMetadata(SCHEMA_METADATA_KEY, existing, cls);
+}
+
+/**
  * Property decorator to define JSON Schema metadata on a class.
  *
  * When used with `generateSchemaFromClass()`, produces a JSON Schema draft-07
  * object from the decorated properties.
  *
- * If `emitDecoratorMetadata` is enabled in tsconfig.json, the TypeScript type
- * is automatically inferred for `string`, `number`, `boolean` — no need to
- * specify `type` explicitly for those.
+ * Supports both TypeScript 5.0+ (Stage 3) and legacy (experimentalDecorators)
+ * decorator APIs.
+ *
+ * If `emitDecoratorMetadata` is enabled in tsconfig.json (legacy mode), the
+ * TypeScript type is automatically inferred for `string`, `number`, `boolean` —
+ * no need to specify `type` explicitly for those.
  *
  * @example
  * ```typescript
@@ -65,26 +107,46 @@ interface StoredFieldMeta extends SchemaFieldOptions {
  * ```
  */
 export function schemaField(options: SchemaFieldOptions = {}) {
-  return function (target: object, propertyKey: string) {
-    // Read existing field metadata for this class
-    const existing: StoredFieldMeta[] =
-      (Reflect.getOwnMetadata(SCHEMA_METADATA_KEY, target.constructor) as StoredFieldMeta[] | undefined) ?? [];
+  return function (
+    targetOrValue: object | undefined,
+    propertyKeyOrContext?: string | { kind: string; name: string | symbol }
+  ): ((initialValue: unknown) => unknown) | undefined {
+    if (isNewDecoratorContext(propertyKeyOrContext)) {
+      // Stage 3 (TypeScript 5.0+) API: (value, context)
+      // Return initializer that runs when instance is created; `this` = instance
+      const propertyKey = String(propertyKeyOrContext.name);
+      return function (this: unknown, initialValue: unknown) {
+        const cls = (this as object).constructor as object;
+        const processed = schemaFieldProcessed.get(cls) ?? new Set<string>();
+        if (!processed.has(propertyKey)) {
+          processed.add(propertyKey);
+          schemaFieldProcessed.set(cls, processed);
+          let designType: unknown;
+          try {
+            designType = Reflect.getMetadata(
+              "design:type",
+              this as object,
+              propertyKey
+            );
+          } catch {
+            // reflect-metadata may not emit design:type for Stage 3 decorators
+          }
+          storeSchemaFieldMetadata(cls, propertyKey, options, designType);
+        }
+        return initialValue;
+      };
+    }
 
-    // Try to infer type from TypeScript metadata
+    // Legacy (experimentalDecorators) API: (target, propertyKey)
+    const target = targetOrValue as object;
+    const propertyKey = propertyKeyOrContext as string;
     let designType: unknown;
     try {
       designType = Reflect.getMetadata("design:type", target, propertyKey);
     } catch {
       // reflect-metadata not available — user must provide type explicitly
     }
-
-    existing.push({
-      ...options,
-      propertyKey,
-      designType,
-    });
-
-    Reflect.defineMetadata(SCHEMA_METADATA_KEY, existing, target.constructor);
+    storeSchemaFieldMetadata(target.constructor as object, propertyKey, options, designType);
   };
 }
 
