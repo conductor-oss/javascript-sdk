@@ -208,13 +208,17 @@ export interface WorkerOptions {
  * }
  * ```
  */
+/** Minimal context shape for Stage 3 method decorators (TypeScript 5.0+). */
+interface MethodDecoratorContext {
+  kind: string;
+  name: string | symbol;
+}
+
 /**
  * Type guard for Stage 3 (TypeScript 5.0+) decorator context.
  * New decorators pass (value, context) where context has a `kind` property.
  */
-function isNewDecoratorContext(
-  arg: unknown
-): arg is { kind: string; name: string | symbol } {
+function isNewDecoratorContext(arg: unknown): arg is MethodDecoratorContext {
   return (
     typeof arg === "object" &&
     arg !== null &&
@@ -223,12 +227,23 @@ function isNewDecoratorContext(
   );
 }
 
+type WorkerMethod = (
+  task: Task
+) => Promise<Omit<TaskResult, "workflowInstanceId" | "taskId">>;
+
 export function worker(options: WorkerOptions) {
-  return function <T extends (task: Task) => Promise<Omit<TaskResult, "workflowInstanceId" | "taskId">>>(
-    target: T,
-    propertyKeyOrContext?:
-      | string
-      | { kind: string; name: string | symbol },
+  function decorator<T extends WorkerMethod>(
+    value: T,
+    context: MethodDecoratorContext
+  ): T | undefined;
+  function decorator(
+    target: object,
+    propertyKey?: string,
+    descriptor?: PropertyDescriptor
+  ): PropertyDescriptor | WorkerMethod | undefined;
+  function decorator<T extends WorkerMethod>(
+    target: T | object,
+    propertyKeyOrContext?: string | MethodDecoratorContext,
     descriptor?: PropertyDescriptor
   ): T | PropertyDescriptor | undefined {
     // Detect decorator API: new (Stage 3) vs legacy (experimentalDecorators)
@@ -334,7 +349,7 @@ export function worker(options: WorkerOptions) {
     });
 
     if (isNewApi) {
-      // New decorator API: return replacement function (cast to T for type compatibility)
+      // New decorator API: return replacement function
       return dualModeFunction as unknown as T;
     }
 
@@ -344,5 +359,7 @@ export function worker(options: WorkerOptions) {
       return descriptor;
     }
     return dualModeFunction as unknown as T;
-  };
+  }
+
+  return decorator;
 }
