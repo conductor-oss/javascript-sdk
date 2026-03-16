@@ -208,20 +208,67 @@ export interface WorkerOptions {
  * }
  * ```
  */
+/** Minimal context shape for Stage 3 method decorators (TypeScript 5.0+). */
+interface MethodDecoratorContext {
+  kind: string;
+  name: string | symbol;
+}
+
+/**
+ * Type guard for Stage 3 (TypeScript 5.0+) decorator context.
+ * New decorators pass (value, context) where context has a `kind` property.
+ */
+function isNewDecoratorContext(arg: unknown): arg is MethodDecoratorContext {
+  return (
+    typeof arg === "object" &&
+    arg !== null &&
+    "kind" in arg &&
+    typeof (arg as { kind: string }).kind === "string"
+  );
+}
+
+type WorkerMethod = (
+  task: Task
+) => Promise<Omit<TaskResult, "workflowInstanceId" | "taskId">>;
+
 export function worker(options: WorkerOptions) {
-  return function (
-    target: unknown,
+  function decorator<T extends WorkerMethod>(
+    value: T,
+    context: MethodDecoratorContext
+  ): T | undefined;
+  function decorator(
+    target: object,
     propertyKey?: string,
     descriptor?: PropertyDescriptor
-  ) {
-    // Extract the function to register
-    const executeFunction = descriptor?.value || target;
+  ): PropertyDescriptor | WorkerMethod | undefined;
+  function decorator<T extends WorkerMethod>(
+    target: T | object,
+    propertyKeyOrContext?: string | MethodDecoratorContext,
+    descriptor?: PropertyDescriptor
+  ): T | PropertyDescriptor | undefined {
+    // Detect decorator API: new (Stage 3) vs legacy (experimentalDecorators)
+    let executeFunction: (task: Task) => Promise<Omit<TaskResult, "workflowInstanceId" | "taskId">>;
+    let isNewApi = false;
+
+    if (isNewDecoratorContext(propertyKeyOrContext)) {
+      // New decorator API: target is the method itself
+      executeFunction = target as (task: Task) => Promise<
+        Omit<TaskResult, "workflowInstanceId" | "taskId">
+      >;
+      isNewApi = true;
+    } else {
+      // Legacy API: descriptor?.value (method) or target (standalone function)
+      const fn = (descriptor?.value ?? target) as (
+        task: Task
+      ) => Promise<Omit<TaskResult, "workflowInstanceId" | "taskId">>;
+      executeFunction = fn;
+    }
 
     // Validate that we have a function
     if (typeof executeFunction !== "function") {
       throw new Error(
         `@worker decorator can only be applied to functions. ` +
-        `Received: ${typeof executeFunction}`
+          `Received: ${typeof executeFunction}`
       );
     }
 
@@ -229,7 +276,7 @@ export function worker(options: WorkerOptions) {
     if (!options.taskDefName) {
       throw new Error(
         `@worker decorator requires 'taskDefName' option. ` +
-        `Example: @worker({ taskDefName: "my_task" })`
+          `Example: @worker({ taskDefName: "my_task" })`
       );
     }
 
@@ -238,16 +285,20 @@ export function worker(options: WorkerOptions) {
     let resolvedOutputSchema = options.outputSchema;
 
     if (options.inputType) {
-      resolvedInputSchema = generateSchemaFromClass(options.inputType) as unknown as Record<string, unknown>;
+      resolvedInputSchema = generateSchemaFromClass(
+        options.inputType
+      ) as unknown as Record<string, unknown>;
     }
     if (options.outputType) {
-      resolvedOutputSchema = generateSchemaFromClass(options.outputType) as unknown as Record<string, unknown>;
+      resolvedOutputSchema = generateSchemaFromClass(
+        options.outputType
+      ) as unknown as Record<string, unknown>;
     }
 
     // Create registered worker metadata
     const registeredWorker: RegisteredWorker = {
       taskDefName: options.taskDefName,
-      executeFunction: executeFunction as (task: Task) => Promise<Omit<TaskResult, "workflowInstanceId" | "taskId">>,
+      executeFunction,
       concurrency: options.concurrency,
       pollInterval: options.pollInterval,
       domain: options.domain,
@@ -285,7 +336,10 @@ export function worker(options: WorkerOptions) {
         );
       }
       // Normal execution mode
-      return (executeFunction as (...args: unknown[]) => unknown).apply(this, args);
+      return (executeFunction as (...args: unknown[]) => unknown).apply(
+        this,
+        args
+      );
     };
 
     // Preserve original function name
@@ -294,10 +348,18 @@ export function worker(options: WorkerOptions) {
       configurable: true,
     });
 
+    if (isNewApi) {
+      // New decorator API: return replacement function
+      return dualModeFunction as unknown as T;
+    }
+
+    // Legacy API
     if (descriptor) {
       descriptor.value = dualModeFunction;
       return descriptor;
     }
-    return dualModeFunction;
-  };
+    return dualModeFunction as unknown as T;
+  }
+
+  return decorator;
 }
