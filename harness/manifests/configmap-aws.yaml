@@ -1,0 +1,10 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: js-sdk-harness-config
+  labels:
+    app: js-sdk-harness-worker
+data:
+  CONDUCTOR_SERVER_URL: "https://certification-aws.orkesconductor.io/api"
+  CONDUCTOR_AUTH_KEY: "7ba9d0ec-247b-11f1-8d42-ea3efeda41b2"
