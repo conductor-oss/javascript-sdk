@@ -1,4 +1,4 @@
-FROM node:18-alpine AS build
+FROM node:24-alpine AS build
 WORKDIR /package
 COPY package*.json ./
 RUN npm ci
@@ -9,15 +9,15 @@ FROM build AS harness-build
 RUN npx tsup harness/main.ts \
       --outDir /app \
       --format cjs \
-      --target node18 \
+      --target node24 \
       --no-splitting
 
-FROM node:18-alpine AS harness-deps
+FROM node:24-alpine AS harness-deps
 WORKDIR /package
 COPY package*.json ./
 RUN npm ci --omit=dev
 
-FROM node:18-alpine AS harness
+FROM node:24-alpine AS harness
 RUN adduser -D -u 65532 nonroot
 USER nonroot
 WORKDIR /app
