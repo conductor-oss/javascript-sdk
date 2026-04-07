@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: js-sdk-harness-worker
+  labels:
+    app: js-sdk-harness-worker
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: js-sdk-harness-worker
+  template:
+    metadata:
+      labels:
+        app: js-sdk-harness-worker
+    spec:
+      containers:
+      - name: harness
+        image: ghcr.io/conductor-oss/javascript-sdk/harness-worker:latest
+        imagePullPolicy: Always
+        env:
+        - name: CONDUCTOR_SERVER_URL
+          valueFrom:
+            configMapKeyRef:
+              name: js-sdk-harness-config
+              key: CONDUCTOR_SERVER_URL
+        - name: CONDUCTOR_AUTH_KEY
+          valueFrom:
+            configMapKeyRef:
+              name: js-sdk-harness-config
+              key: CONDUCTOR_AUTH_KEY
+        - name: CONDUCTOR_AUTH_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: conductor-credentials
+              key: auth-secret
+        - name: HARNESS_WORKFLOWS_PER_SEC
+          value: "1"
+        - name: HARNESS_BATCH_SIZE
+          value: "20"
+        - name: HARNESS_POLL_INTERVAL_MS
+          value: "100"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          exec:
+            command: ["/bin/sh", "-c", "test -e /proc/1/cmdline"]
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          exec:
+            command: ["/bin/sh", "-c", "test -e /proc/1/cmdline"]
+          initialDelaySeconds: 10
+          periodSeconds: 10
+      restartPolicy: Always

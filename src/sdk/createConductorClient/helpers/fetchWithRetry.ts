@@ -113,13 +113,19 @@ export const retryFetch = async (
     ? applyTimeout(init, requestTimeoutMs)
     : init;
 
+  // Request bodies are single-use ReadableStreams. Clone Request inputs
+  // before each attempt so retries get a fresh body stream.
+  // this prevents errors like: "Failed to register workflow: Response body object should not be disturbed or locked"
+  const freshInput = (): Input =>
+    input instanceof Request ? input.clone() : input;
+
   let lastError: unknown;
 
   // Transport retry loop
   for (let transportAttempt = 0; transportAttempt <= maxTransportRetries; transportAttempt++) {
     let response: Response;
     try {
-      response = await fetchFn(input, effectiveInit);
+      response = await fetchFn(freshInput(), effectiveInit);
     } catch (error) {
       // Timeout/abort errors should NOT be retried
       if (isTimeoutError(error)) {
@@ -142,7 +148,7 @@ export const retryFetch = async (
       let delay = initialRetryDelay;
       for (let rlAttempt = 0; rlAttempt < maxRateLimitRetries; rlAttempt++) {
         await new Promise((resolve) => setTimeout(resolve, withJitter(delay)));
-        rateLimitResponse = await fetchFn(input, effectiveInit);
+        rateLimitResponse = await fetchFn(freshInput(), effectiveInit);
         if (rateLimitResponse.status !== 429) {
           return rateLimitResponse;
         }
@@ -167,7 +173,7 @@ export const retryFetch = async (
           headers: new Headers(effectiveInit?.headers),
         };
         retryInit.headers.set("X-Authorization", newToken);
-        return await fetchFn(input, retryInit);
+        return await fetchFn(freshInput(), retryInit);
       }
     }
 
