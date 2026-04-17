@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: harness
-        image: ghcr.io/conductor-oss/javascript-sdk/harness-worker:latest
+        image: ghcr.io/conductor-oss/javascript-sdk/harness-worker:certification-worker-metrics-latest
         imagePullPolicy: Always
         env:
         - name: CONDUCTOR_SERVER_URL
@@ -40,6 +40,10 @@ spec:
           value: "20"
         - name: HARNESS_POLL_INTERVAL_MS
           value: "100"
+        ports:
+        - name: metrics
+          containerPort: 9991
+          protocol: TCP
         resources:
           requests:
             memory: "256Mi"
