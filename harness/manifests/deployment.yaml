@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: harness
-        image: ghcr.io/conductor-oss/javascript-sdk/harness-worker:latest
+        image: ghcr.io/conductor-oss/javascript-sdk/harness-worker:certification-worker-metrics-latest
         imagePullPolicy: Always
         env:
         - name: CONDUCTOR_SERVER_URL
