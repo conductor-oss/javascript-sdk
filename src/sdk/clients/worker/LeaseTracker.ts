@@ -55,9 +55,11 @@ export class LeaseTracker {
     const intervalMs = timeout * LEASE_EXTEND_DURATION_FACTOR * 1000;
     if (intervalMs < 1000) return;
 
-    this.leases.set(task.taskId as string, {
-      taskId: task.taskId as string,
-      workflowInstanceId: task.workflowInstanceId as string,
+    if (!task.taskId || !task.workflowInstanceId) return;
+
+    this.leases.set(task.taskId, {
+      taskId: task.taskId,
+      workflowInstanceId: task.workflowInstanceId,
       responseTimeoutSeconds: timeout,
       lastHeartbeatTime: Date.now(),
       intervalMs,
@@ -108,15 +110,14 @@ export class LeaseTracker {
       for (let attempt = 0; attempt < LEASE_EXTEND_RETRY_COUNT; attempt++) {
         try {
           await this.sendHeartbeatFn(info.taskId, info.workflowInstanceId);
-          // Update timestamp only on success
-          const current = this.leases.get(info.taskId);
-          if (current) {
-            current.lastHeartbeatTime = Date.now();
+          // Update timestamp only on success, only if still the current entry
+          if (this.leases.get(info.taskId) === info) {
+            info.lastHeartbeatTime = Date.now();
           }
           return;
         } catch (err) {
           this.logger.error(
-            `Heartbeat attempt ${attempt + 1}/${LEASE_EXTEND_RETRY_COUNT} failed for task ${info.taskId}: ${(err as Error).message}`
+            `Heartbeat attempt ${attempt + 1}/${LEASE_EXTEND_RETRY_COUNT} failed for task ${info.taskId}: ${(err as Error)?.message ?? String(err)}`
           );
           if (attempt < LEASE_EXTEND_RETRY_COUNT - 1) {
             await new Promise((resolve) => setTimeout(resolve, HEARTBEAT_RETRY_DELAY_MS));
@@ -128,10 +129,9 @@ export class LeaseTracker {
         `All ${LEASE_EXTEND_RETRY_COUNT} heartbeat retries exhausted for task ${info.taskId}. Task may timeout on server.`
       );
     } finally {
-      // Always release the in-flight guard so the next check interval can retry
-      const current = this.leases.get(info.taskId);
-      if (current) {
-        current.isHeartbeating = false;
+      // Only release guard if we're still the current entry for this taskId
+      if (this.leases.get(info.taskId) === info) {
+        info.isHeartbeating = false;
       }
     }
   }
