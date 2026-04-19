@@ -77,6 +77,7 @@ export enum TaskType {
   GENERATE_AUDIO = "GENERATE_AUDIO",
   CALL_MCP_TOOL = "CALL_MCP_TOOL",
   LIST_MCP_TOOLS = "LIST_MCP_TOOLS",
+  PULL_WORKFLOW_MESSAGES = "PULL_WORKFLOW_MESSAGES",
 }
 
 export enum ServiceType {
@@ -100,7 +101,8 @@ export type TaskDefTypes =
   | SwitchTaskDef
   | TerminateTaskDef
   | JoinTaskDef
-  | WaitTaskDef;
+  | WaitTaskDef
+  | PullWorkflowMessagesTaskDef;
 
 export interface DoWhileTaskDef extends CommonTaskDef {
   inputParameters: Record<string, unknown>;
@@ -254,6 +256,14 @@ export interface WaitTaskDef extends CommonTaskDef {
   inputParameters: {
     duration?: string;
     until?: string;
+  };
+  optional?: boolean;
+}
+
+export interface PullWorkflowMessagesTaskDef extends CommonTaskDef {
+  type: TaskType.PULL_WORKFLOW_MESSAGES;
+  inputParameters: {
+    batchSize: number;
   };
   optional?: boolean;
 }
