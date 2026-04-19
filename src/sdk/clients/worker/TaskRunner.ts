@@ -503,6 +503,9 @@ export class TaskRunner {
         ? JSON.stringify(merged.outputData).length
         : undefined;
 
+      // Untrack immediately — execution done, update will follow
+      this.leaseTracker.untrack(taskId);
+
       // Publish TaskExecutionCompleted event
       await this.eventDispatcher.publishTaskExecutionCompleted({
         taskType: this.worker.taskDefName,
@@ -513,9 +516,6 @@ export class TaskRunner {
         outputSizeBytes,
         timestamp: new Date(),
       });
-
-      // Untrack immediately — execution done, update will follow
-      this.leaseTracker.untrack(taskId);
       const nextTask = await this.updateTaskWithRetry(task, {
         ...merged,
         workflowInstanceId,
