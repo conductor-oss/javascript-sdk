@@ -18,3 +18,9 @@ export const AUTH_BACKOFF_MAX_SECONDS = 60;
 export const HEALTH_CHECK_INTERVAL_MS = 5000;
 export const RESTART_BACKOFF_BASE_MS = 1000;
 export const RESTART_BACKOFF_MAX_MS = 60000;
+
+// Lease extension (heartbeat) — matches Python SDK / Java SDK source
+export const LEASE_EXTEND_RETRY_COUNT = 3;
+export const LEASE_EXTEND_DURATION_FACTOR = 0.8;
+export const HEARTBEAT_CHECK_INTERVAL_MS = 100;
+export const HEARTBEAT_RETRY_DELAY_MS = 500;
