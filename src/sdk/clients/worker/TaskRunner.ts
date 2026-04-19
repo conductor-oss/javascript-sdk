@@ -19,6 +19,7 @@ import {
 import { noopErrorHandler, optionEquals } from "./helpers";
 import { EventDispatcher } from "./events/EventDispatcher";
 import { NonRetryableException } from "./exceptions";
+import { LeaseTracker } from "./LeaseTracker";
 import { runWithTaskContext } from "../../worker/context";
 
 const defaultRunnerOptions: Required<TaskRunnerOptions> = {
@@ -47,6 +48,7 @@ export class TaskRunner {
   private poller: Poller<Task>;
   private maxRetries: number;
   private eventDispatcher: EventDispatcher;
+  private leaseTracker: LeaseTracker;
 
   constructor({
     worker,
@@ -70,6 +72,23 @@ export class TaskRunner {
       this.eventDispatcher.register(listener);
     });
 
+    this.leaseTracker = new LeaseTracker(
+      async (taskId: string, workflowInstanceId: string) => {
+        await TaskResource.updateTask({
+          client: this._client,
+          body: {
+            taskId,
+            workflowInstanceId,
+            status: "IN_PROGRESS",
+            extendLease: true,
+            workerId: this.options.workerID,
+          },
+          throwOnError: true,
+        });
+      },
+      this.logger
+    );
+
     this.poller = new Poller(
       worker.taskDefName,
       this.batchPoll,
@@ -90,6 +109,7 @@ export class TaskRunner {
    * Starts polling for work
    */
   startPolling = () => {
+    this.leaseTracker.start();
     this.poller.startPolling();
     this.logger.info(
       `TaskWorker ${this.worker.taskDefName} initialized with concurrency of ${this.poller.options.concurrency} and poll interval of ${this.poller.options.pollInterval}`
@@ -99,6 +119,7 @@ export class TaskRunner {
    * Stops Polling for work
    */
   stopPolling = async () => {
+    this.leaseTracker.stop();
     await this.poller.stopPolling();
   };
 
@@ -405,6 +426,11 @@ export class TaskRunner {
       timestamp: new Date(),
     });
 
+    // Track lease before execution (no-op if leaseExtendEnabled=false or interval too short)
+    if (this.worker.leaseExtendEnabled) {
+      this.leaseTracker.track(task);
+    }
+
     try {
       // Wrap execution in TaskContext (AsyncLocalStorage)
       const { result, context } = await runWithTaskContext(
@@ -419,6 +445,8 @@ export class TaskRunner {
 
       // Handle TaskInProgress return
       if (isTaskInProgress(result)) {
+        // Untrack immediately — execution done, task handed back to Conductor for re-queue
+        this.leaseTracker.untrack(taskId);
         const contextLogs = context.getLogs();
         const nextTask = await this.updateTaskWithRetry(task, {
           workflowInstanceId,
@@ -486,6 +514,8 @@ export class TaskRunner {
         timestamp: new Date(),
       });
 
+      // Untrack immediately — execution done, update will follow
+      this.leaseTracker.untrack(taskId);
       const nextTask = await this.updateTaskWithRetry(task, {
         ...merged,
         workflowInstanceId,
@@ -494,6 +524,8 @@ export class TaskRunner {
       this.logger.debug(`Task has executed successfully ${taskId}`);
       return nextTask;
     } catch (error: unknown) {
+      // Untrack immediately on failure — execution done, update will follow
+      this.leaseTracker.untrack(taskId);
       const durationMs = Date.now() - startTime;
       const err = error as Error;
 

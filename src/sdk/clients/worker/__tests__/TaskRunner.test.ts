@@ -9,15 +9,25 @@ import type {
   TaskUpdateCompleted,
   TaskUpdateFailure,
 } from "@/sdk/clients/worker/events/types";
+import { LeaseTracker } from "@/sdk/clients/worker/LeaseTracker";
 import { NonRetryableException } from "@/sdk/clients/worker/exceptions";
 import { TaskRunner } from "@/sdk/clients/worker/TaskRunner";
 import { RunnerArgs } from "@/sdk/clients/worker/types";
-import { afterEach, describe, expect, jest, test } from "@jest/globals";
+import { afterEach, beforeEach, describe, expect, jest, test } from "@jest/globals";
 import { TaskResource } from "@open-api/generated";
 import type { Client } from "@open-api/generated/client/types.gen";
 import type { Task, TaskResult } from "@open-api/index";
 import { TaskResultStatusEnum } from "@open-api/index";
 import { mockLogger } from "@test-utils/mockLogger";
+
+jest.mock("@/sdk/clients/worker/LeaseTracker", () => ({
+  LeaseTracker: jest.fn().mockImplementation(() => ({
+    track: jest.fn(),
+    untrack: jest.fn(),
+    start: jest.fn(),
+    stop: jest.fn(),
+  })),
+}));
 
 jest.mock("@open-api/generated", () => ({
   TaskResource: {
@@ -1601,5 +1611,222 @@ describe("v5/v4 backend detection", () => {
     // Probe fires once for task-1, then task-2 goes directly to updateTask
     expect(TaskResource.updateTaskV2).toHaveBeenCalledTimes(1);
     expect(TaskResource.updateTask).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("LeaseTracker integration", () => {
+  // jest.config.mjs sets clearMocks: true, which wipes mockImplementation between tests.
+  // Re-establish the LeaseTracker mock implementation before each test.
+  let mockTrackerInstance: {
+    track: jest.Mock;
+    untrack: jest.Mock;
+    start: jest.Mock;
+    stop: jest.Mock;
+  };
+
+  beforeEach(() => {
+    mockTrackerInstance = {
+      track: jest.fn(),
+      untrack: jest.fn(),
+      start: jest.fn(),
+      stop: jest.fn(),
+    };
+    (LeaseTracker as jest.Mock).mockImplementation(() => mockTrackerInstance);
+  });
+
+  const makeTaskWithTimeout = (responseTimeoutSeconds: number): Task => ({
+    taskId: "lease-task-id",
+    workflowInstanceId: "lease-wf-id",
+    status: "IN_PROGRESS",
+    responseTimeoutSeconds,
+    inputData: {},
+  });
+
+  // Access the mock tracker via the module-level mockTrackerInstance (not private field cast)
+  const getTrackerInstance = (_runner: TaskRunner) => mockTrackerInstance;
+
+  test("startPolling() calls leaseTracker.start()", () => {
+    const mockClient = createMockClient();
+    const runner = new TaskRunner({
+      worker: { taskDefName: "test", execute: async () => ({ status: "COMPLETED" as const }) },
+      options: { workerID: "w1", domain: undefined },
+      client: mockClient,
+      logger: mockLogger,
+    });
+    activeRunners.push(runner);
+
+    runner.startPolling();
+
+    const tracker = getTrackerInstance(runner);
+    expect(tracker.start).toHaveBeenCalledTimes(1);
+
+    runner.stopPolling();
+  });
+
+  test("stopPolling() calls leaseTracker.stop()", async () => {
+    const mockClient = createMockClient();
+    const runner = new TaskRunner({
+      worker: { taskDefName: "test", execute: async () => ({ status: "COMPLETED" as const }) },
+      options: { workerID: "w1", domain: undefined },
+      client: mockClient,
+      logger: mockLogger,
+    });
+    activeRunners.push(runner);
+
+    runner.startPolling();
+    await runner.stopPolling();
+
+    const tracker = getTrackerInstance(runner);
+    expect(tracker.stop).toHaveBeenCalledTimes(1);
+  });
+
+  test("tracks lease when leaseExtendEnabled=true and task has responseTimeoutSeconds", async () => {
+    const mockClient = createMockClient();
+    const task = makeTaskWithTimeout(30);
+
+    (TaskResource.batchPoll as jest.Mock).mockResolvedValue({ data: [task] });
+    (TaskResource.updateTaskV2 as jest.Mock).mockResolvedValue({
+      data: null, error: undefined, response: { status: 200, ok: true },
+    });
+
+    const runner = new TaskRunner({
+      worker: {
+        taskDefName: "lease-worker",
+        execute: async () => ({ status: "COMPLETED" as const }),
+        leaseExtendEnabled: true,
+      },
+      options: { workerID: "w1", domain: undefined, pollInterval: 10 },
+      client: mockClient,
+      logger: mockLogger,
+    });
+    activeRunners.push(runner);
+    runner.startPolling();
+
+    await new Promise((r) => setTimeout(r, 100));
+    runner.stopPolling();
+
+    const tracker = getTrackerInstance(runner);
+    expect(tracker.track).toHaveBeenCalledWith(task);
+  });
+
+  test("does not track lease when leaseExtendEnabled is false", async () => {
+    const mockClient = createMockClient();
+    const task = makeTaskWithTimeout(30);
+
+    (TaskResource.batchPoll as jest.Mock).mockResolvedValue({ data: [task] });
+    (TaskResource.updateTaskV2 as jest.Mock).mockResolvedValue({
+      data: null, error: undefined, response: { status: 200, ok: true },
+    });
+
+    const runner = new TaskRunner({
+      worker: {
+        taskDefName: "no-lease-worker",
+        execute: async () => ({ status: "COMPLETED" as const }),
+        leaseExtendEnabled: false,
+      },
+      options: { workerID: "w1", domain: undefined, pollInterval: 10 },
+      client: mockClient,
+      logger: mockLogger,
+    });
+    activeRunners.push(runner);
+    runner.startPolling();
+
+    await new Promise((r) => setTimeout(r, 100));
+    runner.stopPolling();
+
+    const tracker = getTrackerInstance(runner);
+    expect(tracker.track).not.toHaveBeenCalled();
+  });
+
+  test("untracks lease after COMPLETED execution", async () => {
+    const mockClient = createMockClient();
+    const task = makeTaskWithTimeout(30);
+
+    (TaskResource.batchPoll as jest.Mock).mockResolvedValueOnce({ data: [task] });
+    (TaskResource.batchPoll as jest.Mock).mockResolvedValue({ data: [] });
+    (TaskResource.updateTaskV2 as jest.Mock).mockResolvedValue({
+      data: null, error: undefined, response: { status: 200, ok: true },
+    });
+
+    const runner = new TaskRunner({
+      worker: {
+        taskDefName: "lease-complete",
+        execute: async () => ({ status: "COMPLETED" as const }),
+        leaseExtendEnabled: true,
+      },
+      options: { workerID: "w1", domain: undefined, pollInterval: 10 },
+      client: mockClient,
+      logger: mockLogger,
+    });
+    activeRunners.push(runner);
+    runner.startPolling();
+
+    await new Promise((r) => setTimeout(r, 150));
+    runner.stopPolling();
+
+    const tracker = getTrackerInstance(runner);
+    expect(tracker.untrack).toHaveBeenCalledWith(task.taskId);
+  });
+
+  test("untracks lease after FAILED execution (exception)", async () => {
+    const mockClient = createMockClient();
+    const task = makeTaskWithTimeout(30);
+
+    (TaskResource.batchPoll as jest.Mock).mockResolvedValueOnce({ data: [task] });
+    (TaskResource.batchPoll as jest.Mock).mockResolvedValue({ data: [] });
+    (TaskResource.updateTaskV2 as jest.Mock).mockResolvedValue({
+      data: null, error: undefined, response: { status: 200, ok: true },
+    });
+
+    const runner = new TaskRunner({
+      worker: {
+        taskDefName: "lease-fail",
+        execute: async () => { throw new Error("worker error"); },
+        leaseExtendEnabled: true,
+      },
+      options: { workerID: "w1", domain: undefined, pollInterval: 10 },
+      client: mockClient,
+      logger: mockLogger,
+    });
+    activeRunners.push(runner);
+    runner.startPolling();
+
+    await new Promise((r) => setTimeout(r, 150));
+    runner.stopPolling();
+
+    const tracker = getTrackerInstance(runner);
+    expect(tracker.untrack).toHaveBeenCalledWith(task.taskId);
+  });
+
+  test("untracks lease after IN_PROGRESS return", async () => {
+    const mockClient = createMockClient();
+    const task = makeTaskWithTimeout(30);
+
+    (TaskResource.batchPoll as jest.Mock).mockResolvedValueOnce({ data: [task] });
+    (TaskResource.batchPoll as jest.Mock).mockResolvedValue({ data: [] });
+    (TaskResource.updateTaskV2 as jest.Mock).mockResolvedValue({
+      data: null, error: undefined, response: { status: 200, ok: true },
+    });
+
+    const runner = new TaskRunner({
+      worker: {
+        taskDefName: "lease-in-progress",
+        // Untracking on IN_PROGRESS is correct: the task is being handed back to Conductor
+        // for re-queuing; the TaskRunner will see it again as a new poll
+        execute: async () => ({ status: "IN_PROGRESS" as const, callbackAfterSeconds: 30 }),
+        leaseExtendEnabled: true,
+      },
+      options: { workerID: "w1", domain: undefined, pollInterval: 10 },
+      client: mockClient,
+      logger: mockLogger,
+    });
+    activeRunners.push(runner);
+    runner.startPolling();
+
+    await new Promise((r) => setTimeout(r, 150));
+    runner.stopPolling();
+
+    const tracker = getTrackerInstance(runner);
+    expect(tracker.untrack).toHaveBeenCalledWith(task.taskId);
   });
 });
