@@ -30,6 +30,9 @@ export interface WorkerConfig {
   
   /** Enforce strict JSON schema validation */
   strictSchema?: boolean;
+
+  /** Enable automatic lease extension (heartbeat) for long-running tasks. Default: false. */
+  leaseExtendEnabled?: boolean;
 }
 
 /**
@@ -45,6 +48,7 @@ const CONFIGURABLE_PROPERTIES: (keyof WorkerConfig)[] = [
   "paused",
   "overwriteTaskDef",
   "strictSchema",
+  "leaseExtendEnabled",
 ];
 
 /**
@@ -60,6 +64,7 @@ const PROPERTY_TYPES: Record<keyof WorkerConfig, "number" | "string" | "boolean"
   paused: "boolean",
   overwriteTaskDef: "boolean",
   strictSchema: "boolean",
+  leaseExtendEnabled: "boolean",
 };
 
 /**
@@ -73,6 +78,7 @@ const DEFAULT_VALUES: Partial<WorkerConfig> = {
   paused: false,
   overwriteTaskDef: true,
   strictSchema: false,
+  leaseExtendEnabled: false,
 };
 
 /**

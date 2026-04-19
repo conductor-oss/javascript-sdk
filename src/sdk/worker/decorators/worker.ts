@@ -122,6 +122,15 @@ export interface WorkerOptions {
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   outputType?: new (...args: any[]) => unknown;
+
+  /**
+   * Enable automatic lease extension (heartbeat) for long-running tasks.
+   * - Default: false
+   * - When true: sends periodic heartbeats at 80% of the task's responseTimeoutSeconds
+   * - Only applies to tasks where responseTimeoutSeconds > 1.25s
+   * - Can be overridden via env: CONDUCTOR_WORKER_<NAME>_LEASE_EXTEND_ENABLED=true
+   */
+  leaseExtendEnabled?: boolean;
 }
 
 /**
@@ -310,6 +319,7 @@ export function worker(options: WorkerOptions) {
       strictSchema: options.strictSchema,
       inputSchema: resolvedInputSchema,
       outputSchema: resolvedOutputSchema,
+      leaseExtendEnabled: options.leaseExtendEnabled,
     };
 
     // Register in global registry for auto-discovery

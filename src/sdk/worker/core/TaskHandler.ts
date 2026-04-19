@@ -202,6 +202,7 @@ export class TaskHandler {
             paused: undefined,
             overwriteTaskDef: registered.overwriteTaskDef,
             strictSchema: registered.strictSchema,
+            leaseExtendEnabled: registered.leaseExtendEnabled,
           },
           this.logger
         );
@@ -212,6 +213,7 @@ export class TaskHandler {
           concurrency: resolved.concurrency,
           pollInterval: resolved.pollInterval,
           domain: resolved.domain,
+          leaseExtendEnabled: resolved.leaseExtendEnabled,
         };
 
         const resolvedWorkerId =

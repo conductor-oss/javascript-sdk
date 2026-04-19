@@ -55,6 +55,8 @@ export interface ConductorWorker {
   /** Number of polling instances to run concurrently */
   concurrency?: number;
   pollInterval?: number;
+  /** Enable automatic lease extension (heartbeat) for long-running tasks. Default: false. */
+  leaseExtendEnabled?: boolean;
 }
 
 export interface TaskRunnerOptions {

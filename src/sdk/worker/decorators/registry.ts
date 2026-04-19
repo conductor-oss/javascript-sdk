@@ -46,6 +46,9 @@ export interface RegisteredWorker {
 
   /** Whether this worker should start in paused state (default: false) */
   paused?: boolean;
+
+  /** Enable automatic lease extension (heartbeat) for long-running tasks. */
+  leaseExtendEnabled?: boolean;
 }
 
 /**
