@@ -347,5 +347,9 @@ export function getWorkerConfigOneline(
     parts.push(`register_task_def=${resolvedConfig.registerTaskDef}`);
   }
 
+  if (resolvedConfig.leaseExtendEnabled !== undefined) {
+    parts.push(`lease_extend_enabled=${resolvedConfig.leaseExtendEnabled}`);
+  }
+
   return `Conductor Worker[${parts.join(", ")}]`;
 }
