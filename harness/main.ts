@@ -3,6 +3,7 @@ import {
   ConductorWorkflow,
   TaskHandler,
   simpleTask,
+  MetricsCollector,
 } from "../src/sdk";
 import { MetadataResource } from "../src/open-api/generated";
 import type { ConductorWorker } from "../src/sdk/clients/worker/types";
@@ -91,10 +92,15 @@ async function main(): Promise<void> {
     };
   });
 
+  const metricsPort = envIntOrDefault("HARNESS_METRICS_PORT", 9991);
+  const metricsCollector = new MetricsCollector({ httpPort: metricsPort });
+  console.log(`Prometheus metrics server started on port ${metricsPort}`);
+
   const handler = new TaskHandler({
     client,
     workers,
     scanForDecorated: false,
+    eventListeners: [metricsCollector],
   });
   await handler.startWorkers();
 
