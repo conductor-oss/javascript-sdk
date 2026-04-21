@@ -23,7 +23,7 @@ jobs:
           node-version: "22"
           registry-url: "https://registry.npmjs.org"
       - name: Ensure npm supports trusted publishing
-        run: npm install -g npm@latest
+        run: npm install -g npm@10
       - name: Bump version to release
         run: sed -i "s/v0.0.0/$RELEASE_VERSION/" ./package.json
         env:
