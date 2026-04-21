@@ -8,13 +8,18 @@ import {
 } from "./constants";
 
 export interface LeaseInfo {
-  taskId: string;
-  workflowInstanceId: string;
-  responseTimeoutSeconds: number;
-  lastHeartbeatTime: number; // Date.now() at task start or last successful heartbeat
-  intervalMs: number;        // responseTimeoutSeconds * LEASE_EXTEND_DURATION_FACTOR * 1000
-  isHeartbeating: boolean;   // guard: prevents concurrent heartbeat chains for same task
+  readonly taskId: string;
+  readonly workflowInstanceId: string;
+  readonly responseTimeoutSeconds: number;
+  /** Date.now() at task start or last successful heartbeat. Managed internally by LeaseTracker. */
+  readonly lastHeartbeatTime: number;
+  readonly intervalMs: number;
+  /** True while a heartbeat chain is in-flight. Managed internally by LeaseTracker. */
+  readonly isHeartbeating: boolean;
 }
+
+/** Mutable view used only inside LeaseTracker. */
+type MutableLeaseInfo = { -readonly [K in keyof LeaseInfo]: LeaseInfo[K] };
 
 /**
  * Tracks active task leases and sends periodic heartbeats to keep them alive.
@@ -29,7 +34,7 @@ export interface LeaseInfo {
  *   - Heartbeat uses v1 updateTask endpoint, not v2
  */
 export class LeaseTracker {
-  private leases = new Map<string, LeaseInfo>();
+  private leases = new Map<string, MutableLeaseInfo>();
   private timer: ReturnType<typeof setInterval> | null = null;
 
   constructor(
@@ -95,7 +100,7 @@ export class LeaseTracker {
 
   private async sendDueHeartbeats(): Promise<void> {
     const now = Date.now();
-    for (const [, info] of this.leases) {
+    for (const [, info] of this.leases as Map<string, MutableLeaseInfo>) {
       // isHeartbeating guard prevents concurrent heartbeat chains for the same task
       // (the 100ms check interval would otherwise launch a new chain every tick while retries are in flight)
       if (now - info.lastHeartbeatTime >= info.intervalMs && !info.isHeartbeating) {
@@ -105,7 +110,7 @@ export class LeaseTracker {
     }
   }
 
-  private async sendHeartbeat(info: LeaseInfo): Promise<void> {
+  private async sendHeartbeat(info: MutableLeaseInfo): Promise<void> {
     try {
       for (let attempt = 0; attempt < LEASE_EXTEND_RETRY_COUNT; attempt++) {
         try {

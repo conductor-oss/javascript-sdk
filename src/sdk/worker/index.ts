@@ -46,3 +46,12 @@ export type {
   HealthMonitorConfig,
 } from "../clients/worker/types";
 export { isTaskInProgress } from "../clients/worker/types";
+
+// Lease extension
+export { LeaseTracker, type LeaseInfo } from "../clients/worker/LeaseTracker";
+export {
+  LEASE_EXTEND_RETRY_COUNT,
+  LEASE_EXTEND_DURATION_FACTOR,
+  HEARTBEAT_CHECK_INTERVAL_MS,
+  HEARTBEAT_RETRY_DELAY_MS,
+} from "../clients/worker/constants";

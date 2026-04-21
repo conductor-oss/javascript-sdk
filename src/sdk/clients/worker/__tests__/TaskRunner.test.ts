@@ -1738,6 +1738,35 @@ describe("LeaseTracker integration", () => {
     expect(tracker.track).not.toHaveBeenCalled();
   });
 
+  test("does not track lease when leaseExtendEnabled is undefined (default off)", async () => {
+    const mockClient = createMockClient();
+    const task = makeTaskWithTimeout(30);
+
+    (TaskResource.batchPoll as jest.Mock).mockResolvedValue({ data: [task] });
+    (TaskResource.updateTaskV2 as jest.Mock).mockResolvedValue({
+      data: null, error: undefined, response: { status: 200, ok: true },
+    });
+
+    const runner = new TaskRunner({
+      worker: {
+        taskDefName: "undefined-lease-worker",
+        execute: async () => ({ status: "COMPLETED" as const }),
+        // leaseExtendEnabled intentionally omitted — should default to off
+      },
+      options: { workerID: "w1", domain: undefined, pollInterval: 10 },
+      client: mockClient,
+      logger: mockLogger,
+    });
+    activeRunners.push(runner);
+    runner.startPolling();
+
+    await new Promise((r) => setTimeout(r, 100));
+    runner.stopPolling();
+
+    const tracker = getTrackerInstance(runner);
+    expect(tracker.track).not.toHaveBeenCalled();
+  });
+
   test("untracks lease after COMPLETED execution", async () => {
     const mockClient = createMockClient();
     const task = makeTaskWithTimeout(30);

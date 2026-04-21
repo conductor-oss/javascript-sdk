@@ -127,7 +127,7 @@ export interface WorkerOptions {
    * Enable automatic lease extension (heartbeat) for long-running tasks.
    * - Default: false
    * - When true: sends periodic heartbeats at 80% of the task's responseTimeoutSeconds
-   * - Only applies to tasks where responseTimeoutSeconds > 1.25s
+   * - Only applies to tasks where responseTimeoutSeconds >= 1.25s (interval = timeout * 0.8 * 1000 >= 1000ms)
    * - Can be overridden via env: CONDUCTOR_WORKER_<NAME>_LEASE_EXTEND_ENABLED=true
    */
   leaseExtendEnabled?: boolean;

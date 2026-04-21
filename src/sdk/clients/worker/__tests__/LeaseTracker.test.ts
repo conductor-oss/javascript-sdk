@@ -1,5 +1,5 @@
 import { LeaseTracker, LeaseInfo } from "@/sdk/clients/worker/LeaseTracker";
-import { LEASE_EXTEND_DURATION_FACTOR, LEASE_EXTEND_RETRY_COUNT } from "@/sdk/clients/worker/constants";
+import { LEASE_EXTEND_DURATION_FACTOR, LEASE_EXTEND_RETRY_COUNT, HEARTBEAT_RETRY_DELAY_MS } from "@/sdk/clients/worker/constants";
 import { afterEach, beforeEach, describe, expect, jest, test } from "@jest/globals";
 import type { Task } from "@open-api/index";
 import { mockLogger } from "@test-utils/mockLogger";
@@ -107,7 +107,7 @@ describe("LeaseTracker", () => {
       // (must be before draining retries: if stopped after, the interval fires again at ~9200ms)
       tracker.stop();
       // Drain chain 1's retries: each waits HEARTBEAT_RETRY_DELAY_MS (500ms)
-      await jest.advanceTimersByTimeAsync(LEASE_EXTEND_RETRY_COUNT * 500 + 100);
+      await jest.advanceTimersByTimeAsync(LEASE_EXTEND_RETRY_COUNT * HEARTBEAT_RETRY_DELAY_MS + 100);
 
       expect(sendHeartbeatFn).toHaveBeenCalledTimes(LEASE_EXTEND_RETRY_COUNT);
     });
@@ -124,7 +124,7 @@ describe("LeaseTracker", () => {
 
       // First heartbeat attempt (all retries fail)
       await jest.advanceTimersByTimeAsync(8100);
-      await jest.advanceTimersByTimeAsync(LEASE_EXTEND_RETRY_COUNT * 500 + 100);
+      await jest.advanceTimersByTimeAsync(LEASE_EXTEND_RETRY_COUNT * HEARTBEAT_RETRY_DELAY_MS + 100);
 
       // Task is still tracked — next interval fires a second heartbeat sequence
       await jest.advanceTimersByTimeAsync(8000 + LEASE_EXTEND_RETRY_COUNT * 500 + 100);
