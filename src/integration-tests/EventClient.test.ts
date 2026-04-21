@@ -14,7 +14,7 @@ import type {
 } from "../open-api";
 import { EventClient } from "../sdk";
 import { createClientWithRetry } from "./utils/createClientWithRetry";
-import { describeForOrkesV5 } from "./utils/customJestDescribe";
+import { describeForOrkesV4, describeForOrkesV5 } from "./utils/customJestDescribe";
 
 const TEST_HANDLER_NAME_PREFIX = "jsSdkTest:";
 
@@ -78,7 +78,7 @@ describe("EventClient", () => {
     description: `Test event handler: ${name}`,
   });
 
-  describe("Event Handler Management", () => {
+  describeForOrkesV4("Event Handler Management", () => {
     test("Should add a single event handler", async () => {
       const handlerName = createUniqueName("event-handler");
       const eventName = createUniqueName("event");
@@ -287,7 +287,7 @@ describe("EventClient", () => {
     });
   });
 
-  describe("Tag Management", () => {
+  describeForOrkesV4("Tag Management", () => {
     test("Should get tags for an event handler", async () => {
       const handlerName = createUniqueName("event-handler");
       const eventName = createUniqueName("event");
@@ -426,7 +426,7 @@ describe("EventClient", () => {
     });
   });
 
-  describe("Test Endpoint", () => {
+  describeForOrkesV4("Test Endpoint", () => {
     test("Should call test endpoint", async () => {
 
       const result = await eventClient.test();

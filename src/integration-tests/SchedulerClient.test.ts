@@ -9,8 +9,10 @@ import {
   orkesConductorClient,
   SchedulerClient,
 } from "../sdk";
+import { describeForOrkesV4 } from "./utils/customJestDescribe";
 
 describe("SchedulerClient", () => {
+  describeForOrkesV4("SchedulerClient V4+", () => {
   const clientPromise = orkesConductorClient();
   jest.setTimeout(60000);
 
@@ -165,4 +167,5 @@ describe("SchedulerClient", () => {
     const result = await executor.getNextFewSchedules(cronExpression);
     expect(result?.length).toBeGreaterThan(0);
   });
+  }); // end describeForOrkesV4
 });

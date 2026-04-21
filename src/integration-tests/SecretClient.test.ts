@@ -5,6 +5,7 @@ import {
   SecretClient,
 } from "../sdk";
 import type { Tag } from "../open-api";
+import { describeForOrkesV4 } from "./utils/customJestDescribe";
 
 /**
  * E2E Integration Tests for SecretClient
@@ -12,6 +13,7 @@ import type { Tag } from "../open-api";
  * Tests secret CRUD operations, existence checks, listing, and tag management.
  */
 describe("SecretClient", () => {
+  describeForOrkesV4("SecretClient V4+", () => {
   jest.setTimeout(60000);
 
   const clientPromise = orkesConductorClient();
@@ -161,4 +163,5 @@ describe("SecretClient", () => {
       ).rejects.toThrow();
     });
   });
+  }); // end describeForOrkesV4
 });

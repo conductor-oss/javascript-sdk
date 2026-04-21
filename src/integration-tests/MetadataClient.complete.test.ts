@@ -15,6 +15,7 @@ import {
   taskDefinition,
   OrkesClients,
 } from "../sdk";
+import { describeForOrkesV4 } from "./utils/customJestDescribe";
 
 /**
  * E2E Integration Tests for MetadataClient — Complete Coverage
@@ -163,7 +164,7 @@ describe("MetadataClient Complete Coverage", () => {
 
   // ==================== Workflow Tags ====================
 
-  describe("Workflow Tags", () => {
+  describeForOrkesV4("Workflow Tags", () => {
     test("addWorkflowTag should add a tag to a workflow definition", async () => {
       await expect(
         metadataClient.addWorkflowTag(
@@ -217,7 +218,7 @@ describe("MetadataClient Complete Coverage", () => {
 
   // ==================== Task Tags ====================
 
-  describe("Task Tags", () => {
+  describeForOrkesV4("Task Tags", () => {
     test("addTaskTag should add a tag to a task definition", async () => {
       await expect(
         metadataClient.addTaskTag(
@@ -315,7 +316,7 @@ describe("MetadataClient Complete Coverage", () => {
 
   // ==================== Scheduler Extended ====================
 
-  describe("Scheduler Extended", () => {
+  describeForOrkesV4("Scheduler Extended", () => {
     beforeAll(async () => {
       // Create a schedule for tag tests
       await schedulerClient.saveSchedule({

@@ -22,7 +22,7 @@ import {
 } from "../sdk";
 import { waitForWorkflowStatus } from "./utils/waitForWorkflowStatus";
 import { createClientWithRetry } from "./utils/createClientWithRetry";
-import { describeForOrkesV5 } from "./utils/customJestDescribe";
+import { describeForOrkesV4, describeForOrkesV5 } from "./utils/customJestDescribe";
 
 /**
  * E2E Integration Tests for WorkflowExecutor — Complete Coverage
@@ -224,6 +224,7 @@ describe("WorkflowExecutor Complete Coverage", () => {
       expect(execution.tasks.length).toBeGreaterThan(0);
     });
 
+    describeForOrkesV4("getWorkflowStatus (V4+)", () => {
     test("getWorkflowStatus should return status summary", async () => {
       const status = await executor.getWorkflowStatus(
         workflowId,
@@ -234,6 +235,7 @@ describe("WorkflowExecutor Complete Coverage", () => {
       expect(status).toBeDefined();
       expect(status.status).toEqual("COMPLETED");
     });
+    }); // end describeForOrkesV4
 
     test("search should find the workflow", async () => {
       const result = await executor.search(
@@ -250,7 +252,7 @@ describe("WorkflowExecutor Complete Coverage", () => {
 
   // ==================== Correlation IDs ====================
 
-  describe("Correlation IDs", () => {
+  describeForOrkesV4("Correlation IDs", () => {
     test("getByCorrelationIds should return workflows by correlation", async () => {
       const correlationId = `corr-test-${suffix}-${Date.now()}`;
 
@@ -277,7 +279,7 @@ describe("WorkflowExecutor Complete Coverage", () => {
 
   // ==================== Workflow Control ====================
 
-  describe("Workflow Control (pause/resume/terminate/restart/retry)", () => {
+  describeForOrkesV4("Workflow Control (pause/resume/terminate/restart/retry)", () => {
     test("pause and resume should work on a running workflow", async () => {
       const wfId = await executor.startWorkflow({
         name: waitWfName,
@@ -596,7 +598,7 @@ describe("WorkflowExecutor Complete Coverage", () => {
 
   // ==================== Update Variables ====================
 
-  describe("Update Variables", () => {
+  describeForOrkesV4("Update Variables", () => {
     test("updateVariables should update workflow variables", async () => {
       const wfId = await executor.startWorkflow({
         name: waitWfName,

@@ -30,7 +30,7 @@ import { getComplexSignalTestWfDef } from "./metadata/complex_wf_signal_test";
 import { getComplexSignalTestSubWf1Def } from "./metadata/complex_wf_signal_test_subworkflow_1";
 import { getComplexSignalTestSubWf2Def } from "./metadata/complex_wf_signal_test_subworkflow_2";
 import { getWaitSignalTestWfDef } from "./metadata/wait_signal_test";
-import { describeForOrkesV5 } from "./utils/customJestDescribe";
+import { describeForOrkesV4, describeForOrkesV5 } from "./utils/customJestDescribe";
 
 describe("WorkflowExecutor", () => {
   const clientPromise = orkesConductorClient();
@@ -117,6 +117,7 @@ describe("WorkflowExecutor", () => {
     expect(workflowRun.status).toEqual("COMPLETED");
   });
 
+  describeForOrkesV4("V4+ features", () => {
   test("Should be able to get workflow execution status ", async () => {
     const client = await clientPromise;
     const executor = new WorkflowExecutor(client);
@@ -132,18 +133,6 @@ describe("WorkflowExecutor", () => {
     expect(workflowStatus?.status).toBeTruthy();
   });
 
-  test("Should return workflow status detail", async () => {
-    const client = await clientPromise;
-    const executor = new WorkflowExecutor(client);
-    expect(executionId).toBeDefined();
-    if (!executionId) {
-      throw new Error("Execution ID is undefined");
-    }
-    const workflowStatus = await executor.getWorkflow(executionId, true);
-
-    expect(workflowStatus?.status).toBeTruthy();
-    expect(workflowStatus?.tasks?.length).toBe(1);
-  });
   test("Should execute a workflow with indempotency key", async () => {
     const client = await clientPromise;
     const executor = new WorkflowExecutor(client);
@@ -161,7 +150,20 @@ describe("WorkflowExecutor", () => {
     const executionDetails = await executor.getWorkflow(executionId, true);
     expect(executionDetails?.idempotencyKey).toEqual(idempotencyKey);
   });
+  }); // end describeForOrkesV4
 
+  test("Should return workflow status detail", async () => {
+    const client = await clientPromise;
+    const executor = new WorkflowExecutor(client);
+    expect(executionId).toBeDefined();
+    if (!executionId) {
+      throw new Error("Execution ID is undefined");
+    }
+    const workflowStatus = await executor.getWorkflow(executionId, true);
+
+    expect(workflowStatus?.status).toBeTruthy();
+    expect(workflowStatus?.tasks?.length).toBe(1);
+  });
   test("Should run workflow with http task with asyncComplete true", async () => {
     const client = await clientPromise;
     const executor = new WorkflowExecutor(client);

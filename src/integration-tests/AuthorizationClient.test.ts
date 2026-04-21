@@ -5,6 +5,7 @@ import {
   AuthorizationClient,
   MetadataClient,
 } from "../sdk";
+import { describeForOrkesV4 } from "./utils/customJestDescribe";
 
 /**
  * E2E Integration Tests for AuthorizationClient
@@ -13,6 +14,7 @@ import {
  * in a lifecycle order: create → read → update → delete.
  */
 describe("AuthorizationClient", () => {
+  describeForOrkesV4("AuthorizationClient V4+", () => {
   jest.setTimeout(60000);
 
   const suffix = Date.now();
@@ -364,4 +366,5 @@ describe("AuthorizationClient", () => {
       ).rejects.toThrow();
     });
   });
+  }); // end describeForOrkesV4
 });

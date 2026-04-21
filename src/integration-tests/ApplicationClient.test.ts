@@ -9,8 +9,10 @@ import {
 import { ApplicationClient } from "../sdk";
 import { createClientWithRetry } from "./utils/createClientWithRetry";
 import type { Tag } from "../open-api";
+import { describeForOrkesV4 } from "./utils/customJestDescribe";
 
 describe("ApplicationClient", () => {
+  describeForOrkesV4("ApplicationClient V4+", () => {
   jest.setTimeout(60000);
 
   let applicationClient: ApplicationClient;
@@ -576,4 +578,5 @@ describe("ApplicationClient", () => {
     //   ).rejects.toThrow();
     // });
   });
+  }); // end describeForOrkesV4
 });
