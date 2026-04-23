@@ -9,6 +9,7 @@ import type {
   TaskExecutionFailure,
   TaskUpdateCompleted,
   TaskUpdateFailure,
+  TaskPaused,
 } from "./types";
 
 /**
@@ -60,6 +61,11 @@ export interface TaskRunnerEventsListener {
    * This is a CRITICAL event that may require operational intervention.
    */
   onTaskUpdateFailure?(event: TaskUpdateFailure): void | Promise<void>;
+
+  /**
+   * Called when a poll cycle is skipped because the worker is paused.
+   */
+  onTaskPaused?(event: TaskPaused): void | Promise<void>;
 }
 
 /**
@@ -157,6 +163,13 @@ export class EventDispatcher {
    */
   async publishTaskUpdateFailure(event: TaskUpdateFailure): Promise<void> {
     await this.publishEvent("onTaskUpdateFailure", event);
+  }
+
+  /**
+   * Publish a TaskPaused event.
+   */
+  async publishTaskPaused(event: TaskPaused): Promise<void> {
+    await this.publishEvent("onTaskPaused", event);
   }
 
   /**

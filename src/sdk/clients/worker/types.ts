@@ -86,6 +86,8 @@ export interface PollerOptions {
   adaptiveBackoff?: boolean;
   /** Whether this poller is paused (default: false) */
   paused?: boolean;
+  /** Callback invoked each time a poll cycle is skipped because the poller is paused */
+  onPaused?: () => void;
 }
 
 /**

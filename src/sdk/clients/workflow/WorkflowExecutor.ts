@@ -30,6 +30,7 @@ import { enhanceSignalResponse } from "./helpers/enhanceSignalResponse";
 import { reverseFind } from "./helpers/reverseFind";
 import { isCompletedTaskMatchingType } from "./helpers/isCompletedTaskMatchingType";
 import { RETRY_TIME_IN_MILLISECONDS } from "./constants";
+import { getHttpMetricsObserver } from "../../worker/metrics/httpObserver";
 
 export class WorkflowExecutor {
   public readonly _client: Client;
@@ -71,6 +72,23 @@ export class WorkflowExecutor {
   public async startWorkflow(
     workflowRequest: StartWorkflowRequest
   ): Promise<string> {
+    const observer = getHttpMetricsObserver();
+    if (observer) {
+      try {
+        const inputBytes = workflowRequest.input
+          ? JSON.stringify(workflowRequest.input).length
+          : 0;
+        observer.recordWorkflowInputSize(
+          workflowRequest.name ?? "",
+          inputBytes,
+          workflowRequest.version != null
+            ? String(workflowRequest.version)
+            : undefined
+        );
+      } catch {
+        // Best-effort — don't let metrics break workflow start.
+      }
+    }
     try {
       const { data } = await WorkflowResource.startWorkflow({
         body: workflowRequest,
@@ -80,6 +98,16 @@ export class WorkflowExecutor {
 
       return data;
     } catch (error: unknown) {
+      if (observer) {
+        const excName =
+          error instanceof Error
+            ? error.name || error.constructor?.name || "Error"
+            : "Error";
+        observer.recordWorkflowStartError(
+          workflowRequest.name ?? "",
+          excName
+        );
+      }
       handleSdkError(error, "Failed to start workflow");
     }
   }

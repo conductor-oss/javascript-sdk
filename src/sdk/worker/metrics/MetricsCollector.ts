@@ -8,7 +8,9 @@ import type {
   TaskExecutionFailure,
   TaskUpdateCompleted,
   TaskUpdateFailure,
+  TaskPaused,
 } from "../../clients/worker/events";
+import { setHttpMetricsObserver } from "./httpObserver";
 
 /**
  * Configuration for MetricsCollector.
@@ -35,7 +37,7 @@ export interface MetricsCollectorConfig {
 }
 
 /**
- * Collected worker metrics.
+ * Collected worker metrics (legacy shape).
  */
 export interface WorkerMetrics {
   /** Total polls by taskType */
@@ -76,11 +78,179 @@ export interface WorkerMetrics {
   apiRequestDurationMs: Map<string, number[]>;
 }
 
+// ── Canonical constants ──────────────────────────────────────────
+
+const CANONICAL_BUCKETS = [
+  0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10,
+] as const;
+
 const QUANTILES = [0.5, 0.75, 0.9, 0.95, 0.99] as const;
 
+// ── Histogram accumulator ────────────────────────────────────────
+
 /**
- * Calculate quantiles from sorted array using linear interpolation.
+ * Serializable label set used as a Map key for multi-dimensional metrics.
  */
+function labelKey(labels: Record<string, string>): string {
+  const keys = Object.keys(labels).sort();
+  return keys.map((k) => `${k}=${labels[k]}`).join(",");
+}
+
+interface HistogramSeries {
+  labels: Record<string, string>;
+  buckets: number[];
+  count: number;
+  sum: number;
+}
+
+/**
+ * In-memory Prometheus Histogram accumulator.
+ *
+ * Tracks _bucket, _count, _sum per label set using the canonical bucket
+ * boundaries. Renders to Prometheus text exposition format.
+ */
+class HistogramAccumulator {
+  private readonly _boundaries: readonly number[];
+  private _series = new Map<string, HistogramSeries>();
+
+  constructor(boundaries: readonly number[] = CANONICAL_BUCKETS) {
+    this._boundaries = boundaries;
+  }
+
+  observe(labels: Record<string, string>, value: number): void {
+    const key = labelKey(labels);
+    let s = this._series.get(key);
+    if (!s) {
+      s = {
+        labels,
+        buckets: new Array(this._boundaries.length).fill(0),
+        count: 0,
+        sum: 0,
+      };
+      this._series.set(key, s);
+    }
+    for (let i = 0; i < this._boundaries.length; i++) {
+      if (value <= this._boundaries[i]) {
+        s.buckets[i]++;
+      }
+    }
+    s.count++;
+    s.sum += value;
+  }
+
+  render(name: string, help: string): string {
+    if (this._series.size === 0) return "";
+    const lines: string[] = [];
+    lines.push(`# HELP ${name} ${help}`);
+    lines.push(`# TYPE ${name} histogram`);
+    for (const s of this._series.values()) {
+      const lblStr = renderLabels(s.labels);
+      const sep = lblStr ? "," : "";
+      for (let i = 0; i < this._boundaries.length; i++) {
+        lines.push(
+          `${name}_bucket{${lblStr}${sep}le="${this._boundaries[i]}"} ${s.buckets[i]}`
+        );
+      }
+      lines.push(`${name}_bucket{${lblStr}${sep}le="+Inf"} ${s.count}`);
+      lines.push(`${name}_sum{${lblStr}} ${s.sum}`);
+      lines.push(`${name}_count{${lblStr}} ${s.count}`);
+    }
+    return lines.join("\n");
+  }
+}
+
+// ── Multi-label counter ──────────────────────────────────────────
+
+interface CounterSeries {
+  labels: Record<string, string>;
+  value: number;
+}
+
+class MultiLabelCounter {
+  private _series = new Map<string, CounterSeries>();
+
+  increment(labels: Record<string, string>, value = 1): void {
+    const key = labelKey(labels);
+    let s = this._series.get(key);
+    if (!s) {
+      s = { labels, value: 0 };
+      this._series.set(key, s);
+    }
+    s.value += value;
+  }
+
+  render(name: string, help: string): string {
+    if (this._series.size === 0) return "";
+    const lines: string[] = [];
+    lines.push(`# HELP ${name} ${help}`);
+    lines.push(`# TYPE ${name} counter`);
+    for (const s of this._series.values()) {
+      lines.push(`${name}{${renderLabels(s.labels)}} ${s.value}`);
+    }
+    return lines.join("\n");
+  }
+}
+
+// ── Gauge ────────────────────────────────────────────────────────
+
+interface GaugeSeries {
+  labels: Record<string, string>;
+  value: number;
+}
+
+class GaugeMetric {
+  private _series = new Map<string, GaugeSeries>();
+
+  set(labels: Record<string, string>, value: number): void {
+    const key = labelKey(labels);
+    let s = this._series.get(key);
+    if (!s) {
+      s = { labels, value: 0 };
+      this._series.set(key, s);
+    }
+    s.value = value;
+  }
+
+  inc(labels: Record<string, string>, delta = 1): void {
+    const key = labelKey(labels);
+    let s = this._series.get(key);
+    if (!s) {
+      s = { labels, value: 0 };
+      this._series.set(key, s);
+    }
+    s.value += delta;
+  }
+
+  dec(labels: Record<string, string>, delta = 1): void {
+    const key = labelKey(labels);
+    let s = this._series.get(key);
+    if (!s) {
+      s = { labels, value: 0 };
+      this._series.set(key, s);
+    }
+    s.value -= delta;
+  }
+
+  render(name: string, help: string): string {
+    if (this._series.size === 0) return "";
+    const lines: string[] = [];
+    lines.push(`# HELP ${name} ${help}`);
+    lines.push(`# TYPE ${name} gauge`);
+    for (const s of this._series.values()) {
+      lines.push(`${name}{${renderLabels(s.labels)}} ${s.value}`);
+    }
+    return lines.join("\n");
+  }
+}
+
+// ── Helpers ──────────────────────────────────────────────────────
+
+function renderLabels(labels: Record<string, string>): string {
+  return Object.entries(labels)
+    .map(([k, v]) => `${k}="${v}"`)
+    .join(",");
+}
+
 function computeQuantile(sorted: number[], q: number): number {
   if (sorted.length === 0) return 0;
   if (sorted.length === 1) return sorted[0];
@@ -91,11 +261,48 @@ function computeQuantile(sorted: number[], q: number): number {
   return sorted[lower] + (pos - lower) * (sorted[upper] - sorted[lower]);
 }
 
+function exceptionLabel(error: unknown): string {
+  if (error instanceof Error) {
+    return error.name || error.constructor?.name || "Error";
+  }
+  return "Error";
+}
+
+// ── Canonical metric state ───────────────────────────────────────
+
+interface CanonicalMetrics {
+  // Counters
+  taskPollTotal: MultiLabelCounter;
+  taskExecutionStartedTotal: MultiLabelCounter;
+  taskPollErrorTotal: MultiLabelCounter;
+  taskExecuteErrorTotal: MultiLabelCounter;
+  taskUpdateErrorTotal: MultiLabelCounter;
+  taskAckErrorTotal: MultiLabelCounter;
+  taskAckFailedTotal: MultiLabelCounter;
+  taskExecutionQueueFullTotal: MultiLabelCounter;
+  taskPausedTotal: MultiLabelCounter;
+  threadUncaughtExceptionsTotal: MultiLabelCounter;
+  externalPayloadUsedTotal: MultiLabelCounter;
+  workflowStartErrorTotal: MultiLabelCounter;
+
+  // Histograms (seconds)
+  taskPollTimeSeconds: HistogramAccumulator;
+  taskExecuteTimeSeconds: HistogramAccumulator;
+  taskUpdateTimeSeconds: HistogramAccumulator;
+  httpApiClientRequestSeconds: HistogramAccumulator;
+
+  // Gauges
+  taskResultSizeBytes: GaugeMetric;
+  workflowInputSizeBytes: GaugeMetric;
+  activeWorkers: GaugeMetric;
+}
+
 /**
  * Built-in metrics collector implementing TaskRunnerEventsListener.
  *
- * Collects 19 metric types matching the Python SDK's MetricsCollector,
- * with sliding-window quantile support (p50, p75, p90, p95, p99).
+ * Emits both legacy metrics (prefixed, task_type label, ms, Summary) and
+ * canonical metrics (unprefixed, taskType label, seconds, Histogram/Gauge)
+ * for Phase 1 dual-emit harmonization.
  *
  * @example
  * ```typescript
@@ -113,6 +320,7 @@ function computeQuantile(sorted: number[], q: number): number {
  */
 export class MetricsCollector implements TaskRunnerEventsListener {
   private metrics: WorkerMetrics;
+  private canonical: CanonicalMetrics;
   private readonly _prefix: string;
   private readonly _slidingWindowSize: number;
   private _server?: import("./MetricsServer.js").MetricsServer;
@@ -121,6 +329,7 @@ export class MetricsCollector implements TaskRunnerEventsListener {
 
   constructor(config?: MetricsCollectorConfig) {
     this.metrics = this.createEmptyMetrics();
+    this.canonical = this.createEmptyCanonical();
     this._prefix = config?.prefix ?? "conductor_worker";
     this._slidingWindowSize = config?.slidingWindowSize ?? 1000;
     if (config?.usePromClient) {
@@ -135,6 +344,9 @@ export class MetricsCollector implements TaskRunnerEventsListener {
         config.fileWriteIntervalMs ?? 5000
       );
     }
+    // Register as the global HTTP metrics observer so fetchWithRetry can
+    // record http_api_client_request_seconds without explicit wiring.
+    setHttpMetricsObserver(this);
   }
 
   private async initPromClient(): Promise<void> {
@@ -158,10 +370,8 @@ export class MetricsCollector implements TaskRunnerEventsListener {
         // Silently ignore file write errors
       }
     };
-    // Immediate first write, then periodic
     void doWrite();
     this._fileTimer = setInterval(doWrite, intervalMs);
-    // Unref so the timer doesn't prevent process exit
     if (typeof this._fileTimer === "object" && "unref" in this._fileTimer) {
       this._fileTimer.unref();
     }
@@ -190,6 +400,34 @@ export class MetricsCollector implements TaskRunnerEventsListener {
     };
   }
 
+  private createEmptyCanonical(): CanonicalMetrics {
+    return {
+      taskPollTotal: new MultiLabelCounter(),
+      taskExecutionStartedTotal: new MultiLabelCounter(),
+      taskPollErrorTotal: new MultiLabelCounter(),
+      taskExecuteErrorTotal: new MultiLabelCounter(),
+      taskUpdateErrorTotal: new MultiLabelCounter(),
+      taskAckErrorTotal: new MultiLabelCounter(),
+      taskAckFailedTotal: new MultiLabelCounter(),
+      taskExecutionQueueFullTotal: new MultiLabelCounter(),
+      taskPausedTotal: new MultiLabelCounter(),
+      threadUncaughtExceptionsTotal: new MultiLabelCounter(),
+      externalPayloadUsedTotal: new MultiLabelCounter(),
+      workflowStartErrorTotal: new MultiLabelCounter(),
+
+      taskPollTimeSeconds: new HistogramAccumulator(),
+      taskExecuteTimeSeconds: new HistogramAccumulator(),
+      taskUpdateTimeSeconds: new HistogramAccumulator(),
+      httpApiClientRequestSeconds: new HistogramAccumulator(),
+
+      taskResultSizeBytes: new GaugeMetric(),
+      workflowInputSizeBytes: new GaugeMetric(),
+      activeWorkers: new GaugeMetric(),
+    };
+  }
+
+  // ── Legacy helpers ─────────────────────────────────────────────
+
   private increment(map: Map<string, number>, key: string): void {
     map.set(key, (map.get(key) ?? 0) + 1);
   }
@@ -205,7 +443,6 @@ export class MetricsCollector implements TaskRunnerEventsListener {
       map.set(key, arr);
     }
     arr.push(value);
-    // Sliding window: keep only the last N observations
     if (arr.length > this._slidingWindowSize) {
       arr.splice(0, arr.length - this._slidingWindowSize);
     }
@@ -235,55 +472,273 @@ export class MetricsCollector implements TaskRunnerEventsListener {
   // ── Event Listener Methods ──────────────────────────────────────
 
   onPollStarted(event: PollStarted): void {
-    this.incrementCounter(this.metrics.pollTotal, event.taskType, "poll_total", "task_type");
+    // Legacy
+    this.incrementCounter(
+      this.metrics.pollTotal,
+      event.taskType,
+      "poll_total",
+      "task_type"
+    );
+    // Canonical
+    this.canonical.taskPollTotal.increment({ taskType: event.taskType });
+    this._promRegistry?.incrementCanonicalCounter("c_task_poll_total", {
+      taskType: event.taskType,
+    });
   }
 
   onPollCompleted(event: PollCompleted): void {
-    this.observeSummary(this.metrics.pollDurationMs, event.taskType, event.durationMs, "poll_time", "task_type");
+    // Legacy
+    this.observeSummary(
+      this.metrics.pollDurationMs,
+      event.taskType,
+      event.durationMs,
+      "poll_time",
+      "task_type"
+    );
+    // Canonical
+    const seconds = event.durationMs / 1000;
+    this.canonical.taskPollTimeSeconds.observe(
+      { taskType: event.taskType, status: "SUCCESS" },
+      seconds
+    );
+    this._promRegistry?.observeCanonicalHistogram("c_task_poll_time_seconds", {
+      taskType: event.taskType,
+      status: "SUCCESS",
+    }, seconds);
   }
 
   onPollFailure(event: PollFailure): void {
-    this.incrementCounter(this.metrics.pollErrorTotal, event.taskType, "poll_error_total", "task_type");
-    this.observeSummary(this.metrics.pollDurationMs, event.taskType, event.durationMs, "poll_time", "task_type");
+    const excName = exceptionLabel(event.cause);
+
+    // Legacy
+    this.incrementCounter(
+      this.metrics.pollErrorTotal,
+      event.taskType,
+      "poll_error_total",
+      "task_type"
+    );
+    this.observeSummary(
+      this.metrics.pollDurationMs,
+      event.taskType,
+      event.durationMs,
+      "poll_time",
+      "task_type"
+    );
+
+    // Canonical
+    this.canonical.taskPollErrorTotal.increment({
+      taskType: event.taskType,
+      exception: excName,
+    });
+    this._promRegistry?.incrementCanonicalCounter("c_task_poll_error_total", {
+      taskType: event.taskType,
+      exception: excName,
+    });
+    const seconds = event.durationMs / 1000;
+    this.canonical.taskPollTimeSeconds.observe(
+      { taskType: event.taskType, status: "FAILURE" },
+      seconds
+    );
+    this._promRegistry?.observeCanonicalHistogram("c_task_poll_time_seconds", {
+      taskType: event.taskType,
+      status: "FAILURE",
+    }, seconds);
   }
 
-  onTaskExecutionStarted(_event: TaskExecutionStarted): void {
-    // Counted on completion
+  onTaskExecutionStarted(event: TaskExecutionStarted): void {
+    // Canonical
+    this.canonical.taskExecutionStartedTotal.increment({
+      taskType: event.taskType,
+    });
+    this._promRegistry?.incrementCanonicalCounter(
+      "c_task_execution_started_total",
+      { taskType: event.taskType }
+    );
+    this.canonical.activeWorkers.inc({ taskType: event.taskType });
+    this._promRegistry?.setCanonicalGauge("c_active_workers", {
+      taskType: event.taskType,
+    }, this.getActiveWorkerCount(event.taskType) + 1);
   }
 
   onTaskExecutionCompleted(event: TaskExecutionCompleted): void {
-    this.incrementCounter(this.metrics.taskExecutionTotal, event.taskType, "execute_total", "task_type");
-    this.observeSummary(this.metrics.executionDurationMs, event.taskType, event.durationMs, "execute_time", "task_type");
+    // Legacy
+    this.incrementCounter(
+      this.metrics.taskExecutionTotal,
+      event.taskType,
+      "execute_total",
+      "task_type"
+    );
+    this.observeSummary(
+      this.metrics.executionDurationMs,
+      event.taskType,
+      event.durationMs,
+      "execute_time",
+      "task_type"
+    );
     if (event.outputSizeBytes !== undefined) {
-      this.observeSummary(this.metrics.outputSizeBytes, event.taskType, event.outputSizeBytes, "result_size", "task_type");
+      this.observeSummary(
+        this.metrics.outputSizeBytes,
+        event.taskType,
+        event.outputSizeBytes,
+        "result_size",
+        "task_type"
+      );
+      // Canonical gauge (last-value)
+      this.canonical.taskResultSizeBytes.set(
+        { taskType: event.taskType },
+        event.outputSizeBytes
+      );
+      this._promRegistry?.setCanonicalGauge("c_task_result_size_bytes", {
+        taskType: event.taskType,
+      }, event.outputSizeBytes);
     }
+
+    // Canonical histogram
+    const seconds = event.durationMs / 1000;
+    this.canonical.taskExecuteTimeSeconds.observe(
+      { taskType: event.taskType, status: "SUCCESS" },
+      seconds
+    );
+    this._promRegistry?.observeCanonicalHistogram(
+      "c_task_execute_time_seconds",
+      { taskType: event.taskType, status: "SUCCESS" },
+      seconds
+    );
+
+    // Decrement active workers
+    this.canonical.activeWorkers.dec({ taskType: event.taskType });
+    this._promRegistry?.setCanonicalGauge("c_active_workers", {
+      taskType: event.taskType,
+    }, Math.max(0, this.getActiveWorkerCount(event.taskType) - 1));
   }
 
   onTaskExecutionFailure(event: TaskExecutionFailure): void {
-    const key = `${event.taskType}:${event.cause?.name ?? "Error"}`;
-    this.incrementCounter(this.metrics.taskExecutionErrorTotal, key, "execute_error_total", "task_type");
-    this.observeSummary(this.metrics.executionDurationMs, event.taskType, event.durationMs, "execute_time", "task_type");
+    const excName = exceptionLabel(event.cause);
+    const legacyKey = `${event.taskType}:${event.cause?.name ?? "Error"}`;
+
+    // Legacy
+    this.incrementCounter(
+      this.metrics.taskExecutionErrorTotal,
+      legacyKey,
+      "execute_error_total",
+      "task_type"
+    );
+    this.observeSummary(
+      this.metrics.executionDurationMs,
+      event.taskType,
+      event.durationMs,
+      "execute_time",
+      "task_type"
+    );
+
+    // Canonical
+    this.canonical.taskExecuteErrorTotal.increment({
+      taskType: event.taskType,
+      exception: excName,
+    });
+    this._promRegistry?.incrementCanonicalCounter(
+      "c_task_execute_error_total",
+      { taskType: event.taskType, exception: excName }
+    );
+    const seconds = event.durationMs / 1000;
+    this.canonical.taskExecuteTimeSeconds.observe(
+      { taskType: event.taskType, status: "FAILURE" },
+      seconds
+    );
+    this._promRegistry?.observeCanonicalHistogram(
+      "c_task_execute_time_seconds",
+      { taskType: event.taskType, status: "FAILURE" },
+      seconds
+    );
+
+    // Decrement active workers
+    this.canonical.activeWorkers.dec({ taskType: event.taskType });
+    this._promRegistry?.setCanonicalGauge("c_active_workers", {
+      taskType: event.taskType,
+    }, Math.max(0, this.getActiveWorkerCount(event.taskType) - 1));
   }
 
   onTaskUpdateCompleted(event: TaskUpdateCompleted): void {
-    this.observeSummary(this.metrics.updateDurationMs, event.taskType, event.durationMs, "update_time", "task_type");
+    // Legacy
+    this.observeSummary(
+      this.metrics.updateDurationMs,
+      event.taskType,
+      event.durationMs,
+      "update_time",
+      "task_type"
+    );
+    // Canonical
+    const seconds = event.durationMs / 1000;
+    this.canonical.taskUpdateTimeSeconds.observe(
+      { taskType: event.taskType, status: "SUCCESS" },
+      seconds
+    );
+    this._promRegistry?.observeCanonicalHistogram(
+      "c_task_update_time_seconds",
+      { taskType: event.taskType, status: "SUCCESS" },
+      seconds
+    );
   }
 
   onTaskUpdateFailure(event: TaskUpdateFailure): void {
-    this.incrementCounter(this.metrics.taskUpdateFailureTotal, event.taskType, "update_error_total", "task_type");
+    const excName = exceptionLabel(event.cause);
+
+    // Legacy
+    this.incrementCounter(
+      this.metrics.taskUpdateFailureTotal,
+      event.taskType,
+      "update_error_total",
+      "task_type"
+    );
+
+    // Canonical
+    this.canonical.taskUpdateErrorTotal.increment({
+      taskType: event.taskType,
+      exception: excName,
+    });
+    this._promRegistry?.incrementCanonicalCounter(
+      "c_task_update_error_total",
+      { taskType: event.taskType, exception: excName }
+    );
+  }
+
+  onTaskPaused(event: TaskPaused): void {
+    this.recordTaskPaused(event.taskType);
   }
 
   // ── Direct Recording Methods (for code outside event system) ───
 
   /** Record a task execution queue full event */
   recordTaskExecutionQueueFull(taskType: string): void {
-    this.incrementCounter(this.metrics.taskExecutionQueueFullTotal, taskType, "queue_full_total", "task_type");
+    this.incrementCounter(
+      this.metrics.taskExecutionQueueFullTotal,
+      taskType,
+      "queue_full_total",
+      "task_type"
+    );
+    this.canonical.taskExecutionQueueFullTotal.increment({
+      taskType,
+    });
+    this._promRegistry?.incrementCanonicalCounter(
+      "c_task_execution_queue_full_total",
+      { taskType }
+    );
   }
 
   /** Record an uncaught exception */
-  recordUncaughtException(): void {
+  recordUncaughtException(exception?: string): void {
+    const excName = exception ?? "Error";
+    // Legacy (no labels)
     this.metrics.uncaughtExceptionTotal++;
     this._promRegistry?.incrementCounter("uncaught_total", {});
+    // Canonical
+    this.canonical.threadUncaughtExceptionsTotal.increment({
+      exception: excName,
+    });
+    this._promRegistry?.incrementCanonicalCounter(
+      "c_thread_uncaught_exceptions_total",
+      { exception: excName }
+    );
   }
 
   /** Record a worker restart */
@@ -294,55 +749,177 @@ export class MetricsCollector implements TaskRunnerEventsListener {
 
   /** Record a task paused event */
   recordTaskPaused(taskType: string): void {
-    this.incrementCounter(this.metrics.taskPausedTotal, taskType, "paused_total", "task_type");
+    this.incrementCounter(
+      this.metrics.taskPausedTotal,
+      taskType,
+      "paused_total",
+      "task_type"
+    );
+    this.canonical.taskPausedTotal.increment({ taskType });
+    this._promRegistry?.incrementCanonicalCounter("c_task_paused_total", {
+      taskType,
+    });
   }
 
   /** Record a task ack error */
-  recordTaskAckError(taskType: string): void {
-    this.incrementCounter(this.metrics.taskAckErrorTotal, taskType, "ack_error_total", "task_type");
+  recordTaskAckError(taskType: string, exception?: string): void {
+    const excName = exception ?? "Error";
+    // Legacy
+    this.incrementCounter(
+      this.metrics.taskAckErrorTotal,
+      taskType,
+      "ack_error_total",
+      "task_type"
+    );
+    // Canonical
+    this.canonical.taskAckErrorTotal.increment({
+      taskType,
+      exception: excName,
+    });
+    this._promRegistry?.incrementCanonicalCounter("c_task_ack_error_total", {
+      taskType,
+      exception: excName,
+    });
+  }
+
+  /** Record a task ack failed (server declined ack, no exception) */
+  recordTaskAckFailed(taskType: string): void {
+    this.canonical.taskAckFailedTotal.increment({ taskType });
+    this._promRegistry?.incrementCanonicalCounter("c_task_ack_failed_total", {
+      taskType,
+    });
   }
 
   /** Record a workflow start error */
-  recordWorkflowStartError(): void {
+  recordWorkflowStartError(
+    workflowType?: string,
+    exception?: string
+  ): void {
+    const wfType = workflowType ?? "";
+    const excName = exception ?? "Error";
+    // Legacy (no labels)
     this.metrics.workflowStartErrorTotal++;
     this._promRegistry?.incrementCounter("wf_start_error_total", {});
+    // Canonical
+    this.canonical.workflowStartErrorTotal.increment({
+      workflowType: wfType,
+      exception: excName,
+    });
+    this._promRegistry?.incrementCanonicalCounter(
+      "c_workflow_start_error_total",
+      { workflowType: wfType, exception: excName }
+    );
   }
 
   /** Record external payload usage */
-  recordExternalPayloadUsed(payloadType: string): void {
-    this.incrementCounter(this.metrics.externalPayloadUsedTotal, payloadType, "external_payload_total", "payload_type");
+  recordExternalPayloadUsed(
+    payloadType: string,
+    entityName?: string,
+    operation?: string
+  ): void {
+    // Legacy
+    this.incrementCounter(
+      this.metrics.externalPayloadUsedTotal,
+      payloadType,
+      "external_payload_total",
+      "payload_type"
+    );
+    // Canonical
+    this.canonical.externalPayloadUsedTotal.increment({
+      entityName: entityName ?? "",
+      operation: operation ?? "",
+      payload_type: payloadType,
+    });
+    this._promRegistry?.incrementCanonicalCounter(
+      "c_external_payload_used_total",
+      {
+        entityName: entityName ?? "",
+        operation: operation ?? "",
+        payload_type: payloadType,
+      }
+    );
   }
 
   /** Record workflow input size */
-  recordWorkflowInputSize(workflowType: string, sizeBytes: number): void {
-    this.observeSummary(this.metrics.workflowInputSizeBytes, workflowType, sizeBytes, "wf_input_size", "workflow_type");
+  recordWorkflowInputSize(
+    workflowType: string,
+    sizeBytes: number,
+    version?: string
+  ): void {
+    // Legacy
+    this.observeSummary(
+      this.metrics.workflowInputSizeBytes,
+      workflowType,
+      sizeBytes,
+      "wf_input_size",
+      "workflow_type"
+    );
+    // Canonical gauge (last-value)
+    this.canonical.workflowInputSizeBytes.set(
+      { workflowType, version: version ?? "" },
+      sizeBytes
+    );
+    this._promRegistry?.setCanonicalGauge("c_workflow_input_size_bytes", {
+      workflowType,
+      version: version ?? "",
+    }, sizeBytes);
   }
 
   /** Record API request duration */
   recordApiRequestTime(
     method: string,
     uri: string,
-    status: number,
+    status: number | string,
     durationMs: number
   ): void {
-    const key = `${method}:${uri}:${status}`;
-    this.observeSummary(this.metrics.apiRequestDurationMs, key, durationMs, "api_request", "endpoint");
+    const statusStr = String(status);
+    // Legacy (compound label)
+    const legacyKey = `${method}:${uri}:${statusStr}`;
+    this.observeSummary(
+      this.metrics.apiRequestDurationMs,
+      legacyKey,
+      durationMs,
+      "api_request",
+      "endpoint"
+    );
+    // Canonical histogram (seconds, separate labels)
+    const seconds = durationMs / 1000;
+    this.canonical.httpApiClientRequestSeconds.observe(
+      { method, uri, status: statusStr },
+      seconds
+    );
+    this._promRegistry?.observeCanonicalHistogram(
+      "c_http_api_client_request_seconds",
+      { method, uri, status: statusStr },
+      seconds
+    );
+  }
+
+  // ── active_workers helper ──────────────────────────────────────
+
+  private getActiveWorkerCount(taskType: string): number {
+    const snapshot = this.canonical.activeWorkers as GaugeMetric;
+    const key = labelKey({ taskType });
+    // Access internal state via render-less path
+    return (snapshot as any)._series?.get(key)?.value ?? 0;
   }
 
   // ── Public API ──────────────────────────────────────────────────
 
-  /** Get a snapshot of all collected metrics */
+  /** Get a snapshot of all collected legacy metrics */
   getMetrics(): Readonly<WorkerMetrics> {
     return this.metrics;
   }
 
-  /** Reset all collected metrics */
+  /** Reset all collected metrics (legacy + canonical) */
   reset(): void {
     this.metrics = this.createEmptyMetrics();
+    this.canonical = this.createEmptyCanonical();
   }
 
   /** Stop the auto-started metrics HTTP server and file writer (if any) */
   async stop(): Promise<void> {
+    setHttpMetricsObserver(undefined);
     if (this._fileTimer) {
       clearInterval(this._fileTimer);
       this._fileTimer = undefined;
@@ -355,20 +932,14 @@ export class MetricsCollector implements TaskRunnerEventsListener {
 
   /**
    * Get the content type for the Prometheus metrics endpoint.
-   * Returns prom-client's content type when available, otherwise standard Prometheus text format.
    */
   getContentType(): string {
-    return this._promRegistry?.contentType ?? "text/plain; version=0.0.4; charset=utf-8";
+    return (
+      this._promRegistry?.contentType ??
+      "text/plain; version=0.0.4; charset=utf-8"
+    );
   }
 
-  /**
-   * Render all collected metrics in Prometheus exposition format.
-   * If prom-client is available and `usePromClient: true`, delegates to prom-client's registry.
-   * Otherwise uses built-in rendering with p50/p75/p90/p95/p99 quantiles.
-   *
-   * @param prefix - Metric name prefix (defaults to constructor config or "conductor_worker")
-   * @returns Prometheus text format string
-   */
   /**
    * Async version of toPrometheusText.
    * When prom-client is available, returns its native registry output.
@@ -381,11 +952,17 @@ export class MetricsCollector implements TaskRunnerEventsListener {
     return this.toPrometheusText();
   }
 
+  /**
+   * Render all collected metrics in Prometheus exposition format.
+   *
+   * Emits legacy metrics (prefixed, task_type, ms, Summary) followed by
+   * canonical metrics (unprefixed, taskType, seconds, Histogram/Gauge).
+   */
   toPrometheusText(prefix?: string): string {
     const p = prefix ?? this._prefix;
     const lines: string[] = [];
 
-    // ── Labelled counters ──
+    // ── Legacy labelled counters ──
     const labelledCounters: {
       name: string;
       help: string;
@@ -459,7 +1036,7 @@ export class MetricsCollector implements TaskRunnerEventsListener {
       }
     }
 
-    // ── Global counters (no labels) ──
+    // ── Legacy global counters (no labels) ──
     const globalCounters: {
       name: string;
       help: string;
@@ -489,7 +1066,7 @@ export class MetricsCollector implements TaskRunnerEventsListener {
       lines.push(`${counter.name} ${counter.value}`);
     }
 
-    // ── Summaries with quantiles ──
+    // ── Legacy summaries with quantiles ──
     const summaries: {
       name: string;
       help: string;
@@ -555,6 +1132,140 @@ export class MetricsCollector implements TaskRunnerEventsListener {
           `${summary.name}_sum{${summary.labelName}="${label}"} ${sum}`
         );
       }
+    }
+
+    // ── Canonical counters ──
+    const canonicalCounterDefs: {
+      name: string;
+      help: string;
+      counter: MultiLabelCounter;
+    }[] = [
+      {
+        name: "task_poll_total",
+        help: "Total number of task polls",
+        counter: this.canonical.taskPollTotal,
+      },
+      {
+        name: "task_execution_started_total",
+        help: "Total number of task executions started",
+        counter: this.canonical.taskExecutionStartedTotal,
+      },
+      {
+        name: "task_poll_error_total",
+        help: "Total number of task poll errors",
+        counter: this.canonical.taskPollErrorTotal,
+      },
+      {
+        name: "task_execute_error_total",
+        help: "Total number of task execution errors",
+        counter: this.canonical.taskExecuteErrorTotal,
+      },
+      {
+        name: "task_update_error_total",
+        help: "Total number of task update errors",
+        counter: this.canonical.taskUpdateErrorTotal,
+      },
+      {
+        name: "task_ack_error_total",
+        help: "Total number of task ack errors",
+        counter: this.canonical.taskAckErrorTotal,
+      },
+      {
+        name: "task_ack_failed_total",
+        help: "Total number of task ack failures (server declined)",
+        counter: this.canonical.taskAckFailedTotal,
+      },
+      {
+        name: "task_execution_queue_full_total",
+        help: "Total number of task execution queue full events",
+        counter: this.canonical.taskExecutionQueueFullTotal,
+      },
+      {
+        name: "task_paused_total",
+        help: "Total number of task paused events",
+        counter: this.canonical.taskPausedTotal,
+      },
+      {
+        name: "thread_uncaught_exceptions_total",
+        help: "Total uncaught exceptions",
+        counter: this.canonical.threadUncaughtExceptionsTotal,
+      },
+      {
+        name: "external_payload_used_total",
+        help: "Total external payload usage",
+        counter: this.canonical.externalPayloadUsedTotal,
+      },
+      {
+        name: "workflow_start_error_total",
+        help: "Total workflow start errors",
+        counter: this.canonical.workflowStartErrorTotal,
+      },
+    ];
+
+    for (const def of canonicalCounterDefs) {
+      const rendered = def.counter.render(def.name, def.help);
+      if (rendered) lines.push(rendered);
+    }
+
+    // ── Canonical histograms ──
+    const canonicalHistogramDefs: {
+      name: string;
+      help: string;
+      histogram: HistogramAccumulator;
+    }[] = [
+      {
+        name: "task_poll_time_seconds",
+        help: "Task poll duration in seconds",
+        histogram: this.canonical.taskPollTimeSeconds,
+      },
+      {
+        name: "task_execute_time_seconds",
+        help: "Task execution duration in seconds",
+        histogram: this.canonical.taskExecuteTimeSeconds,
+      },
+      {
+        name: "task_update_time_seconds",
+        help: "Task update duration in seconds",
+        histogram: this.canonical.taskUpdateTimeSeconds,
+      },
+      {
+        name: "http_api_client_request_seconds",
+        help: "HTTP API client request duration in seconds",
+        histogram: this.canonical.httpApiClientRequestSeconds,
+      },
+    ];
+
+    for (const def of canonicalHistogramDefs) {
+      const rendered = def.histogram.render(def.name, def.help);
+      if (rendered) lines.push(rendered);
+    }
+
+    // ── Canonical gauges ──
+    const canonicalGaugeDefs: {
+      name: string;
+      help: string;
+      gauge: GaugeMetric;
+    }[] = [
+      {
+        name: "task_result_size_bytes",
+        help: "Task result output size in bytes",
+        gauge: this.canonical.taskResultSizeBytes,
+      },
+      {
+        name: "workflow_input_size_bytes",
+        help: "Workflow input payload size in bytes",
+        gauge: this.canonical.workflowInputSizeBytes,
+      },
+      {
+        name: "active_workers",
+        help: "Number of workers actively executing tasks",
+        gauge: this.canonical.activeWorkers,
+      },
+    ];
+
+    for (const def of canonicalGaugeDefs) {
+      const rendered = def.gauge.render(def.name, def.help);
+      if (rendered) lines.push(rendered);
     }
 
     lines.push(""); // trailing newline

@@ -1,3 +1,5 @@
+import { getHttpMetricsObserver } from "../../worker/metrics/httpObserver";
+
 type Input = Parameters<typeof fetch>[0];
 type Init = Parameters<typeof fetch>[1];
 
@@ -184,11 +186,60 @@ export const retryFetch = async (
   throw lastError ?? new Error("Fetch retry exhausted");
 };
 
+/**
+ * Extract the HTTP method and URI path from a fetch request for metrics.
+ */
+function extractRequestMeta(input: Input, init?: Init): { method: string; uri: string } {
+  let method = "GET";
+  let uri = "";
+
+  if (input instanceof Request) {
+    method = input.method ?? "GET";
+    try {
+      const url = new URL(input.url);
+      uri = url.pathname;
+    } catch {
+      uri = input.url;
+    }
+  } else if (typeof input === "string") {
+    try {
+      const url = new URL(input);
+      uri = url.pathname;
+    } catch {
+      uri = input;
+    }
+  } else if (input && typeof input === "object" && "pathname" in input) {
+    uri = (input as URL).pathname ?? "";
+  }
+
+  if (init?.method) {
+    method = init.method;
+  }
+
+  return { method: method.toUpperCase(), uri };
+}
+
 export const wrapFetchWithRetry = (
   fetchFn: typeof fetch,
   options?: RetryFetchOptions
 ): typeof fetch => {
-  return (input: Input, init?: Init): Promise<Response> => {
-    return retryFetch(input, init, fetchFn, options);
+  return async (input: Input, init?: Init): Promise<Response> => {
+    const startMs = Date.now();
+    let statusStr = "0";
+    try {
+      const response = await retryFetch(input, init, fetchFn, options);
+      statusStr = String(response.status);
+      return response;
+    } catch (error) {
+      statusStr = "0";
+      throw error;
+    } finally {
+      const durationMs = Date.now() - startMs;
+      const observer = getHttpMetricsObserver();
+      if (observer) {
+        const { method, uri } = extractRequestMeta(input, init);
+        observer.recordApiRequestTime(method, uri, statusStr, durationMs);
+      }
+    }
   };
 };

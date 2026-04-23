@@ -16,6 +16,7 @@ import {
   resolveWorkerConfig,
 } from "../config/WorkerConfig";
 import { getRegisteredWorkers, type RegisteredWorker } from "../decorators/registry";
+import type { MetricsCollector } from "../metrics/MetricsCollector";
 
 /**
  * Configuration for TaskHandler.
@@ -139,6 +140,10 @@ export class TaskHandler {
   private healthCheckTimer?: ReturnType<typeof setInterval>;
   private restartAttempts = new Map<number, number>(); // runner index → attempt count
   private healthMonitorConfig: HealthMonitorConfig;
+
+  // Uncaught exception handlers (bound so we can remove them)
+  private _uncaughtHandler?: (err: Error) => void;
+  private _unhandledHandler?: (reason: unknown) => void;
 
   /**
    * Create a TaskHandler instance with async module imports.
@@ -323,6 +328,7 @@ export class TaskHandler {
 
     this.isRunning = true;
     this.startHealthMonitor();
+    this.wireUncaughtExceptionHandlers();
     this.logger.info("All workers started successfully");
   }
 
@@ -341,6 +347,7 @@ export class TaskHandler {
     }
 
     this.stopHealthMonitor();
+    this.unwireUncaughtExceptionHandlers();
     this.logger.info(`Stopping ${this.taskRunners.length} worker(s)...`);
 
     const stopPromises = this.taskRunners.map(async (runner, index) => {
@@ -525,6 +532,47 @@ export class TaskHandler {
           }
         }, backoffMs);
       }
+    }
+  }
+
+  // ── Uncaught Exception Handling ─────────────────────────────────
+
+  private findMetricsCollector(): MetricsCollector | undefined {
+    const listeners = this.config.eventListeners ?? [];
+    return listeners.find(
+      (l): l is MetricsCollector =>
+        typeof (l as MetricsCollector).recordUncaughtException === "function"
+    );
+  }
+
+  private wireUncaughtExceptionHandlers(): void {
+    const collector = this.findMetricsCollector();
+    if (!collector) return;
+
+    this._uncaughtHandler = (err: Error) => {
+      const excName = err.name || err.constructor?.name || "Error";
+      collector.recordUncaughtException(excName);
+    };
+    this._unhandledHandler = (reason: unknown) => {
+      const excName =
+        reason instanceof Error
+          ? reason.name || reason.constructor?.name || "Error"
+          : "Error";
+      collector.recordUncaughtException(excName);
+    };
+
+    process.on("uncaughtException", this._uncaughtHandler);
+    process.on("unhandledRejection", this._unhandledHandler);
+  }
+
+  private unwireUncaughtExceptionHandlers(): void {
+    if (this._uncaughtHandler) {
+      process.removeListener("uncaughtException", this._uncaughtHandler);
+      this._uncaughtHandler = undefined;
+    }
+    if (this._unhandledHandler) {
+      process.removeListener("unhandledRejection", this._unhandledHandler);
+      this._unhandledHandler = undefined;
     }
   }
 
