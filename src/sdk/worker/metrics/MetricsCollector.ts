@@ -828,6 +828,7 @@ export class MetricsCollector implements TaskRunnerEventsListener {
     this.canonical.externalPayloadUsedTotal.increment({
       entityName: entityName ?? "",
       operation: operation ?? "",
+      payloadType: payloadType,
       payload_type: payloadType,
     });
     this._promRegistry?.incrementCanonicalCounter(
@@ -835,6 +836,7 @@ export class MetricsCollector implements TaskRunnerEventsListener {
       {
         entityName: entityName ?? "",
         operation: operation ?? "",
+        payloadType: payloadType,
         payload_type: payloadType,
       }
     );

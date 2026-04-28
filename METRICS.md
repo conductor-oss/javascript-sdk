@@ -110,7 +110,7 @@ These are the harmonized metrics matching the canonical catalog. All SDKs emit t
 | `task_execution_queue_full_total` | `taskType` | Execution queue full events (surface-only; Poller back-pressures) |
 | `task_paused_total` | `taskType` | Poll cycles skipped due to pause state |
 | `thread_uncaught_exceptions_total` | `exception` | Uncaught exceptions (wired to `process.on('uncaughtException')`) |
-| `external_payload_used_total` | `entityName, operation, payload_type` | External payload storage usage (surface-only) |
+| `external_payload_used_total` | `entityName, operation, payloadType, payload_type` | External payload storage usage (surface-only). `payloadType` is canonical; `payload_type` is deprecated. |
 | `workflow_start_error_total` | `workflowType, exception` | Workflow start errors |
 
 ### Histograms (seconds)
@@ -153,7 +153,7 @@ These metrics are retained for backward compatibility. They will be marked as de
 | `{prefix}_task_execution_queue_full_total` | `taskExecutionQueueFullTotal` | Times the execution queue was full (concurrency limit reached) |
 | `{prefix}_task_paused_total` | `taskPausedTotal` | Total task paused events |
 
-#### Labeled by `payload_type`
+#### Labeled by `payload_type` (legacy)
 
 | Prometheus Name | Internal Key | Description |
 |----------------|-------------|-------------|

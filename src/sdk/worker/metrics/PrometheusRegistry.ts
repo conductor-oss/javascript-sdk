@@ -155,7 +155,7 @@ export class PrometheusRegistry {
       { key: "c_task_execution_queue_full_total", name: "task_execution_queue_full_total", help: "Task execution queue full", labels: ["taskType"] },
       { key: "c_task_paused_total", name: "task_paused_total", help: "Task paused events", labels: ["taskType"] },
       { key: "c_thread_uncaught_exceptions_total", name: "thread_uncaught_exceptions_total", help: "Uncaught exceptions", labels: ["exception"] },
-      { key: "c_external_payload_used_total", name: "external_payload_used_total", help: "External payload used", labels: ["entityName", "operation", "payload_type"] },
+      { key: "c_external_payload_used_total", name: "external_payload_used_total", help: "External payload used", labels: ["entityName", "operation", "payloadType", "payload_type"] },
       { key: "c_workflow_start_error_total", name: "workflow_start_error_total", help: "Workflow start errors", labels: ["workflowType", "exception"] },
     ];
 
