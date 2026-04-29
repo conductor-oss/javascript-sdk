@@ -15,8 +15,9 @@ import { CanonicalMetricsCollector } from "./CanonicalMetricsCollector";
 export function createMetricsCollector(
   config?: MetricsCollectorConfig,
 ): MetricsCollectorInterface {
-  const useCanonical =
-    process.env.WORKER_CANONICAL_METRICS?.toLowerCase() === "true";
+  const useCanonical = ["true", "1", "yes"].includes(
+    (process.env.WORKER_CANONICAL_METRICS ?? "").toLowerCase(),
+  );
 
   if (useCanonical) {
     return new CanonicalMetricsCollector(config);

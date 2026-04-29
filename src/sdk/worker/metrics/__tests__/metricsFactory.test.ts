@@ -55,6 +55,20 @@ describe("createMetricsCollector", () => {
     expect(collector).toBeInstanceOf(CanonicalMetricsCollector);
   });
 
+  it('should return CanonicalMetricsCollector when WORKER_CANONICAL_METRICS="1"', () => {
+    process.env.WORKER_CANONICAL_METRICS = "1";
+
+    const collector = createMetricsCollector();
+    expect(collector).toBeInstanceOf(CanonicalMetricsCollector);
+  });
+
+  it('should return CanonicalMetricsCollector when WORKER_CANONICAL_METRICS="yes"', () => {
+    process.env.WORKER_CANONICAL_METRICS = "yes";
+
+    const collector = createMetricsCollector();
+    expect(collector).toBeInstanceOf(CanonicalMetricsCollector);
+  });
+
   it("should pass config through to the collector", () => {
     delete process.env.WORKER_CANONICAL_METRICS;
 
