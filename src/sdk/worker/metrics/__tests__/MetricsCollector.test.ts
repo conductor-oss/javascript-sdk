@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeEach } from "@jest/globals";
-import { MetricsCollector } from "../MetricsCollector";
+import { LegacyMetricsCollector } from "../LegacyMetricsCollector";
 
-describe("MetricsCollector", () => {
-  let collector: MetricsCollector;
+describe("LegacyMetricsCollector", () => {
+  let collector: LegacyMetricsCollector;
 
   beforeEach(() => {
-    collector = new MetricsCollector();
+    collector = new LegacyMetricsCollector();
   });
 
   describe("poll metrics", () => {

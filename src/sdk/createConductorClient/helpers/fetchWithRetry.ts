@@ -186,9 +186,61 @@ export const retryFetch = async (
 
 export const wrapFetchWithRetry = (
   fetchFn: typeof fetch,
-  options?: RetryFetchOptions
+  options?: RetryFetchOptions,
 ): typeof fetch => {
-  return (input: Input, init?: Init): Promise<Response> => {
-    return retryFetch(input, init, fetchFn, options);
+  return async (input: Input, init?: Init): Promise<Response> => {
+    const start = performance.now();
+    let method = "GET";
+    let uri = "";
+
+    try {
+      if (input instanceof Request) {
+        method = input.method;
+        uri = new URL(input.url).pathname;
+      } else if (typeof input === "string") {
+        method = init?.method ?? "GET";
+        try { uri = new URL(input).pathname; } catch { uri = input; }
+      } else {
+        method = init?.method ?? "GET";
+        try { uri = input.pathname; } catch { uri = String(input); }
+      }
+    } catch {
+      // Best-effort URI extraction
+    }
+
+    try {
+      const response = await retryFetch(input, init, fetchFn, options);
+      const durationMs = performance.now() - start;
+      try {
+        const { getHttpMetricsObserver } = await import(
+          "../../worker/metrics/httpObserver.js"
+        );
+        getHttpMetricsObserver()?.recordApiRequestTime(
+          method,
+          uri,
+          String(response.status),
+          durationMs,
+        );
+      } catch {
+        // Metrics recording is best-effort
+      }
+      return response;
+    } catch (error) {
+      const durationMs = performance.now() - start;
+      try {
+        const { getHttpMetricsObserver } = await import(
+          "../../worker/metrics/httpObserver.js"
+        );
+        getHttpMetricsObserver()?.recordApiRequestTime(
+          method,
+          uri,
+          "0",
+          durationMs,
+        );
+      } catch {
+        // Metrics recording is best-effort
+      }
+      throw error;
+    }
   };
 };

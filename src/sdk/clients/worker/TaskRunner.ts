@@ -96,6 +96,12 @@ export class TaskRunner {
       {
         concurrency: worker.concurrency ?? this.options.concurrency,
         pollInterval: worker.pollInterval ?? this.options.pollInterval,
+        onPaused: () => {
+          void this.eventDispatcher.publishTaskPaused({
+            taskType: this.worker.taskDefName,
+            timestamp: new Date(),
+          });
+        },
       },
       this.logger
     );

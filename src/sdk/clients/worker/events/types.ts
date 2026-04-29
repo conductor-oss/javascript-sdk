@@ -135,6 +135,13 @@ export interface TaskUpdateCompleted extends TaskRunnerEvent {
 }
 
 /**
+ * Event published when a poll cycle is skipped because the worker is paused.
+ */
+export interface TaskPaused extends TaskRunnerEvent {
+  // No additional fields — taskType is inherited from TaskRunnerEvent.
+}
+
+/**
  * Union type of all task runner events.
  */
 export type TaskRunnerEventType =
@@ -145,4 +152,5 @@ export type TaskRunnerEventType =
   | TaskExecutionCompleted
   | TaskExecutionFailure
   | TaskUpdateCompleted
-  | TaskUpdateFailure;
+  | TaskUpdateFailure
+  | TaskPaused;

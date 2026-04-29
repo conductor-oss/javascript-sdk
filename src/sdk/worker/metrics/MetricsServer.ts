@@ -1,5 +1,5 @@
 import { createServer, type Server, type IncomingMessage, type ServerResponse } from "node:http";
-import type { MetricsCollector } from "./MetricsCollector";
+import type { MetricsCollectorInterface } from "./MetricsCollectorInterface";
 
 /**
  * Lightweight HTTP server exposing Prometheus metrics and a health check endpoint.
@@ -21,11 +21,11 @@ import type { MetricsCollector } from "./MetricsCollector";
  * ```
  */
 export class MetricsServer {
-  private readonly _collector: MetricsCollector;
+  private readonly _collector: MetricsCollectorInterface;
   private readonly _port: number;
   private _server?: Server;
 
-  constructor(collector: MetricsCollector, port: number) {
+  constructor(collector: MetricsCollectorInterface, port: number) {
     this._collector = collector;
     this._port = port;
   }

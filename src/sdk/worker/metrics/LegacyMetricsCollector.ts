@@ -1,5 +1,4 @@
 import type {
-  TaskRunnerEventsListener,
   PollStarted,
   PollCompleted,
   PollFailure,
@@ -9,6 +8,8 @@ import type {
   TaskUpdateCompleted,
   TaskUpdateFailure,
 } from "../../clients/worker/events";
+import type { MetricsCollectorInterface } from "./MetricsCollectorInterface";
+import { setHttpMetricsObserver } from "./httpObserver";
 
 /**
  * Configuration for MetricsCollector.
@@ -35,7 +36,7 @@ export interface MetricsCollectorConfig {
 }
 
 /**
- * Collected worker metrics.
+ * Collected worker metrics (legacy shape).
  */
 export interface WorkerMetrics {
   /** Total polls by taskType */
@@ -78,9 +79,6 @@ export interface WorkerMetrics {
 
 const QUANTILES = [0.5, 0.75, 0.9, 0.95, 0.99] as const;
 
-/**
- * Calculate quantiles from sorted array using linear interpolation.
- */
 function computeQuantile(sorted: number[], q: number): number {
   if (sorted.length === 0) return 0;
   if (sorted.length === 1) return sorted[0];
@@ -92,26 +90,13 @@ function computeQuantile(sorted: number[], q: number): number {
 }
 
 /**
- * Built-in metrics collector implementing TaskRunnerEventsListener.
+ * Legacy metrics collector.
  *
- * Collects 19 metric types matching the Python SDK's MetricsCollector,
- * with sliding-window quantile support (p50, p75, p90, p95, p99).
- *
- * @example
- * ```typescript
- * const metrics = new MetricsCollector({ httpPort: 9090 });
- *
- * const handler = new TaskHandler({
- *   client,
- *   eventListeners: [metrics],
- * });
- *
- * await handler.startWorkers();
- * // GET http://localhost:9090/metrics  — Prometheus format
- * // GET http://localhost:9090/health   — {"status":"UP"}
- * ```
+ * Emits prefixed Prometheus metrics with `task_type` labels, millisecond
+ * time units, and Summary type for distributions. This is the default
+ * implementation during the deprecation transition period.
  */
-export class MetricsCollector implements TaskRunnerEventsListener {
+export class LegacyMetricsCollector implements MetricsCollectorInterface {
   private metrics: WorkerMetrics;
   private readonly _prefix: string;
   private readonly _slidingWindowSize: number;
@@ -132,9 +117,10 @@ export class MetricsCollector implements TaskRunnerEventsListener {
     if (config?.filePath) {
       this.startFileWriter(
         config.filePath,
-        config.fileWriteIntervalMs ?? 5000
+        config.fileWriteIntervalMs ?? 5000,
       );
     }
+    setHttpMetricsObserver(this);
   }
 
   private async initPromClient(): Promise<void> {
@@ -158,10 +144,8 @@ export class MetricsCollector implements TaskRunnerEventsListener {
         // Silently ignore file write errors
       }
     };
-    // Immediate first write, then periodic
     void doWrite();
     this._fileTimer = setInterval(doWrite, intervalMs);
-    // Unref so the timer doesn't prevent process exit
     if (typeof this._fileTimer === "object" && "unref" in this._fileTimer) {
       this._fileTimer.unref();
     }
@@ -197,7 +181,7 @@ export class MetricsCollector implements TaskRunnerEventsListener {
   private observe(
     map: Map<string, number[]>,
     key: string,
-    value: number
+    value: number,
   ): void {
     let arr = map.get(key);
     if (!arr) {
@@ -205,7 +189,6 @@ export class MetricsCollector implements TaskRunnerEventsListener {
       map.set(key, arr);
     }
     arr.push(value);
-    // Sliding window: keep only the last N observations
     if (arr.length > this._slidingWindowSize) {
       arr.splice(0, arr.length - this._slidingWindowSize);
     }
@@ -215,7 +198,7 @@ export class MetricsCollector implements TaskRunnerEventsListener {
     map: Map<string, number>,
     key: string,
     promKey: string,
-    labelName: string
+    labelName: string,
   ): void {
     this.increment(map, key);
     this._promRegistry?.incrementCounter(promKey, { [labelName]: key });
@@ -226,7 +209,7 @@ export class MetricsCollector implements TaskRunnerEventsListener {
     key: string,
     value: number,
     promKey: string,
-    labelName: string
+    labelName: string,
   ): void {
     this.observe(map, key, value);
     this._promRegistry?.observeSummary(promKey, { [labelName]: key }, value);
@@ -248,7 +231,7 @@ export class MetricsCollector implements TaskRunnerEventsListener {
   }
 
   onTaskExecutionStarted(_event: TaskExecutionStarted): void {
-    // Counted on completion
+    // Legacy counts on completion, not start
   }
 
   onTaskExecutionCompleted(event: TaskExecutionCompleted): void {
@@ -273,57 +256,65 @@ export class MetricsCollector implements TaskRunnerEventsListener {
     this.incrementCounter(this.metrics.taskUpdateFailureTotal, event.taskType, "update_error_total", "task_type");
   }
 
-  // ── Direct Recording Methods (for code outside event system) ───
+  // Canonical-only event — noop in legacy
+  onTaskPaused(): void {
+    // Noop: TaskPaused events are handled via recordTaskPaused()
+  }
 
-  /** Record a task execution queue full event */
+  // ── Direct Recording Methods ───────────────────────────────────
+
   recordTaskExecutionQueueFull(taskType: string): void {
     this.incrementCounter(this.metrics.taskExecutionQueueFullTotal, taskType, "queue_full_total", "task_type");
   }
 
-  /** Record an uncaught exception */
-  recordUncaughtException(): void {
+  recordUncaughtException(_exception?: string): void {
     this.metrics.uncaughtExceptionTotal++;
     this._promRegistry?.incrementCounter("uncaught_total", {});
   }
 
-  /** Record a worker restart */
   recordWorkerRestart(): void {
     this.metrics.workerRestartTotal++;
     this._promRegistry?.incrementCounter("restart_total", {});
   }
 
-  /** Record a task paused event */
   recordTaskPaused(taskType: string): void {
     this.incrementCounter(this.metrics.taskPausedTotal, taskType, "paused_total", "task_type");
   }
 
-  /** Record a task ack error */
-  recordTaskAckError(taskType: string): void {
+  recordTaskAckError(taskType: string, _exception?: string): void {
     this.incrementCounter(this.metrics.taskAckErrorTotal, taskType, "ack_error_total", "task_type");
   }
 
-  /** Record a workflow start error */
-  recordWorkflowStartError(): void {
+  recordTaskAckFailed(_taskType: string): void {
+    // Noop: canonical-only metric (server declined ack)
+  }
+
+  recordWorkflowStartError(_workflowType?: string, _exception?: string): void {
     this.metrics.workflowStartErrorTotal++;
     this._promRegistry?.incrementCounter("wf_start_error_total", {});
   }
 
-  /** Record external payload usage */
-  recordExternalPayloadUsed(payloadType: string): void {
+  recordExternalPayloadUsed(
+    payloadType: string,
+    _entityName?: string,
+    _operation?: string,
+  ): void {
     this.incrementCounter(this.metrics.externalPayloadUsedTotal, payloadType, "external_payload_total", "payload_type");
   }
 
-  /** Record workflow input size */
-  recordWorkflowInputSize(workflowType: string, sizeBytes: number): void {
+  recordWorkflowInputSize(
+    workflowType: string,
+    sizeBytes: number,
+    _version?: string,
+  ): void {
     this.observeSummary(this.metrics.workflowInputSizeBytes, workflowType, sizeBytes, "wf_input_size", "workflow_type");
   }
 
-  /** Record API request duration */
   recordApiRequestTime(
     method: string,
     uri: string,
-    status: number,
-    durationMs: number
+    status: number | string,
+    durationMs: number,
   ): void {
     const key = `${method}:${uri}:${status}`;
     this.observeSummary(this.metrics.apiRequestDurationMs, key, durationMs, "api_request", "endpoint");
@@ -331,18 +322,16 @@ export class MetricsCollector implements TaskRunnerEventsListener {
 
   // ── Public API ──────────────────────────────────────────────────
 
-  /** Get a snapshot of all collected metrics */
   getMetrics(): Readonly<WorkerMetrics> {
     return this.metrics;
   }
 
-  /** Reset all collected metrics */
   reset(): void {
     this.metrics = this.createEmptyMetrics();
   }
 
-  /** Stop the auto-started metrics HTTP server and file writer (if any) */
   async stop(): Promise<void> {
+    setHttpMetricsObserver(undefined);
     if (this._fileTimer) {
       clearInterval(this._fileTimer);
       this._fileTimer = undefined;
@@ -353,27 +342,13 @@ export class MetricsCollector implements TaskRunnerEventsListener {
     }
   }
 
-  /**
-   * Get the content type for the Prometheus metrics endpoint.
-   * Returns prom-client's content type when available, otherwise standard Prometheus text format.
-   */
   getContentType(): string {
-    return this._promRegistry?.contentType ?? "text/plain; version=0.0.4; charset=utf-8";
+    return (
+      this._promRegistry?.contentType ??
+      "text/plain; version=0.0.4; charset=utf-8"
+    );
   }
 
-  /**
-   * Render all collected metrics in Prometheus exposition format.
-   * If prom-client is available and `usePromClient: true`, delegates to prom-client's registry.
-   * Otherwise uses built-in rendering with p50/p75/p90/p95/p99 quantiles.
-   *
-   * @param prefix - Metric name prefix (defaults to constructor config or "conductor_worker")
-   * @returns Prometheus text format string
-   */
-  /**
-   * Async version of toPrometheusText.
-   * When prom-client is available, returns its native registry output.
-   * Otherwise falls back to the built-in text format.
-   */
   async toPrometheusTextAsync(): Promise<string> {
     if (this._promRegistry?.available) {
       return this._promRegistry.metrics();
@@ -454,7 +429,7 @@ export class MetricsCollector implements TaskRunnerEventsListener {
       lines.push(`# TYPE ${counter.name} counter`);
       for (const [label, value] of counter.data) {
         lines.push(
-          `${counter.name}{${counter.labelName}="${label}"} ${value}`
+          `${counter.name}{${counter.labelName}="${label}"} ${value}`,
         );
       }
     }
@@ -545,14 +520,14 @@ export class MetricsCollector implements TaskRunnerEventsListener {
         for (const q of QUANTILES) {
           const val = computeQuantile(sorted, q);
           lines.push(
-            `${summary.name}{${summary.labelName}="${label}",quantile="${q}"} ${val}`
+            `${summary.name}{${summary.labelName}="${label}",quantile="${q}"} ${val}`,
           );
         }
         lines.push(
-          `${summary.name}_count{${summary.labelName}="${label}"} ${count}`
+          `${summary.name}_count{${summary.labelName}="${label}"} ${count}`,
         );
         lines.push(
-          `${summary.name}_sum{${summary.labelName}="${label}"} ${sum}`
+          `${summary.name}_sum{${summary.labelName}="${label}"} ${sum}`,
         );
       }
     }

@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach } from "@jest/globals";
 import { get as httpGet } from "node:http";
-import { MetricsCollector } from "../MetricsCollector";
+import { LegacyMetricsCollector } from "../LegacyMetricsCollector";
 import { MetricsServer } from "../MetricsServer";
 
 function fetchHttp(url: string): Promise<{ status: number; body: string; headers: Record<string, string | string[] | undefined> }> {
@@ -38,7 +38,7 @@ describe("MetricsServer", () => {
 
   it("should serve /metrics with Prometheus text format", async () => {
     const port = nextPort();
-    const collector = new MetricsCollector();
+    const collector = new LegacyMetricsCollector();
     collector.onPollStarted({ taskType: "test_task", workerId: "w", pollCount: 1, timestamp: new Date() });
 
     server = new MetricsServer(collector, port);
@@ -51,7 +51,7 @@ describe("MetricsServer", () => {
 
   it("should serve /health with JSON status", async () => {
     const port = nextPort();
-    const collector = new MetricsCollector();
+    const collector = new LegacyMetricsCollector();
     server = new MetricsServer(collector, port);
     await server.start();
 
@@ -62,7 +62,7 @@ describe("MetricsServer", () => {
 
   it("should return 404 for unknown paths", async () => {
     const port = nextPort();
-    const collector = new MetricsCollector();
+    const collector = new LegacyMetricsCollector();
     server = new MetricsServer(collector, port);
     await server.start();
 
@@ -72,7 +72,7 @@ describe("MetricsServer", () => {
 
   it("should stop cleanly after start", async () => {
     const port = nextPort();
-    const collector = new MetricsCollector();
+    const collector = new LegacyMetricsCollector();
     server = new MetricsServer(collector, port);
     await server.start();
     await server.stop();
@@ -80,7 +80,7 @@ describe("MetricsServer", () => {
   });
 
   it("should not throw when stop() called without start()", async () => {
-    const collector = new MetricsCollector();
+    const collector = new LegacyMetricsCollector();
     server = new MetricsServer(collector, nextPort());
     await server.stop();
     server = undefined;
@@ -88,7 +88,7 @@ describe("MetricsServer", () => {
 
   it("should not throw when start() called twice", async () => {
     const port = nextPort();
-    const collector = new MetricsCollector();
+    const collector = new LegacyMetricsCollector();
     server = new MetricsServer(collector, port);
     await server.start();
     await server.start(); // second call should be a no-op

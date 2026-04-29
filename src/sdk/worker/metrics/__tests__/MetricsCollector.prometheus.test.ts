@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeEach } from "@jest/globals";
-import { MetricsCollector } from "../MetricsCollector";
+import { LegacyMetricsCollector } from "../LegacyMetricsCollector";
 
-describe("MetricsCollector - Prometheus features", () => {
-  let collector: MetricsCollector;
+describe("LegacyMetricsCollector - Prometheus features", () => {
+  let collector: LegacyMetricsCollector;
 
   beforeEach(() => {
-    collector = new MetricsCollector({ slidingWindowSize: 1000 });
+    collector = new LegacyMetricsCollector({ slidingWindowSize: 1000 });
   });
 
   // ── toPrometheusText() ──────────────────────────────────────────
@@ -36,7 +36,7 @@ describe("MetricsCollector - Prometheus features", () => {
     });
 
     it("should use custom prefix", () => {
-      const c = new MetricsCollector({ prefix: "myapp" });
+      const c = new LegacyMetricsCollector({ prefix: "myapp" });
       c.onPollStarted({ taskType: "t", workerId: "w", pollCount: 1, timestamp: new Date() });
       const text = c.toPrometheusText();
       expect(text).toContain("myapp_task_poll_total");
@@ -167,7 +167,7 @@ describe("MetricsCollector - Prometheus features", () => {
 
   describe("sliding window", () => {
     it("should trim observations beyond window size", () => {
-      const small = new MetricsCollector({ slidingWindowSize: 5 });
+      const small = new LegacyMetricsCollector({ slidingWindowSize: 5 });
       for (let i = 0; i < 10; i++) {
         small.onPollCompleted({ taskType: "t", workerId: "w", durationMs: i, pollCount: i, taskCount: 1, timestamp: new Date() });
       }
