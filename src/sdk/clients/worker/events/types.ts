@@ -137,6 +137,7 @@ export interface TaskUpdateCompleted extends TaskRunnerEvent {
 /**
  * Event published when a poll cycle is skipped because the worker is paused.
  */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface TaskPaused extends TaskRunnerEvent {
   // No additional fields — taskType is inherited from TaskRunnerEvent.
 }

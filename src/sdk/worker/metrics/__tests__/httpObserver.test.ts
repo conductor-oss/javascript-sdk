@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "@jest/globals";
+import { describe, it, expect, beforeEach, jest } from "@jest/globals";
 import {
   getHttpMetricsObserver,
   setHttpMetricsObserver,
@@ -16,9 +16,9 @@ describe("httpObserver", () => {
 
   it("should return the observer after setting one", () => {
     const observer: HttpMetricsObserver = {
-      recordApiRequestTime: () => {},
-      recordWorkflowInputSize: () => {},
-      recordWorkflowStartError: () => {},
+      recordApiRequestTime: jest.fn(),
+      recordWorkflowInputSize: jest.fn(),
+      recordWorkflowStartError: jest.fn(),
     };
     setHttpMetricsObserver(observer);
     expect(getHttpMetricsObserver()).toBe(observer);
@@ -26,9 +26,9 @@ describe("httpObserver", () => {
 
   it("should clear the observer when set to undefined", () => {
     const observer: HttpMetricsObserver = {
-      recordApiRequestTime: () => {},
-      recordWorkflowInputSize: () => {},
-      recordWorkflowStartError: () => {},
+      recordApiRequestTime: jest.fn(),
+      recordWorkflowInputSize: jest.fn(),
+      recordWorkflowStartError: jest.fn(),
     };
     setHttpMetricsObserver(observer);
     expect(getHttpMetricsObserver()).toBe(observer);
@@ -39,14 +39,14 @@ describe("httpObserver", () => {
 
   it("should replace the observer on subsequent set calls", () => {
     const observer1: HttpMetricsObserver = {
-      recordApiRequestTime: () => {},
-      recordWorkflowInputSize: () => {},
-      recordWorkflowStartError: () => {},
+      recordApiRequestTime: jest.fn(),
+      recordWorkflowInputSize: jest.fn(),
+      recordWorkflowStartError: jest.fn(),
     };
     const observer2: HttpMetricsObserver = {
-      recordApiRequestTime: () => {},
-      recordWorkflowInputSize: () => {},
-      recordWorkflowStartError: () => {},
+      recordApiRequestTime: jest.fn(),
+      recordWorkflowInputSize: jest.fn(),
+      recordWorkflowStartError: jest.fn(),
     };
 
     setHttpMetricsObserver(observer1);

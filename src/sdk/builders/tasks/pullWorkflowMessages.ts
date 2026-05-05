@@ -16,7 +16,7 @@ import { TaskType, PullWorkflowMessagesTaskDef } from "../../../open-api";
  */
 export const pullWorkflowMessages = (
   taskReferenceName: string,
-  batchSize: number = 1,
+  batchSize = 1,
   optional?: boolean
 ): PullWorkflowMessagesTaskDef => ({
   name: taskReferenceName,
