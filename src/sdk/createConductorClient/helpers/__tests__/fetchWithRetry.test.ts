@@ -181,6 +181,80 @@ describe("fetchWithRetry", () => {
     });
   });
 
+  // ─── Server error (502/503/504) retry ───────────────────────────────
+
+  describe("server error (502/503/504) retry", () => {
+    it("should retry 502 and succeed on next attempt", async () => {
+      mockFetch
+        .mockResolvedValueOnce(createMockResponse(502, "Bad Gateway"))
+        .mockResolvedValueOnce(createMockResponse(200, "ok"));
+
+      const result = await retryFetch("http://test.com", {}, mockFetch, {
+        maxTransportRetries: 3,
+        initialRetryDelay: 1,
+      });
+
+      expect(result.status).toBe(200);
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+    });
+
+    it("should retry 503 and succeed on next attempt", async () => {
+      mockFetch
+        .mockResolvedValueOnce(createMockResponse(503, "Service Unavailable"))
+        .mockResolvedValueOnce(createMockResponse(200, "ok"));
+
+      const result = await retryFetch("http://test.com", {}, mockFetch, {
+        maxTransportRetries: 3,
+        initialRetryDelay: 1,
+      });
+
+      expect(result.status).toBe(200);
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+    });
+
+    it("should retry 504 and succeed on next attempt", async () => {
+      mockFetch
+        .mockResolvedValueOnce(createMockResponse(504, "Gateway Timeout"))
+        .mockResolvedValueOnce(createMockResponse(200, "ok"));
+
+      const result = await retryFetch("http://test.com", {}, mockFetch, {
+        maxTransportRetries: 3,
+        initialRetryDelay: 1,
+      });
+
+      expect(result.status).toBe(200);
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+    });
+
+    it("should exhaust retries and return last 5xx response", async () => {
+      mockFetch.mockResolvedValue(createMockResponse(502, "Bad Gateway"));
+
+      const result = await retryFetch("http://test.com", {}, mockFetch, {
+        maxTransportRetries: 2,
+        initialRetryDelay: 1,
+      });
+
+      expect(result.status).toBe(502);
+      // 1 initial + 2 retries = 3
+      expect(mockFetch).toHaveBeenCalledTimes(3);
+    });
+
+    it("should handle transport error then 502 then success", async () => {
+      mockFetch
+        .mockRejectedValueOnce(new Error("ECONNRESET"))
+        .mockResolvedValueOnce(createMockResponse(502, "Bad Gateway"))
+        .mockResolvedValueOnce(createMockResponse(200, "ok"));
+
+      const result = await retryFetch("http://test.com", {}, mockFetch, {
+        maxTransportRetries: 3,
+        initialRetryDelay: 1,
+      });
+
+      expect(result.status).toBe(200);
+      expect(mockFetch).toHaveBeenCalledTimes(3);
+    });
+  });
+
   // ─── Auth failure (401/403) retry ──────────────────────────────────
 
   describe("auth failure (401/403) retry", () => {

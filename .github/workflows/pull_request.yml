@@ -79,14 +79,14 @@ jobs:
           name: codecov-unit-node-${{ matrix.node-version }}
           fail_ci_if_error: false
 
-  # Integration tests (v5): one job at a time (max-parallel: 1) to avoid 502/503 on shared Conductor.
+  # Integration tests (v5): one shard at a time (max-parallel: 1) to avoid 502/503 on shared Conductor.
   # Sharding (--shard i/N) splits the suite so each job runs ~1/N of tests — keeps per-job under timeout.
   integration-tests:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     strategy:
       fail-fast: false
-      max-parallel: 2
+      max-parallel: 1
       matrix:
         node-version: [20, 22, 24]
         shard: [1, 2, 3]

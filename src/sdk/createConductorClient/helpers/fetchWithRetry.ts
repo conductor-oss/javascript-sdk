@@ -157,6 +157,18 @@ export const retryFetch = async (
       return rateLimitResponse;
     }
 
+    // Gateway error retry (502, 503, 504) -- transient proxy/server errors
+    if (response.status >= 502 && response.status <= 504) {
+      lastError = new Error(`Server error: HTTP ${response.status}`);
+      if (transportAttempt < maxTransportRetries) {
+        await new Promise((resolve) =>
+          setTimeout(resolve, withJitter(initialRetryDelay * (transportAttempt + 1)))
+        );
+        continue;
+      }
+      return response;
+    }
+
     // Auth failure retry (401/403) - only refresh+retry when the error is a token
     // problem (EXPIRED_TOKEN or INVALID_TOKEN). Permission errors should propagate
     // immediately without wasting a token refresh + retry round-trip.
