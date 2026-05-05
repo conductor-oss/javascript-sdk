@@ -79,14 +79,16 @@ jobs:
           name: codecov-unit-node-${{ matrix.node-version }}
           fail_ci_if_error: false
 
-  # Integration tests (v5): one shard at a time (max-parallel: 1) to avoid 502/503 on shared Conductor.
-  # Sharding (--shard i/N) splits the suite so each job runs ~1/N of tests — keeps per-job under timeout.
+  # Integration tests (v5): lower max-parallel reduces 502/503 from the shared Conductor server
+  # but makes CI slower without eliminating flakes entirely — feel free to experiment - this test
+  # setup is insane. Sharding (--shard i/N) splits the suite so each job runs ~1/N of tests.
+  # fetchWithRetry now retries 502/503/504, so higher parallelism is more viable than before.
   integration-tests:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     strategy:
       fail-fast: false
-      max-parallel: 1
+      max-parallel: 3
       matrix:
         node-version: [20, 22, 24]
         shard: [1, 2, 3]
