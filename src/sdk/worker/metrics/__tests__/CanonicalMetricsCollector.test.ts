@@ -318,4 +318,116 @@ describe("CanonicalMetricsCollector", () => {
       await expect(collector.stop()).resolves.toBeUndefined();
     });
   });
+
+  describe("default argument handling", () => {
+    it("recordUncaughtException with no arg should default to 'Error'", () => {
+      collector.recordUncaughtException();
+      const text = collector.toPrometheusText();
+      expect(text).toContain('thread_uncaught_exceptions_total{exception="Error"} 1');
+    });
+
+    it("recordWorkflowStartError with no args should default both labels", () => {
+      collector.recordWorkflowStartError();
+      const text = collector.toPrometheusText();
+      expect(text).toContain('workflow_start_error_total{workflowType="",exception="Error"} 1');
+    });
+
+    it("recordWorkflowStartError with only workflowType should default exception", () => {
+      collector.recordWorkflowStartError("my_wf");
+      const text = collector.toPrometheusText();
+      expect(text).toContain('workflow_start_error_total{workflowType="my_wf",exception="Error"} 1');
+    });
+
+    it("recordExternalPayloadUsed with missing optional args should default to empty strings", () => {
+      collector.recordExternalPayloadUsed("TASK_OUTPUT");
+      const text = collector.toPrometheusText();
+      expect(text).toContain('external_payload_used_total{entityName="",operation="",payloadType="TASK_OUTPUT"} 1');
+    });
+
+    it("recordTaskAckError with no exception arg should default to 'Error'", () => {
+      collector.recordTaskAckError("task_a");
+      const text = collector.toPrometheusText();
+      expect(text).toContain('task_ack_error_total{taskType="task_a",exception="Error"} 1');
+    });
+
+    it("recordWorkflowInputSize with no version should default to empty string", () => {
+      collector.recordWorkflowInputSize("my_wf", 1000);
+      const text = collector.toPrometheusText();
+      expect(text).toContain('workflow_input_size_bytes_sum{workflowType="my_wf",version=""} 1000');
+    });
+  });
+
+  describe("execution completion without outputSizeBytes", () => {
+    it("should not emit task_result_size_bytes when outputSizeBytes is undefined", () => {
+      collector.onTaskExecutionCompleted({
+        taskType: "task_a",
+        taskId: "t1",
+        workerId: "w1",
+        durationMs: 200,
+        timestamp: new Date(),
+      });
+
+      const text = collector.toPrometheusText();
+      expect(text).toContain("task_execute_time_seconds");
+      expect(text).not.toContain("task_result_size_bytes");
+    });
+  });
+
+  describe("output helpers without prom-client", () => {
+    it("getContentType should return plain text fallback", () => {
+      expect(collector.getContentType()).toBe(
+        "text/plain; version=0.0.4; charset=utf-8"
+      );
+    });
+
+    it("toPrometheusTextAsync should fall back to sync text", async () => {
+      collector.onPollStarted({
+        taskType: "t",
+        workerId: "w",
+        pollCount: 1,
+        timestamp: new Date(),
+      });
+      const asyncText = await collector.toPrometheusTextAsync();
+      const syncText = collector.toPrometheusText();
+      expect(asyncText).toBe(syncText);
+    });
+
+    it("toPrometheusText should ignore _prefix argument", () => {
+      collector.onPollStarted({
+        taskType: "t",
+        workerId: "w",
+        pollCount: 1,
+        timestamp: new Date(),
+      });
+      const text = collector.toPrometheusText("some_prefix");
+      expect(text).not.toContain("some_prefix");
+      expect(text).toContain("task_poll_total{");
+    });
+  });
+
+  describe("active_workers gauge on failure", () => {
+    it("should decrement active_workers on task execution failure", () => {
+      collector.onTaskExecutionStarted({
+        taskType: "task_a",
+        taskId: "t1",
+        workerId: "w1",
+        timestamp: new Date(),
+      });
+
+      let text = collector.toPrometheusText();
+      expect(text).toContain('active_workers{taskType="task_a"} 1');
+
+      collector.onTaskExecutionFailure({
+        taskType: "task_a",
+        taskId: "t1",
+        workerId: "w1",
+        cause: new Error("fail"),
+        durationMs: 100,
+        timestamp: new Date(),
+      });
+
+      text = collector.toPrometheusText();
+      expect(text).toContain('active_workers{taskType="task_a"} 0');
+    });
+  });
 });

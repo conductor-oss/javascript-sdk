@@ -1,5 +1,6 @@
-import { jest, expect, describe, it, beforeEach } from "@jest/globals";
+import { jest, expect, describe, it, beforeEach, afterEach } from "@jest/globals";
 import { retryFetch, wrapFetchWithRetry, applyTimeout } from "../fetchWithRetry";
+import * as httpObserver from "@/sdk/worker/metrics/httpObserver";
 
 const createMockResponse = (status: number, body = ""): Response =>
   new Response(body, { status, statusText: `Status ${status}` });
@@ -523,6 +524,109 @@ describe("fetchWithRetry", () => {
       const result = await wrappedFetch("http://test.com", { method: "POST" });
 
       expect(result.status).toBe(200);
+    });
+  });
+
+  // ─── wrapFetchWithRetry metrics recording ───────────────────────────
+
+  describe("wrapFetchWithRetry metrics", () => {
+    const mockRecordApiRequestTime = jest.fn<
+      (m: string, u: string, s: string, d: number) => void
+    >();
+
+    beforeEach(() => {
+      mockRecordApiRequestTime.mockClear();
+      httpObserver.setHttpMetricsObserver({
+        recordApiRequestTime: mockRecordApiRequestTime,
+        recordWorkflowInputSize: jest.fn(),
+        recordWorkflowStartError: jest.fn(),
+      });
+    });
+
+    afterEach(() => {
+      httpObserver.setHttpMetricsObserver(undefined);
+    });
+
+    it("should record API request time on successful response", async () => {
+      mockFetch.mockResolvedValue(createMockResponse(200));
+
+      const wrappedFetch = wrapFetchWithRetry(mockFetch);
+      await wrappedFetch("http://test.com/api/tasks", { method: "POST" });
+
+      expect(mockRecordApiRequestTime).toHaveBeenCalledTimes(1);
+      const [method, uri, status, duration] =
+        mockRecordApiRequestTime.mock.calls[0];
+      expect(method).toBe("POST");
+      expect(uri).toBe("/api/tasks");
+      expect(status).toBe("200");
+      expect(duration).toBeGreaterThanOrEqual(0);
+    });
+
+    it("should record status '0' on network failure", async () => {
+      mockFetch.mockRejectedValue(new Error("ECONNRESET"));
+
+      const wrappedFetch = wrapFetchWithRetry(mockFetch, {
+        maxTransportRetries: 0,
+      });
+
+      await expect(
+        wrappedFetch("http://test.com/api/workflow")
+      ).rejects.toThrow("ECONNRESET");
+
+      expect(mockRecordApiRequestTime).toHaveBeenCalledTimes(1);
+      const [method, uri, status] =
+        mockRecordApiRequestTime.mock.calls[0];
+      expect(method).toBe("GET");
+      expect(uri).toBe("/api/workflow");
+      expect(status).toBe("0");
+    });
+
+    it("should extract method and URI from string URL", async () => {
+      mockFetch.mockResolvedValue(createMockResponse(201));
+
+      const wrappedFetch = wrapFetchWithRetry(mockFetch);
+      await wrappedFetch("http://example.com/tasks/123", { method: "PUT" });
+
+      expect(mockRecordApiRequestTime).toHaveBeenCalledTimes(1);
+      const [method, uri] = mockRecordApiRequestTime.mock.calls[0];
+      expect(method).toBe("PUT");
+      expect(uri).toBe("/tasks/123");
+    });
+
+    it("should extract method and URI from Request object", async () => {
+      mockFetch.mockResolvedValue(createMockResponse(200));
+
+      const wrappedFetch = wrapFetchWithRetry(mockFetch);
+      const request = new Request("http://example.com/api/metadata", {
+        method: "DELETE",
+      });
+      await wrappedFetch(request);
+
+      expect(mockRecordApiRequestTime).toHaveBeenCalledTimes(1);
+      const [method, uri] = mockRecordApiRequestTime.mock.calls[0];
+      expect(method).toBe("DELETE");
+      expect(uri).toBe("/api/metadata");
+    });
+
+    it("should not break fetch when no observer is registered", async () => {
+      httpObserver.setHttpMetricsObserver(undefined);
+
+      mockFetch.mockResolvedValue(createMockResponse(200));
+      const wrappedFetch = wrapFetchWithRetry(mockFetch);
+      const result = await wrappedFetch("http://test.com");
+
+      expect(result.status).toBe(200);
+    });
+
+    it("should default method to GET when init has no method", async () => {
+      mockFetch.mockResolvedValue(createMockResponse(200));
+
+      const wrappedFetch = wrapFetchWithRetry(mockFetch);
+      await wrappedFetch("http://test.com/path");
+
+      expect(mockRecordApiRequestTime).toHaveBeenCalledTimes(1);
+      const [method] = mockRecordApiRequestTime.mock.calls[0];
+      expect(method).toBe("GET");
     });
   });
 });

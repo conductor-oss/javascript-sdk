@@ -21,6 +21,7 @@ export default {
     "^@/(.*)$": "<rootDir>/src/$1",
     "^@open-api/(.*)$": "<rootDir>/src/open-api/$1",
     "^@test-utils/(.*)$": "<rootDir>/src/integration-tests/utils/$1",
+    "^(.*)\\.js$": "$1",
   },
   transform: {
     "^.+\\.tsx?$": [
