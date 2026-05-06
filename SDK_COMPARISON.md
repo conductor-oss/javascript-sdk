@@ -4,7 +4,7 @@
 
 This document provides a detailed comparison between the **Python SDK** (golden reference, `conductor-python`) and the **JavaScript SDK** (`@io-orkes/conductor-javascript` v3.0.0), covering API surface, architecture, worker system, and feature parity.
 
-**Verdict Summary**: The JavaScript SDK has **near-complete parity** with the Python SDK (~98%). All client classes (including rate limit CRUD), worker features (TaskContext, adaptive backoff, 19 Prometheus metrics with quantiles and optional prom-client, decorator-based JSON schema generation), workflow DSL (`ConductorWorkflow` with `toSubWorkflowTask()`), and all 34 task type builders (including 13 LLM/AI + 2 MCP) are implemented.
+**Verdict Summary**: The JavaScript SDK has **near-complete parity** with the Python SDK (~98%). All client classes (including rate limit CRUD), worker features (TaskContext, adaptive backoff, Prometheus metrics with legacy and canonical modes, decorator-based JSON schema generation), workflow DSL (`ConductorWorkflow` with `toSubWorkflowTask()`), and all 34 task type builders (including 13 LLM/AI + 2 MCP) are implemented.
 
 ---
 
@@ -580,22 +580,23 @@ Features:
 
 #### Metrics / Observability
 
+Both SDKs support legacy and canonical metric surfaces via `WORKER_CANONICAL_METRICS`. See [METRICS.md](METRICS.md) for the JavaScript SDK catalog.
+
 | # | Feature | Python | JavaScript | Status |
 |---|---------|--------|-----------|--------|
-| 1 | MetricsCollector | Yes (19 metrics) | Yes (19 metrics) | Full |
+| 1 | Legacy / canonical collectors | `create_metrics_collector()` | `createMetricsCollector()` | Full |
 | 2 | HTTP `/metrics` endpoint | Yes | `MetricsServer` | Full |
 | 3 | HTTP `/health` endpoint | Yes | `MetricsServer` | Full |
 | 4 | Prometheus text format | Yes | `toPrometheusText()` | Full |
 | 5 | File-based metrics | Yes (`.prom` files) | Yes (`filePath` config option) | Full |
-| 6 | API request metrics | `http_api_client_request` | `recordApiRequestTime()` | Full |
-| 7 | Queue full metric | `task_execution_queue_full` | `recordTaskExecutionQueueFull()` | Full |
-| 8 | Uncaught exception metric | `thread_uncaught_exceptions` | `recordUncaughtException()` | Full |
-| 9 | Workflow start error | `workflow_start_error` | `recordWorkflowStartError()` | Full |
-| 10 | External payload used | `external_payload_used` | `recordExternalPayloadUsed()` | Full |
-| 11 | Worker restart metric | `worker_restart` | `recordWorkerRestart()` | Full |
-| 12 | Quantile calculation (p50-p99) | Yes (sliding window 1000) | Yes (sliding window, configurable) | Full |
-| 13 | `prometheus_client` integration | Yes (native prom-client) | Optional `prom-client` integration via `usePromClient: true` + `PrometheusRegistry` | Full (optional peer dep) |
-| 14 | Auto-start via `httpPort` config | Yes | Yes | Full |
+| 6 | API request metrics | Yes | `recordApiRequestTime()` | Full |
+| 7 | Queue full metric | Yes | `recordTaskExecutionQueueFull()` | Full |
+| 8 | Uncaught exception metric | Yes | `recordUncaughtException()` | Full |
+| 9 | Workflow start error | Yes | `recordWorkflowStartError()` | Full |
+| 10 | External payload used | Yes | `recordExternalPayloadUsed()` | Full |
+| 11 | Worker restart metric | Yes (Python-only, multi-process) | Legacy only (single-process model) | Full |
+| 12 | `prometheus_client` / `prom-client` | Yes (native) | Optional via `usePromClient: true` | Full |
+| 13 | Auto-start via `httpPort` config | Yes | Yes | Full |
 
 #### JSON Schema Generation
 
@@ -692,7 +693,7 @@ Both SDKs support identical environment variable formats for worker configuratio
 | **Worker system** | **98%** | TaskContext, adaptive backoff, auth backoff, events, schema |
 | **Task type builders** | **100%** | 34/34 builders including LLM, MCP, HTTP Poll, Webhook, GetDocument |
 | **Workflow DSL** | **95%** | Full `ConductorWorkflow` with `toSubWorkflowTask()`. Missing only `__call__` (language limitation) |
-| **Metrics/Observability** | **98%** | 19 metrics, quantiles (p50-p99), HTTP + file export, optional prom-client integration |
+| **Metrics/Observability** | **98%** | Legacy + canonical modes, HTTP + file export, optional prom-client integration |
 | **AI module** | **95%** | All LLM task builders + `LLMProvider`/`VectorDB` enums + `IntegrationConfig` types. Missing only `AIOrchestrator` |
 | **JSON schema** | **95%** | `jsonSchema()` declarative helper + `@schemaField()` decorator with `reflect-metadata` type inference |
 | **Scheduling** | **100%** | Full parity including tags |
@@ -712,7 +713,7 @@ Both SDKs support identical environment variable formats for worker configuratio
 7. **Worker configuration hierarchy**: Identical env var format and precedence
 8. **`TaskHandler` orchestrator**: Same architecture as Python
 9. **TaskContext**: Full async-local context with `addLog()`, `setCallbackAfter()`
-10. **Prometheus metrics**: 19 metrics with quantiles (p50-p99), `MetricsServer` (HTTP + file export), optional `prom-client` integration
+10. **Prometheus metrics**: Legacy and canonical modes with `createMetricsCollector()`, `MetricsServer` (HTTP + file export), optional `prom-client` integration
 11. **JSON schema generation**: `jsonSchema()` declarative helper + `@schemaField()` decorator with `reflect-metadata` runtime type inference + `inputType`/`outputType` on `@worker`
 12. **AI types**: `LLMProvider`, `VectorDB` enums + typed `IntegrationConfig` + `withPromptVariable()` helpers
 13. **OpenAPI-generated types**: Strong TypeScript types from spec

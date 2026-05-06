@@ -545,37 +545,38 @@ handler = TaskHandler(
 
 ### JavaScript: Built-in MetricsCollector
 
-The JavaScript SDK provides a built-in `MetricsCollector` that implements `TaskRunnerEventsListener`:
+The JavaScript SDK provides `createMetricsCollector()` which returns a legacy or canonical collector based on `WORKER_CANONICAL_METRICS`. See [METRICS.md](METRICS.md) for the full catalog.
 
 ```typescript
-import { MetricsCollector, TaskHandler } from "@io-orkes/conductor-javascript/worker";
+import { createMetricsCollector, MetricsServer, TaskHandler } from "@io-orkes/conductor-javascript";
 
-const metrics = new MetricsCollector();
+const metrics = createMetricsCollector();
+const server = new MetricsServer(metrics, 9090);
+await server.start();
 
 const handler = new TaskHandler({
     client,
     eventListeners: [metrics],
 });
 
-handler.startWorkers();
-
-// Read metrics
-const snapshot = metrics.getMetrics();
-console.log("Poll total:", snapshot.pollTotal);
-console.log("Execution durations:", snapshot.executionDurationMs);
+await handler.startWorkers();
+// GET http://localhost:9090/metrics -> Prometheus text
+// GET http://localhost:9090/health  -> {"status":"UP"}
 ```
 
 ### Comparison
 
 | Feature | Python | JavaScript |
 |---------|--------|-----------|
-| Built-in metrics collector | Yes (`MetricsCollector`) | Yes (`MetricsCollector`) | Parity |
-| HTTP metrics endpoint | Yes (`/metrics`, `/health`) | No (use prom-client separately) | Python richer |
-| File-based metrics | Yes (`.prom` files) | No | Python richer |
+| Built-in metrics collector | Yes (`create_metrics_collector()`) | Yes (`createMetricsCollector()`) | Parity |
+| Legacy / canonical modes | Yes (`WORKER_CANONICAL_METRICS`) | Yes (`WORKER_CANONICAL_METRICS`) | Parity |
+| HTTP metrics endpoint | Yes (`/metrics`, `/health`) | Yes (`MetricsServer`) | Parity |
+| File-based metrics | Yes (`.prom` files) | Yes (`filePath` config) | Parity |
 | Multiprocess aggregation | Yes (SQLite) | N/A (single process) | N/A |
-| API request metrics | Yes (`http_api_client_request`) | No | Python richer |
+| API request metrics | Yes | Yes (`recordApiRequestTime()`) | Parity |
 | Event-based architecture | Yes (MetricsCollector is listener) | Yes (MetricsCollector is listener) | Parity |
 | Custom metrics via events | Yes | Yes | Parity |
+| Optional `prom-client` | Yes (native) | Yes (`usePromClient: true`) | Parity |
 
 ---
 

@@ -119,9 +119,15 @@ src/
       context/
         TaskContext.ts            # AsyncLocalStorage-based per-task context + getTaskContext()
       metrics/
-        MetricsCollector.ts      # TaskRunnerEventsListener impl, 19 metric types, quantiles
-        MetricsServer.ts         # HTTP server: /metrics (Prometheus) + /health (JSON)
-        PrometheusRegistry.ts    # Optional prom-client bridge (lazy loaded)
+        LegacyMetricsCollector.ts       # Default: prefixed names, Summary type, ms units
+        CanonicalMetricsCollector.ts    # Opt-in: unprefixed canonical names, Histogram type, seconds
+        metricsFactory.ts               # createMetricsCollector() reads WORKER_CANONICAL_METRICS
+        MetricsServer.ts                # HTTP server: /metrics (Prometheus) + /health (JSON)
+        MetricsCollectorInterface.ts    # Shared interface for both collectors
+        PrometheusRegistry.ts           # Optional prom-client bridge for legacy collector
+        CanonicalPrometheusRegistry.ts  # Optional prom-client bridge for canonical collector
+        accumulators.ts                 # HistogramAccumulator, MultiLabelCounter, GaugeMetric
+        httpObserver.ts                 # Global singleton for API request metrics
       schema/                    # jsonSchema(), schemaField() decorator, generateSchemaFromClass()
       config/                    # Worker configuration resolution helpers
     generators/                   # Legacy task generators (pre-v3, still exported for backward compat)
@@ -268,14 +274,12 @@ Returns `undefined` outside task execution. All 16 methods: `getTaskId()`, `getW
 
 ### 7. Metrics
 
+`createMetricsCollector()` reads `WORKER_CANONICAL_METRICS` and returns a legacy or canonical collector. See [METRICS.md](METRICS.md) for the full catalog and migration guide.
+
 ```typescript
-const metrics = new MetricsCollector({ prefix: "my_app", slidingWindowSize: 1000 });
+const metrics = createMetricsCollector();
 const handler = new TaskHandler({ client, eventListeners: [metrics], scanForDecorated: true });
 await handler.startWorkers();
-
-// Programmatic access
-const m = metrics.getMetrics();
-console.log(m.pollTotal.get("my_task"));
 
 // Prometheus text
 const text = metrics.toPrometheusText();
@@ -291,7 +295,7 @@ await server.start();
 await server.stop();
 ```
 
-**Do not use `MetricsCollector({ httpPort })` in Jest** - it uses a dynamic import with `.js` extension that doesn't resolve under Jest's TS transform.
+**Do not use `MetricsCollector({ httpPort })` in Jest** -- it uses a dynamic import with `.js` extension that doesn't resolve under Jest's TS transform.
 
 ## Known Pitfalls
 
@@ -616,7 +620,7 @@ Node 18+ required. Dual ESM/CJS via `tsup` with `exports` field in `package.json
 | Workflow DSL | `ConductorWorkflow` | `ConductorWorkflow` | Fluent builder |
 | Worker decorator | `@worker_task` | `@worker` | TS decorator syntax |
 | Task context | `get_task_context()` | `getTaskContext()` | AsyncLocalStorage vs contextvars |
-| Metrics | `MetricsCollector` | `MetricsCollector` | 19 metric types, quantiles |
+| Metrics | `MetricsCollector` | `createMetricsCollector()` | Legacy + canonical modes, see [METRICS.md](METRICS.md) |
 | Metrics server | HTTP endpoint | `MetricsServer` | `/metrics` + `/health` |
 | Non-retryable | `NonRetryableError` | `NonRetryableException` | `FAILED_WITH_TERMINAL_ERROR` |
 | LLM builders | 13 builders | 13 builders | Full parity |

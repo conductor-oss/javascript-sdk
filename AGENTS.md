@@ -32,7 +32,7 @@ src/sdk/                         # Main SDK source
     decorators/worker.ts         # @worker decorator + dual-mode support
     decorators/registry.ts       # Global registry (register/get/clear)
     context/TaskContext.ts        # AsyncLocalStorage per-task context
-    metrics/                     # MetricsCollector, MetricsServer, PrometheusRegistry
+    metrics/                     # LegacyMetricsCollector, CanonicalMetricsCollector, metricsFactory, MetricsServer, PrometheusRegistry, CanonicalPrometheusRegistry, accumulators, httpObserver
     schema/                      # jsonSchema, schemaField decorators
   generators/                    # Legacy generators (pre-v3, still exported for compat)
 src/open-api/                    # OpenAPI layer
@@ -211,10 +211,10 @@ public async someMethod(args): Promise<T> {
 
 ### Metrics Documentation (METRICS.md)
 
-When adding, removing, or renaming metrics in `src/sdk/worker/metrics/MetricsCollector.ts`:
-1. Update `METRICS.md` to reflect the change (name, type, labels, description)
-2. Ensure both `MetricsCollector.toPrometheusText()` and `PrometheusRegistry.createMetrics()` are updated in sync — missing a summary/counter in either causes silent data loss
-3. Update the metric count in the METRICS.md overview section
+When adding, removing, or renaming metrics in `src/sdk/worker/metrics/`:
+1. Update both `LegacyMetricsCollector.ts` and `CanonicalMetricsCollector.ts` (or add a no-op stub in the collector that does not emit the metric)
+2. Ensure `toPrometheusText()` and the corresponding `PrometheusRegistry` / `CanonicalPrometheusRegistry` are updated in sync — missing a metric in either causes silent data loss
+3. Update `METRICS.md` to reflect the change in both the legacy and canonical catalog tables
 4. Add or update the corresponding direct recording method documentation if applicable
 
 ### SDK_NEW_LANGUAGE_GUIDE.md
