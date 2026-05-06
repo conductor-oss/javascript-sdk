@@ -416,6 +416,10 @@ export class CanonicalMetricsCollector implements MetricsCollectorInterface {
     }
   }
 
+  collectorName(): string {
+    return "canonical";
+  }
+
   getContentType(): string {
     return (
       this._promRegistry?.contentType ??

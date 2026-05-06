@@ -39,6 +39,7 @@ export interface MetricsCollectorInterface extends TaskRunnerEventsListener {
 
   // ── Output / lifecycle ─────────────────────────────────────────
 
+  collectorName(): string;
   getMetrics(): unknown;
   reset(): void;
   stop(): Promise<void>;

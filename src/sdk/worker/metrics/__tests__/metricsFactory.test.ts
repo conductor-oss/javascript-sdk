@@ -79,6 +79,20 @@ describe("createMetricsCollector", () => {
     expect(typeof text).toBe("string");
   });
 
+  it('legacy collector returns "legacy" from collectorName()', () => {
+    delete process.env.WORKER_CANONICAL_METRICS;
+
+    const collector = createMetricsCollector();
+    expect(collector.collectorName()).toBe("legacy");
+  });
+
+  it('canonical collector returns "canonical" from collectorName()', () => {
+    process.env.WORKER_CANONICAL_METRICS = "true";
+
+    const collector = createMetricsCollector();
+    expect(collector.collectorName()).toBe("canonical");
+  });
+
   it("both implementations satisfy MetricsCollectorInterface", () => {
     const legacy = createMetricsCollector();
     const requiredMethods = [
@@ -97,6 +111,7 @@ describe("createMetricsCollector", () => {
       "stop",
       "getContentType",
       "toPrometheusText",
+      "collectorName",
       "toPrometheusTextAsync",
     ];
 

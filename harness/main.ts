@@ -94,12 +94,7 @@ async function main(): Promise<void> {
 
   const metricsPort = envIntOrDefault("HARNESS_METRICS_PORT", 9991);
   const metricsCollector = createMetricsCollector({ httpPort: metricsPort });
-  const variant = ["true", "1", "yes"].includes(
-    (process.env.WORKER_CANONICAL_METRICS ?? "").toLowerCase(),
-  )
-    ? "canonical"
-    : "legacy";
-  console.log(`Prometheus metrics server started on port ${metricsPort} (${variant} metrics)`);
+  console.log(`Prometheus metrics server started on port ${metricsPort} (${metricsCollector.collectorName()} metrics)`);
 
   const handler = new TaskHandler({
     client,

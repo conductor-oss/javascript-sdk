@@ -342,6 +342,10 @@ export class LegacyMetricsCollector implements MetricsCollectorInterface {
     }
   }
 
+  collectorName(): string {
+    return "legacy";
+  }
+
   getContentType(): string {
     return (
       this._promRegistry?.contentType ??
