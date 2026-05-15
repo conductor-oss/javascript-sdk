@@ -2,6 +2,7 @@ import type { MetricsCollectorConfig } from "./LegacyMetricsCollector";
 import type { MetricsCollectorInterface } from "./MetricsCollectorInterface";
 import { LegacyMetricsCollector } from "./LegacyMetricsCollector";
 import { CanonicalMetricsCollector } from "./CanonicalMetricsCollector";
+import { setHttpMetricsObserver } from "./httpObserver";
 
 /**
  * Create the appropriate MetricsCollector based on environment variables.
@@ -19,9 +20,10 @@ export function createMetricsCollector(
     (process.env.WORKER_CANONICAL_METRICS ?? "").toLowerCase(),
   );
 
-  if (useCanonical) {
-    return new CanonicalMetricsCollector(config);
-  }
+  const collector = useCanonical
+    ? new CanonicalMetricsCollector(config)
+    : new LegacyMetricsCollector(config);
 
-  return new LegacyMetricsCollector(config);
+  setHttpMetricsObserver(collector);
+  return collector;
 }

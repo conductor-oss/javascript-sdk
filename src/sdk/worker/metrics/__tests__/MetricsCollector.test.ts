@@ -133,13 +133,14 @@ describe("LegacyMetricsCollector", () => {
       expect(metrics.updateDurationMs.get("task_a")).toEqual([25, 30]);
     });
 
-    it("should count update failures via onTaskUpdateFailure", () => {
+    it("should count update failures and record duration via onTaskUpdateFailure", () => {
       collector.onTaskUpdateFailure({
         taskType: "task_a",
         taskId: "t1",
         workerId: "w1",
         workflowInstanceId: "wf1",
         cause: new Error("server error"),
+        durationMs: 200,
         retryCount: 4,
         taskResult: {},
         timestamp: new Date(),
@@ -147,6 +148,7 @@ describe("LegacyMetricsCollector", () => {
 
       const metrics = collector.getMetrics();
       expect(metrics.taskUpdateFailureTotal.get("task_a")).toBe(1);
+      expect(metrics.updateDurationMs.get("task_a")).toEqual([200]);
     });
   });
 

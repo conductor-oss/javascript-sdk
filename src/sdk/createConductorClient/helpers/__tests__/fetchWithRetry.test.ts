@@ -239,6 +239,44 @@ describe("fetchWithRetry", () => {
       expect(mockFetch).toHaveBeenCalledTimes(3);
     });
 
+    it("should NOT retry 502 for POST requests (non-idempotent)", async () => {
+      mockFetch.mockResolvedValue(createMockResponse(502, "Bad Gateway"));
+
+      const result = await retryFetch("http://test.com", { method: "POST" }, mockFetch, {
+        maxTransportRetries: 3,
+        initialRetryDelay: 1,
+      });
+
+      expect(result.status).toBe(502);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
+
+    it("should NOT retry 503 for PATCH requests (non-idempotent)", async () => {
+      mockFetch.mockResolvedValue(createMockResponse(503, "Service Unavailable"));
+
+      const result = await retryFetch("http://test.com", { method: "PATCH" }, mockFetch, {
+        maxTransportRetries: 3,
+        initialRetryDelay: 1,
+      });
+
+      expect(result.status).toBe(503);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
+
+    it("should retry 502 for PUT requests (idempotent)", async () => {
+      mockFetch
+        .mockResolvedValueOnce(createMockResponse(502, "Bad Gateway"))
+        .mockResolvedValueOnce(createMockResponse(200, "ok"));
+
+      const result = await retryFetch("http://test.com", { method: "PUT" }, mockFetch, {
+        maxTransportRetries: 3,
+        initialRetryDelay: 1,
+      });
+
+      expect(result.status).toBe(200);
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+    });
+
     it("should handle transport error then 502 then success", async () => {
       mockFetch
         .mockRejectedValueOnce(new Error("ECONNRESET"))

@@ -354,6 +354,30 @@ sum(rate(task_execute_time_seconds_count[5m])) by (taskType)
 - Avoid embedding user identifiers or unbounded values in task type, workflow
   type, or external payload labels.
 
+### Recording Uncaught Exceptions
+
+The `thread_uncaught_exceptions_total` metric is not wired automatically. In
+Node.js, registering a `process.on("uncaughtException")` handler overrides the
+default crash behavior, which can leave the process running in a corrupted
+state. Instead, wire it yourself so you control the exit policy:
+
+```typescript
+const metrics = createMetricsCollector();
+
+process.on("uncaughtException", (err) => {
+  metrics.recordUncaughtException(err.name || "Error");
+  console.error(err);
+  process.exit(1);
+});
+
+process.on("unhandledRejection", (reason) => {
+  const name = reason instanceof Error ? reason.name || "Error" : "Error";
+  metrics.recordUncaughtException(name);
+  console.error(reason);
+  process.exit(1);
+});
+```
+
 ### prom-client Issues
 
 - `MetricsCollector` uses `await import("./MetricsServer.js")` internally. The

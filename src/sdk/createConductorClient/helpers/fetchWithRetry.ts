@@ -1,3 +1,5 @@
+import { getHttpMetricsObserver } from "../../worker/metrics/httpObserver";
+
 type Input = Parameters<typeof fetch>[0];
 type Init = Parameters<typeof fetch>[1];
 
@@ -95,6 +97,8 @@ const withJitter = (delayMs: number): number => {
   return Math.max(0, Math.round(delayMs + jitter));
 };
 
+const IDEMPOTENT_METHODS = new Set(["GET", "HEAD", "OPTIONS", "PUT", "DELETE"]);
+
 export const retryFetch = async (
   input: Input,
   init: Init,
@@ -157,10 +161,15 @@ export const retryFetch = async (
       return rateLimitResponse;
     }
 
-    // Gateway error retry (502, 503, 504) -- transient proxy/server errors
+    // Gateway error retry (502, 503, 504) -- only for idempotent methods to
+    // avoid duplicate side effects when the upstream may have processed the request.
     if (response.status >= 502 && response.status <= 504) {
-      lastError = new Error(`Server error: HTTP ${response.status}`);
-      if (transportAttempt < maxTransportRetries) {
+      const reqMethod = (input instanceof Request
+        ? input.method
+        : init?.method ?? "GET"
+      ).toUpperCase();
+      if (IDEMPOTENT_METHODS.has(reqMethod) && transportAttempt < maxTransportRetries) {
+        lastError = new Error(`Server error: HTTP ${response.status}`);
         await new Promise((resolve) =>
           setTimeout(resolve, withJitter(initialRetryDelay * (transportAttempt + 1)))
         );
@@ -223,35 +232,21 @@ export const wrapFetchWithRetry = (
     try {
       const response = await retryFetch(input, init, fetchFn, options);
       const durationMs = performance.now() - start;
-      try {
-        const { getHttpMetricsObserver } = await import(
-          "../../worker/metrics/httpObserver.js"
-        );
-        getHttpMetricsObserver()?.recordApiRequestTime(
-          method,
-          uri,
-          String(response.status),
-          durationMs,
-        );
-      } catch {
-        // Metrics recording is best-effort
-      }
+      getHttpMetricsObserver()?.recordApiRequestTime(
+        method,
+        uri,
+        String(response.status),
+        durationMs,
+      );
       return response;
     } catch (error) {
       const durationMs = performance.now() - start;
-      try {
-        const { getHttpMetricsObserver } = await import(
-          "../../worker/metrics/httpObserver.js"
-        );
-        getHttpMetricsObserver()?.recordApiRequestTime(
-          method,
-          uri,
-          "0",
-          durationMs,
-        );
-      } catch {
-        // Metrics recording is best-effort
-      }
+      getHttpMetricsObserver()?.recordApiRequestTime(
+        method,
+        uri,
+        "0",
+        durationMs,
+      );
       throw error;
     }
   };

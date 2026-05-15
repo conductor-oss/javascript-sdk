@@ -227,6 +227,7 @@ describe("EventDispatcher", () => {
       workerId: "worker-1",
       workflowInstanceId: "workflow-1",
       cause: new Error("Update failed"),
+      durationMs: 500,
       retryCount: 4,
       taskResult: { status: "COMPLETED" },
       timestamp: new Date(),

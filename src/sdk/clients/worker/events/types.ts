@@ -114,6 +114,8 @@ export interface TaskUpdateFailure extends TaskRunnerEvent {
   workflowInstanceId?: string;
   /** The error that caused the final update failure */
   cause: Error;
+  /** Time taken for the last update attempt in milliseconds */
+  durationMs: number;
   /** Number of retry attempts made */
   retryCount: number;
   /** The TaskResult object that failed to update (for recovery/logging) */

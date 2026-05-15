@@ -81,7 +81,6 @@ export class CanonicalMetricsCollector implements MetricsCollectorInterface {
         config.fileWriteIntervalMs ?? 5000,
       );
     }
-    setHttpMetricsObserver(this);
   }
 
   private async initPromClient(): Promise<void> {
@@ -279,6 +278,16 @@ export class CanonicalMetricsCollector implements MetricsCollectorInterface {
       taskType: event.taskType,
       exception: excName,
     });
+
+    const seconds = event.durationMs / 1000;
+    this.state.taskUpdateTimeSeconds.observe(
+      { taskType: event.taskType, status: "FAILURE" },
+      seconds,
+    );
+    this._promRegistry?.observeHistogram("task_update_time_seconds", {
+      taskType: event.taskType,
+      status: "FAILURE",
+    }, seconds);
   }
 
   onTaskPaused(event: TaskPaused): void {

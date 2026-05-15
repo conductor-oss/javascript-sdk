@@ -120,7 +120,6 @@ export class LegacyMetricsCollector implements MetricsCollectorInterface {
         config.fileWriteIntervalMs ?? 5000,
       );
     }
-    setHttpMetricsObserver(this);
   }
 
   private async initPromClient(): Promise<void> {
@@ -254,6 +253,7 @@ export class LegacyMetricsCollector implements MetricsCollectorInterface {
 
   onTaskUpdateFailure(event: TaskUpdateFailure): void {
     this.incrementCounter(this.metrics.taskUpdateFailureTotal, event.taskType, "update_error_total", "task_type");
+    this.observeSummary(this.metrics.updateDurationMs, event.taskType, event.durationMs, "update_time", "task_type");
   }
 
   // Canonical-only event — noop in legacy

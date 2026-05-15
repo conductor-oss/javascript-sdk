@@ -160,12 +160,13 @@ describe("CanonicalMetricsCollector", () => {
       expect(text).toContain('task_update_time_seconds_sum{taskType="task_a",status="SUCCESS"} 0.025');
     });
 
-    it("should emit task_update_error_total with exception label on failure", () => {
+    it("should emit task_update_error_total and task_update_time_seconds on failure", () => {
       collector.onTaskUpdateFailure({
         taskType: "task_a",
         taskId: "t1",
         workerId: "w1",
         cause: new Error("server error"),
+        durationMs: 150,
         retryCount: 4,
         taskResult: {},
         timestamp: new Date(),
@@ -173,6 +174,7 @@ describe("CanonicalMetricsCollector", () => {
 
       const text = collector.toPrometheusText();
       expect(text).toContain('task_update_error_total{taskType="task_a",exception="Error"} 1');
+      expect(text).toContain('task_update_time_seconds_sum{taskType="task_a",status="FAILURE"} 0.15');
     });
   });
 

@@ -13,8 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - New `CanonicalMetricsCollector` and optional `CanonicalPrometheusRegistry` (prom-client adapter) emit the harmonized cross-SDK catalog: 12 counters (e.g. `task_poll_total`, `task_execution_started_total`, `task_paused_total`, `external_payload_used_total{entityName,operation,payloadType}`, `workflow_start_error_total{workflowType,exception}`), 4 time histograms (`task_poll_time_seconds`, `task_execute_time_seconds`, `task_update_time_seconds`, `http_api_client_request_seconds{method,uri,status}`) with buckets `0.001…10s`, 2 size histograms (`task_result_size_bytes`, `workflow_input_size_bytes{workflowType,version}`) with buckets `100…10_000_000` bytes, and `active_workers` gauge. Labels are camelCase; names are unprefixed.
   - `createMetricsCollector()` factory selects `LegacyMetricsCollector` (default) or `CanonicalMetricsCollector` based on `WORKER_CANONICAL_METRICS` (truthy: `true`, `1`, `yes`, case-insensitive). `WORKER_LEGACY_METRICS` is also recognized; canonical wins when both are set.
   - `HttpMetricsObserver` plus `fetchWithRetry` instrumentation records `http_api_client_request_seconds`; `WorkflowExecutor` records `workflow_input_size_bytes` and `workflow_start_error_total`.
-  - `Poller`, `TaskRunner`, and `EventDispatcher` emit a new `taskAckFailed` event and propagate output size, exception cause, and status.
-  - `fetchWithRetry` now retries on HTTP 502/503/504.
+  - `Poller`, `TaskRunner`, and `EventDispatcher` emit a new `taskPaused` event when a poll cycle is skipped because the worker is paused.
+  - `fetchWithRetry` now retries HTTP 502/503/504 for idempotent methods (GET, HEAD, OPTIONS, PUT, DELETE).
   - Harness deployment manifest sets `WORKER_CANONICAL_METRICS=true`; `harness/main.ts` logs which collector is active.
 
 ### Changed
