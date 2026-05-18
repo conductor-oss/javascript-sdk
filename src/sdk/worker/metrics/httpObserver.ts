@@ -2,9 +2,14 @@
  * Global metrics observer for recording API client request latency
  * and workflow-level metrics from code outside the event system.
  *
- * Both LegacyMetricsCollector and CanonicalMetricsCollector register
- * themselves here on construction; fetchWithRetry and WorkflowExecutor
- * call the observer without needing a direct reference.
+ * `createMetricsCollector()` and `CanonicalMetricsCollector` register
+ * themselves here on construction. `LegacyMetricsCollector` does NOT
+ * self-register so that direct construction preserves pre-metrics
+ * behavior; use `createMetricsCollector()` or call
+ * `setHttpMetricsObserver()` explicitly to opt in.
+ *
+ * fetchWithRetry and WorkflowExecutor call the observer without
+ * needing a direct reference.
  */
 
 export interface HttpMetricsObserver {

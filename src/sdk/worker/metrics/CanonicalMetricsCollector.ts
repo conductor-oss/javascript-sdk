@@ -11,7 +11,7 @@ import type {
 } from "../../clients/worker/events";
 import type { MetricsCollectorInterface } from "./MetricsCollectorInterface";
 import type { MetricsCollectorConfig } from "./LegacyMetricsCollector";
-import { setHttpMetricsObserver } from "./httpObserver";
+import { getHttpMetricsObserver, setHttpMetricsObserver } from "./httpObserver";
 import {
   HistogramAccumulator,
   MultiLabelCounter,
@@ -421,7 +421,9 @@ export class CanonicalMetricsCollector implements MetricsCollectorInterface {
   }
 
   async stop(): Promise<void> {
-    setHttpMetricsObserver(undefined);
+    if (getHttpMetricsObserver() === this) {
+      setHttpMetricsObserver(undefined);
+    }
     if (this._fileTimer) {
       clearInterval(this._fileTimer);
       this._fileTimer = undefined;

@@ -212,8 +212,11 @@ export const wrapFetchWithRetry = (
   options?: RetryFetchOptions,
 ): typeof fetch => {
   return async (input: Input, init?: Init): Promise<Response> => {
-    const start = performance.now();
+    if (!getHttpMetricsObserver()) {
+      return retryFetch(input, init, fetchFn, options);
+    }
 
+    const start = performance.now();
     try {
       return await retryFetch(input, init, fetchFn, options);
     } catch (error) {

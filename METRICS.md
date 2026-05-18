@@ -493,10 +493,15 @@ default `true`, legacy default `false`). The Go SDK provides
 `TaskRunnerEventsListener`, so they receive lifecycle events from the worker
 infrastructure:
 
-- `onTaskPoll` / `onTaskPollError` / `onTaskExecutionStarted` /
-  `onTaskExecutionCompleted` / `onTaskExecutionFailed` / `onTaskUpdateSuccess` /
-  `onTaskUpdateError` / `onTaskAckError` / `onTaskAckFailed` /
-  `onTaskExecutionQueueFull` / `onTaskPaused`
+- Event listener methods (from `TaskRunnerEventsListener`): `onPollStarted` /
+  `onPollCompleted` / `onPollFailure` / `onTaskExecutionStarted` /
+  `onTaskExecutionCompleted` / `onTaskExecutionFailure` /
+  `onTaskUpdateCompleted` / `onTaskUpdateFailure` / `onTaskPaused`
+- Direct recording methods (called outside the event system):
+  `recordTaskExecutionQueueFull` / `recordUncaughtException` /
+  `recordTaskAckError` / `recordTaskAckFailed` / `recordTaskPaused` /
+  `recordExternalPayloadUsed` / `recordWorkflowStartError` /
+  `recordWorkflowInputSize` / `recordApiRequestTime`
 - `Poller`, `TaskRunner`, and `EventDispatcher` emit a `taskPaused` event when a
   poll cycle is skipped because the worker is paused.
 

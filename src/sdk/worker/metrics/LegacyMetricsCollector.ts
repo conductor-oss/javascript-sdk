@@ -9,7 +9,7 @@ import type {
   TaskUpdateFailure,
 } from "../../clients/worker/events";
 import type { MetricsCollectorInterface } from "./MetricsCollectorInterface";
-import { setHttpMetricsObserver } from "./httpObserver";
+import { getHttpMetricsObserver, setHttpMetricsObserver } from "./httpObserver";
 
 /**
  * Configuration for MetricsCollector.
@@ -127,7 +127,6 @@ export class LegacyMetricsCollector implements MetricsCollectorInterface {
         config.fileWriteIntervalMs ?? 5000,
       );
     }
-    setHttpMetricsObserver(this);
   }
 
   private async initPromClient(): Promise<void> {
@@ -344,7 +343,9 @@ export class LegacyMetricsCollector implements MetricsCollectorInterface {
   }
 
   async stop(): Promise<void> {
-    setHttpMetricsObserver(undefined);
+    if (getHttpMetricsObserver() === this) {
+      setHttpMetricsObserver(undefined);
+    }
     if (this._fileTimer) {
       clearInterval(this._fileTimer);
       this._fileTimer = undefined;
