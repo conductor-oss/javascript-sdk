@@ -509,7 +509,7 @@ export class TaskRunner {
 
       // Calculate output size if possible
       const outputSizeBytes = merged.outputData
-        ? JSON.stringify(merged.outputData).length
+        ? Buffer.byteLength(JSON.stringify(merged.outputData), "utf8")
         : undefined;
 
       // Untrack immediately — execution done, update will follow

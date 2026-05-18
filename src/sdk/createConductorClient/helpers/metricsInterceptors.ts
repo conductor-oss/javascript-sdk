@@ -12,6 +12,21 @@ const stripApiPrefix = (url: string): string =>
   url.startsWith("/api/") ? url.slice(4) : url;
 
 /**
+ * The OpenAPI spec uses all-lowercase path parameter names in a few
+ * templates (e.g. `{tasktype}` instead of `{taskType}`). This map
+ * normalizes them to camelCase so the canonical `uri` metric label
+ * is consistent across all endpoints.
+ */
+const CANONICAL_PARAM_NAMES: Record<string, string> = {
+  tasktype: "taskType",
+};
+
+const normalizePlaceholders = (url: string): string =>
+  url.replace(/\{(\w+)\}/g, (_m, name: string) =>
+    `{${CANONICAL_PARAM_NAMES[name] ?? name}}`,
+  );
+
+/**
  * Maps each Request to its OpenAPI path template. The request interceptor
  * stashes the template here so the fetch wrapper (which only receives the
  * Request object) can pass bounded-cardinality URI labels to the metrics
@@ -37,7 +52,10 @@ export function createMetricsInterceptors() {
     opts: ResolvedRequestOptions,
   ): Request => {
     if (typeof opts.url === "string") {
-      requestTemplateMap.set(request, stripApiPrefix(opts.url));
+      requestTemplateMap.set(
+        request,
+        normalizePlaceholders(stripApiPrefix(opts.url)),
+      );
     }
     return request;
   };

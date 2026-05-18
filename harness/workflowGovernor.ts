@@ -49,6 +49,7 @@ export class WorkflowGovernor {
         this.workflowExecutor.startWorkflow({
           name: this.workflowName,
           version: 1,
+          input: { startedAt: Date.now() },
         }),
       );
     }

@@ -391,10 +391,12 @@ process.on("unhandledRejection", (reason) => {
 
 ### One Collector Per Process
 
-Only one metrics collector can be active at a time. Both
-`LegacyMetricsCollector` and `CanonicalMetricsCollector` register themselves
-as the global HTTP metrics observer on construction. Creating a second
-collector replaces the first. Calling `stop()` clears the global observer.
+Only one metrics collector can be active at a time.
+`CanonicalMetricsCollector` registers itself as the global HTTP metrics
+observer on construction. `LegacyMetricsCollector` does not self-register;
+use `createMetricsCollector()` or call `setHttpMetricsObserver()` explicitly
+to enable HTTP metrics in legacy mode. Creating a second collector replaces
+the first. Calling `stop()` clears the global observer.
 
 ### Payload Size Measurement
 

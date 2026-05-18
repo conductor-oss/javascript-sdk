@@ -56,6 +56,32 @@ describe("metricsInterceptors", () => {
     expect(returned).toBe(request);
   });
 
+  it("should normalize lowercase {tasktype} to {taskType}", () => {
+    const { onRequest } = createMetricsInterceptors();
+
+    const request = new Request("http://host/api/tasks/poll/batch/my_task", {
+      method: "GET",
+    });
+    const opts = fakeOpts("/api/tasks/poll/batch/{tasktype}");
+
+    onRequest(request, opts);
+
+    expect(requestTemplateMap.get(request)).toBe("/tasks/poll/batch/{taskType}");
+  });
+
+  it("should leave already-camelCase placeholders unchanged", () => {
+    const { onRequest } = createMetricsInterceptors();
+
+    const request = new Request("http://host/api/workflow/abc-123", {
+      method: "GET",
+    });
+    const opts = fakeOpts("/api/workflow/{workflowId}");
+
+    onRequest(request, opts);
+
+    expect(requestTemplateMap.get(request)).toBe("/workflow/{workflowId}");
+  });
+
   it("should not stash when opts.url is not a string", () => {
     const { onRequest } = createMetricsInterceptors();
 
