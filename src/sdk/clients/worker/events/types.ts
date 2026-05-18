@@ -115,7 +115,7 @@ export interface TaskUpdateFailure extends TaskRunnerEvent {
   /** The error that caused the final update failure */
   cause: Error;
   /** Time taken for the last update attempt in milliseconds */
-  durationMs: number;
+  durationMs?: number;
   /** Number of retry attempts made */
   retryCount: number;
   /** The TaskResult object that failed to update (for recovery/logging) */

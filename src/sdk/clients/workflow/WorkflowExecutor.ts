@@ -73,11 +73,10 @@ export class WorkflowExecutor {
     workflowRequest: StartWorkflowRequest
   ): Promise<string> {
     const observer = getHttpMetricsObserver();
-    if (observer) {
+    if (observer?.measurePayloadSize && workflowRequest.input) {
       try {
-        const inputBytes = workflowRequest.input
-          ? JSON.stringify(workflowRequest.input).length
-          : 0;
+        const json = JSON.stringify(workflowRequest.input);
+        const inputBytes = Buffer.byteLength(json, "utf8");
         observer.recordWorkflowInputSize(
           workflowRequest.name ?? "",
           inputBytes,

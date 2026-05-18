@@ -9,6 +9,7 @@ export interface RetryFetchOptions {
   maxRateLimitRetries?: number; // default 5
   maxTransportRetries?: number; // default 3
   initialRetryDelay?: number; // default 1000ms
+  retryServerErrors?: boolean; // retry 502/503/504 for idempotent methods (default false)
 }
 
 const isTimeoutError = (error: unknown): boolean => {
@@ -161,9 +162,10 @@ export const retryFetch = async (
       return rateLimitResponse;
     }
 
-    // Gateway error retry (502, 503, 504) -- only for idempotent methods to
-    // avoid duplicate side effects when the upstream may have processed the request.
-    if (response.status >= 502 && response.status <= 504) {
+    // Gateway error retry (502, 503, 504) -- opt-in via retryServerErrors.
+    // Only retries idempotent methods to avoid duplicate side effects when
+    // the upstream may have processed the request.
+    if (options.retryServerErrors && response.status >= 502 && response.status <= 504) {
       const reqMethod = (input instanceof Request
         ? input.method
         : init?.method ?? "GET"

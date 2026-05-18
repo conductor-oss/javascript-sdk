@@ -35,6 +35,7 @@ export const createConductorClient = async (
     proxyUrl,
     tlsInsecure,
     disableHttp2,
+    retryServerErrors,
   } = resolveOrkesConfig(config);
 
   if (!serverUrl) throw new Error("Conductor server URL is not set");
@@ -53,7 +54,7 @@ export const createConductorClient = async (
   // Start with retry + timeout on fetch (no auth failure callback yet)
   const openApiClient = createClient({
     baseUrl: serverUrl,
-    fetch: wrapFetchWithRetry(baseFetchFn, { requestTimeoutMs }),
+    fetch: wrapFetchWithRetry(baseFetchFn, { requestTimeoutMs, retryServerErrors }),
     throwOnError: true,
   });
 
@@ -79,6 +80,7 @@ export const createConductorClient = async (
       fetch: wrapFetchWithRetry(baseFetchFn, {
         onAuthFailure: authResult.refreshToken,
         requestTimeoutMs,
+        retryServerErrors,
       }),
     });
   }

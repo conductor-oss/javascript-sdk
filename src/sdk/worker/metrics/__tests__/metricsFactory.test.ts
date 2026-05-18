@@ -12,15 +12,6 @@ describe("createMetricsCollector", () => {
 
   it("should return LegacyMetricsCollector by default", () => {
     delete process.env.WORKER_CANONICAL_METRICS;
-    delete process.env.WORKER_LEGACY_METRICS;
-
-    const collector = createMetricsCollector();
-    expect(collector).toBeInstanceOf(LegacyMetricsCollector);
-  });
-
-  it("should return LegacyMetricsCollector when WORKER_LEGACY_METRICS=true", () => {
-    process.env.WORKER_LEGACY_METRICS = "true";
-    delete process.env.WORKER_CANONICAL_METRICS;
 
     const collector = createMetricsCollector();
     expect(collector).toBeInstanceOf(LegacyMetricsCollector);
@@ -28,14 +19,6 @@ describe("createMetricsCollector", () => {
 
   it("should return CanonicalMetricsCollector when WORKER_CANONICAL_METRICS=true", () => {
     process.env.WORKER_CANONICAL_METRICS = "true";
-
-    const collector = createMetricsCollector();
-    expect(collector).toBeInstanceOf(CanonicalMetricsCollector);
-  });
-
-  it("should prefer canonical when both env vars are true", () => {
-    process.env.WORKER_CANONICAL_METRICS = "true";
-    process.env.WORKER_LEGACY_METRICS = "true";
 
     const collector = createMetricsCollector();
     expect(collector).toBeInstanceOf(CanonicalMetricsCollector);

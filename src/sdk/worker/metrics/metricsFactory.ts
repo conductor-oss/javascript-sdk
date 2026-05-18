@@ -7,11 +7,12 @@ import { setHttpMetricsObserver } from "./httpObserver";
 /**
  * Create the appropriate MetricsCollector based on environment variables.
  *
- * - WORKER_CANONICAL_METRICS=true  -> CanonicalMetricsCollector  (default: false)
- * - WORKER_LEGACY_METRICS=true     -> LegacyMetricsCollector     (default: true)
+ * - WORKER_CANONICAL_METRICS=true  -> CanonicalMetricsCollector
+ * - Unset / any other value        -> LegacyMetricsCollector (default)
  *
- * WORKER_CANONICAL_METRICS takes priority when both are set.
- * During the deprecation transition period the default is legacy.
+ * WORKER_LEGACY_METRICS is reserved for future use: once canonical becomes
+ * the default, setting WORKER_LEGACY_METRICS=true will re-activate legacy
+ * metrics.  It is not read by the current implementation.
  */
 export function createMetricsCollector(
   config?: MetricsCollectorConfig,

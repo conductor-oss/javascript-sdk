@@ -31,7 +31,9 @@ export function createMetricsInterceptors() {
     request: Request,
     opts: ResolvedRequestOptions,
   ): Request => {
-    (opts as OptsWithMetrics)._metricsStart = performance.now();
+    if (getHttpMetricsObserver()) {
+      (opts as OptsWithMetrics)._metricsStart = performance.now();
+    }
     return request;
   };
 

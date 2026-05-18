@@ -38,6 +38,10 @@ export interface MetricsCollectorInterface extends TaskRunnerEventsListener {
     metricUri?: string,
   ): void;
 
+  // ── Configuration ───────────────────────────────────────────────
+
+  readonly measurePayloadSize: boolean;
+
   // ── Output / lifecycle ─────────────────────────────────────────
 
   collectorName(): string;

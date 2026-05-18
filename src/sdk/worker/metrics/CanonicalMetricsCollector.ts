@@ -65,10 +65,12 @@ export class CanonicalMetricsCollector implements MetricsCollectorInterface {
   private _fileTimer?: ReturnType<typeof setInterval>;
   private _promRegistry?: import("./CanonicalPrometheusRegistry.js").CanonicalPrometheusRegistry;
   private readonly _usePromClient: boolean;
+  readonly measurePayloadSize: boolean;
 
   constructor(config?: MetricsCollectorConfig) {
     this.state = this.createEmpty();
     this._usePromClient = config?.usePromClient ?? false;
+    this.measurePayloadSize = config?.measurePayloadSize ?? true;
     if (this._usePromClient) {
       void this.initPromClient();
     }
@@ -81,6 +83,7 @@ export class CanonicalMetricsCollector implements MetricsCollectorInterface {
         config.fileWriteIntervalMs ?? 5000,
       );
     }
+    setHttpMetricsObserver(this);
   }
 
   private async initPromClient(): Promise<void> {
@@ -279,15 +282,17 @@ export class CanonicalMetricsCollector implements MetricsCollectorInterface {
       exception: excName,
     });
 
-    const seconds = event.durationMs / 1000;
-    this.state.taskUpdateTimeSeconds.observe(
-      { taskType: event.taskType, status: "FAILURE" },
-      seconds,
-    );
-    this._promRegistry?.observeHistogram("task_update_time_seconds", {
-      taskType: event.taskType,
-      status: "FAILURE",
-    }, seconds);
+    if (event.durationMs != null) {
+      const seconds = event.durationMs / 1000;
+      this.state.taskUpdateTimeSeconds.observe(
+        { taskType: event.taskType, status: "FAILURE" },
+        seconds,
+      );
+      this._promRegistry?.observeHistogram("task_update_time_seconds", {
+        taskType: event.taskType,
+        status: "FAILURE",
+      }, seconds);
+    }
   }
 
   onTaskPaused(event: TaskPaused): void {

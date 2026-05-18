@@ -387,6 +387,40 @@ process.on("unhandledRejection", (reason) => {
 - When `usePromClient: true` is set but `prom-client` is not installed, the
   collector falls back to the built-in text format silently.
 
+## Implementation Notes
+
+### One Collector Per Process
+
+Only one metrics collector can be active at a time. Both
+`LegacyMetricsCollector` and `CanonicalMetricsCollector` register themselves
+as the global HTTP metrics observer on construction. Creating a second
+collector replaces the first. Calling `stop()` clears the global observer.
+
+### Payload Size Measurement
+
+`workflow_input_size_bytes` is recorded by calling `JSON.stringify` on the
+workflow input and measuring the resulting UTF-8 byte length with
+`Buffer.byteLength`. This cost is controlled by the `measurePayloadSize`
+config option:
+
+- **Canonical** (default `true`): measured on every `startWorkflow` call.
+  Set `measurePayloadSize: false` to disable.
+- **Legacy** (default `false`): not measured unless you set
+  `measurePayloadSize: true`.
+
+### Legacy `task_paused_total`
+
+Legacy mode does not emit `task_paused_total`. This metric was defined but
+never recorded in any prior release. It remains unrecorded in legacy mode to
+preserve byte-for-byte output compatibility. Switch to canonical mode
+(`WORKER_CANONICAL_METRICS=true`) to get paused metrics.
+
+### `WORKER_LEGACY_METRICS` (Reserved)
+
+`WORKER_LEGACY_METRICS` is reserved for future use. Once canonical metrics
+become the default, setting `WORKER_LEGACY_METRICS=true` will re-activate
+the legacy metric surface. It is not read by the current implementation.
+
 ## Detailed Technical Notes -- Unreleased
 
 This section documents internal implementation details for developers reviewing
@@ -415,7 +449,7 @@ returns a matched pair of request/response interceptors registered on the
 OpenAPI generated client:
 
 - **Request interceptor** stashes `performance.now()` on the `opts` object
-  that the generated client passes through both interceptors.
+  only when a metrics observer is active (no mutation otherwise).
 - **Response interceptor** computes the request duration, extracts the
   interpolated URI from `request.url`, extracts the path template from
   `opts.url` (stripping the `/api/` prefix baked in by the OpenAPI spec), and
@@ -449,10 +483,9 @@ sub-fields of the request/response payloads (`workflowRequest.input` and
 separate `JSON.stringify` call on the sub-field, independent of the HTTP body
 serialization performed by the OpenAPI client.
 
-This is an acceptable minor cost, consistent with how the Go, Java, and Python
-SDKs measure the same metrics. The Go SDK provides `WORKER_METRICS_PAYLOAD_SIZE`
-to opt out of this serialization; a similar env var can be added to the
-JavaScript SDK in a future release if needed.
+This cost is controlled by the `measurePayloadSize` config option (canonical
+default `true`, legacy default `false`). The Go SDK provides
+`WORKER_METRICS_PAYLOAD_SIZE` for the same purpose.
 
 ### Metrics collector event surface
 

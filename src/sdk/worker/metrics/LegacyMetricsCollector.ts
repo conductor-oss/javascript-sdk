@@ -33,6 +33,11 @@ export interface MetricsCollectorConfig {
    * Falls back to custom text format if prom-client is not installed.
    */
   usePromClient?: boolean;
+  /**
+   * Measure workflow input payload size via JSON.stringify on each
+   * `startWorkflow` call.  Default: true for canonical, false for legacy.
+   */
+  measurePayloadSize?: boolean;
 }
 
 /**
@@ -103,11 +108,13 @@ export class LegacyMetricsCollector implements MetricsCollectorInterface {
   private _server?: import("./MetricsServer.js").MetricsServer;
   private _fileTimer?: ReturnType<typeof setInterval>;
   private _promRegistry?: import("./PrometheusRegistry.js").PrometheusRegistry;
+  readonly measurePayloadSize: boolean;
 
   constructor(config?: MetricsCollectorConfig) {
     this.metrics = this.createEmptyMetrics();
     this._prefix = config?.prefix ?? "conductor_worker";
     this._slidingWindowSize = config?.slidingWindowSize ?? 1000;
+    this.measurePayloadSize = config?.measurePayloadSize ?? false;
     if (config?.usePromClient) {
       void this.initPromClient();
     }
@@ -120,6 +127,7 @@ export class LegacyMetricsCollector implements MetricsCollectorInterface {
         config.fileWriteIntervalMs ?? 5000,
       );
     }
+    setHttpMetricsObserver(this);
   }
 
   private async initPromClient(): Promise<void> {
@@ -253,12 +261,16 @@ export class LegacyMetricsCollector implements MetricsCollectorInterface {
 
   onTaskUpdateFailure(event: TaskUpdateFailure): void {
     this.incrementCounter(this.metrics.taskUpdateFailureTotal, event.taskType, "update_error_total", "task_type");
-    this.observeSummary(this.metrics.updateDurationMs, event.taskType, event.durationMs, "update_time", "task_type");
+    if (event.durationMs != null) {
+      this.observeSummary(this.metrics.updateDurationMs, event.taskType, event.durationMs, "update_time", "task_type");
+    }
   }
 
-  // Canonical-only event — noop in legacy
   onTaskPaused(): void {
-    // Noop: TaskPaused events are handled via recordTaskPaused()
+    // Intentional no-op: task_paused_total was never emitted by the legacy
+    // metrics surface. Keeping it unrecorded preserves byte-for-byte output
+    // compatibility. Users who want paused metrics should switch to canonical
+    // mode (WORKER_CANONICAL_METRICS=true).
   }
 
   // ── Direct Recording Methods ───────────────────────────────────

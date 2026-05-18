@@ -184,6 +184,18 @@ describe("fetchWithRetry", () => {
   // ─── Server error (502/503/504) retry ───────────────────────────────
 
   describe("server error (502/503/504) retry", () => {
+    it("should NOT retry 502 by default (retryServerErrors unset)", async () => {
+      mockFetch.mockResolvedValue(createMockResponse(502, "Bad Gateway"));
+
+      const result = await retryFetch("http://test.com", {}, mockFetch, {
+        maxTransportRetries: 3,
+        initialRetryDelay: 1,
+      });
+
+      expect(result.status).toBe(502);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
+
     it("should retry 502 and succeed on next attempt", async () => {
       mockFetch
         .mockResolvedValueOnce(createMockResponse(502, "Bad Gateway"))
@@ -192,6 +204,7 @@ describe("fetchWithRetry", () => {
       const result = await retryFetch("http://test.com", {}, mockFetch, {
         maxTransportRetries: 3,
         initialRetryDelay: 1,
+        retryServerErrors: true,
       });
 
       expect(result.status).toBe(200);
@@ -206,6 +219,7 @@ describe("fetchWithRetry", () => {
       const result = await retryFetch("http://test.com", {}, mockFetch, {
         maxTransportRetries: 3,
         initialRetryDelay: 1,
+        retryServerErrors: true,
       });
 
       expect(result.status).toBe(200);
@@ -220,6 +234,7 @@ describe("fetchWithRetry", () => {
       const result = await retryFetch("http://test.com", {}, mockFetch, {
         maxTransportRetries: 3,
         initialRetryDelay: 1,
+        retryServerErrors: true,
       });
 
       expect(result.status).toBe(200);
@@ -232,6 +247,7 @@ describe("fetchWithRetry", () => {
       const result = await retryFetch("http://test.com", {}, mockFetch, {
         maxTransportRetries: 2,
         initialRetryDelay: 1,
+        retryServerErrors: true,
       });
 
       expect(result.status).toBe(502);
@@ -245,6 +261,7 @@ describe("fetchWithRetry", () => {
       const result = await retryFetch("http://test.com", { method: "POST" }, mockFetch, {
         maxTransportRetries: 3,
         initialRetryDelay: 1,
+        retryServerErrors: true,
       });
 
       expect(result.status).toBe(502);
@@ -257,6 +274,7 @@ describe("fetchWithRetry", () => {
       const result = await retryFetch("http://test.com", { method: "PATCH" }, mockFetch, {
         maxTransportRetries: 3,
         initialRetryDelay: 1,
+        retryServerErrors: true,
       });
 
       expect(result.status).toBe(503);
@@ -271,6 +289,7 @@ describe("fetchWithRetry", () => {
       const result = await retryFetch("http://test.com", { method: "PUT" }, mockFetch, {
         maxTransportRetries: 3,
         initialRetryDelay: 1,
+        retryServerErrors: true,
       });
 
       expect(result.status).toBe(200);
@@ -286,6 +305,7 @@ describe("fetchWithRetry", () => {
       const result = await retryFetch("http://test.com", {}, mockFetch, {
         maxTransportRetries: 3,
         initialRetryDelay: 1,
+        retryServerErrors: true,
       });
 
       expect(result.status).toBe(200);

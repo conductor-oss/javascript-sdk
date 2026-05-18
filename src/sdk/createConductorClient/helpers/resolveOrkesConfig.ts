@@ -67,5 +67,8 @@ export const resolveOrkesConfig = (config?: Partial<OrkesApiConfig>) => {
     disableHttp2:
       parseEnvBoolean(process.env.CONDUCTOR_DISABLE_HTTP2) ??
       config?.disableHttp2,
+    retryServerErrors:
+      parseEnvBoolean(process.env.CONDUCTOR_RETRY_SERVER_ERRORS) ??
+      config?.retryServerErrors,
   };
 };

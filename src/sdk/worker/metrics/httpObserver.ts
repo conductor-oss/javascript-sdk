@@ -8,6 +8,8 @@
  */
 
 export interface HttpMetricsObserver {
+  readonly measurePayloadSize: boolean;
+
   recordApiRequestTime(
     method: string,
     uri: string,
