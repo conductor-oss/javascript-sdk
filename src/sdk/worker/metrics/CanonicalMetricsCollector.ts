@@ -389,16 +389,18 @@ export class CanonicalMetricsCollector implements MetricsCollectorInterface {
     uri: string,
     status: number | string,
     durationMs: number,
+    metricUri?: string,
   ): void {
+    const resolvedUri = metricUri ?? uri;
     const statusStr = String(status);
     const seconds = durationMs / 1000;
     this.state.httpApiClientRequestSeconds.observe(
-      { method, uri, status: statusStr },
+      { method, uri: resolvedUri, status: statusStr },
       seconds,
     );
     this._promRegistry?.observeHistogram("http_api_client_request_seconds", {
       method,
-      uri,
+      uri: resolvedUri,
       status: statusStr,
     }, seconds);
   }

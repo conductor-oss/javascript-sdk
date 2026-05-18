@@ -35,6 +35,7 @@ export interface MetricsCollectorInterface extends TaskRunnerEventsListener {
     uri: string,
     status: number | string,
     durationMs: number,
+    metricUri?: string,
   ): void;
 
   // ── Output / lifecycle ─────────────────────────────────────────

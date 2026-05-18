@@ -246,6 +246,19 @@ describe("CanonicalMetricsCollector", () => {
       expect(text).toContain("# TYPE http_api_client_request_seconds histogram");
       expect(text).toContain('http_api_client_request_seconds_sum{method="GET",uri="/api/workflow",status="200"} 0.045');
     });
+
+    it("recordApiRequestTime should prefer metricUri over uri when provided", () => {
+      collector.recordApiRequestTime("GET", "/api/workflow/abc-123", 200, 30, "/workflow/{workflowId}");
+      const text = collector.toPrometheusText();
+      expect(text).toContain('uri="/workflow/{workflowId}"');
+      expect(text).not.toContain("abc-123");
+    });
+
+    it("recordApiRequestTime should fall back to uri when metricUri is undefined", () => {
+      collector.recordApiRequestTime("POST", "/api/tasks", 201, 20);
+      const text = collector.toPrometheusText();
+      expect(text).toContain('uri="/api/tasks"');
+    });
   });
 
   describe("onTaskPaused event", () => {

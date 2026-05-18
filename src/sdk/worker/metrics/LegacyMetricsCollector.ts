@@ -315,6 +315,7 @@ export class LegacyMetricsCollector implements MetricsCollectorInterface {
     uri: string,
     status: number | string,
     durationMs: number,
+    _metricUri?: string,
   ): void {
     const key = `${method}:${uri}:${status}`;
     this.observeSummary(this.metrics.apiRequestDurationMs, key, durationMs, "api_request", "endpoint");

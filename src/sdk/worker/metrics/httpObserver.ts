@@ -13,6 +13,7 @@ export interface HttpMetricsObserver {
     uri: string,
     status: number | string,
     durationMs: number,
+    metricUri?: string,
   ): void;
 
   recordWorkflowInputSize(

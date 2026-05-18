@@ -211,35 +211,29 @@ export const wrapFetchWithRetry = (
 ): typeof fetch => {
   return async (input: Input, init?: Init): Promise<Response> => {
     const start = performance.now();
-    let method = "GET";
-    let uri = "";
 
     try {
-      if (input instanceof Request) {
-        method = input.method;
-        uri = new URL(input.url).pathname;
-      } else if (typeof input === "string") {
-        method = init?.method ?? "GET";
-        try { uri = new URL(input).pathname; } catch { uri = input; }
-      } else {
-        method = init?.method ?? "GET";
-        try { uri = input.pathname; } catch { uri = String(input); }
-      }
-    } catch {
-      // Best-effort URI extraction
-    }
-
-    try {
-      const response = await retryFetch(input, init, fetchFn, options);
-      const durationMs = performance.now() - start;
-      getHttpMetricsObserver()?.recordApiRequestTime(
-        method,
-        uri,
-        String(response.status),
-        durationMs,
-      );
-      return response;
+      return await retryFetch(input, init, fetchFn, options);
     } catch (error) {
+      // Network-error fallback: the response interceptor never runs when
+      // fetch throws, so record a status="0" metric here as a safety net.
+      let method = "GET";
+      let uri = "";
+      try {
+        if (input instanceof Request) {
+          method = input.method;
+          uri = new URL(input.url).pathname;
+        } else if (typeof input === "string") {
+          method = init?.method ?? "GET";
+          try { uri = new URL(input).pathname; } catch { uri = input; }
+        } else {
+          method = init?.method ?? "GET";
+          try { uri = input.pathname; } catch { uri = String(input); }
+        }
+      } catch {
+        // Best-effort URI extraction
+      }
+
       const durationMs = performance.now() - start;
       getHttpMetricsObserver()?.recordApiRequestTime(
         method,

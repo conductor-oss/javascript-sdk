@@ -161,6 +161,13 @@ describe("LegacyMetricsCollector - Prometheus features", () => {
       const m = collector.getMetrics();
       expect(m.apiRequestDurationMs.get("GET:/api/workflow:200")).toEqual([45, 55]);
     });
+
+    it("should ignore metricUri and use uri (legacy behavior preserved)", () => {
+      collector.recordApiRequestTime("GET", "/api/workflow/abc-123", 200, 45, "/workflow/{workflowId}");
+      const m = collector.getMetrics();
+      expect(m.apiRequestDurationMs.get("GET:/api/workflow/abc-123:200")).toEqual([45]);
+      expect(m.apiRequestDurationMs.get("GET:/workflow/{workflowId}:200")).toBeUndefined();
+    });
   });
 
   // ── Sliding window ──────────────────────────────────────────────

@@ -7,6 +7,7 @@ import {
 import type { OrkesApiConfig } from "../types";
 import { createClient } from "../../open-api/generated/client";
 import { addResourcesBackwardCompatibility } from "./helpers/addResourcesBackwardCompatibility";
+import { createMetricsInterceptors } from "./helpers/metricsInterceptors";
 
 /**
  * Creates a Conductor client with authentication and configuration
@@ -55,6 +56,10 @@ export const createConductorClient = async (
     fetch: wrapFetchWithRetry(baseFetchFn, { requestTimeoutMs }),
     throwOnError: true,
   });
+
+  const { onRequest, onResponse } = createMetricsInterceptors();
+  openApiClient.interceptors.request.use(onRequest);
+  openApiClient.interceptors.response.use(onResponse);
 
   let authResult: Awaited<ReturnType<typeof handleAuth>> | undefined;
   if (keyId && keySecret) {
