@@ -338,9 +338,9 @@ sum(rate(task_execute_time_seconds_count[5m])) by (taskType)
 ### Missing HTTP or Workflow Metrics
 
 - `http_api_client_request_seconds` (canonical) or
-  `conductor_worker_http_api_client_request` (legacy) is recorded by request /
-  response interceptors on the OpenAPI client, with a network-error fallback in
-  `fetchWithRetry`. Verify the collector is constructed before HTTP calls begin.
+  `conductor_worker_http_api_client_request` (legacy) is recorded by the
+  `wrapFetchWithRetry` wrapper. Verify the collector is constructed before HTTP
+  calls begin.
 - `workflow_input_size_bytes` and `workflow_start_error_total` are recorded in
   `WorkflowExecutor`. Verify the collector is active before starting workflows.
 
@@ -444,23 +444,19 @@ appropriate implementation.
 
 ### HTTP request timing via interceptors
 
-`createMetricsInterceptors()` (`src/sdk/createConductorClient/helpers/metricsInterceptors.ts`)
-returns a matched pair of request/response interceptors registered on the
-OpenAPI generated client:
+A **request interceptor** (`createMetricsInterceptors()` in
+`src/sdk/createConductorClient/helpers/metricsInterceptors.ts`) stashes the
+OpenAPI path template (from `opts.url`) in a `WeakMap` keyed on the `Request`
+object. The template is stripped of the `/api/` prefix baked in by the OpenAPI
+spec so the canonical `uri` label matches the cross-SDK convention (e.g.
+`/workflow/{workflowId}`).
 
-- **Request interceptor** stashes `performance.now()` on the `opts` object
-  only when a metrics observer is active (no mutation otherwise).
-- **Response interceptor** computes the request duration, extracts the
-  interpolated URI from `request.url`, extracts the path template from
-  `opts.url` (stripping the `/api/` prefix baked in by the OpenAPI spec), and
-  calls `observer.recordApiRequestTime(method, uri, status, durationMs, metricUri)`.
-
-Both interceptors receive the same `opts` reference (confirmed in
-`client.gen.ts` lines 89-102), so no `WeakMap` or side-channel is needed.
-
-`wrapFetchWithRetry` retains a network-error fallback that records `status: "0"`
-when `fetch` throws before any HTTP response (the response interceptor never
-runs in that case).
+`wrapFetchWithRetry` reads the template from the `WeakMap` before calling
+`retryFetch` and records HTTP metrics for both successful responses and
+network errors (status `"0"`). All timing and metric recording is centralised
+in the fetch wrapper; the interceptor's only job is to bridge the path
+template from `opts` (available to interceptors) to the fetch layer (which
+only receives the `Request` object).
 
 ### Canonical vs. legacy URI label
 
@@ -471,7 +467,7 @@ byte-for-byte.
 
 The JavaScript SDK's OpenAPI spec bakes `/api/` into every path template
 (`opts.url = "/api/workflow/{workflowId}"`). Other SDKs keep `/api` in the base
-URL and use clean paths. The response interceptor strips this prefix so the
+URL and use clean paths. The request interceptor strips this prefix so the
 canonical `uri` label matches the cross-SDK convention (e.g.
 `/workflow/{workflowId}`).
 

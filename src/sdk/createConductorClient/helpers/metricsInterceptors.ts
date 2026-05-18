@@ -1,5 +1,4 @@
 import type { ResolvedRequestOptions } from "../../../open-api/generated/client/types.gen";
-import { getHttpMetricsObserver } from "../../worker/metrics/httpObserver";
 
 /**
  * Strips the /api prefix that the OpenAPI spec bakes into every path.
@@ -12,58 +11,36 @@ import { getHttpMetricsObserver } from "../../worker/metrics/httpObserver";
 const stripApiPrefix = (url: string): string =>
   url.startsWith("/api/") ? url.slice(4) : url;
 
-type OptsWithMetrics = ResolvedRequestOptions & { _metricsStart?: number };
+/**
+ * Maps each Request to its OpenAPI path template. The request interceptor
+ * stashes the template here so the fetch wrapper (which only receives the
+ * Request object) can pass bounded-cardinality URI labels to the metrics
+ * observer for both success and error paths.
+ *
+ * Entries are garbage-collected with the Request.
+ */
+export const requestTemplateMap = new WeakMap<Request, string>();
 
 /**
- * Creates a matched pair of request/response interceptors that record
- * http_api_client_request_seconds via the global HttpMetricsObserver.
+ * Creates a request interceptor that captures the OpenAPI path template
+ * for each request. The template is stored in {@link requestTemplateMap}
+ * and read by `wrapFetchWithRetry` when recording HTTP metrics.
  *
- * Both interceptors receive the same `opts` object for a given request
- * (see client.gen.ts lines 89-102), so start time is stashed directly
- * on opts — no WeakMap or side-channel needed.
- *
- * The response interceptor passes both the interpolated URI (for legacy
- * metrics) and the bounded-cardinality path template (for canonical
- * metrics) to the observer, letting each collector choose which to use.
+ * Timing and metric recording are handled entirely in the fetch wrapper;
+ * the interceptor's only job is to bridge the path template from `opts`
+ * (available to interceptors) to the fetch layer (which only sees the
+ * Request object).
  */
 export function createMetricsInterceptors() {
   const onRequest = (
     request: Request,
     opts: ResolvedRequestOptions,
   ): Request => {
-    if (getHttpMetricsObserver()) {
-      (opts as OptsWithMetrics)._metricsStart = performance.now();
+    if (typeof opts.url === "string") {
+      requestTemplateMap.set(request, stripApiPrefix(opts.url));
     }
     return request;
   };
 
-  const onResponse = (
-    response: Response,
-    request: Request,
-    opts: ResolvedRequestOptions,
-  ): Response => {
-    const observer = getHttpMetricsObserver();
-    if (!observer) return response;
-
-    const start = (opts as OptsWithMetrics)._metricsStart;
-    const durationMs = start != null ? performance.now() - start : 0;
-
-    const method = request.method;
-    const status = String(response.status);
-
-    let uri = "";
-    try {
-      uri = new URL(request.url).pathname;
-    } catch {
-      uri = String(request.url);
-    }
-
-    const template = typeof opts.url === "string" ? stripApiPrefix(opts.url) : uri;
-
-    observer.recordApiRequestTime(method, uri, status, durationMs, template);
-
-    return response;
-  };
-
-  return { onRequest, onResponse };
+  return { onRequest };
 }

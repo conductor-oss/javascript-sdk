@@ -1,4 +1,5 @@
 import { getHttpMetricsObserver } from "../../worker/metrics/httpObserver";
+import { requestTemplateMap } from "./metricsInterceptors";
 
 type Input = Parameters<typeof fetch>[0];
 type Init = Parameters<typeof fetch>[1];
@@ -207,46 +208,53 @@ export const retryFetch = async (
   throw lastError ?? new Error("Fetch retry exhausted");
 };
 
+const extractRequestInfo = (input: Input, init?: Init) => {
+  const method = input instanceof Request
+    ? input.method
+    : (init?.method ?? "GET");
+  let uri = "";
+  try {
+    uri = new URL(
+      input instanceof Request ? input.url : String(input),
+    ).pathname;
+  } catch {
+    uri = String(input);
+  }
+  return { method, uri };
+};
+
 export const wrapFetchWithRetry = (
   fetchFn: typeof fetch,
   options?: RetryFetchOptions,
 ): typeof fetch => {
-  return async (input: Input, init?: Init): Promise<Response> => {
-    if (!getHttpMetricsObserver()) {
+  return (input: Input, init?: Init): Promise<Response> => {
+    const observer = getHttpMetricsObserver();
+    if (!observer) {
       return retryFetch(input, init, fetchFn, options);
     }
 
     const start = performance.now();
-    try {
-      return await retryFetch(input, init, fetchFn, options);
-    } catch (error) {
-      // Network-error fallback: the response interceptor never runs when
-      // fetch throws, so record a status="0" metric here as a safety net.
-      let method = "GET";
-      let uri = "";
-      try {
-        if (input instanceof Request) {
-          method = input.method;
-          uri = new URL(input.url).pathname;
-        } else if (typeof input === "string") {
-          method = init?.method ?? "GET";
-          try { uri = new URL(input).pathname; } catch { uri = input; }
-        } else {
-          method = init?.method ?? "GET";
-          try { uri = input.pathname; } catch { uri = String(input); }
-        }
-      } catch {
-        // Best-effort URI extraction
-      }
+    const template = input instanceof Request
+      ? requestTemplateMap.get(input)
+      : undefined;
 
-      const durationMs = performance.now() - start;
-      getHttpMetricsObserver()?.recordApiRequestTime(
-        method,
-        uri,
-        "0",
-        durationMs,
-      );
-      throw error;
-    }
+    return retryFetch(input, init, fetchFn, options).then(
+      (response) => {
+        const durationMs = performance.now() - start;
+        const { method, uri } = extractRequestInfo(input, init);
+        observer.recordApiRequestTime(
+          method, uri, String(response.status), durationMs, template,
+        );
+        return response;
+      },
+      (error) => {
+        const durationMs = performance.now() - start;
+        const { method, uri } = extractRequestInfo(input, init);
+        observer.recordApiRequestTime(
+          method, uri, "0", durationMs, template,
+        );
+        throw error;
+      },
+    );
   };
 };

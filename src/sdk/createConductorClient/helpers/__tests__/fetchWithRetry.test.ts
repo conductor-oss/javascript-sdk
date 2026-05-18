@@ -1,6 +1,7 @@
 import { jest, expect, describe, it, beforeEach, afterEach } from "@jest/globals";
 import { retryFetch, wrapFetchWithRetry, applyTimeout } from "../fetchWithRetry";
 import * as httpObserver from "@/sdk/worker/metrics/httpObserver";
+import { requestTemplateMap } from "../metricsInterceptors";
 
 const createMockResponse = (status: number, body = ""): Response =>
   new Response(body, { status, statusText: `Status ${status}` });
@@ -660,19 +661,16 @@ describe("fetchWithRetry", () => {
   });
 
   // ─── wrapFetchWithRetry metrics recording ───────────────────────────
-  //
-  // After the interceptor migration, wrapFetchWithRetry only records
-  // metrics on network errors (status "0") — the response interceptor
-  // handles all successful/HTTP-error cases.
 
   describe("wrapFetchWithRetry metrics", () => {
     const mockRecordApiRequestTime = jest.fn<
-      (m: string, u: string, s: string, d: number) => void
+      (m: string, u: string, s: string, d: number, t?: string) => void
     >();
 
     beforeEach(() => {
       mockRecordApiRequestTime.mockClear();
       httpObserver.setHttpMetricsObserver({
+        measurePayloadSize: false,
         recordApiRequestTime: mockRecordApiRequestTime,
         recordWorkflowInputSize: jest.fn(),
         recordWorkflowStartError: jest.fn(),
@@ -683,13 +681,19 @@ describe("fetchWithRetry", () => {
       httpObserver.setHttpMetricsObserver(undefined);
     });
 
-    it("should NOT record metrics on successful response (interceptors handle it)", async () => {
+    it("should record metrics on successful response", async () => {
       mockFetch.mockResolvedValue(createMockResponse(200));
 
       const wrappedFetch = wrapFetchWithRetry(mockFetch);
       await wrappedFetch("http://test.com/api/tasks", { method: "POST" });
 
-      expect(mockRecordApiRequestTime).not.toHaveBeenCalled();
+      expect(mockRecordApiRequestTime).toHaveBeenCalledTimes(1);
+      const [method, uri, status, duration] =
+        mockRecordApiRequestTime.mock.calls[0];
+      expect(method).toBe("POST");
+      expect(uri).toBe("/api/tasks");
+      expect(status).toBe("200");
+      expect(duration).toBeGreaterThanOrEqual(0);
     });
 
     it("should record status '0' on network failure", async () => {
@@ -730,6 +734,57 @@ describe("fetchWithRetry", () => {
       expect(status).toBe("0");
     });
 
+    it("should pass template from requestTemplateMap on success", async () => {
+      mockFetch.mockResolvedValue(createMockResponse(200));
+
+      const request = new Request("http://host/api/workflow/abc-123", {
+        method: "GET",
+      });
+      requestTemplateMap.set(request, "/workflow/{workflowId}");
+
+      const wrappedFetch = wrapFetchWithRetry(mockFetch);
+      await wrappedFetch(request);
+
+      expect(mockRecordApiRequestTime).toHaveBeenCalledTimes(1);
+      const [, , , , template] = mockRecordApiRequestTime.mock.calls[0];
+      expect(template).toBe("/workflow/{workflowId}");
+    });
+
+    it("should pass template from requestTemplateMap on network failure", async () => {
+      mockFetch.mockRejectedValue(new Error("ECONNRESET"));
+
+      const request = new Request("http://host/api/workflow/abc-123", {
+        method: "GET",
+      });
+      requestTemplateMap.set(request, "/workflow/{workflowId}");
+
+      const wrappedFetch = wrapFetchWithRetry(mockFetch, {
+        maxTransportRetries: 0,
+      });
+
+      await expect(wrappedFetch(request)).rejects.toThrow("ECONNRESET");
+
+      expect(mockRecordApiRequestTime).toHaveBeenCalledTimes(1);
+      const [, , , , template] = mockRecordApiRequestTime.mock.calls[0];
+      expect(template).toBe("/workflow/{workflowId}");
+    });
+
+    it("should pass undefined template when requestTemplateMap has no entry", async () => {
+      mockFetch.mockResolvedValue(createMockResponse(200));
+
+      const request = new Request("http://host/api/workflow/abc-123", {
+        method: "GET",
+      });
+      // Do NOT set requestTemplateMap
+
+      const wrappedFetch = wrapFetchWithRetry(mockFetch);
+      await wrappedFetch(request);
+
+      expect(mockRecordApiRequestTime).toHaveBeenCalledTimes(1);
+      const [, , , , template] = mockRecordApiRequestTime.mock.calls[0];
+      expect(template).toBeUndefined();
+    });
+
     it("should not break fetch when no observer is registered", async () => {
       httpObserver.setHttpMetricsObserver(undefined);
 
@@ -738,6 +793,16 @@ describe("fetchWithRetry", () => {
       const result = await wrappedFetch("http://test.com");
 
       expect(result.status).toBe(200);
+    });
+
+    it("should not record metrics when no observer is registered", async () => {
+      httpObserver.setHttpMetricsObserver(undefined);
+
+      mockFetch.mockResolvedValue(createMockResponse(200));
+      const wrappedFetch = wrapFetchWithRetry(mockFetch);
+      await wrappedFetch("http://test.com");
+
+      expect(mockRecordApiRequestTime).not.toHaveBeenCalled();
     });
   });
 });

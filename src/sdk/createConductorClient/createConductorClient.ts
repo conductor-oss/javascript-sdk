@@ -58,9 +58,8 @@ export const createConductorClient = async (
     throwOnError: true,
   });
 
-  const { onRequest, onResponse } = createMetricsInterceptors();
+  const { onRequest } = createMetricsInterceptors();
   openApiClient.interceptors.request.use(onRequest);
-  openApiClient.interceptors.response.use(onResponse);
 
   let authResult: Awaited<ReturnType<typeof handleAuth>> | undefined;
   if (keyId && keySecret) {

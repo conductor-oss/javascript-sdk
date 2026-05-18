@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Legacy metrics emit unchanged when constructing `LegacyMetricsCollector` directly (the pre-existing pattern). Using `createMetricsCollector()` additionally enables automatic HTTP request timing via OpenAPI interceptors for both legacy and canonical modes; no other action required for existing deployments.
 - `MetricsCollector.ts` renamed to `LegacyMetricsCollector.ts`; the public symbol is preserved via re-export so existing imports keep working.
-- `http_api_client_request` timing is now recorded automatically via OpenAPI client request/response interceptors when a metrics collector is active (via `createMetricsCollector()` or `setHttpMetricsObserver`). Previously, `recordApiRequestTime` existed but was not wired into the HTTP pipeline -- [details](METRICS.md#implementation-notes).
+- `http_api_client_request` timing is now recorded automatically by `wrapFetchWithRetry` when a metrics collector is active (via `createMetricsCollector()` or `setHttpMetricsObserver`), covering both successful responses and network-error fallback paths. A lightweight request interceptor captures OpenAPI path templates so the canonical `uri` label uses bounded-cardinality templates in all cases. Previously, `recordApiRequestTime` existed but was not wired into the HTTP pipeline -- [details](METRICS.md#implementation-notes).
 - Added optional `durationMs` field to `TaskUpdateFailure` event, recording the duration of the last update attempt. Declared optional so existing event listener implementations are unaffected.
 
 ### Deprecated
