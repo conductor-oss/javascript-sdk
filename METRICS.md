@@ -253,7 +253,7 @@ Type is Summary. Values are bytes.
 | `payload_type` | Legacy `conductor_worker_external_payload_used_total` | Payload type, such as `workflow_input` or `task_output`. |
 | `payloadType` | Canonical `external_payload_used_total` | Payload type, such as `TASK_INPUT`, `TASK_OUTPUT`, `WORKFLOW_INPUT`, or `WORKFLOW_OUTPUT`. |
 | `method` | Canonical HTTP metrics | HTTP verb. |
-| `uri` | Canonical HTTP metrics | Request path. May contain interpolated identifiers. |
+| `uri` | Canonical HTTP metrics | Request path template (e.g. `/workflow/{workflowId}`). Uses bounded-cardinality templates, not interpolated paths. |
 | `endpoint` | Legacy HTTP metrics | Compound `"METHOD:/api/path:STATUS"` string. |
 | `quantile` | Legacy time and size metrics | `0.5`, `0.75`, `0.9`, `0.95`, or `0.99`. |
 
@@ -338,17 +338,17 @@ sum(rate(task_execute_time_seconds_count[5m])) by (taskType)
 ### Missing HTTP or Workflow Metrics
 
 - `http_api_client_request_seconds` (canonical) or
-  `conductor_worker_http_api_client_request` (legacy) is recorded from the
-  `fetchWithRetry` HTTP layer. Verify the collector is constructed before HTTP
-  calls begin.
+  `conductor_worker_http_api_client_request` (legacy) is recorded by request /
+  response interceptors on the OpenAPI client, with a network-error fallback in
+  `fetchWithRetry`. Verify the collector is constructed before HTTP calls begin.
 - `workflow_input_size_bytes` and `workflow_start_error_total` are recorded in
   `WorkflowExecutor`. Verify the collector is active before starting workflows.
 
 ### High Cardinality
 
-- Watch the `uri` label (canonical) or `endpoint` label (legacy) on HTTP
-  metrics. The SDK records the interpolated request path, which may include
-  task type names or workflow IDs.
+- In canonical mode the `uri` label on `http_api_client_request_seconds` uses
+  path templates (e.g. `/workflow/{workflowId}`), giving bounded cardinality.
+  Legacy mode's `endpoint` label still contains fully interpolated paths.
 - Prefer canonical mode for bounded `exception` labels. Legacy error counters
   encode exception names in the Map key, not as a proper Prometheus label.
 - Avoid embedding user identifiers or unbounded values in task type, workflow
@@ -386,3 +386,91 @@ process.on("unhandledRejection", (reason) => {
   option.
 - When `usePromClient: true` is set but `prom-client` is not installed, the
   collector falls back to the built-in text format silently.
+
+## Detailed Technical Notes -- Unreleased
+
+This section documents internal implementation details for developers reviewing
+the metrics harmonization changes. It is not end-user-facing and will be
+removed or folded into the relevant sections once the release is published.
+
+### Architecture
+
+The `MetricsCollectorInterface` (`src/sdk/worker/metrics/MetricsCollectorInterface.ts`)
+defines the contract for recording SDK metrics. Two implementations exist:
+
+- `LegacyMetricsCollector` (`src/sdk/worker/metrics/LegacyMetricsCollector.ts`)
+  -- emits the original metric names and types (sliding-window Summaries for
+  timing, compound `endpoint` labels, `conductor_worker_` prefix).
+- `CanonicalMetricsCollector` (`src/sdk/worker/metrics/CanonicalMetricsCollector.ts`)
+  -- emits the harmonized cross-SDK catalog (Histograms in seconds/bytes,
+  `_total` counters, bounded `exception` labels from `error.name`).
+
+`createMetricsCollector()` reads `WORKER_CANONICAL_METRICS` once and returns the
+appropriate implementation.
+
+### HTTP request timing via interceptors
+
+`createMetricsInterceptors()` (`src/sdk/createConductorClient/helpers/metricsInterceptors.ts`)
+returns a matched pair of request/response interceptors registered on the
+OpenAPI generated client:
+
+- **Request interceptor** stashes `performance.now()` on the `opts` object
+  that the generated client passes through both interceptors.
+- **Response interceptor** computes the request duration, extracts the
+  interpolated URI from `request.url`, extracts the path template from
+  `opts.url` (stripping the `/api/` prefix baked in by the OpenAPI spec), and
+  calls `observer.recordApiRequestTime(method, uri, status, durationMs, metricUri)`.
+
+Both interceptors receive the same `opts` reference (confirmed in
+`client.gen.ts` lines 89-102), so no `WeakMap` or side-channel is needed.
+
+`wrapFetchWithRetry` retains a network-error fallback that records `status: "0"`
+when `fetch` throws before any HTTP response (the response interceptor never
+runs in that case).
+
+### Canonical vs. legacy URI label
+
+`recordApiRequestTime` accepts an optional `metricUri` parameter (the path
+template). The canonical collector uses `metricUri ?? uri`; the legacy collector
+ignores `metricUri` and uses the interpolated `uri`, preserving legacy output
+byte-for-byte.
+
+The JavaScript SDK's OpenAPI spec bakes `/api/` into every path template
+(`opts.url = "/api/workflow/{workflowId}"`). Other SDKs keep `/api` in the base
+URL and use clean paths. The response interceptor strips this prefix so the
+canonical `uri` label matches the cross-SDK convention (e.g.
+`/workflow/{workflowId}`).
+
+### Payload size metrics
+
+`workflow_input_size_bytes` and `task_result_size_bytes` measure specific
+sub-fields of the request/response payloads (`workflowRequest.input` and
+`merged.outputData` respectively), not the full HTTP body. This requires a
+separate `JSON.stringify` call on the sub-field, independent of the HTTP body
+serialization performed by the OpenAPI client.
+
+This is an acceptable minor cost, consistent with how the Go, Java, and Python
+SDKs measure the same metrics. The Go SDK provides `WORKER_METRICS_PAYLOAD_SIZE`
+to opt out of this serialization; a similar env var can be added to the
+JavaScript SDK in a future release if needed.
+
+### Metrics collector event surface
+
+`CanonicalMetricsCollector` and `LegacyMetricsCollector` both implement
+`TaskRunnerEventsListener`, so they receive lifecycle events from the worker
+infrastructure:
+
+- `onTaskPoll` / `onTaskPollError` / `onTaskExecutionStarted` /
+  `onTaskExecutionCompleted` / `onTaskExecutionFailed` / `onTaskUpdateSuccess` /
+  `onTaskUpdateError` / `onTaskAckError` / `onTaskAckFailed` /
+  `onTaskExecutionQueueFull` / `onTaskPaused`
+- `Poller`, `TaskRunner`, and `EventDispatcher` emit a `taskPaused` event when a
+  poll cycle is skipped because the worker is paused.
+
+### Harness changes
+
+- Harness deployment manifest sets `WORKER_CANONICAL_METRICS=true`.
+- `harness/main.ts` logs which collector is active.
+- `WorkflowStatusProbe` (opt-in via `HARNESS_PROBE_RATE_PER_SEC`) exercises
+  UUID-bearing endpoints (`/api/workflow/{workflowId}`) to validate that the
+  `uri` label uses bounded templates.

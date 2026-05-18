@@ -9,18 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Metrics harmonization** - canonical metric surface aligned with the cross-SDK catalog, opt-in via `WORKER_CANONICAL_METRICS=true`
-  - New `CanonicalMetricsCollector` and optional `CanonicalPrometheusRegistry` (prom-client adapter) emit the harmonized cross-SDK catalog: 12 counters (e.g. `task_poll_total`, `task_execution_started_total`, `task_paused_total`, `external_payload_used_total{entityName,operation,payloadType}`, `workflow_start_error_total{workflowType,exception}`), 4 time histograms (`task_poll_time_seconds`, `task_execute_time_seconds`, `task_update_time_seconds`, `http_api_client_request_seconds{method,uri,status}`) with buckets `0.001…10s`, 2 size histograms (`task_result_size_bytes`, `workflow_input_size_bytes{workflowType,version}`) with buckets `100…10_000_000` bytes, and `active_workers` gauge. Labels are camelCase; names are unprefixed.
-  - `createMetricsCollector()` factory selects `LegacyMetricsCollector` (default) or `CanonicalMetricsCollector` based on `WORKER_CANONICAL_METRICS` (truthy: `true`, `1`, `yes`, case-insensitive). `WORKER_LEGACY_METRICS` is also recognized; canonical wins when both are set.
-  - `HttpMetricsObserver` plus `fetchWithRetry` instrumentation records `http_api_client_request_seconds`; `WorkflowExecutor` records `workflow_input_size_bytes` and `workflow_start_error_total`.
-  - `Poller`, `TaskRunner`, and `EventDispatcher` emit a new `taskPaused` event when a poll cycle is skipped because the worker is paused.
-  - `fetchWithRetry` now retries HTTP 502/503/504 for idempotent methods (GET, HEAD, OPTIONS, PUT, DELETE).
-  - Harness deployment manifest sets `WORKER_CANONICAL_METRICS=true`; `harness/main.ts` logs which collector is active.
+- Canonical metrics: opt-in harmonized metric surface via `WORKER_CANONICAL_METRICS=true` -- see [METRICS.md](METRICS.md) for the full catalog, configuration, and migration guide
+- Bounded `uri` label on `http_api_client_request_seconds`: canonical mode uses path templates (e.g. `/workflow/{workflowId}`) instead of fully-resolved paths, preventing metric cardinality explosion from dynamic IDs
+- `WorkflowStatusProbe` in harness: opt-in probe (via `HARNESS_PROBE_RATE_PER_SEC`) that exercises UUID-bearing endpoints to validate template URI metrics
+- `fetchWithRetry` now retries HTTP 502/503/504 for idempotent methods (GET, HEAD, OPTIONS, PUT, DELETE)
 
 ### Changed
 
-- **Metrics harmonization** - defaults preserved; legacy metrics emit unchanged when `WORKER_CANONICAL_METRICS` is unset
-  - `src/sdk/worker/metrics/MetricsCollector.ts` was renamed to `LegacyMetricsCollector.ts`. The public symbol is preserved via `export { LegacyMetricsCollector as MetricsCollector }` in `src/sdk/worker/metrics/index.ts`, so existing imports keep working.
-  - Default behavior is unchanged: with no env var set, the metric names, labels, and `conductor_worker_*` prefix from `v3.0.3` are preserved byte-for-byte.
-  - Rewrote `METRICS.md` with both surfaces, the env-var gate, side-by-side migration table with PromQL replacements, and troubleshooting.
-  - Updated `README.md`, `AGENTS.md`, `SDK_DEVELOPMENT.md`, `SDK_COMPARISON.md`, and `WORKER_ARCHITECTURE_COMPARISON.md` to reference `createMetricsCollector()` and the env var.
+- Legacy metrics emit unchanged by default; no action required for existing deployments
+- `MetricsCollector.ts` renamed to `LegacyMetricsCollector.ts`; the public symbol is preserved via re-export so existing imports keep working
+- HTTP metrics recording moved from `fetchWithRetry` to OpenAPI client interceptors -- [details](METRICS.md#detailed-technical-notes----unreleased)
+
+### Deprecated
+
+- Legacy metric names remain the default. Migration guidance is in [METRICS.md](METRICS.md#migrating-from-legacy-to-canonical).
