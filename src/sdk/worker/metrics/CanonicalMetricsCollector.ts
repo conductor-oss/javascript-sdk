@@ -64,14 +64,12 @@ export class CanonicalMetricsCollector implements MetricsCollectorInterface {
   private _server?: import("./MetricsServer.js").MetricsServer;
   private _fileTimer?: ReturnType<typeof setInterval>;
   private _promRegistry?: import("./CanonicalPrometheusRegistry.js").CanonicalPrometheusRegistry;
-  private readonly _usePromClient: boolean;
   readonly measurePayloadSize: boolean;
 
   constructor(config?: MetricsCollectorConfig) {
     this.state = this.createEmpty();
-    this._usePromClient = config?.usePromClient ?? false;
     this.measurePayloadSize = config?.measurePayloadSize ?? true;
-    if (this._usePromClient) {
+    if (config?.usePromClient) {
       void this.initPromClient();
     }
     if (config?.httpPort) {

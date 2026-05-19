@@ -94,8 +94,10 @@ async function main(): Promise<void> {
   });
 
   const metricsPort = envIntOrDefault("HARNESS_METRICS_PORT", 9991);
-  const metricsCollector = createMetricsCollector({ httpPort: metricsPort });
-  console.log(`Prometheus metrics server started on port ${metricsPort} (${metricsCollector.collectorName()} metrics)`);
+  const usePromClient = process.env.HARNESS_USE_PROM_CLIENT === "true";
+  const metricsCollector = createMetricsCollector({ httpPort: metricsPort, usePromClient });
+  const backend = usePromClient ? "prom-client" : "built-in";
+  console.log(`Prometheus metrics server started on port ${metricsPort} (${metricsCollector.collectorName()} metrics, ${backend} backend)`);
 
   const handler = new TaskHandler({
     client,
