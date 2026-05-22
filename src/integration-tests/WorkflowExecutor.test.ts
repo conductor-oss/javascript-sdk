@@ -606,9 +606,7 @@ describe("WorkflowExecutor", () => {
         const finalWorkflow = await waitForWorkflowStatus(
           executor,
           workflowId,
-          "COMPLETED",
-          300000, // 5 min max wait
-          200 // 200ms poll interval
+          "COMPLETED"
         );
 
         expect(finalWorkflow.status).toEqual("COMPLETED");
@@ -718,9 +716,7 @@ describe("WorkflowExecutor", () => {
           await waitForWorkflowStatus(
             executor,
             workflowId,
-            "COMPLETED",
-            300000,
-            200
+            "COMPLETED"
           );
           console.log(`✓ ${testCase.name} test completed successfully`);
         });

@@ -1,3 +1,5 @@
+import { HTTPBIN_BASE_URL } from "../utils/testConstants";
+
 export const getComplexSignalTestWfDef = (date: number) => {
   return {
     createTime: 1744299182957,
@@ -10,7 +12,7 @@ export const getComplexSignalTestWfDef = (date: number) => {
         name: "http",
         taskReferenceName: "http_ref",
         inputParameters: {
-          uri: "http://httpbin-server:8081/api/hello?name=test1",
+          uri: `${HTTPBIN_BASE_URL}/api/hello?name=test1`,
           method: "GET",
           accept: "application/json",
           contentType: "application/json",

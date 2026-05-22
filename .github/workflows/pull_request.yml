@@ -177,6 +177,7 @@ jobs:
           CONDUCTOR_AUTH_SECRET: ${{ secrets.SDKDEV_V5_AUTH_SECRET }}
           CONDUCTOR_REQUEST_TIMEOUT_MS: "120000"
           CONDUCTOR_RETRY_SERVER_ERRORS: "true"
+          HTTPBIN_SERVICE_HOSTNAME: "httpbin"
           JEST_JUNIT_OUTPUT_NAME: integration-v5-sdkdev-node-${{ matrix.node-version }}-shard-${{ matrix.shard }}-test-results.xml
       - name: Publish Test Results
         uses: dorny/test-reporter@v2
@@ -234,6 +235,7 @@ jobs:
           CONDUCTOR_AUTH_SECRET: ${{ secrets.SM_V5_AUTH_SECRET }}
           CONDUCTOR_REQUEST_TIMEOUT_MS: "120000"
           CONDUCTOR_RETRY_SERVER_ERRORS: "true"
+          HTTPBIN_SERVICE_HOSTNAME: "httpbin"
           JEST_JUNIT_OUTPUT_NAME: integration-v5-sm-node-${{ matrix.node-version }}-shard-${{ matrix.shard }}-test-results.xml
       - name: Publish Test Results
         uses: dorny/test-reporter@v2

@@ -26,6 +26,7 @@ describe("SDK Worker Registration", () => {
   const clientPromise = createClientWithRetry();
   let executor: WorkflowExecutor;
   const workflowsToCleanup: { name: string; version: number }[] = [];
+  const tasksToCleanup: string[] = [];
 
   beforeAll(async () => {
     const client = await clientPromise;
@@ -45,10 +46,14 @@ describe("SDK Worker Registration", () => {
         metadataClient.unregisterWorkflow(w.name, w.version)
       )
     );
+    await Promise.allSettled(
+      tasksToCleanup.map((t) => metadataClient.unregisterTask(t))
+    );
   });
 
   test("worker() function registers workers in global registry", async () => {
     const taskName = `sdk_test_basic_worker_${Date.now()}`;
+    tasksToCleanup.push(taskName);
 
     worker({ taskDefName: taskName })(
       async function basicWorker() {
@@ -71,6 +76,7 @@ describe("SDK Worker Registration", () => {
     const client = await clientPromise;
     const taskName = `sdk_test_auto_discover_${Date.now()}`;
     const workflowName = `sdk_test_auto_discover_wf_${Date.now()}`;
+    tasksToCleanup.push(taskName);
 
     let workerExecuted = false;
 
@@ -163,6 +169,7 @@ describe("SDK Worker Registration", () => {
     const client = await clientPromise;
     const taskName = `sdk_test_concurrency_${Date.now()}`;
     const workflowName = `sdk_test_concurrency_wf_${Date.now()}`;
+    tasksToCleanup.push(taskName);
 
     let executionCount = 0;
     const executionTimes: number[] = [];
@@ -247,6 +254,7 @@ describe("SDK Worker Registration", () => {
   test("worker with domain isolation", async () => {
     const client = await clientPromise;
     const taskName = `sdk_test_domain_${Date.now()}`;
+    tasksToCleanup.push(taskName);
     const domain = "test_domain";
 
     worker({ taskDefName: taskName, domain, pollInterval: 100 })(
@@ -284,6 +292,7 @@ describe("SDK Worker Registration", () => {
     const client = await clientPromise;
     const taskName = `sdk_test_non_retryable_${Date.now()}`;
     const workflowName = `sdk_test_non_retryable_wf_${Date.now()}`;
+    tasksToCleanup.push(taskName);
 
     worker({ taskDefName: taskName, pollInterval: 100, concurrency: 1 })(
       async function nonRetryableWorker(task: Task) {
@@ -363,6 +372,7 @@ describe("SDK Worker Registration", () => {
     const client = await clientPromise;
     const taskName = `sdk_test_events_${Date.now()}`;
     const workflowName = `sdk_test_events_wf_${Date.now()}`;
+    tasksToCleanup.push(taskName);
 
     const events: string[] = [];
 
@@ -447,6 +457,7 @@ describe("SDK Worker Registration", () => {
     const taskName1 = `sdk_test_multi_1_${Date.now()}`;
     const taskName2 = `sdk_test_multi_2_${Date.now()}`;
     const workflowName = `sdk_test_multi_wf_${Date.now()}`;
+    tasksToCleanup.push(taskName1, taskName2);
 
     let worker1Executed = false;
     let worker2Executed = false;
@@ -534,6 +545,7 @@ describe("SDK Worker Registration", () => {
   test("TaskHandler lifecycle - start and stop multiple times", async () => {
     const client = await clientPromise;
     const taskName = `sdk_test_lifecycle_${Date.now()}`;
+    tasksToCleanup.push(taskName);
 
     worker({ taskDefName: taskName, pollInterval: 100 })(
       async function lifecycleWorker() {
@@ -585,6 +597,7 @@ describe("SDK Worker Registration", () => {
     const client = await clientPromise;
     const decoratedTaskName = `sdk_test_decorated_${Date.now()}`;
     const manualTaskName = `sdk_test_manual_${Date.now()}`;
+    tasksToCleanup.push(decoratedTaskName, manualTaskName);
 
     worker({ taskDefName: decoratedTaskName, pollInterval: 100 })(
       async function decoratedWorker() {
@@ -622,6 +635,7 @@ describe("SDK Worker Registration", () => {
 
   test("worker with custom configuration options", async () => {
     const taskName = `sdk_test_custom_config_${Date.now()}`;
+    tasksToCleanup.push(taskName);
 
     worker({
       taskDefName: taskName,
@@ -650,6 +664,7 @@ describe("SDK Worker Registration", () => {
   test("clearWorkerRegistry removes all registered workers", () => {
     const taskName1 = `sdk_test_clear_1_${Date.now()}`;
     const taskName2 = `sdk_test_clear_2_${Date.now()}`;
+    tasksToCleanup.push(taskName1, taskName2);
 
     worker({ taskDefName: taskName1 })(
       async function worker1() {
@@ -675,6 +690,7 @@ describe("SDK Worker Registration", () => {
       const client = await clientPromise;
       const taskName = `sdk_test_update_v2_verify_${Date.now()}`;
       const workflowName = `sdk_test_update_v2_verify_wf_${Date.now()}`;
+      tasksToCleanup.push(taskName);
 
       // Reset the static probe so this test measures a live response from the server,
       // regardless of what earlier tests in this shard may have set.

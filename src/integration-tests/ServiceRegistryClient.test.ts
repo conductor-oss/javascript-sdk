@@ -5,12 +5,13 @@ import { ServiceType } from "../open-api";
 import * as fs from "fs";
 import * as path from "path";
 import { describeForOrkesV5 } from "./utils/customJestDescribe";
+import { HTTPBIN_BASE_URL } from "./utils/testConstants";
 
 // Conductor must be able to fetch this URL for discovery; use CONDUCTOR_TEST_SERVICE_URI
 // when testing against a remote cluster (e.g. a public Swagger URL it can reach).
 const TEST_SERVICE_URI =
   process.env.CONDUCTOR_TEST_SERVICE_URI ??
-  "http://httpbin-server:8081/api-docs";
+  `${HTTPBIN_BASE_URL}/api-docs`;
 
 describeForOrkesV5("ServiceRegistryClient", () => {
   const clientPromise = createClientWithRetry();

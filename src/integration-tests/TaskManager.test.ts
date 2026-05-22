@@ -92,6 +92,7 @@ describe("TaskManager", () => {
     const executor = new WorkflowExecutor(client);
     const taskName = `jsSdkTest-taskmanager-test-${Date.now()}`;
     const workflowName = `jsSdkTest-taskmanager-test-wf-${Date.now()}`;
+    tasksToCleanup.push(taskName);
 
     const worker: ConductorWorker = {
       taskDefName: taskName,
@@ -296,6 +297,7 @@ describe("TaskManager", () => {
     const workerNames: string[] = Array.from({ length: 3 })
       .fill(0)
       .map((_, i: number) => `jsSdkTest-taskman-multi-${1 + i}-${Date.now()}`);
+    tasksToCleanup.push(...workerNames);
 
     // names to actual workers
     const workers: ConductorWorker[] = workerNames.map((name) => ({
@@ -376,6 +378,7 @@ describe("TaskManager", () => {
     const workerNames: string[] = Array.from({ length: 3 })
       .fill(0)
       .map((_, i: number) => `${workerName}-${1 + i}`);
+    tasksToCleanup.push(...workerNames);
 
     const candidateWorkerUpdate = `${workerName}-1`;
     const initialCandidateWorkflowOptions = {
