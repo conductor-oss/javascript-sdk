@@ -31,6 +31,7 @@ import { getComplexSignalTestSubWf1Def } from "./metadata/complex_wf_signal_test
 import { getComplexSignalTestSubWf2Def } from "./metadata/complex_wf_signal_test_subworkflow_2";
 import { getWaitSignalTestWfDef } from "./metadata/wait_signal_test";
 import { describeForOrkesV4, describeForOrkesV5 } from "./utils/customJestDescribe";
+import { registerWorkflowDefWithRetry } from "./utils/registerWorkflowWithRetry";
 
 describe("WorkflowExecutor", () => {
   const clientPromise = createClientWithRetry();
@@ -72,6 +73,9 @@ describe("WorkflowExecutor", () => {
       timeoutSeconds: 15,
     };
 
+    // No retry wrapper here — this call IS the thing under test.
+    // If the server is flaky, this test should fail honestly.
+    // (subject to future reconsiderations)
     await expect(
       executor.registerWorkflow(true, workflowDefinition)
     ).resolves.not.toThrow();
@@ -347,10 +351,10 @@ describe("WorkflowExecutor", () => {
     async function registerAllWorkflows(): Promise<void> {
       try {
         await Promise.all([
-          metadataClient.registerWorkflowDef(WORKFLOWS.COMPLEX_WF, true),
-          metadataClient.registerWorkflowDef(WORKFLOWS.SUB_WF_1, true),
-          metadataClient.registerWorkflowDef(WORKFLOWS.SUB_WF_2, true),
-          metadataClient.registerWorkflowDef(WORKFLOWS.WAIT_SIGNAL_TEST, true),
+          registerWorkflowDefWithRetry(metadataClient, WORKFLOWS.COMPLEX_WF),
+          registerWorkflowDefWithRetry(metadataClient, WORKFLOWS.SUB_WF_1),
+          registerWorkflowDefWithRetry(metadataClient, WORKFLOWS.SUB_WF_2),
+          registerWorkflowDefWithRetry(metadataClient, WORKFLOWS.WAIT_SIGNAL_TEST),
         ]);
 
         // Add to cleanup list

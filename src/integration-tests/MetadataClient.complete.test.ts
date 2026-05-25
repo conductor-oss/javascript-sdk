@@ -16,6 +16,7 @@ import {
   OrkesClients,
 } from "../sdk";
 import { describeForOrkesV4 } from "./utils/customJestDescribe";
+import { registerWorkflowDefWithRetry } from "./utils/registerWorkflowWithRetry";
 
 /**
  * E2E Integration Tests for MetadataClient — Complete Coverage
@@ -55,7 +56,8 @@ describe("MetadataClient Complete Coverage", () => {
     _executor = clients.getWorkflowClient();
 
     // Register a workflow for tag and rate limit tests
-    await metadataClient.registerWorkflowDef(
+    await registerWorkflowDefWithRetry(
+      metadataClient,
       {
         name: wfName,
         version: 1,
@@ -70,8 +72,7 @@ describe("MetadataClient Complete Coverage", () => {
         inputParameters: [],
         outputParameters: {},
         timeoutSeconds: 60,
-      },
-      true
+      }
     );
     workflowsToCleanup.push({ name: wfName, version: 1 });
   });

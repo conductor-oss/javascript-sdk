@@ -6,6 +6,7 @@ import {
   MetadataClient,
 } from "../sdk";
 import { describeForOrkesV4 } from "./utils/customJestDescribe";
+import { registerWorkflowDefWithRetry } from "./utils/registerWorkflowWithRetry";
 
 /**
  * E2E Integration Tests for AuthorizationClient
@@ -50,7 +51,8 @@ describe("AuthorizationClient", () => {
     metadataClient = clients.getMetadataClient();
 
     // Register a workflow def to test permissions against
-    await metadataClient.registerWorkflowDef(
+    await registerWorkflowDefWithRetry(
+      metadataClient,
       {
         name: workflowName,
         version: 1,
@@ -64,8 +66,7 @@ describe("AuthorizationClient", () => {
         ],
         timeoutSeconds: 60,
         inputParameters: [],
-      },
-      true
+      }
     );
   });
 

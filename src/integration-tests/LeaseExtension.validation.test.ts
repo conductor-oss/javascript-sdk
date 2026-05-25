@@ -78,8 +78,9 @@ describe("Lease Extension — end-to-end validation", () => {
       ownerEmail:             "sdk-validation@example.com",
     });
 
+    const { registerWorkflowWithRetry } = await import("./utils/registerWorkflowWithRetry");
     const { simpleTask } = await import("../sdk/builders/tasks/simple");
-    await executor.registerWorkflow(true, {
+    await registerWorkflowWithRetry(executor, {
       name:             wfName,
       version:          1,
       tasks:            [simpleTask("task_ref", taskDefName, {})],

@@ -22,6 +22,7 @@ import {
 } from "../sdk";
 import { waitForWorkflowStatus } from "./utils/waitForWorkflowStatus";
 import { createClientWithRetry } from "./utils/createClientWithRetry";
+import { registerWorkflowWithRetry } from "./utils/registerWorkflowWithRetry";
 import { describeForOrkesV4, describeForOrkesV5 } from "./utils/customJestDescribe";
 
 /**
@@ -92,7 +93,7 @@ describe("WorkflowExecutor Complete Coverage", () => {
       outputParameters: {},
       timeoutSeconds: 600,
     };
-    await executor.registerWorkflow(true, waitWfDef);
+    await registerWorkflowWithRetry(executor, waitWfDef);
     workflowsToCleanup.push({ name: waitWfName, version: 1 });
 
     // Register SET_VARIABLE workflow (completes instantly)
@@ -112,7 +113,7 @@ describe("WorkflowExecutor Complete Coverage", () => {
       timeoutSeconds: 60,
       variables: { counter: 0 },
     };
-    await executor.registerWorkflow(true, simpleWfDef);
+    await registerWorkflowWithRetry(executor, simpleWfDef);
     workflowsToCleanup.push({ name: simpleWfName, version: 1 });
 
     // Register SIMPLE task workflow (blocks on task poll)
@@ -127,7 +128,7 @@ describe("WorkflowExecutor Complete Coverage", () => {
       outputParameters: {},
       timeoutSeconds: 600,
     };
-    await executor.registerWorkflow(true, taskWfDef);
+    await registerWorkflowWithRetry(executor, taskWfDef);
     workflowsToCleanup.push({ name: taskWfName, version: 1 });
   });
 

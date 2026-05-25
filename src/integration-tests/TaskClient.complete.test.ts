@@ -19,6 +19,7 @@ import {
 } from "../sdk";
 import { waitForWorkflowStatus } from "./utils/waitForWorkflowStatus";
 import { describeForOrkesV4 } from "./utils/customJestDescribe";
+import { registerWorkflowWithRetry } from "./utils/registerWorkflowWithRetry";
 
 /**
  * E2E Integration Tests for TaskClient — Complete Coverage
@@ -61,7 +62,7 @@ describe("TaskClient Complete Coverage", () => {
       outputParameters: {},
       timeoutSeconds: 600,
     };
-    await executor.registerWorkflow(true, wfDef);
+    await registerWorkflowWithRetry(executor, wfDef);
 
     // Start workflow — WAIT task will be IN_PROGRESS
     workflowId = await executor.startWorkflow({
