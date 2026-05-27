@@ -21,6 +21,7 @@ import { waitForWorkflowStatus } from "./utils/waitForWorkflowStatus";
 import { executeWorkflowWithRetry } from "./utils/executeWorkflowWithRetry";
 import { createClientWithRetry } from "./utils/createClientWithRetry";
 import { describeForOrkesV5 } from "./utils/customJestDescribe";
+import { registerWorkflowWithRetry } from "./utils/registerWorkflowWithRetry";
 
 describe("SDK Worker Registration", () => {
   const clientPromise = createClientWithRetry();
@@ -49,7 +50,7 @@ describe("SDK Worker Registration", () => {
     await Promise.allSettled(
       tasksToCleanup.map((t) => metadataClient.unregisterTask(t))
     );
-  });
+  }, 180000);
 
   test("worker() function registers workers in global registry", async () => {
     const taskName = `sdk_test_basic_worker_${Date.now()}`;
@@ -109,7 +110,7 @@ describe("SDK Worker Registration", () => {
     await new Promise(resolve => setTimeout(resolve, 100));
 
     // Register workflow - pass workflow input to task
-    await executor.registerWorkflow(true, {
+    await registerWorkflowWithRetry(executor, {
       name: workflowName,
       version: 1,
       ownerEmail: "developers@orkes.io",
@@ -206,7 +207,7 @@ describe("SDK Worker Registration", () => {
     await new Promise(resolve => setTimeout(resolve, 100));
 
     // Register workflow with multiple tasks
-    await executor.registerWorkflow(true, {
+    await registerWorkflowWithRetry(executor, {
       name: workflowName,
       version: 1,
       ownerEmail: "developers@orkes.io",
@@ -321,7 +322,7 @@ describe("SDK Worker Registration", () => {
     await new Promise(resolve => setTimeout(resolve, 100));
 
     // Register workflow with input parameter
-    await executor.registerWorkflow(true, {
+    await registerWorkflowWithRetry(executor, {
       name: workflowName,
       version: 1,
       ownerEmail: "developers@orkes.io",
@@ -414,7 +415,7 @@ describe("SDK Worker Registration", () => {
     await new Promise(resolve => setTimeout(resolve, 100));
 
     // Register workflow
-    await executor.registerWorkflow(true, {
+    await registerWorkflowWithRetry(executor, {
       name: workflowName,
       version: 1,
       ownerEmail: "developers@orkes.io",
@@ -496,7 +497,7 @@ describe("SDK Worker Registration", () => {
     await new Promise(resolve => setTimeout(resolve, 100));
 
     // Register workflow with both tasks
-    await executor.registerWorkflow(true, {
+    await registerWorkflowWithRetry(executor, {
       name: workflowName,
       version: 1,
       ownerEmail: "developers@orkes.io",
@@ -706,7 +707,7 @@ describe("SDK Worker Registration", () => {
       });
       taskRunner.startPolling();
 
-      await executor.registerWorkflow(true, {
+      await registerWorkflowWithRetry(executor, {
         name: workflowName,
         version: 1,
         ownerEmail: "developers@orkes.io",

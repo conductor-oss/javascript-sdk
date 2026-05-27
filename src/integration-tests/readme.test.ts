@@ -15,7 +15,7 @@ describe("TaskManager", () => {
   const workflowsToCleanup: { name: string; version: number }[] = [];
   const tasksToCleanup: string[] = [];
 
-  jest.setTimeout(60000);
+  jest.setTimeout(120000);
 
   afterAll(async () => {
     const client = await clientPromise;
@@ -28,7 +28,7 @@ describe("TaskManager", () => {
     await Promise.allSettled(
       tasksToCleanup.map((t) => metadataClient.unregisterTask(t))
     );
-  });
+  }, 120000);
 
   test("worker example ", async () => {
     const client = await clientPromise;

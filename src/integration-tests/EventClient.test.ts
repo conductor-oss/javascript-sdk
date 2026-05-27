@@ -15,6 +15,7 @@ import type {
 import { EventClient } from "../sdk";
 import { createClientWithRetry } from "./utils/createClientWithRetry";
 import { describeForOrkesV4, describeForOrkesV5 } from "./utils/customJestDescribe";
+import { pollUntil } from "./utils/pollUntil";
 
 const TEST_HANDLER_NAME_PREFIX = "jsSdkTest:";
 
@@ -114,8 +115,10 @@ describe("EventClient", () => {
         eventClient.addEventHandler(eventHandler)
       ).resolves.not.toThrow();
 
-      const retrievedHandler = await eventClient.getEventHandlerByName(
-        handlerName
+      const retrievedHandler = await pollUntil(
+        () => eventClient.getEventHandlerByName(handlerName),
+        (h) => h != null && h.name === handlerName,
+        { label: "wait for handler after add" }
       );
       if (!retrievedHandler) throw new Error("Expected handler to exist");
       expect(retrievedHandler.name).toEqual(handlerName);
@@ -187,6 +190,13 @@ describe("EventClient", () => {
       // Add the handler
       await eventClient.addEventHandler(eventHandler);
 
+      // Wait for handler to be visible (eventual consistency)
+      await pollUntil(
+        () => eventClient.getEventHandlerByName(handlerName),
+        (h) => h != null && h.name === handlerName,
+        { label: "wait for handler before update" }
+      );
+
       // Update the handler
       const updatedHandler: EventHandler = {
         ...eventHandler,
@@ -198,9 +208,11 @@ describe("EventClient", () => {
         eventClient.updateEventHandler(updatedHandler)
       ).resolves.not.toThrow();
 
-      // Verify it was updated
-      const retrievedHandler = await eventClient.getEventHandlerByName(
-        handlerName
+      // Verify it was updated (poll for consistency)
+      const retrievedHandler = await pollUntil(
+        () => eventClient.getEventHandlerByName(handlerName),
+        (h) => h != null && h.active === false,
+        { label: "wait for handler update" }
       );
       if (!retrievedHandler) throw new Error("Expected handler to exist");
       expect(retrievedHandler.active).toEqual(false);
@@ -224,8 +236,10 @@ describe("EventClient", () => {
 
       await eventClient.addEventHandler(eventHandler);
 
-      const retrievedHandler = await eventClient.getEventHandlerByName(
-        handlerName
+      const retrievedHandler = await pollUntil(
+        () => eventClient.getEventHandlerByName(handlerName),
+        (h) => h != null && h.name === handlerName,
+        { label: "wait for handler by name" }
       );
       if (!retrievedHandler) throw new Error("Expected handler to exist");
       expect(retrievedHandler.name).toEqual(handlerName);
@@ -243,7 +257,11 @@ describe("EventClient", () => {
 
       await eventClient.addEventHandler(eventHandler);
 
-      const handlers = await eventClient.getEventHandlersForEvent(eventName);
+      const handlers = await pollUntil(
+        () => eventClient.getEventHandlersForEvent(eventName),
+        (h) => Array.isArray(h) && h.some((x) => x.name === handlerName),
+        { label: "wait for handlers for event" }
+      );
 
       expect(Array.isArray(handlers)).toBe(true);
       const foundHandler = handlers.find((h) => h.name === handlerName);
@@ -268,9 +286,11 @@ describe("EventClient", () => {
 
       await eventClient.addEventHandler(eventHandler);
 
-      // Verify it exists
-      const retrievedHandler = await eventClient.getEventHandlerByName(
-        handlerName
+      // Wait for handler to be visible (eventual consistency)
+      const retrievedHandler = await pollUntil(
+        () => eventClient.getEventHandlerByName(handlerName),
+        (h) => h != null && h.name === handlerName,
+        { label: "wait for handler before remove" }
       );
       if (!retrievedHandler) throw new Error("Expected handler to exist");
       expect(retrievedHandler.name).toEqual(handlerName);
@@ -296,6 +316,13 @@ describe("EventClient", () => {
 
       await eventClient.addEventHandler(eventHandler);
 
+      // Wait for handler to be visible before tagging
+      await pollUntil(
+        () => eventClient.getEventHandlerByName(handlerName),
+        (h) => h != null && h.name === handlerName,
+        { label: "wait for handler before tagging" }
+      );
+
       // Add tags to the event handler
       const expectedTags: Tag[] = [
         { key: "test-key-1", value: "test-value-1" },
@@ -305,9 +332,11 @@ describe("EventClient", () => {
 
       await eventClient.putTagForEventHandler(handlerName, expectedTags);
 
-      // Get tags and verify they match exactly
-      const retrievedTags = await eventClient.getTagsForEventHandler(
-        handlerName
+      // Poll for tags to be visible (eventual consistency)
+      const retrievedTags = await pollUntil(
+        () => eventClient.getTagsForEventHandler(handlerName),
+        (tags) => Array.isArray(tags) && tags.length >= expectedTags.length,
+        { label: "wait for tags" }
       );
 
       expect(Array.isArray(retrievedTags)).toBe(true);
@@ -336,6 +365,13 @@ describe("EventClient", () => {
 
       await eventClient.addEventHandler(eventHandler);
 
+      // Wait for handler to be visible before tagging
+      await pollUntil(
+        () => eventClient.getEventHandlerByName(handlerName),
+        (h) => h != null && h.name === handlerName,
+        { label: "wait for handler before put tags" }
+      );
+
       const tags: Tag[] = [
         { key: "test-key-1", value: "test-value-1" },
         { key: "test-key-2", value: "test-value-2" },
@@ -346,9 +382,11 @@ describe("EventClient", () => {
         eventClient.putTagForEventHandler(handlerName, tags)
       ).resolves.not.toThrow();
 
-      // Verify the tags were actually added
-      const retrievedTags = await eventClient.getTagsForEventHandler(
-        handlerName
+      // Poll for tags to be visible (eventual consistency)
+      const retrievedTags = await pollUntil(
+        () => eventClient.getTagsForEventHandler(handlerName),
+        (t) => Array.isArray(t) && t.length >= tags.length,
+        { label: "wait for put tags" }
       );
 
       expect(Array.isArray(retrievedTags)).toBe(true);
@@ -376,6 +414,13 @@ describe("EventClient", () => {
 
       await eventClient.addEventHandler(eventHandler);
 
+      // Wait for handler to be visible before tagging
+      await pollUntil(
+        () => eventClient.getEventHandlerByName(handlerName),
+        (h) => h != null && h.name === handlerName,
+        { label: "wait for handler before delete tags" }
+      );
+
       const tags: Tag[] = [
         { key: "test-key-1", value: "test-value-1" },
         { key: "test-key-2", value: "test-value-2" },
@@ -384,9 +429,13 @@ describe("EventClient", () => {
       // First add all tags
       await eventClient.putTagForEventHandler(handlerName, tags);
 
-      // Verify all tags are present before deletion
-      const tagsBeforeDeletion = await eventClient.getTagsForEventHandler(
-        handlerName
+      // Poll for all tags to be visible before deletion
+      const tagsBeforeDeletion = await pollUntil(
+        () => eventClient.getTagsForEventHandler(handlerName),
+        (t) =>
+          Array.isArray(t) &&
+          tags.every((tag) => t.some((x) => x.key === tag.key && x.value === tag.value)),
+        { label: "wait for tags before delete" }
       );
       tags.forEach((tag) => {
         const foundTag = tagsBeforeDeletion.find(
@@ -542,16 +591,20 @@ describe("EventClient", () => {
       };
       await eventClient.addEventHandler(eventHandler);
 
-      const retrievedHandler = await eventClient.getEventHandlerByName(
-        handlerName
+      const retrievedHandler = await pollUntil(
+        () => eventClient.getEventHandlerByName(handlerName),
+        (h) => h != null && h.name === handlerName,
+        { label: "wait for handler before incoming event" }
       );
       if (!retrievedHandler) throw new Error("Expected handler to exist");
       expect(retrievedHandler.name).toEqual(handlerName);
       expect(retrievedHandler.event).toEqual(eventName);
       expect(retrievedHandler.active).toBe(true);
 
-      const handlersForEvent = await eventClient.getEventHandlersForEvent(
-        eventName
+      const handlersForEvent = await pollUntil(
+        () => eventClient.getEventHandlersForEvent(eventName),
+        (h) => Array.isArray(h) && h.length > 0 && h.some((x) => x.name === handlerName),
+        { label: "wait for handlers for event before firing" }
       );
       expect(handlersForEvent.length).toBeGreaterThan(0);
       expect(handlersForEvent.some((h) => h.name === handlerName)).toBe(true);
@@ -631,6 +684,13 @@ describe("EventClient", () => {
 
       await eventClient.addEventHandler(eventHandler);
 
+      // Wait for handler to be visible before firing event
+      await pollUntil(
+        () => eventClient.getEventHandlerByName(handlerName),
+        (h) => h != null && h.name === handlerName,
+        { label: "wait for handler before active-handlers test" }
+      );
+
       // Trigger an event so the handler processes it and appears in execution view
       const eventData: Record<string, string> = {
         event: eventName,
@@ -640,8 +700,15 @@ describe("EventClient", () => {
       };
       await eventClient.handleIncomingEvent(eventData);
 
-      // Get all active event handlers (execution view only shows handlers with executions)
-      const result = await eventClient.getAllActiveEventHandlers();
+      // Poll for our handler to appear in the active event handlers (async processing)
+      const result = await pollUntil(
+        () => eventClient.getAllActiveEventHandlers(),
+        (r) =>
+          r != null &&
+          Array.isArray(r.results) &&
+          r.results.some((h) => h.name === handlerName && h.event === eventName),
+        { maxWaitMs: 30000, label: "wait for active event handlers" }
+      );
 
       expect(result).toBeDefined();
       expect(result).toHaveProperty("results");
@@ -682,6 +749,13 @@ describe("EventClient", () => {
         description: `Test handler for ${eventName}`,
       };
       await eventClient.addEventHandler(eventHandler);
+
+      // Wait for handler to be visible before firing event
+      await pollUntil(
+        () => eventClient.getEventHandlerByName(handlerName),
+        (h) => h != null && h.name === handlerName,
+        { label: "wait for handler before executions test" }
+      );
 
       // Trigger an event so the handler processes it and creates an execution
       const eventData = {
@@ -746,6 +820,13 @@ describe("EventClient", () => {
       };
       await eventClient.addEventHandler(eventHandler);
 
+      // Wait for handler to be visible before firing event
+      await pollUntil(
+        () => eventClient.getEventHandlerByName(handlerName),
+        (h) => h != null && h.name === handlerName,
+        { label: "wait for handler before stats test" }
+      );
+
       // Trigger an event so the handler processes it and creates an execution
       const eventData = {
         event: eventName,
@@ -755,29 +836,21 @@ describe("EventClient", () => {
       };
       await eventClient.handleIncomingEvent(eventData);
 
-      // Wait for statistics to be updated (async processing)
-      let foundHandler;
-      const maxWaitTime = 30000; // 30 seconds
-      const pollInterval = 500; // 500ms
-      const startTime = Date.now();
+      // Poll for our handler to appear in stats (catches server-side NPE on cache miss)
+      const response = await pollUntil(
+        () => eventClient.getEventHandlersWithStats(0),
+        (r) =>
+          r != null &&
+          Array.isArray(r.results) &&
+          r.results.some((h) => h.event === eventName),
+        { maxWaitMs: 30000, intervalMs: 1000, label: "wait for handler stats" }
+      );
 
-      while (Date.now() - startTime < maxWaitTime) {
-        const response = await eventClient.getEventHandlersWithStats(0);
-        expect(response).toBeDefined();
-        expect(response).toHaveProperty("results");
-        expect(Array.isArray(response.results)).toBe(true);
-        expect(response.results?.length).toBeGreaterThan(0);
+      expect(response).toBeDefined();
+      expect(response).toHaveProperty("results");
+      expect(Array.isArray(response.results)).toBe(true);
 
-        // Find our handler in the results
-        foundHandler = response.results?.find((h) => h.event === eventName);
-
-        if (foundHandler) {
-          break;
-        }
-
-        await new Promise((resolve) => setTimeout(resolve, pollInterval));
-      }
-
+      const foundHandler = response.results?.find((h) => h.event === eventName);
       expect(foundHandler).toBeDefined();
       expect(foundHandler?.event).toBe(eventName);
       expect(foundHandler?.active).toBe(true);
@@ -810,6 +883,13 @@ describe("EventClient", () => {
       };
       await eventClient.addEventHandler(eventHandler);
 
+      // Wait for handler to be visible before firing event
+      await pollUntil(
+        () => eventClient.getEventHandlerByName(handlerName),
+        (h) => h != null && h.name === handlerName,
+        { label: "wait for handler before event-messages test" }
+      );
+
       // Trigger an event to create messages
       const eventData = {
         event: eventName,
@@ -819,7 +899,12 @@ describe("EventClient", () => {
       };
       await eventClient.handleIncomingEvent(eventData);
 
-      const messages = await eventClient.getEventMessages(eventName);
+      // Poll for messages to appear (async processing)
+      const messages = await pollUntil(
+        () => eventClient.getEventMessages(eventName),
+        (m) => Array.isArray(m) && m.length > 0,
+        { maxWaitMs: 30000, label: "wait for event messages" }
+      );
       expect(Array.isArray(messages)).toBe(true);
       expect(messages.length).toBeGreaterThan(0);
 

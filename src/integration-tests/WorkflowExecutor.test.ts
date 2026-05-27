@@ -31,7 +31,7 @@ import { getComplexSignalTestSubWf1Def } from "./metadata/complex_wf_signal_test
 import { getComplexSignalTestSubWf2Def } from "./metadata/complex_wf_signal_test_subworkflow_2";
 import { getWaitSignalTestWfDef } from "./metadata/wait_signal_test";
 import { describeForOrkesV4, describeForOrkesV5 } from "./utils/customJestDescribe";
-import { registerWorkflowDefWithRetry } from "./utils/registerWorkflowWithRetry";
+import { registerWorkflowDefWithRetry, registerWorkflowWithRetry } from "./utils/registerWorkflowWithRetry";
 
 describe("WorkflowExecutor", () => {
   const clientPromise = createClientWithRetry();
@@ -243,7 +243,7 @@ describe("WorkflowExecutor", () => {
     const workflowName = `jsSdkTest-wf_with_optional_http_task-${Date.now()}`;
     const taskName = `jsSdkTest-optional_http_task-${Date.now()}`;
 
-    await executor.registerWorkflow(true, {
+    await registerWorkflowWithRetry(executor, {
       name: workflowName,
       version: 1,
       ownerEmail: "developers@orkes.io",
@@ -311,7 +311,7 @@ describe("WorkflowExecutor", () => {
 
       // Register all test workflows
       await registerAllWorkflows();
-    });
+    }, 90000);
 
     afterEach(async () => {
       // Clean up executions first
