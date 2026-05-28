@@ -23,6 +23,7 @@ import {
 import { waitForWorkflowStatus } from "./utils/waitForWorkflowStatus";
 import { createClientWithRetry } from "./utils/createClientWithRetry";
 import { registerWorkflowWithRetry } from "./utils/registerWorkflowWithRetry";
+import { startWorkflowWithRetry } from "./utils/startWorkflowWithRetry";
 import { describeForOrkesV4, describeForOrkesV5 } from "./utils/customJestDescribe";
 
 /**
@@ -713,7 +714,7 @@ describe("WorkflowExecutor Complete Coverage", () => {
 
   describeForOrkesV5("Signal Async", () => {
     test("signalAsync should signal a workflow asynchronously", async () => {
-      const wfId = await executor.startWorkflow({
+      const wfId = await startWorkflowWithRetry(executor, {
         name: waitWfName,
         version: 1,
       });
@@ -797,7 +798,7 @@ describe("WorkflowExecutor Complete Coverage", () => {
     });
 
     test("goBackToTask should throw when no matching task found", async () => {
-      const wfId = await executor.startWorkflow({
+      const wfId = await startWorkflowWithRetry(executor, {
         name: simpleWfName,
         version: 1,
       });

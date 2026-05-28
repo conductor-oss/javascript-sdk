@@ -10,7 +10,7 @@ import type { MetadataClient } from "../../sdk/clients/metadata/MetadataClient";
 export async function registerWorkflowWithRetry(
   executor: WorkflowExecutor,
   workflow: WorkflowDef,
-  maxAttempts = 5,
+  maxAttempts = 8,
   delayMs = 2000
 ): Promise<void> {
   let lastError: unknown;
@@ -37,7 +37,7 @@ export async function registerWorkflowDefWithRetry(
   metadataClient: MetadataClient,
   workflow: WorkflowDef,
   overwrite = true,
-  maxAttempts = 5,
+  maxAttempts = 8,
   delayMs = 2000
 ): Promise<void> {
   let lastError: unknown;

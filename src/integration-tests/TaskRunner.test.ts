@@ -4,14 +4,14 @@ import {
   WorkflowExecutor,
   OrkesClients,
   simpleTask,
-  orkesConductorClient,
   MetadataClient,
 } from "../sdk";
 import { cleanupWorkflowsAndTasks } from "./utils/cleanup";
 import { waitForWorkflowStatus } from "./utils/waitForWorkflowStatus";
+import { createClientWithRetry } from "./utils/createClientWithRetry";
 
 describe("TaskRunner", () => {
-  const clientPromise = orkesConductorClient();
+  const clientPromise = createClientWithRetry();
   const workflowsToCleanup: { name: string; version: number }[] = [];
 
   jest.setTimeout(60000);

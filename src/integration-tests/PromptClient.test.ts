@@ -1,11 +1,11 @@
 import { expect, describe, test, jest, beforeAll, afterAll } from "@jest/globals";
 import {
-  orkesConductorClient,
   OrkesClients,
   PromptClient,
 } from "../sdk";
 import type { Tag } from "../open-api";
 import { describeForOrkesV5 } from "./utils/customJestDescribe";
+import { createClientWithRetry } from "./utils/createClientWithRetry";
 
 /**
  * E2E Integration Tests for PromptClient (v5 only).
@@ -16,7 +16,7 @@ import { describeForOrkesV5 } from "./utils/customJestDescribe";
 describeForOrkesV5("PromptClient", () => {
   jest.setTimeout(60000);
 
-  const clientPromise = orkesConductorClient();
+  const clientPromise = createClientWithRetry();
   const suffix = Date.now();
 
   let promptClient: PromptClient;

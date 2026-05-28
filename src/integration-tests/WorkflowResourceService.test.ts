@@ -1,7 +1,7 @@
 import { expect, describe, test, jest, afterEach } from "@jest/globals";
 import { MetadataClient } from "../sdk";
 import { simpleTask, workflow } from "../sdk/builders";
-import { orkesConductorClient } from "../sdk/createConductorClient";
+import { createClientWithRetry } from "./utils/createClientWithRetry";
 import type { TaskDefTypes } from "../open-api";
 import { WorkflowResource } from "../open-api/generated";
 import { cleanupWorkflowsAndTasks } from "./utils/cleanup";
@@ -11,7 +11,7 @@ describe("WorkflowResourceService", () => {
   const workflowsToCleanup: { name: string; version: number }[] = [];
 
   afterEach(async () => {
-    const client = await orkesConductorClient();
+    const client = await createClientWithRetry();
     const metadataClient = new MetadataClient(client);
     await Promise.allSettled(
       workflowsToCleanup.map((w) =>
@@ -22,7 +22,7 @@ describe("WorkflowResourceService", () => {
   });
 
   test("Should test a workflow", async () => {
-    const client = await orkesConductorClient();
+    const client = await createClientWithRetry();
     const metadataClient = new MetadataClient(client);
     const taskDefName = "le_simple_task";
     const tasks: TaskDefTypes[] = [

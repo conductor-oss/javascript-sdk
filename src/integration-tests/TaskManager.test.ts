@@ -4,17 +4,17 @@ import {
   simpleTask,
   taskDefinition,
   WorkflowExecutor,
-  orkesConductorClient,
   TaskManager,
   ConductorWorker,
 } from "../sdk";
+import { createClientWithRetry } from "./utils/createClientWithRetry";
 import { mockLogger } from "./utils/mockLogger";
 import { waitForWorkflowCompletion } from "./utils/waitForWorkflowCompletion";
 import { describeForOrkesV5 } from "./utils/customJestDescribe";
 
 const BASE_TIME = 1000;
 describe("TaskManager", () => {
-  const clientPromise = orkesConductorClient();
+  const clientPromise = createClientWithRetry();
   const workflowsToCleanup: { name: string; version: number }[] = [];
   const tasksToCleanup: string[] = [];
   const activeManagers: TaskManager[] = [];

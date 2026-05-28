@@ -1,10 +1,10 @@
 import { expect, describe, test, jest, beforeAll, afterAll } from "@jest/globals";
 import {
-  orkesConductorClient,
   OrkesClients,
   AuthorizationClient,
   MetadataClient,
 } from "../sdk";
+import { createClientWithRetry } from "./utils/createClientWithRetry";
 import { describeForOrkesV4 } from "./utils/customJestDescribe";
 import { registerWorkflowDefWithRetry } from "./utils/registerWorkflowWithRetry";
 
@@ -33,19 +33,7 @@ describe("AuthorizationClient", () => {
   const groupsToCleanup: string[] = [];
 
   beforeAll(async () => {
-    // Retry client creation to handle transient auth failures in CI
-    const maxAttempts = 3;
-    let client;
-    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-      try {
-        client = await orkesConductorClient();
-        break;
-      } catch (e) {
-        if (attempt === maxAttempts) throw e;
-        await new Promise((r) => setTimeout(r, 2000 * attempt));
-      }
-    }
-    if (client == null) throw new Error("Failed to create Conductor client");
+    const client = await createClientWithRetry();
     const clients = new OrkesClients(client);
     authClient = clients.getAuthorizationClient();
     metadataClient = clients.getMetadataClient();

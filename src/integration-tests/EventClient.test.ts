@@ -169,12 +169,17 @@ describe("EventClient", () => {
         eventClient.addEventHandlers(eventHandlers)
       ).resolves.not.toThrow();
 
-      // Verify both were added
-      const allHandlers = await eventClient.getAllEventHandlers();
-      const addedHandlers = allHandlers.filter(
-        (h) => h.name === handlerName1 || h.name === handlerName2
+      // Poll until both handlers are visible (eventual consistency)
+      await pollUntil(
+        () => eventClient.getAllEventHandlers(),
+        (all) => {
+          const added = all.filter(
+            (h) => h.name === handlerName1 || h.name === handlerName2
+          );
+          return added.length >= 2;
+        },
+        { label: "wait for both event handlers to be visible" }
       );
-      expect(addedHandlers.length).toBeGreaterThanOrEqual(2);
 
       // Cleanup
       await tryRemoveEventHandler(eventClient, handlerName1);
@@ -452,14 +457,17 @@ describe("EventClient", () => {
         eventClient.deleteTagForEventHandler(handlerName, tagToDelete)
       ).resolves.not.toThrow();
 
-      // Verify the deleted tag is no longer present
-      const tagsAfterDeletion = await eventClient.getTagsForEventHandler(
-        handlerName
+      // Poll until the deleted tag is no longer visible (eventual consistency)
+      const tagsAfterDeletion = await pollUntil(
+        () => eventClient.getTagsForEventHandler(handlerName),
+        (t) =>
+          Array.isArray(t) &&
+          !t.some(
+            (tag) =>
+              tag.key === tagToDelete.key && tag.value === tagToDelete.value
+          ),
+        { label: "wait for tag deletion to propagate" }
       );
-      const foundDeletedTag = tagsAfterDeletion.find(
-        (tag) => tag.key === tagToDelete.key && tag.value === tagToDelete.value
-      );
-      expect(foundDeletedTag).toBeUndefined();
 
       // Verify the remaining tags are still present
       const foundRemainingTag = tagsAfterDeletion.find(

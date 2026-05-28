@@ -7,7 +7,7 @@ export async function pollUntil<T>(
   fn: () => Promise<T>,
   predicate: (result: T) => boolean,
   {
-    maxWaitMs = 15000,
+    maxWaitMs = 60000,
     intervalMs = 1000,
     label = "pollUntil",
   }: { maxWaitMs?: number; intervalMs?: number; label?: string } = {}

@@ -346,7 +346,7 @@ describe("WorkflowExecutor", () => {
     afterAll(async () => {
       // Cleanup all workflows
       await cleanupAllWorkflows();
-    });
+    }, 120_000);
 
     async function registerAllWorkflows(): Promise<void> {
       try {
