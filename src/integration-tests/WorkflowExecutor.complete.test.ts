@@ -25,6 +25,7 @@ import { createClientWithRetry } from "./utils/createClientWithRetry";
 import { registerWorkflowWithRetry } from "./utils/registerWorkflowWithRetry";
 import { startWorkflowWithRetry } from "./utils/startWorkflowWithRetry";
 import { describeForOrkesV4, describeForOrkesV5 } from "./utils/customJestDescribe";
+import { registerTaskWithRetry } from "./utils/registerTaskWithRetry";
 
 /**
  * E2E Integration Tests for WorkflowExecutor — Complete Coverage
@@ -69,7 +70,7 @@ describe("WorkflowExecutor Complete Coverage", () => {
     _taskClient = new TaskClient(client);
 
     // Register task definition for SIMPLE tasks
-    await metadataClient.registerTask({
+    await registerTaskWithRetry(metadataClient, {
       name: taskDefName,
       retryCount: 3,
       timeoutSeconds: 600,

@@ -20,7 +20,7 @@ import { pollUntil } from "./utils/pollUntil";
 const TEST_HANDLER_NAME_PREFIX = "jsSdkTest:";
 
 describe("EventClient", () => {
-  jest.setTimeout(30000);
+  jest.setTimeout(60000);
 
   let eventClient: EventClient;
 

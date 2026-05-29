@@ -36,7 +36,7 @@ import { registerWorkflowDefWithRetry, registerWorkflowWithRetry } from "./utils
 describe("WorkflowExecutor", () => {
   const clientPromise = createClientWithRetry();
 
-  jest.setTimeout(60000);
+  jest.setTimeout(120000);
 
   const name = `jsSdkTest-Workflow-${Date.now()}`;
   const version = 1;
@@ -203,7 +203,7 @@ describe("WorkflowExecutor", () => {
     await waitForWorkflowStatus(executor, executionId, "RUNNING");
 
     // Wait for the task to be IN_PROGRESS before updating (V4 may take longer; server requires "running" task)
-    const taskReadyTimeout = 60000;
+    const taskReadyTimeout = 90000;
     const pollInterval = 1000;
     const taskReadyStart = Date.now();
     let taskStatus: string | undefined;
@@ -694,7 +694,7 @@ describe("WorkflowExecutor", () => {
           await new Promise((r) => setTimeout(r, 2000));
           const signalWithRetry = async (
             output: Record<string, unknown>,
-            maxAttempts = 3
+            maxAttempts = 5
           ) => {
             let lastErr: unknown;
             for (let attempt = 1; attempt <= maxAttempts; attempt++) {
