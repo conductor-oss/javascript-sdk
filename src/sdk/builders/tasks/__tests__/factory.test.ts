@@ -145,14 +145,14 @@ describe("httpTask", () => {
   it("Should generate an http task", () => {
     const tname = "httpTask";
     const httpTaskObj = httpTask(tname, {
-      uri: "http://www.yahoo.com",
+      uri: "https://example.com",
       method: "GET",
     });
     expect(httpTaskObj).toEqual({
       name: "httpTask",
       taskReferenceName: "httpTask",
       inputParameters: {
-        http_request: { uri: "http://www.yahoo.com", method: "GET" },
+        http_request: { uri: "https://example.com", method: "GET" },
       },
       type: "HTTP",
     });

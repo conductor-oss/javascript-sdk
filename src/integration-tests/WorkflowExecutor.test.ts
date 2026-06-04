@@ -32,6 +32,7 @@ import { getComplexSignalTestSubWf2Def } from "./metadata/complex_wf_signal_test
 import { getWaitSignalTestWfDef } from "./metadata/wait_signal_test";
 import { describeForOrkesV4, describeForOrkesV5 } from "./utils/customJestDescribe";
 import { registerWorkflowDefWithRetry, registerWorkflowWithRetry } from "./utils/registerWorkflowWithRetry";
+import { HTTPBIN_BASE_URL } from "./utils/testConstants";
 
 describe("WorkflowExecutor", () => {
   const clientPromise = createClientWithRetry();
@@ -181,7 +182,7 @@ describe("WorkflowExecutor", () => {
       tasks: [
         httpTask(
           taskName,
-          { uri: "http://www.yahoo.com", method: "GET" },
+          { uri: `${HTTPBIN_BASE_URL}/api/hello?name=test1`, method: "GET" },
           true
         ),
       ],
