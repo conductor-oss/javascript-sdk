@@ -37,7 +37,7 @@ import { HTTPBIN_BASE_URL } from "./utils/testConstants";
 describe("WorkflowExecutor", () => {
   const clientPromise = createClientWithRetry();
 
-  jest.setTimeout(120000);
+  jest.setTimeout(60000);
 
   const name = `jsSdkTest-Workflow-${Date.now()}`;
   const version = 1;
@@ -175,20 +175,28 @@ describe("WorkflowExecutor", () => {
     const workflowName = `jsSdkTest-wf_with_asyncComplete_http_task-${Date.now()}`;
     const taskName = `jsSdkTest-http_task_with_asyncComplete_true-${Date.now()}`;
 
+    // v5 uses the internal httpbin service. For v4 we fall back to a public URL
+    // (http://www.yahoo.com).
+    // NOTE: httpbin-server IS now deployed in the v4 test cluster, but the HTTP
+    // task inexplicably cannot talk to it there - the task stays SCHEDULED and
+    // never reaches IN_PROGRESS, even though `curl`-ing the same URL from inside
+    // the worker pod succeeds and the SSRF blocklist logs nothing. Requires
+    // further investigation; until then v4 keeps using the public URL.
+    const asyncHttpUri =
+      Number(process.env.ORKES_BACKEND_VERSION) >= 5
+        ? `${HTTPBIN_BASE_URL}/api/hello?name=test1`
+        : "http://www.yahoo.com";
+
     await executor.registerWorkflow(true, {
       name: workflowName,
       version: 1,
       ownerEmail: "developers@orkes.io",
       tasks: [
-        httpTask(
-          taskName,
-          { uri: `${HTTPBIN_BASE_URL}/api/hello?name=test1`, method: "GET" },
-          true
-        ),
+        httpTask(taskName, { uri: asyncHttpUri, method: "GET" }, true),
       ],
       inputParameters: [],
       outputParameters: {},
-      timeoutSeconds: 300,
+      timeoutSeconds: 30,
     });
 
     const executionId = await executor.startWorkflow({
@@ -201,19 +209,33 @@ describe("WorkflowExecutor", () => {
       throw new Error("Execution ID is undefined");
     }
 
+    // Log the id so a failed/incomplete run can be inspected in the Conductor UI.
+    console.log(
+      `[asyncComplete http] workflowId=${executionId} workflow=${workflowName} task=${taskName}`
+    );
+
     await waitForWorkflowStatus(executor, executionId, "RUNNING");
 
     // Wait for the task to be IN_PROGRESS before updating (V4 may take longer; server requires "running" task)
-    const taskReadyTimeout = 90000;
-    const pollInterval = 1000;
+    const taskReadyTimeout = 30000;
+    const pollInterval = 3000;
     const taskReadyStart = Date.now();
     let taskStatus: string | undefined;
     while (Date.now() - taskReadyStart < taskReadyTimeout) {
       const wf = await executor.getWorkflow(executionId, true);
       taskStatus = wf?.tasks?.[0]?.status;
       if (taskStatus === "IN_PROGRESS") break;
-      if (taskStatus === "FAILED" || taskStatus === "COMPLETED")
-        throw new Error(`Task ended in unexpected state: ${taskStatus}`);
+      if (taskStatus === "FAILED" || taskStatus === "COMPLETED") {
+        const failedTask = wf?.tasks?.[0];
+        throw new Error(
+          `Task ended in unexpected state: ${taskStatus} ` +
+            `(workflowId=${executionId}, workflow=${workflowName}, task=${taskName}` +
+            (failedTask?.reasonForIncompletion
+              ? `, reason=${failedTask.reasonForIncompletion}`
+              : "") +
+            ")"
+        );
+      }
       await new Promise((resolve) => setTimeout(resolve, pollInterval));
     }
     expect(taskStatus).toEqual("IN_PROGRESS");
@@ -227,7 +249,7 @@ describe("WorkflowExecutor", () => {
       executor,
       executionId,
       "COMPLETED",
-      120000,
+      30000,
       5000
     );
 
@@ -258,7 +280,7 @@ describe("WorkflowExecutor", () => {
       ],
       inputParameters: [],
       outputParameters: {},
-      timeoutSeconds: 300,
+      timeoutSeconds: 30,
     });
 
     const executionId = await executor.startWorkflow({
@@ -312,7 +334,7 @@ describe("WorkflowExecutor", () => {
 
       // Register all test workflows
       await registerAllWorkflows();
-    }, 90000);
+    }, 30000);
 
     afterEach(async () => {
       // Clean up executions first
