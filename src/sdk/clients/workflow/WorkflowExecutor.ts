@@ -30,7 +30,7 @@ import { enhanceSignalResponse } from "./helpers/enhanceSignalResponse";
 import { reverseFind } from "./helpers/reverseFind";
 import { isCompletedTaskMatchingType } from "./helpers/isCompletedTaskMatchingType";
 import { RETRY_TIME_IN_MILLISECONDS } from "./constants";
-import { getHttpMetricsObserver } from "../../worker/metrics/httpObserver";
+import { getHttpMetricsObserver, safeEmit } from "../../worker/metrics/httpObserver";
 
 export class WorkflowExecutor {
   public readonly _client: Client;
@@ -74,7 +74,7 @@ export class WorkflowExecutor {
   ): Promise<string> {
     const observer = getHttpMetricsObserver();
     if (observer?.measurePayloadSize && workflowRequest.input) {
-      try {
+      safeEmit(() => {
         const json = JSON.stringify(workflowRequest.input);
         const inputBytes = Buffer.byteLength(json, "utf8");
         observer.recordWorkflowInputSize(
@@ -84,9 +84,7 @@ export class WorkflowExecutor {
             ? String(workflowRequest.version)
             : undefined,
         );
-      } catch {
-        // Best-effort — don't let metrics break workflow start.
-      }
+      }, "workflow_input_size");
     }
     try {
       const { data } = await WorkflowResource.startWorkflow({
@@ -102,9 +100,12 @@ export class WorkflowExecutor {
           error instanceof Error
             ? error.name || error.constructor?.name || "Error"
             : "Error";
-        observer.recordWorkflowStartError(
-          workflowRequest.name ?? "",
-          excName,
+        safeEmit(
+          () => observer.recordWorkflowStartError(
+            workflowRequest.name ?? "",
+            excName,
+          ),
+          "workflow_start_error",
         );
       }
       handleSdkError(error, "Failed to start workflow");

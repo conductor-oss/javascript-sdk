@@ -1,4 +1,4 @@
-import { getHttpMetricsObserver } from "../../worker/metrics/httpObserver";
+import { getHttpMetricsObserver, safeEmit } from "../../worker/metrics/httpObserver";
 import { requestTemplateMap } from "./metricsInterceptors";
 
 type Input = Parameters<typeof fetch>[0];
@@ -242,16 +242,22 @@ export const wrapFetchWithRetry = (
       (response) => {
         const durationMs = performance.now() - start;
         const { method, uri } = extractRequestInfo(input, init);
-        observer.recordApiRequestTime(
-          method, uri, String(response.status), durationMs, template,
+        safeEmit(
+          () => observer.recordApiRequestTime(
+            method, uri, String(response.status), durationMs, template,
+          ),
+          "api_request_time",
         );
         return response;
       },
       (error) => {
         const durationMs = performance.now() - start;
         const { method, uri } = extractRequestInfo(input, init);
-        observer.recordApiRequestTime(
-          method, uri, "0", durationMs, template,
+        safeEmit(
+          () => observer.recordApiRequestTime(
+            method, uri, "0", durationMs, template,
+          ),
+          "api_request_time",
         );
         throw error;
       },

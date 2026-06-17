@@ -804,5 +804,39 @@ describe("fetchWithRetry", () => {
 
       expect(mockRecordApiRequestTime).not.toHaveBeenCalled();
     });
+
+    it("should still resolve the response when the collector throws on success", async () => {
+      const warnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
+      mockRecordApiRequestTime.mockImplementation(() => {
+        throw new Error("collector blew up");
+      });
+      mockFetch.mockResolvedValue(createMockResponse(200));
+
+      const wrappedFetch = wrapFetchWithRetry(mockFetch);
+      const result = await wrappedFetch("http://test.com/api/tasks");
+
+      expect(result.status).toBe(200);
+      expect(warnSpy).toHaveBeenCalled();
+      warnSpy.mockRestore();
+    });
+
+    it("should propagate the original error (not the metrics error) when the collector throws on failure", async () => {
+      const warnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
+      mockRecordApiRequestTime.mockImplementation(() => {
+        throw new Error("collector blew up");
+      });
+      mockFetch.mockRejectedValue(new Error("ECONNRESET"));
+
+      const wrappedFetch = wrapFetchWithRetry(mockFetch, {
+        maxTransportRetries: 0,
+      });
+
+      await expect(
+        wrappedFetch("http://test.com/api/workflow")
+      ).rejects.toThrow("ECONNRESET");
+
+      expect(warnSpy).toHaveBeenCalled();
+      warnSpy.mockRestore();
+    });
   });
 });

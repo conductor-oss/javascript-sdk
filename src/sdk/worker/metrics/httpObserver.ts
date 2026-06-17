@@ -46,3 +46,19 @@ export function setHttpMetricsObserver(
 export function getHttpMetricsObserver(): HttpMetricsObserver | undefined {
   return _observer;
 }
+
+/**
+ * Runs a metrics emit callback in isolation: if the observer/collector throws,
+ * the error is logged and swallowed so it can never fail the real request that
+ * triggered the emit.
+ *
+ * No `ConductorLogger` is available at these call sites, so we fall back to
+ * `console.warn` (same approach as `EventDispatcher` when no logger is set).
+ */
+export function safeEmit(fn: () => void, context: string): void {
+  try {
+    fn();
+  } catch (err) {
+    console.warn(`[conductor-metrics] failed to record ${context}:`, err);
+  }
+}
