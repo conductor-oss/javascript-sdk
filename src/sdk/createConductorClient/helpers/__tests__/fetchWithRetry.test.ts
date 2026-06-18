@@ -806,7 +806,7 @@ describe("fetchWithRetry", () => {
     });
 
     it("should still resolve the response when the collector throws on success", async () => {
-      const warnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
+      const warnSpy = jest.spyOn(console, "warn").mockImplementation(() => undefined);
       mockRecordApiRequestTime.mockImplementation(() => {
         throw new Error("collector blew up");
       });
@@ -821,7 +821,7 @@ describe("fetchWithRetry", () => {
     });
 
     it("should propagate the original error (not the metrics error) when the collector throws on failure", async () => {
-      const warnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
+      const warnSpy = jest.spyOn(console, "warn").mockImplementation(() => undefined);
       mockRecordApiRequestTime.mockImplementation(() => {
         throw new Error("collector blew up");
       });

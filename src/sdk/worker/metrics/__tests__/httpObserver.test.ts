@@ -92,7 +92,7 @@ describe("safeEmit", () => {
   });
 
   it("should swallow and log errors thrown by the callback", () => {
-    const warnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
+    const warnSpy = jest.spyOn(console, "warn").mockImplementation(() => undefined);
     const err = new Error("collector blew up");
 
     expect(() =>
