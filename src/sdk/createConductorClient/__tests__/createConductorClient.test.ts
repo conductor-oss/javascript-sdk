@@ -1,4 +1,10 @@
 import { jest, expect, describe, it, beforeEach } from "@jest/globals";
+import { MAX_AUTH_BACKOFF_MS, MAX_INITIAL_TOKEN_RETRIES } from "../constants";
+
+const INITIAL_AUTH_TOTAL_BACKOFF_MS = Array.from(
+  { length: MAX_INITIAL_TOKEN_RETRIES - 1 },
+  (_, i) => Math.min(Math.pow(2, i) * 1000, MAX_AUTH_BACKOFF_MS)
+).reduce((a, b) => a + b, 0);
 
 // Mock undici to avoid ts-jest compilation failure on missing module
 jest.mock("../helpers/getUndiciHttp2FetchFn", () => ({
@@ -176,9 +182,10 @@ describe("createConductorClient integration", () => {
     });
 
     it("should throw when initial auth fails", async () => {
+      jest.useFakeTimers();
       mockedGenerateToken.mockResolvedValue(tokenFailure("Bad credentials"));
 
-      await expect(
+      const assertion = expect(
         createConductorClient(
           {
             serverUrl: "http://localhost:8080",
@@ -188,6 +195,12 @@ describe("createConductorClient integration", () => {
           async () => jsonResponse({})
         )
       ).rejects.toThrow("Failed to generate authorization token");
+
+      // Advance past all initial-auth retry backoff delays
+      await jest.advanceTimersByTimeAsync(INITIAL_AUTH_TOTAL_BACKOFF_MS);
+      await assertion;
+
+      jest.useRealTimers();
     });
   });
 

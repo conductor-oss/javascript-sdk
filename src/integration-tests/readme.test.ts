@@ -1,17 +1,17 @@
 import { expect, describe, test, jest, afterAll } from "@jest/globals";
 import {
-  orkesConductorClient,
   TaskRunner,
   WorkflowExecutor,
   simpleTask,
   generate,
   MetadataClient,
 } from "../sdk";
+import { createClientWithRetry } from "./utils/createClientWithRetry";
 import { TaskType } from "../open-api";
 import { waitForWorkflowStatus } from "./utils/waitForWorkflowStatus";
 
 describe("TaskManager", () => {
-  const clientPromise = orkesConductorClient();
+  const clientPromise = createClientWithRetry();
   const workflowsToCleanup: { name: string; version: number }[] = [];
 
   jest.setTimeout(60000);

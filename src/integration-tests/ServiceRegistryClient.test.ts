@@ -1,6 +1,6 @@
 import { beforeAll, afterEach, expect, jest, test } from "@jest/globals";
 import { ServiceRegistryClient } from "../sdk/clients/service-registry";
-import { orkesConductorClient } from "../sdk/createConductorClient";
+import { createClientWithRetry } from "./utils/createClientWithRetry";
 import { ServiceType } from "../open-api";
 import * as fs from "fs";
 import * as path from "path";
@@ -13,7 +13,7 @@ const TEST_SERVICE_URI =
   "http://httpbin-server:8081/api-docs";
 
 describeForOrkesV5("ServiceRegistryClient", () => {
-  const clientPromise = orkesConductorClient();
+  const clientPromise = createClientWithRetry();
   let serviceRegistryClient: ServiceRegistryClient;
 
   const testServicesToCleanup: string[] = [];

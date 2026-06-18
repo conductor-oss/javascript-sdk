@@ -1,9 +1,9 @@
 import { expect, describe, test, jest, beforeAll, afterAll } from "@jest/globals";
 import {
-  orkesConductorClient,
   OrkesClients,
   SchemaClient,
 } from "../sdk";
+import { createClientWithRetry } from "./utils/createClientWithRetry";
 import { describeForOrkesV5 } from "./utils/customJestDescribe";
 
 /**
@@ -16,7 +16,7 @@ import { describeForOrkesV5 } from "./utils/customJestDescribe";
 describeForOrkesV5("SchemaClient", () => {
   jest.setTimeout(60000);
 
-  const clientPromise = orkesConductorClient();
+  const clientPromise = createClientWithRetry();
   const suffix = Date.now();
 
   let schemaClient: SchemaClient;
