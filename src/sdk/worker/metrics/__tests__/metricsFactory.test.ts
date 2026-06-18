@@ -1,13 +1,22 @@
-import { describe, it, expect, afterEach } from "@jest/globals";
+import { describe, it, expect, beforeEach, afterEach } from "@jest/globals";
 import { createMetricsCollector } from "../metricsFactory";
 import { LegacyMetricsCollector } from "../LegacyMetricsCollector";
 import { CanonicalMetricsCollector } from "../CanonicalMetricsCollector";
+import {
+  getHttpMetricsObserver,
+  setHttpMetricsObserver,
+} from "../httpObserver";
 
 describe("createMetricsCollector", () => {
   const originalEnv = { ...process.env };
 
+  beforeEach(() => {
+    setHttpMetricsObserver(undefined);
+  });
+
   afterEach(() => {
     process.env = { ...originalEnv };
+    setHttpMetricsObserver(undefined);
   });
 
   it("should return LegacyMetricsCollector by default", () => {
@@ -107,5 +116,31 @@ describe("createMetricsCollector", () => {
     for (const method of requiredMethods) {
       expect(typeof (canonical as unknown as Record<string, unknown>)[method]).toBe("function");
     }
+  });
+
+  it("does NOT register the legacy collector as the HTTP metrics observer", () => {
+    delete process.env.WORKER_CANONICAL_METRICS;
+
+    const collector = createMetricsCollector();
+    expect(collector).toBeInstanceOf(LegacyMetricsCollector);
+    // Legacy mode must leave the HTTP observer unset so http_api_client_request
+    // stays dormant and legacy output matches main.
+    expect(getHttpMetricsObserver()).toBeUndefined();
+  });
+
+  it("registers the canonical collector as the HTTP metrics observer", () => {
+    process.env.WORKER_CANONICAL_METRICS = "true";
+
+    const collector = createMetricsCollector();
+    expect(collector).toBeInstanceOf(CanonicalMetricsCollector);
+    expect(getHttpMetricsObserver()).toBe(collector);
+  });
+
+  it("legacy collector emits no http_api_client_request even if recordApiRequestTime is called", () => {
+    delete process.env.WORKER_CANONICAL_METRICS;
+
+    const collector = createMetricsCollector();
+    collector.recordApiRequestTime("GET", "/api/workflow/abc-123", 200, 45, "/workflow/{workflowId}");
+    expect(collector.toPrometheusText()).not.toContain("http_api_client_request");
   });
 });

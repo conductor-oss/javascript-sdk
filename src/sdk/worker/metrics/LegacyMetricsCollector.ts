@@ -78,8 +78,6 @@ export interface WorkerMetrics {
   outputSizeBytes: Map<string, number[]>;
   /** Workflow input size observations in bytes */
   workflowInputSizeBytes: Map<string, number[]>;
-  /** API request duration observations in ms by "method:uri:status" */
-  apiRequestDurationMs: Map<string, number[]>;
 }
 
 const QUANTILES = [0.5, 0.75, 0.9, 0.95, 0.99] as const;
@@ -176,7 +174,6 @@ export class LegacyMetricsCollector implements MetricsCollectorInterface {
       updateDurationMs: new Map(),
       outputSizeBytes: new Map(),
       workflowInputSizeBytes: new Map(),
-      apiRequestDurationMs: new Map(),
     };
   }
 
@@ -322,14 +319,19 @@ export class LegacyMetricsCollector implements MetricsCollectorInterface {
   }
 
   recordApiRequestTime(
-    method: string,
-    uri: string,
-    status: number | string,
-    durationMs: number,
+    _method: string,
+    _uri: string,
+    _status: number | string,
+    _durationMs: number,
     _metricUri?: string,
   ): void {
-    const key = `${method}:${uri}:${status}`;
-    this.observeSummary(this.metrics.apiRequestDurationMs, key, durationMs, "api_request", "endpoint");
+    // Intentional no-op: pre-harmonization `main` never emitted
+    // http_api_client_request because fetchWithRetry was never instrumented,
+    // so this metric stays dormant in legacy mode to preserve byte-for-byte
+    // output compatibility. The legacy collector is not registered as the HTTP
+    // metrics observer (see metricsFactory), so this is normally never called;
+    // the no-op is belt-and-suspenders. Users who want HTTP request metrics
+    // should switch to canonical mode (WORKER_CANONICAL_METRICS=true).
   }
 
   // ── Public API ──────────────────────────────────────────────────
@@ -518,12 +520,6 @@ export class LegacyMetricsCollector implements MetricsCollectorInterface {
         help: "Workflow input payload size in bytes",
         data: this.metrics.workflowInputSizeBytes,
         labelName: "workflow_type",
-      },
-      {
-        name: `${p}_http_api_client_request`,
-        help: "API request duration in milliseconds",
-        data: this.metrics.apiRequestDurationMs,
-        labelName: "endpoint",
       },
     ];
 

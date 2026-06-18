@@ -155,18 +155,12 @@ describe("LegacyMetricsCollector - Prometheus features", () => {
   });
 
   describe("recordApiRequestTime()", () => {
-    it("should observe apiRequestDurationMs by endpoint key", () => {
+    it("is a no-op: legacy never emits http_api_client_request (matches main)", () => {
       collector.recordApiRequestTime("GET", "/api/workflow", 200, 45);
       collector.recordApiRequestTime("GET", "/api/workflow", 200, 55);
-      const m = collector.getMetrics();
-      expect(m.apiRequestDurationMs.get("GET:/api/workflow:200")).toEqual([45, 55]);
-    });
-
-    it("should ignore metricUri and use uri (legacy behavior preserved)", () => {
       collector.recordApiRequestTime("GET", "/api/workflow/abc-123", 200, 45, "/workflow/{workflowId}");
-      const m = collector.getMetrics();
-      expect(m.apiRequestDurationMs.get("GET:/api/workflow/abc-123:200")).toEqual([45]);
-      expect(m.apiRequestDurationMs.get("GET:/workflow/{workflowId}:200")).toBeUndefined();
+      const text = collector.toPrometheusText();
+      expect(text).not.toContain("http_api_client_request");
     });
   });
 
@@ -215,7 +209,6 @@ describe("LegacyMetricsCollector - Prometheus features", () => {
       collector.recordTaskAckError("t");
       collector.recordExternalPayloadUsed("t");
       collector.recordWorkflowInputSize("t", 100);
-      collector.recordApiRequestTime("GET", "/", 200, 10);
 
       collector.reset();
 
@@ -228,7 +221,6 @@ describe("LegacyMetricsCollector - Prometheus features", () => {
       expect(m.taskAckErrorTotal.size).toBe(0);
       expect(m.externalPayloadUsedTotal.size).toBe(0);
       expect(m.workflowInputSizeBytes.size).toBe(0);
-      expect(m.apiRequestDurationMs.size).toBe(0);
     });
   });
 

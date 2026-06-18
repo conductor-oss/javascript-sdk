@@ -1,10 +1,12 @@
-import { describe, it, expect, beforeEach, jest } from "@jest/globals";
+import { describe, it, expect, beforeEach, afterEach, jest } from "@jest/globals";
 import {
   getHttpMetricsObserver,
   setHttpMetricsObserver,
   safeEmit,
   type HttpMetricsObserver,
 } from "../httpObserver";
+import { LegacyMetricsCollector } from "../LegacyMetricsCollector";
+import { CanonicalMetricsCollector } from "../CanonicalMetricsCollector";
 
 describe("httpObserver", () => {
   beforeEach(() => {
@@ -59,6 +61,26 @@ describe("httpObserver", () => {
 
     setHttpMetricsObserver(observer2);
     expect(getHttpMetricsObserver()).toBe(observer2);
+  });
+});
+
+describe("collector self-registration", () => {
+  beforeEach(() => {
+    setHttpMetricsObserver(undefined);
+  });
+
+  afterEach(() => {
+    setHttpMetricsObserver(undefined);
+  });
+
+  it("LegacyMetricsCollector does NOT self-register as the HTTP observer", () => {
+    new LegacyMetricsCollector();
+    expect(getHttpMetricsObserver()).toBeUndefined();
+  });
+
+  it("CanonicalMetricsCollector self-registers as the HTTP observer", () => {
+    const collector = new CanonicalMetricsCollector();
+    expect(getHttpMetricsObserver()).toBe(collector);
   });
 });
 

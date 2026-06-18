@@ -2,7 +2,6 @@ import type { MetricsCollectorConfig } from "./LegacyMetricsCollector";
 import type { MetricsCollectorInterface } from "./MetricsCollectorInterface";
 import { LegacyMetricsCollector } from "./LegacyMetricsCollector";
 import { CanonicalMetricsCollector } from "./CanonicalMetricsCollector";
-import { setHttpMetricsObserver } from "./httpObserver";
 
 /**
  * Create the appropriate MetricsCollector based on environment variables.
@@ -21,10 +20,15 @@ export function createMetricsCollector(
     (process.env.WORKER_CANONICAL_METRICS ?? "").toLowerCase(),
   );
 
-  const collector = useCanonical
-    ? new CanonicalMetricsCollector(config)
-    : new LegacyMetricsCollector(config);
+  if (useCanonical) {
+    // CanonicalMetricsCollector self-registers as the HTTP metrics observer in
+    // its constructor, so it instruments http_api_client_request_seconds.
+    return new CanonicalMetricsCollector(config);
+  }
 
-  setHttpMetricsObserver(collector);
-  return collector;
+  // The legacy collector deliberately does NOT become the HTTP metrics
+  // observer: pre-harmonization `main` never emitted http_api_client_request
+  // (fetchWithRetry was never instrumented), so legacy mode must leave that
+  // metric dormant to keep its output identical to main.
+  return new LegacyMetricsCollector(config);
 }

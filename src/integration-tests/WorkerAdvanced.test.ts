@@ -206,6 +206,8 @@ describeForOrkesV5("Worker Advanced Features", () => {
       collector.recordWorkflowStartError();
       collector.recordExternalPayloadUsed("task_output");
       collector.recordWorkflowInputSize("wf_type", 1024);
+      // recordApiRequestTime is a no-op in legacy mode (http_api_client_request
+      // stays dormant to match main); calling it must not throw or emit.
       collector.recordApiRequestTime("POST", "/api/tasks", 200, 35);
 
       const m = collector.getMetrics();
@@ -217,7 +219,7 @@ describeForOrkesV5("Worker Advanced Features", () => {
       expect(m.workflowStartErrorTotal).toBe(1);
       expect(m.externalPayloadUsedTotal.get("task_output")).toBe(1);
       expect(m.workflowInputSizeBytes.get("wf_type")).toEqual([1024]);
-      expect(m.apiRequestDurationMs.get("POST:/api/tasks:200")).toEqual([35]);
+      expect(collector.toPrometheusText()).not.toContain("http_api_client_request");
     });
   });
 
