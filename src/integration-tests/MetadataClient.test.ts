@@ -2,11 +2,11 @@ import { expect, describe, test, jest } from "@jest/globals";
 import {
   MetadataClient,
   taskDefinition,
-  orkesConductorClient,
 } from "../sdk";
+import { createClientWithRetry } from "./utils/createClientWithRetry";
 
 describe("MetadataClient", () => {
-  const clientPromise = orkesConductorClient();
+  const clientPromise = createClientWithRetry();
   const taskName = `jsSdkTest-test_task_definition-${Date.now()}`;
 
   jest.setTimeout(60000);

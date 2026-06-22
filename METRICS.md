@@ -1,259 +1,512 @@
-# Metrics Reference
+# JavaScript SDK Metrics
 
-The Conductor JavaScript SDK provides built-in Prometheus metrics for monitoring worker performance, API latency, and task execution.
+The Conductor JavaScript SDK can expose Prometheus metrics for worker polling,
+task execution, task updates, workflow starts, external payload usage, and
+API-client HTTP calls.
 
-## Overview
+The SDK currently has two mutually exclusive metric surfaces:
 
-`MetricsCollector` implements `TaskRunnerEventsListener` and records **18 metric types** (12 counters + 6 summaries). Metrics are exposed in [Prometheus exposition format](https://prometheus.io/docs/instrumenting/exposition_formats/).
+- **Legacy metrics** are the default. They preserve the original JavaScript SDK
+  names and shapes, including a `conductor_worker_` prefix, `task_type` labels,
+  millisecond time units, and Summary type for distributions.
+- **Canonical metrics** are opt-in with `WORKER_CANONICAL_METRICS=true`. They
+  use the cross-SDK canonical names, labels, units, and Prometheus histogram
+  shapes.
 
-- **Default prefix:** `conductor_worker`
-- **Quantiles:** p50, p75, p90, p95, p99 (computed from a sliding window)
-- **Sliding window:** Last 1,000 observations (configurable)
+Only one collector is active at a time. The SDK does not emit legacy and
+canonical metrics at the same time.
 
-## Quick Start
+Metrics are created lazily. A metric appears in `/metrics` only after the
+corresponding worker event or collector method records it. Some low-level
+surface metrics, such as ack, queue-full, paused, and uncaught-exception
+counters, may not appear in normal worker runs unless that path is exercised.
 
-### HTTP Server
+## Usage
+
+Create a metrics collector, start a scrape server, and wire the collector into
+`TaskHandler` as an event listener:
 
 ```typescript
-import { MetricsCollector, MetricsServer, TaskHandler } from "@io-orkes/conductor-javascript";
+import {
+  createMetricsCollector,
+  MetricsServer,
+  TaskHandler,
+} from "@io-orkes/conductor-javascript";
 
-const metrics = new MetricsCollector({ httpPort: 9090 });
+const metrics = createMetricsCollector();
+const server = new MetricsServer(metrics, 9090);
+await server.start();
 
 const handler = new TaskHandler({
   client,
-  scanForDecorated: true,
   eventListeners: [metrics],
+  scanForDecorated: true,
 });
 
 await handler.startWorkers();
 // GET http://localhost:9090/metrics  — Prometheus text format
-// GET http://localhost:9090/health   — { "status": "UP" }
+// GET http://localhost:9090/health   — {"status":"UP"}
 ```
 
-### File Output
+`createMetricsCollector()` reads `WORKER_CANONICAL_METRICS` and returns either
+a `LegacyMetricsCollector` or a `CanonicalMetricsCollector`. Both implement
+`MetricsCollectorInterface`, so call sites never need to know which variant is
+active.
+
+You can also construct a collector directly if you need to pass configuration:
 
 ```typescript
-const metrics = new MetricsCollector({
-  filePath: "/tmp/conductor_metrics.prom",
-  fileWriteIntervalMs: 10000, // write every 10s
-});
-```
+import { LegacyMetricsCollector } from "@io-orkes/conductor-javascript";
 
-The file writer performs an immediate first write, then writes periodically at the configured interval. The timer is unreferenced so it does not prevent Node.js process exit.
-
-### prom-client Integration
-
-```typescript
-const metrics = new MetricsCollector({ usePromClient: true });
-// Metrics are registered in prom-client's default registry.
-// Use prom-client's register.metrics() for native scraping.
-```
-
-Requires `npm install prom-client`. Falls back to built-in text format if not installed.
-
-### All-in-One
-
-```typescript
-const metrics = new MetricsCollector({
-  prefix: "myapp_worker",
+const metrics = new LegacyMetricsCollector({
   httpPort: 9090,
-  filePath: "/tmp/metrics.prom",
+  filePath: "/tmp/conductor_metrics.prom",
   fileWriteIntervalMs: 10000,
-  slidingWindowSize: 500,
   usePromClient: true,
 });
 ```
 
+### File Output
+
+```typescript
+const metrics = createMetricsCollector({
+  filePath: "/tmp/conductor_metrics.prom",
+  fileWriteIntervalMs: 10000,
+});
+```
+
+The file writer performs an immediate first write, then writes periodically at
+the configured interval. The timer is unreferenced so it does not prevent
+Node.js process exit.
+
+### prom-client Integration
+
+```typescript
+const metrics = createMetricsCollector({ usePromClient: true });
+// Metrics are registered in prom-client's default registry.
+// Use prom-client's register.metrics() for native scraping.
+```
+
+Requires `npm install prom-client`. Falls back to built-in text format if
+prom-client is not installed.
+
+## Selecting Canonical Metrics
+
+Set `WORKER_CANONICAL_METRICS` before the worker starts:
+
+```shell
+WORKER_CANONICAL_METRICS=true node my_worker.js
+```
+
+Accepted true values are `true`, `1`, and `yes`, case-insensitive. Any other
+value, or an unset variable, selects legacy metrics. The variable is read when
+the metrics collector is created, so changing it requires a worker restart.
+
 ## Configuration
 
 | Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `prefix` | `string` | `"conductor_worker"` | Prometheus metric name prefix |
-| `httpPort` | `number` | — | Start built-in HTTP server on this port |
-| `filePath` | `string` | — | Periodically write metrics to this file path |
-| `fileWriteIntervalMs` | `number` | `5000` | File write interval in milliseconds |
-| `slidingWindowSize` | `number` | `1000` | Max observations kept for quantile calculation |
-| `usePromClient` | `boolean` | `false` | Use `prom-client` for native Prometheus integration |
+|---|---|---|---|
+| `prefix` | `string` | `"conductor_worker"` | Prometheus metric name prefix. Legacy only; canonical metrics are unprefixed. |
+| `httpPort` | `number` | — | Start built-in HTTP server on this port. |
+| `filePath` | `string` | — | Periodically write metrics to this file path. |
+| `fileWriteIntervalMs` | `number` | `5000` | File write interval in milliseconds. |
+| `slidingWindowSize` | `number` | `1000` | Max observations for quantile calculation. Legacy only; canonical uses histogram buckets. |
+| `usePromClient` | `boolean` | `false` | Use `prom-client` for native Prometheus integration. |
 
----
+## Canonical Metrics
 
-## Counter Metrics
+Canonical timing values are seconds. Canonical size values are bytes. Label
+names use camelCase.
 
-### Labeled by `task_type`
+### Canonical Counters
 
-| Prometheus Name | Internal Key | Description |
-|----------------|-------------|-------------|
-| `{prefix}_task_poll_total` | `pollTotal` | Total number of task polls initiated |
-| `{prefix}_task_poll_error_total` | `pollErrorTotal` | Total number of failed task polls |
-| `{prefix}_task_execute_total` | `taskExecutionTotal` | Total number of task executions completed |
-| `{prefix}_task_execute_error_total` | `taskExecutionErrorTotal` | Total task execution errors. Label format: `taskType:ExceptionName` |
-| `{prefix}_task_update_error_total` | `taskUpdateFailureTotal` | Total task result update failures (result lost from Conductor) |
-| `{prefix}_task_ack_error_total` | `taskAckErrorTotal` | Total task acknowledgement errors |
-| `{prefix}_task_execution_queue_full_total` | `taskExecutionQueueFullTotal` | Times the execution queue was full (concurrency limit reached) |
-| `{prefix}_task_paused_total` | `taskPausedTotal` | Total task paused events |
+| Metric | Labels | Description |
+|---|---|---|
+| `task_poll_total` | `taskType` | Incremented each time the worker issues a poll request. |
+| `task_execution_started_total` | `taskType` | Incremented when a polled task is dispatched to the worker function. |
+| `task_poll_error_total` | `taskType`, `exception` | Incremented when a poll request fails client-side. |
+| `task_execute_error_total` | `taskType`, `exception` | Incremented when the worker function throws. |
+| `task_update_error_total` | `taskType`, `exception` | Incremented when updating the task result fails. |
+| `task_ack_error_total` | `taskType`, `exception` | Collector surface for task ack errors. The internal runner uses batch poll responses as ack and may not emit this during normal polling. |
+| `task_ack_failed_total` | `taskType` | Collector surface for failed task ack responses. The internal runner uses batch poll responses as ack and may not emit this during normal polling. |
+| `task_execution_queue_full_total` | `taskType` | Incremented when the worker execution queue is saturated. |
+| `task_paused_total` | `taskType` | Incremented when a worker is paused and skips acting on a poll. |
+| `thread_uncaught_exceptions_total` | `exception` | Incremented on uncaught exceptions in the worker process. |
+| `external_payload_used_total` | `entityName`, `operation`, `payloadType` | Incremented when external payload storage is used for task or workflow payloads. |
+| `workflow_start_error_total` | `workflowType`, `exception` | Incremented when starting a workflow fails client-side. |
 
-### Labeled by `payload_type`
+### Canonical Time Histograms
 
-| Prometheus Name | Internal Key | Description |
-|----------------|-------------|-------------|
-| `{prefix}_external_payload_used_total` | `externalPayloadUsedTotal` | External payload storage usage (e.g., `"workflow_input"`, `"task_output"`) |
+All canonical time histograms use buckets:
+`0.001`, `0.005`, `0.01`, `0.025`, `0.05`, `0.1`, `0.25`, `0.5`, `1`, `2.5`,
+`5`, `10`.
 
-### Global (no labels)
+| Metric | Labels | Description |
+|---|---|---|
+| `task_poll_time_seconds` | `taskType`, `status` | Poll request latency. `status` is `SUCCESS` or `FAILURE`. |
+| `task_execute_time_seconds` | `taskType`, `status` | Worker function execution duration. `status` is `SUCCESS` or `FAILURE`. |
+| `task_update_time_seconds` | `taskType`, `status` | Task-result update latency. `status` is `SUCCESS` or `FAILURE`. |
+| `http_api_client_request_seconds` | `method`, `uri`, `status` | API-client HTTP request latency. `status` is the HTTP status code as a string, or `"0"` on network failure. |
 
-| Prometheus Name | Internal Key | Description |
-|----------------|-------------|-------------|
-| `{prefix}_thread_uncaught_exceptions_total` | `uncaughtExceptionTotal` | Total uncaught exceptions in worker processes |
-| `{prefix}_worker_restart_total` | `workerRestartTotal` | Total worker restart events |
-| `{prefix}_workflow_start_error_total` | `workflowStartErrorTotal` | Total workflow start errors |
+Each histogram exposes Prometheus series such as:
 
----
-
-## Summary Metrics
-
-Each summary emits quantile values, a count, and a sum:
-
-```
-{name}{task_type="myTask",quantile="0.5"} 12.3
-{name}{task_type="myTask",quantile="0.75"} 15.1
-{name}{task_type="myTask",quantile="0.9"} 18.7
-{name}{task_type="myTask",quantile="0.95"} 22.0
-{name}{task_type="myTask",quantile="0.99"} 45.2
-{name}_count{task_type="myTask"} 1000
-{name}_sum{task_type="myTask"} 14523.7
+```prometheus
+task_execute_time_seconds_bucket{taskType="my_task",status="SUCCESS",le="0.1"} 42
+task_execute_time_seconds_count{taskType="my_task",status="SUCCESS"} 50
+task_execute_time_seconds_sum{taskType="my_task",status="SUCCESS"} 2.3
 ```
 
-### Labeled by `task_type`
+### Canonical Size Histograms
 
-| Prometheus Name | Internal Key | Unit | Description |
-|----------------|-------------|------|-------------|
-| `{prefix}_task_poll_time` | `pollDurationMs` | ms | Task poll round-trip duration |
-| `{prefix}_task_execute_time` | `executionDurationMs` | ms | Worker function execution duration |
-| `{prefix}_task_update_time` | `updateDurationMs` | ms | Task result update (SDK to server) duration |
-| `{prefix}_task_result_size_bytes` | `outputSizeBytes` | bytes | Task result output payload size |
+All canonical size histograms use buckets:
+`100`, `1000`, `10000`, `100000`, `1000000`, `10000000`.
 
-### Labeled by `workflow_type`
+| Metric | Labels | Description |
+|---|---|---|
+| `task_result_size_bytes` | `taskType` | Serialized task result output size. |
+| `workflow_input_size_bytes` | `workflowType`, `version` | Serialized workflow input size. `version` is an empty string when not provided. |
 
-| Prometheus Name | Internal Key | Unit | Description |
-|----------------|-------------|------|-------------|
-| `{prefix}_workflow_input_size_bytes` | `workflowInputSizeBytes` | bytes | Workflow input payload size |
+### Canonical Gauges
 
-### Labeled by `endpoint`
+| Metric | Labels | Description |
+|---|---|---|
+| `active_workers` | `taskType` | Current number of workers actively executing tasks. |
 
-| Prometheus Name | Internal Key | Unit | Description |
-|----------------|-------------|------|-------------|
-| `{prefix}_http_api_client_request` | `apiRequestDurationMs` | ms | API request duration. Label format: `METHOD:/api/path:STATUS` |
+## Legacy Metrics
 
----
+Legacy mode is the default so existing dashboards and alerts continue to work.
+The default metric name prefix is `conductor_worker`. The prefix is configurable
+via the `prefix` option on `MetricsCollectorConfig`.
 
-## Event Listener Methods
+Distribution metrics are sliding-window summaries over the latest 1,000
+observations (configurable via `slidingWindowSize`), exposing quantiles at
+p50, p75, p90, p95, and p99. Legacy distribution metrics also expose `_count`
+and `_sum` series.
 
-These methods are called automatically by the `TaskRunner` when `MetricsCollector` is registered as an event listener:
+### Legacy Counters
 
-| Method | Metrics Updated |
-|--------|----------------|
-| `onPollStarted(event)` | Increments `pollTotal` |
-| `onPollCompleted(event)` | Records `pollDurationMs` |
-| `onPollFailure(event)` | Increments `pollErrorTotal`, records `pollDurationMs` |
-| `onTaskExecutionStarted(event)` | _(no-op, counted on completion)_ |
-| `onTaskExecutionCompleted(event)` | Increments `taskExecutionTotal`, records `executionDurationMs` and `outputSizeBytes` |
-| `onTaskExecutionFailure(event)` | Increments `taskExecutionErrorTotal`, records `executionDurationMs` |
-| `onTaskUpdateCompleted(event)` | Records `updateDurationMs` |
-| `onTaskUpdateFailure(event)` | Increments `taskUpdateFailureTotal` |
+| Metric | Labels | Description |
+|---|---|---|
+| `conductor_worker_task_poll_total` | `task_type` | Incremented each time polling is done. |
+| `conductor_worker_task_poll_error_total` | `task_type` | Incremented when a poll request fails. |
+| `conductor_worker_task_execute_total` | `task_type` | Incremented when a task execution completes. |
+| `conductor_worker_task_execute_error_total` | `task_type` | Task execution errors. Label format: `taskType:ExceptionName`. |
+| `conductor_worker_task_update_error_total` | `task_type` | Incremented when updating the task result fails. |
+| `conductor_worker_task_ack_error_total` | `task_type` | Collector surface for task ack errors. |
+| `conductor_worker_task_execution_queue_full_total` | `task_type` | Incremented when the execution queue is saturated. |
+| `conductor_worker_task_paused_total` | `task_type` | Incremented when a worker is paused and skips a poll. |
+| `conductor_worker_external_payload_used_total` | `payload_type` | External payload storage usage. |
+| `conductor_worker_thread_uncaught_exceptions_total` | none | Uncaught exceptions in the worker process. |
+| `conductor_worker_worker_restart_total` | none | Worker restart events. |
+| `conductor_worker_workflow_start_error_total` | none | Workflow start errors. |
 
-## Direct Recording Methods
+Legacy mode does not emit `task_execution_started_total`,
+`task_ack_failed_total`, or `active_workers`.
 
-For metrics outside the event listener system, call these methods directly:
+### Legacy Time Metrics
+
+Time values are milliseconds. Type is Summary.
+
+| Metric | Labels | Description |
+|---|---|---|
+| `conductor_worker_task_poll_time` | `task_type` | Poll round-trip duration. |
+| `conductor_worker_task_execute_time` | `task_type` | Worker function execution duration. |
+| `conductor_worker_task_update_time` | `task_type` | Task result update duration. |
+
+Each summary exposes quantile, count, and sum series:
+
+```prometheus
+conductor_worker_task_execute_time{task_type="my_task",quantile="0.5"} 102
+conductor_worker_task_execute_time{task_type="my_task",quantile="0.95"} 250
+conductor_worker_task_execute_time_count{task_type="my_task"} 1000
+conductor_worker_task_execute_time_sum{task_type="my_task"} 120345
+```
+
+### Legacy Size Metrics
+
+Type is Summary. Values are bytes.
+
+| Metric | Labels | Description |
+|---|---|---|
+| `conductor_worker_task_result_size_bytes` | `task_type` | Task result output payload size. |
+| `conductor_worker_workflow_input_size_bytes` | `workflow_type` | Workflow input payload size. |
+
+### Legacy HTTP Metrics
+
+| Metric | Labels | Description |
+|---|---|---|
+| `conductor_worker_http_api_client_request` | `endpoint` | API request duration in milliseconds. The `endpoint` label is a compound `"METHOD:/api/path:STATUS"` string. |
+
+## Labels
+
+| Label | Used by | Values |
+|---|---|---|
+| `task_type` | Legacy worker metrics | Task definition name. |
+| `taskType` | Canonical worker metrics | Task definition name. |
+| `workflowType` | Canonical workflow metrics | Workflow definition name. |
+| `workflow_type` | Legacy `conductor_worker_workflow_input_size_bytes` | Workflow definition name. |
+| `version` | Canonical `workflow_input_size_bytes` | Workflow version as a string. Empty string when not provided. |
+| `status` | Canonical task time histograms | `SUCCESS` or `FAILURE`. For `http_api_client_request_seconds`, the HTTP status code as a string, or `"0"` on network failure. |
+| `exception` | Canonical error counters | Exception type name, such as `TypeError`. Derived from `error.name` or `error.constructor.name`. |
+| `entityName` | Canonical `external_payload_used_total` | Task type or workflow name associated with the external payload. |
+| `operation` | Canonical `external_payload_used_total` | External payload operation, such as `READ` or `WRITE`. |
+| `payload_type` | Legacy `conductor_worker_external_payload_used_total` | Payload type, such as `workflow_input` or `task_output`. |
+| `payloadType` | Canonical `external_payload_used_total` | Payload type, such as `TASK_INPUT`, `TASK_OUTPUT`, `WORKFLOW_INPUT`, or `WORKFLOW_OUTPUT`. |
+| `method` | Canonical HTTP metrics | HTTP verb. |
+| `uri` | Canonical HTTP metrics | Request path template (e.g. `/workflow/{workflowId}`). Uses bounded-cardinality templates, not interpolated paths. |
+| `endpoint` | Legacy HTTP metrics | Compound `"METHOD:/api/path:STATUS"` string. |
+| `quantile` | Legacy time and size metrics | `0.5`, `0.75`, `0.9`, `0.95`, or `0.99`. |
+
+## Migrating From Legacy to Canonical
+
+Canonical mode is opt-in during the deprecation period. Before switching a
+production worker, update dashboards and alerts against a staging worker with
+`WORKER_CANONICAL_METRICS=true`.
+
+Key changes:
+
+- The `conductor_worker_` prefix is removed. Canonical metric names are
+  unprefixed.
+- Legacy task labels use `task_type`; canonical task labels use `taskType`.
+- Legacy time metrics are millisecond summaries with quantiles. Canonical time
+  metrics are second-based histograms with bucket boundaries. Query `_bucket`
+  series with `histogram_quantile()` instead of reading `{quantile="..."}`
+  gauges.
+- Legacy size metrics are summaries. Canonical size metrics are histograms.
+- Canonical error counters add an `exception` label containing the exception
+  type name.
+- Canonical time histograms add a `status` label (`SUCCESS` or `FAILURE`).
+- Canonical mode adds metrics that legacy mode never emits:
+  `task_execution_started_total`, `task_ack_failed_total`, and
+  `active_workers`.
+- Legacy `conductor_worker_worker_restart_total` is not emitted in canonical
+  mode (Node.js single-process model).
+- Legacy uses `payload_type`; canonical uses `payloadType`.
+- Legacy HTTP metrics use a compound `endpoint` label; canonical uses separate
+  `method`, `uri`, and `status` labels.
+- Canonical and legacy collectors are mutually exclusive. During a migration,
+  compare scrape output by running separate worker instances or environments
+  with and without `WORKER_CANONICAL_METRICS=true`.
+
+Legacy-to-canonical replacements:
+
+| Legacy metric | Canonical replacement |
+|---|---|
+| `conductor_worker_task_poll_total{task_type}` | `task_poll_total{taskType}` |
+| `conductor_worker_task_poll_error_total{task_type}` | `task_poll_error_total{taskType,exception}` |
+| `conductor_worker_task_execute_total{task_type}` | `task_execute_time_seconds{taskType,status}` (count from histogram) and `task_execution_started_total{taskType}` |
+| `conductor_worker_task_execute_error_total{task_type}` | `task_execute_error_total{taskType,exception}` |
+| `conductor_worker_task_update_error_total{task_type}` | `task_update_error_total{taskType,exception}` |
+| `conductor_worker_task_poll_time{task_type}` (summary, ms) | `task_poll_time_seconds{taskType,status}` (histogram, seconds) |
+| `conductor_worker_task_execute_time{task_type}` (summary, ms) | `task_execute_time_seconds{taskType,status}` (histogram, seconds) |
+| `conductor_worker_task_update_time{task_type}` (summary, ms) | `task_update_time_seconds{taskType,status}` (histogram, seconds) |
+| `conductor_worker_task_result_size_bytes{task_type}` (summary) | `task_result_size_bytes{taskType}` (histogram) |
+| `conductor_worker_workflow_input_size_bytes{workflow_type}` (summary) | `workflow_input_size_bytes{workflowType,version}` (histogram) |
+| `conductor_worker_http_api_client_request{endpoint}` (summary, ms) | `http_api_client_request_seconds{method,uri,status}` (histogram, seconds) |
+| `conductor_worker_external_payload_used_total{payload_type}` | `external_payload_used_total{entityName,operation,payloadType}` |
+| `conductor_worker_workflow_start_error_total` (no labels) | `workflow_start_error_total{workflowType,exception}` |
+| `conductor_worker_worker_restart_total` | — (not emitted in canonical mode) |
+
+Common PromQL replacements:
+
+| Legacy | Canonical |
+|---|---|
+| `conductor_worker_task_execute_time{quantile="0.95"}` | `histogram_quantile(0.95, sum by (le, taskType, status) (rate(task_execute_time_seconds_bucket[5m])))` |
+| `conductor_worker_task_poll_time{quantile="0.95"}` | `histogram_quantile(0.95, sum by (le, taskType, status) (rate(task_poll_time_seconds_bucket[5m])))` |
+| `conductor_worker_http_api_client_request{quantile="0.95"}` | `histogram_quantile(0.95, sum by (le, method, uri, status) (rate(http_api_client_request_seconds_bucket[5m])))` |
+| `conductor_worker_task_result_size_bytes{quantile="0.95"}` | `histogram_quantile(0.95, sum by (le, taskType) (rate(task_result_size_bytes_bucket[5m])))` |
+
+Average latency queries continue to use `_sum` divided by `_count`, but the
+canonical series are cumulative histogram counters:
+
+```promql
+sum(rate(task_execute_time_seconds_sum[5m])) by (taskType)
+/
+sum(rate(task_execute_time_seconds_count[5m])) by (taskType)
+```
+
+## Troubleshooting
+
+### Metrics Are Empty
+
+- Verify that `createMetricsCollector()` or a collector constructor is called
+  and the collector is passed to `TaskHandler` via `eventListeners`.
+- Verify workers have polled or executed tasks. Metrics are created lazily when
+  the relevant event occurs.
+- Confirm the scrape endpoint is reachable at the expected host and port.
+
+### Missing HTTP or Workflow Metrics
+
+- `http_api_client_request_seconds` (canonical) or
+  `conductor_worker_http_api_client_request` (legacy) is recorded by the
+  `wrapFetchWithRetry` wrapper. Verify the collector is constructed before HTTP
+  calls begin.
+- `workflow_input_size_bytes` and `workflow_start_error_total` are recorded in
+  `WorkflowExecutor`. Verify the collector is active before starting workflows.
+
+### High Cardinality
+
+- In canonical mode the `uri` label on `http_api_client_request_seconds` uses
+  path templates (e.g. `/workflow/{workflowId}`), giving bounded cardinality.
+  Legacy mode's `endpoint` label still contains fully interpolated paths.
+- Prefer canonical mode for bounded `exception` labels. Legacy error counters
+  encode exception names in the Map key, not as a proper Prometheus label.
+- Avoid embedding user identifiers or unbounded values in task type, workflow
+  type, or external payload labels.
+
+### Recording Uncaught Exceptions
+
+The `thread_uncaught_exceptions_total` metric is not wired automatically. In
+Node.js, registering a `process.on("uncaughtException")` handler overrides the
+default crash behavior, which can leave the process running in a corrupted
+state. Instead, wire it yourself so you control the exit policy:
 
 ```typescript
-const collector = new MetricsCollector();
+const metrics = createMetricsCollector();
 
-collector.recordTaskExecutionQueueFull("my_task");
-collector.recordUncaughtException();
-collector.recordWorkerRestart();
-collector.recordTaskPaused("my_task");
-collector.recordTaskAckError("my_task");
-collector.recordWorkflowStartError();
-collector.recordExternalPayloadUsed("task_output");
-collector.recordWorkflowInputSize("my_workflow", 2048);
-collector.recordApiRequestTime("POST", "/api/tasks", 200, 35);
+process.on("uncaughtException", (err) => {
+  metrics.recordUncaughtException(err.name || "Error");
+  console.error(err);
+  process.exit(1);
+});
+
+process.on("unhandledRejection", (reason) => {
+  const name = reason instanceof Error ? reason.name || "Error" : "Error";
+  metrics.recordUncaughtException(name);
+  console.error(reason);
+  process.exit(1);
+});
 ```
 
-## Exposition Formats
+### prom-client Issues
 
-### Built-in Prometheus Text
+- `MetricsCollector` uses `await import("./MetricsServer.js")` internally. The
+  `.js` extension does not resolve under Jest's TypeScript transform. Test
+  `MetricsServer` by importing it directly, not via the `httpPort` config
+  option.
+- When `usePromClient: true` is set but `prom-client` is not installed, the
+  collector falls back to the built-in text format silently.
 
-```typescript
-const text = collector.toPrometheusText();
-// Returns Prometheus text format (text/plain; version=0.0.4)
-```
+## Implementation Notes
 
-### Async (with prom-client support)
+### One Collector Per Process
 
-```typescript
-const text = await collector.toPrometheusTextAsync();
-// Uses prom-client registry when available, falls back to built-in
-```
+Only one metrics collector can be active at a time.
+`CanonicalMetricsCollector` registers itself as the global HTTP metrics
+observer on construction. `LegacyMetricsCollector` does not self-register;
+use `createMetricsCollector()` or call `setHttpMetricsObserver()` explicitly
+to enable HTTP metrics in legacy mode. Creating a second collector replaces
+the first. Calling `stop()` clears the global observer.
 
-### HTTP Server (MetricsServer)
+### Payload Size Measurement
 
-```typescript
-import { MetricsServer } from "@io-orkes/conductor-javascript";
+`workflow_input_size_bytes` is recorded by calling `JSON.stringify` on the
+workflow input and measuring the resulting UTF-8 byte length with
+`Buffer.byteLength`. This cost is controlled by the `measurePayloadSize`
+config option:
 
-const server = new MetricsServer(collector, 9090);
-await server.start();
-// GET /metrics — Content-Type from collector.getContentType()
-// GET /health  — { "status": "UP" }
-await server.stop();
-```
+- **Canonical** (default `true`): measured on every `startWorkflow` call.
+  Set `measurePayloadSize: false` to disable.
+- **Legacy** (default `false`): not measured unless you set
+  `measurePayloadSize: true`.
 
-### File Output
+### Legacy `task_paused_total`
 
-Configured via `filePath` in `MetricsCollectorConfig`. Writes `toPrometheusText()` output to disk. The file writer performs an immediate first write on construction, then writes periodically at the configured interval.
+Legacy mode does not emit `task_paused_total`. This metric was defined but
+never recorded in any prior release. It remains unrecorded in legacy mode to
+preserve byte-for-byte output compatibility. Switch to canonical mode
+(`WORKER_CANONICAL_METRICS=true`) to get paused metrics.
 
----
+### `WORKER_LEGACY_METRICS` (Reserved)
 
-## Sliding Window and Quantile Calculation
+`WORKER_LEGACY_METRICS` is reserved for future use. Once canonical metrics
+become the default, setting `WORKER_LEGACY_METRICS=true` will re-activate
+the legacy metric surface. It is not read by the current implementation.
 
-Summary metrics use a **sliding window** (default: 1,000 observations) to calculate percentiles. This provides:
+## Detailed Technical Notes -- Unreleased
 
-- Accurate recent percentiles without unbounded memory growth
-- No need to pre-configure histogram bucket boundaries
-- Direct percentile values without interpolation artifacts
+This section documents internal implementation details for developers reviewing
+the metrics harmonization changes. It is not end-user-facing and will be
+removed or folded into the relevant sections once the release is published.
 
-Quantiles are computed on-demand using linear interpolation on sorted observations when `toPrometheusText()` is called.
+### Architecture
 
-When using `prom-client` (`usePromClient: true`), summaries use prom-client's native implementation with `maxAgeSeconds: 600` and `ageBuckets: 5`.
+The `MetricsCollectorInterface` (`src/sdk/worker/metrics/MetricsCollectorInterface.ts`)
+defines the contract for recording SDK metrics. Two implementations exist:
 
----
+- `LegacyMetricsCollector` (`src/sdk/worker/metrics/LegacyMetricsCollector.ts`)
+  -- emits the original metric names and types (sliding-window Summaries for
+  timing, compound `endpoint` labels, `conductor_worker_` prefix).
+- `CanonicalMetricsCollector` (`src/sdk/worker/metrics/CanonicalMetricsCollector.ts`)
+  -- emits the harmonized cross-SDK catalog (Histograms in seconds/bytes,
+  `_total` counters, bounded `exception` labels from `error.name`).
 
-## Monitoring Best Practices
+`createMetricsCollector()` reads `WORKER_CANONICAL_METRICS` once and returns the
+appropriate implementation.
 
-- **Use p95/p99 for SLO monitoring** rather than averages. Percentile-based thresholds better capture user-impacting performance variations.
-- **Alert on `task_update_error_total`** — a rising count indicates task results are being lost and workers are failing to report back to the Conductor server.
-- **Alert on `task_execution_queue_full_total`** — indicates the concurrency limit is consistently reached. Consider increasing worker `concurrency`.
-- **Monitor `task_poll_time` p99** — high poll latency suggests network issues or server overload.
-- **Monitor `task_execute_time` p95** — watch for execution time regression in worker functions.
-- **File output interval**: 10-60 seconds recommended for production. Lower intervals increase disk I/O.
-- **Clean metrics directory on startup** when using file output with multiprocess workers to avoid stale data.
+### HTTP request timing via interceptors
 
----
+A **request interceptor** (`createMetricsInterceptors()` in
+`src/sdk/createConductorClient/helpers/metricsInterceptors.ts`) stashes the
+OpenAPI path template (from `opts.url`) in a `WeakMap` keyed on the `Request`
+object. The template is stripped of the `/api/` prefix baked in by the OpenAPI
+spec so the canonical `uri` label matches the cross-SDK convention (e.g.
+`/workflow/{workflowId}`).
 
-## Programmatic Access
+`wrapFetchWithRetry` reads the template from the `WeakMap` before calling
+`retryFetch` and records HTTP metrics for both successful responses and
+network errors (status `"0"`). All timing and metric recording is centralised
+in the fetch wrapper; the interceptor's only job is to bridge the path
+template from `opts` (available to interceptors) to the fetch layer (which
+only receives the `Request` object).
 
-```typescript
-const metrics = collector.getMetrics();
+### Canonical vs. legacy URI label
 
-// Counter values
-metrics.pollTotal.get("my_task");           // number
-metrics.taskExecutionTotal.get("my_task");  // number
+`recordApiRequestTime` accepts an optional `metricUri` parameter (the path
+template). The canonical collector uses `metricUri ?? uri`; the legacy collector
+ignores `metricUri` and uses the interpolated `uri`, preserving legacy output
+byte-for-byte.
 
-// Summary observations (raw array)
-metrics.pollDurationMs.get("my_task");      // number[]
-metrics.executionDurationMs.get("my_task"); // number[]
+The JavaScript SDK's OpenAPI spec bakes `/api/` into every path template
+(`opts.url = "/api/workflow/{workflowId}"`). Other SDKs keep `/api` in the base
+URL and use clean paths. The request interceptor strips this prefix so the
+canonical `uri` label matches the cross-SDK convention (e.g.
+`/workflow/{workflowId}`).
 
-// Reset all metrics
-collector.reset();
+### Payload size metrics
 
-// Stop file writer and HTTP server
-await collector.stop();
-```
+`workflow_input_size_bytes` and `task_result_size_bytes` measure specific
+sub-fields of the request/response payloads (`workflowRequest.input` and
+`merged.outputData` respectively), not the full HTTP body. This requires a
+separate `JSON.stringify` call on the sub-field, independent of the HTTP body
+serialization performed by the OpenAPI client.
+
+This cost is controlled by the `measurePayloadSize` config option (canonical
+default `true`, legacy default `false`). The Go SDK provides
+`WORKER_METRICS_PAYLOAD_SIZE` for the same purpose.
+
+### Metrics collector event surface
+
+`CanonicalMetricsCollector` and `LegacyMetricsCollector` both implement
+`TaskRunnerEventsListener`, so they receive lifecycle events from the worker
+infrastructure:
+
+- Event listener methods (from `TaskRunnerEventsListener`): `onPollStarted` /
+  `onPollCompleted` / `onPollFailure` / `onTaskExecutionStarted` /
+  `onTaskExecutionCompleted` / `onTaskExecutionFailure` /
+  `onTaskUpdateCompleted` / `onTaskUpdateFailure` / `onTaskPaused`
+- Direct recording methods (called outside the event system):
+  `recordTaskExecutionQueueFull` / `recordUncaughtException` /
+  `recordTaskAckError` / `recordTaskAckFailed` / `recordTaskPaused` /
+  `recordExternalPayloadUsed` / `recordWorkflowStartError` /
+  `recordWorkflowInputSize` / `recordApiRequestTime`
+- `Poller`, `TaskRunner`, and `EventDispatcher` emit a `taskPaused` event when a
+  poll cycle is skipped because the worker is paused.
+
+### Harness changes
+
+- Harness deployment manifest sets `WORKER_CANONICAL_METRICS=true`.
+- `harness/main.ts` logs which collector is active.
+- `WorkflowStatusProbe` (opt-in via `HARNESS_PROBE_RATE_PER_SEC`) exercises
+  UUID-bearing endpoints (`/api/workflow/{workflowId}`) to validate that the
+  `uri` label uses bounded templates.

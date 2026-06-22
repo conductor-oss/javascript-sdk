@@ -7,6 +7,7 @@ import {
 import type { OrkesApiConfig } from "../types";
 import { createClient } from "../../open-api/generated/client";
 import { addResourcesBackwardCompatibility } from "./helpers/addResourcesBackwardCompatibility";
+import { createMetricsInterceptors } from "./helpers/metricsInterceptors";
 
 /**
  * Creates a Conductor client with authentication and configuration
@@ -34,6 +35,7 @@ export const createConductorClient = async (
     proxyUrl,
     tlsInsecure,
     disableHttp2,
+    retryServerErrors,
   } = resolveOrkesConfig(config);
 
   if (!serverUrl) throw new Error("Conductor server URL is not set");
@@ -52,9 +54,12 @@ export const createConductorClient = async (
   // Start with retry + timeout on fetch (no auth failure callback yet)
   const openApiClient = createClient({
     baseUrl: serverUrl,
-    fetch: wrapFetchWithRetry(baseFetchFn, { requestTimeoutMs }),
+    fetch: wrapFetchWithRetry(baseFetchFn, { requestTimeoutMs, retryServerErrors }),
     throwOnError: true,
   });
+
+  const { onRequest } = createMetricsInterceptors();
+  openApiClient.interceptors.request.use(onRequest);
 
   let authResult: Awaited<ReturnType<typeof handleAuth>> | undefined;
   if (keyId && keySecret) {
@@ -74,6 +79,7 @@ export const createConductorClient = async (
       fetch: wrapFetchWithRetry(baseFetchFn, {
         onAuthFailure: authResult.refreshToken,
         requestTimeoutMs,
+        retryServerErrors,
       }),
     });
   }

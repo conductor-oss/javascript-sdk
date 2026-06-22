@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeEach } from "@jest/globals";
-import { MetricsCollector } from "../MetricsCollector";
+import { LegacyMetricsCollector } from "../LegacyMetricsCollector";
 
-describe("MetricsCollector", () => {
-  let collector: MetricsCollector;
+describe("LegacyMetricsCollector", () => {
+  let collector: LegacyMetricsCollector;
 
   beforeEach(() => {
-    collector = new MetricsCollector();
+    collector = new LegacyMetricsCollector();
   });
 
   describe("poll metrics", () => {
@@ -133,13 +133,14 @@ describe("MetricsCollector", () => {
       expect(metrics.updateDurationMs.get("task_a")).toEqual([25, 30]);
     });
 
-    it("should count update failures via onTaskUpdateFailure", () => {
+    it("should count update failures and record duration via onTaskUpdateFailure", () => {
       collector.onTaskUpdateFailure({
         taskType: "task_a",
         taskId: "t1",
         workerId: "w1",
         workflowInstanceId: "wf1",
         cause: new Error("server error"),
+        durationMs: 200,
         retryCount: 4,
         taskResult: {},
         timestamp: new Date(),
@@ -147,6 +148,7 @@ describe("MetricsCollector", () => {
 
       const metrics = collector.getMetrics();
       expect(metrics.taskUpdateFailureTotal.get("task_a")).toBe(1);
+      expect(metrics.updateDurationMs.get("task_a")).toEqual([200]);
     });
   });
 

@@ -4,16 +4,19 @@ export class WorkflowGovernor {
   private readonly workflowExecutor: WorkflowExecutor;
   private readonly workflowName: string;
   private readonly workflowsPerSecond: number;
+  private readonly idSink?: (id: string) => void;
   private timer: ReturnType<typeof setInterval> | undefined;
 
   constructor(
     workflowExecutor: WorkflowExecutor,
     workflowName: string,
     workflowsPerSecond: number,
+    idSink?: (id: string) => void,
   ) {
     this.workflowExecutor = workflowExecutor;
     this.workflowName = workflowName;
     this.workflowsPerSecond = workflowsPerSecond;
+    this.idSink = idSink;
   }
 
   start(): void {
@@ -46,15 +49,21 @@ export class WorkflowGovernor {
         this.workflowExecutor.startWorkflow({
           name: this.workflowName,
           version: 1,
+          input: { startedAt: Date.now() },
         }),
       );
     }
 
     Promise.all(promises)
-      .then(() => {
+      .then((ids) => {
         console.log(
           `Governor: started ${this.workflowsPerSecond} workflow(s)`,
         );
+        if (this.idSink) {
+          for (const id of ids) {
+            this.idSink(id);
+          }
+        }
       })
       .catch((err: unknown) => {
         console.error(

@@ -20,4 +20,5 @@ export interface OrkesApiConfig {
   proxyUrl?: string; // HTTP/HTTPS proxy URL
   tlsInsecure?: boolean; // disable TLS certificate verification (for self-signed certs)
   disableHttp2?: boolean; // force HTTP/1.1 instead of HTTP/2
+  retryServerErrors?: boolean; // retry 502/503/504 for idempotent methods (default false)
 }

@@ -36,7 +36,6 @@ import type { Client } from "../open-api";
 import {
   MetadataClient,
   WorkflowExecutor,
-  TaskClient,
   orkesConductorClient,
 } from "../sdk";
 import { LeaseTracker } from "../sdk/clients/worker/LeaseTracker";
@@ -56,7 +55,6 @@ describe("Lease Extension — end-to-end validation", () => {
   let client: Client;
   let executor: WorkflowExecutor;
   let metadataClient: MetadataClient;
-  let taskClient: TaskClient;
   const logger: ConductorLogger = new DefaultLogger();
 
   const suffix      = Date.now();
@@ -67,7 +65,6 @@ describe("Lease Extension — end-to-end validation", () => {
     client         = await orkesConductorClient();
     executor       = new WorkflowExecutor(client);
     metadataClient = new MetadataClient(client);
-    taskClient     = new TaskClient(client);
 
     await metadataClient.registerTask({
       name:                   taskDefName,
@@ -117,7 +114,7 @@ describe("Lease Extension — end-to-end validation", () => {
     const deadline = Date.now() + maxWaitMs;
     while (Date.now() < deadline) {
       const wf = await executor.getWorkflow(workflowId, false);
-      if (terminal.has(wf.status ?? "")) return wf.status!;
+      if (terminal.has(wf.status ?? "")) return wf.status ?? "";
       await sleep(1_000);
     }
     return "STILL_RUNNING";
@@ -132,8 +129,8 @@ describe("Lease Extension — end-to-end validation", () => {
     const { data: tasks1 } = await TaskResource.batchPoll({ client, path: { tasktype: taskDefName }, query: { workerid: "val-worker-no-lease", count: 1, timeout: 200 } });
     const [task] = tasks1 ?? [];
     expect(task).toBeDefined();
-    const taskId1 = task.taskId!;
-    const wfId1   = task.workflowInstanceId!;
+    const taskId1 = task.taskId ?? "";
+    const wfId1   = task.workflowInstanceId ?? "";
     console.log(`   Task polled: ${taskId1}`);
     console.log(`   No LeaseTracker created — zero extendLease calls will be made`);
 
@@ -177,8 +174,8 @@ describe("Lease Extension — end-to-end validation", () => {
     const { data: tasks2 } = await TaskResource.batchPoll({ client, path: { tasktype: taskDefName }, query: { workerid: "val-worker-with-lease", count: 1, timeout: 200 } });
     const [task] = tasks2 ?? [];
     expect(task).toBeDefined();
-    const taskId2 = task.taskId!;
-    const wfId2   = task.workflowInstanceId!;
+    const taskId2 = task.taskId ?? "";
+    const wfId2   = task.workflowInstanceId ?? "";
     console.log(`   Task polled: ${taskId2}`);
 
     // Track heartbeat calls via a spy that ALSO sends the real heartbeat

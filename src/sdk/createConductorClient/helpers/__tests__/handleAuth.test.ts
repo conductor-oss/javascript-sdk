@@ -4,7 +4,13 @@ import { handleAuth } from "../handleAuth";
 import { TokenResource } from "../../../../open-api/generated";
 import type { Client } from "../../../../open-api/generated/client/types.gen";
 import type { ConductorLogger } from "../../../helpers/logger";
-import { TOKEN_TTL_MS, MAX_AUTH_FAILURES, MAX_INITIAL_TOKEN_RETRIES } from "../../constants";
+import { TOKEN_TTL_MS, MAX_AUTH_FAILURES, MAX_AUTH_BACKOFF_MS, MAX_INITIAL_TOKEN_RETRIES } from "../../constants";
+
+/** Total fake-time needed to exhaust all initial-auth retry backoffs. */
+const INITIAL_AUTH_TOTAL_BACKOFF_MS = Array.from(
+  { length: MAX_INITIAL_TOKEN_RETRIES - 1 },
+  (_, i) => Math.min(Math.pow(2, i) * 1000, MAX_AUTH_BACKOFF_MS)
+).reduce((a, b) => a + b, 0);
 
 // Mock TokenResource.generateToken
 jest.mock("../../../../open-api/generated", () => ({
@@ -117,8 +123,7 @@ describe("handleAuth", () => {
         handleAuth(mockClient as unknown as Client, "key-id", "key-secret", 3600000, mockLogger)
       ).rejects.toThrow("Failed to generate authorization token");
 
-      // Advance past all retry backoff delays (1s + 2s = 3s)
-      await jest.advanceTimersByTimeAsync(3000);
+      await jest.advanceTimersByTimeAsync(INITIAL_AUTH_TOTAL_BACKOFF_MS);
       await assertion;
 
       expect(mockedGenerateToken).toHaveBeenCalledTimes(MAX_INITIAL_TOKEN_RETRIES);
@@ -141,8 +146,7 @@ describe("handleAuth", () => {
 
       const p = handleAuth(mockClient as unknown as Client, "key-id", "key-secret", 3600000, mockLogger);
 
-      // Advance past retry backoff delays
-      await jest.advanceTimersByTimeAsync(3000);
+      await jest.advanceTimersByTimeAsync(INITIAL_AUTH_TOTAL_BACKOFF_MS);
 
       const result = await p;
       expect(result).toBeDefined();
@@ -164,7 +168,7 @@ describe("handleAuth", () => {
         handleAuth(mockClient as unknown as Client, "key-id", "key-secret", 3600000, mockLogger)
       ).rejects.toThrow("Failed to generate authorization token");
 
-      await jest.advanceTimersByTimeAsync(3000);
+      await jest.advanceTimersByTimeAsync(INITIAL_AUTH_TOTAL_BACKOFF_MS);
       await assertion;
 
       expect(mockLogger.debug).toHaveBeenCalledWith(
@@ -184,7 +188,7 @@ describe("handleAuth", () => {
         handleAuth(mockClient as unknown as Client, "key-id", "key-secret", 3600000, mockLogger)
       ).rejects.toThrow("Failed to generate authorization token");
 
-      await jest.advanceTimersByTimeAsync(3000);
+      await jest.advanceTimersByTimeAsync(INITIAL_AUTH_TOTAL_BACKOFF_MS);
       await assertion;
 
       expect(mockLogger.debug).toHaveBeenCalledWith(

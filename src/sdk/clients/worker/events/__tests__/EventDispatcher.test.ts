@@ -9,6 +9,7 @@ import type {
   TaskExecutionFailure,
   TaskUpdateCompleted,
   TaskUpdateFailure,
+  TaskPaused,
 } from "../types";
 
 describe("EventDispatcher", () => {
@@ -143,6 +144,7 @@ describe("EventDispatcher", () => {
       onTaskExecutionFailure: jest.fn<() => void>(),
       onTaskUpdateCompleted: jest.fn<() => void>(),
       onTaskUpdateFailure: jest.fn<() => void>(),
+      onTaskPaused: jest.fn<() => void>(),
     };
 
     dispatcher.register(listener);
@@ -225,12 +227,21 @@ describe("EventDispatcher", () => {
       workerId: "worker-1",
       workflowInstanceId: "workflow-1",
       cause: new Error("Update failed"),
+      durationMs: 500,
       retryCount: 4,
       taskResult: { status: "COMPLETED" },
       timestamp: new Date(),
     };
     await dispatcher.publishTaskUpdateFailure(updateFailure);
     expect(listener.onTaskUpdateFailure).toHaveBeenCalledWith(updateFailure);
+
+    // Test TaskPaused
+    const taskPaused: TaskPaused = {
+      taskType: "test-task",
+      timestamp: new Date(),
+    };
+    await dispatcher.publishTaskPaused(taskPaused);
+    expect(listener.onTaskPaused).toHaveBeenCalledWith(taskPaused);
   });
 
   test("should have zero overhead when no listeners registered", async () => {

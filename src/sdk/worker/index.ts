@@ -17,7 +17,11 @@ export { TaskContext, getTaskContext } from "./context";
 // Metrics
 export {
   MetricsCollector,
+  LegacyMetricsCollector,
+  CanonicalMetricsCollector,
+  createMetricsCollector,
   MetricsServer,
+  type MetricsCollectorInterface,
   type MetricsCollectorConfig,
   type WorkerMetrics,
 } from "./metrics";

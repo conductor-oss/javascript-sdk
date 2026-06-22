@@ -1,5 +1,7 @@
-import { jest, expect, describe, it, beforeEach } from "@jest/globals";
+import { jest, expect, describe, it, beforeEach, afterEach } from "@jest/globals";
 import { retryFetch, wrapFetchWithRetry, applyTimeout } from "../fetchWithRetry";
+import * as httpObserver from "@/sdk/worker/metrics/httpObserver";
+import { requestTemplateMap } from "../metricsInterceptors";
 
 const createMockResponse = (status: number, body = ""): Response =>
   new Response(body, { status, statusText: `Status ${status}` });
@@ -177,6 +179,138 @@ describe("fetchWithRetry", () => {
         retryFetch("http://test.com", {}, mockFetch, { maxTransportRetries: 3 })
       ).rejects.toThrow();
       expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  // ─── Server error (502/503/504) retry ───────────────────────────────
+
+  describe("server error (502/503/504) retry", () => {
+    it("should NOT retry 502 by default (retryServerErrors unset)", async () => {
+      mockFetch.mockResolvedValue(createMockResponse(502, "Bad Gateway"));
+
+      const result = await retryFetch("http://test.com", {}, mockFetch, {
+        maxTransportRetries: 3,
+        initialRetryDelay: 1,
+      });
+
+      expect(result.status).toBe(502);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
+
+    it("should retry 502 and succeed on next attempt", async () => {
+      mockFetch
+        .mockResolvedValueOnce(createMockResponse(502, "Bad Gateway"))
+        .mockResolvedValueOnce(createMockResponse(200, "ok"));
+
+      const result = await retryFetch("http://test.com", {}, mockFetch, {
+        maxTransportRetries: 3,
+        initialRetryDelay: 1,
+        retryServerErrors: true,
+      });
+
+      expect(result.status).toBe(200);
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+    });
+
+    it("should retry 503 and succeed on next attempt", async () => {
+      mockFetch
+        .mockResolvedValueOnce(createMockResponse(503, "Service Unavailable"))
+        .mockResolvedValueOnce(createMockResponse(200, "ok"));
+
+      const result = await retryFetch("http://test.com", {}, mockFetch, {
+        maxTransportRetries: 3,
+        initialRetryDelay: 1,
+        retryServerErrors: true,
+      });
+
+      expect(result.status).toBe(200);
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+    });
+
+    it("should retry 504 and succeed on next attempt", async () => {
+      mockFetch
+        .mockResolvedValueOnce(createMockResponse(504, "Gateway Timeout"))
+        .mockResolvedValueOnce(createMockResponse(200, "ok"));
+
+      const result = await retryFetch("http://test.com", {}, mockFetch, {
+        maxTransportRetries: 3,
+        initialRetryDelay: 1,
+        retryServerErrors: true,
+      });
+
+      expect(result.status).toBe(200);
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+    });
+
+    it("should exhaust retries and return last 5xx response", async () => {
+      mockFetch.mockResolvedValue(createMockResponse(502, "Bad Gateway"));
+
+      const result = await retryFetch("http://test.com", {}, mockFetch, {
+        maxTransportRetries: 2,
+        initialRetryDelay: 1,
+        retryServerErrors: true,
+      });
+
+      expect(result.status).toBe(502);
+      // 1 initial + 2 retries = 3
+      expect(mockFetch).toHaveBeenCalledTimes(3);
+    });
+
+    it("should NOT retry 502 for POST requests (non-idempotent)", async () => {
+      mockFetch.mockResolvedValue(createMockResponse(502, "Bad Gateway"));
+
+      const result = await retryFetch("http://test.com", { method: "POST" }, mockFetch, {
+        maxTransportRetries: 3,
+        initialRetryDelay: 1,
+        retryServerErrors: true,
+      });
+
+      expect(result.status).toBe(502);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
+
+    it("should NOT retry 503 for PATCH requests (non-idempotent)", async () => {
+      mockFetch.mockResolvedValue(createMockResponse(503, "Service Unavailable"));
+
+      const result = await retryFetch("http://test.com", { method: "PATCH" }, mockFetch, {
+        maxTransportRetries: 3,
+        initialRetryDelay: 1,
+        retryServerErrors: true,
+      });
+
+      expect(result.status).toBe(503);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
+
+    it("should retry 502 for PUT requests (idempotent)", async () => {
+      mockFetch
+        .mockResolvedValueOnce(createMockResponse(502, "Bad Gateway"))
+        .mockResolvedValueOnce(createMockResponse(200, "ok"));
+
+      const result = await retryFetch("http://test.com", { method: "PUT" }, mockFetch, {
+        maxTransportRetries: 3,
+        initialRetryDelay: 1,
+        retryServerErrors: true,
+      });
+
+      expect(result.status).toBe(200);
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+    });
+
+    it("should handle transport error then 502 then success", async () => {
+      mockFetch
+        .mockRejectedValueOnce(new Error("ECONNRESET"))
+        .mockResolvedValueOnce(createMockResponse(502, "Bad Gateway"))
+        .mockResolvedValueOnce(createMockResponse(200, "ok"));
+
+      const result = await retryFetch("http://test.com", {}, mockFetch, {
+        maxTransportRetries: 3,
+        initialRetryDelay: 1,
+        retryServerErrors: true,
+      });
+
+      expect(result.status).toBe(200);
+      expect(mockFetch).toHaveBeenCalledTimes(3);
     });
   });
 
@@ -523,6 +657,186 @@ describe("fetchWithRetry", () => {
       const result = await wrappedFetch("http://test.com", { method: "POST" });
 
       expect(result.status).toBe(200);
+    });
+  });
+
+  // ─── wrapFetchWithRetry metrics recording ───────────────────────────
+
+  describe("wrapFetchWithRetry metrics", () => {
+    const mockRecordApiRequestTime = jest.fn<
+      (m: string, u: string, s: string, d: number, t?: string) => void
+    >();
+
+    beforeEach(() => {
+      mockRecordApiRequestTime.mockClear();
+      httpObserver.setHttpMetricsObserver({
+        measurePayloadSize: false,
+        recordApiRequestTime: mockRecordApiRequestTime,
+        recordWorkflowInputSize: jest.fn(),
+        recordWorkflowStartError: jest.fn(),
+      });
+    });
+
+    afterEach(() => {
+      httpObserver.setHttpMetricsObserver(undefined);
+    });
+
+    it("should record metrics on successful response", async () => {
+      mockFetch.mockResolvedValue(createMockResponse(200));
+
+      const wrappedFetch = wrapFetchWithRetry(mockFetch);
+      await wrappedFetch("http://test.com/api/tasks", { method: "POST" });
+
+      expect(mockRecordApiRequestTime).toHaveBeenCalledTimes(1);
+      const [method, uri, status, duration] =
+        mockRecordApiRequestTime.mock.calls[0];
+      expect(method).toBe("POST");
+      expect(uri).toBe("/api/tasks");
+      expect(status).toBe("200");
+      expect(duration).toBeGreaterThanOrEqual(0);
+    });
+
+    it("should record status '0' on network failure", async () => {
+      mockFetch.mockRejectedValue(new Error("ECONNRESET"));
+
+      const wrappedFetch = wrapFetchWithRetry(mockFetch, {
+        maxTransportRetries: 0,
+      });
+
+      await expect(
+        wrappedFetch("http://test.com/api/workflow")
+      ).rejects.toThrow("ECONNRESET");
+
+      expect(mockRecordApiRequestTime).toHaveBeenCalledTimes(1);
+      const [method, uri, status] =
+        mockRecordApiRequestTime.mock.calls[0];
+      expect(method).toBe("GET");
+      expect(uri).toBe("/api/workflow");
+      expect(status).toBe("0");
+    });
+
+    it("should extract method and URI from Request object on network failure", async () => {
+      mockFetch.mockRejectedValue(new Error("ECONNRESET"));
+
+      const wrappedFetch = wrapFetchWithRetry(mockFetch, {
+        maxTransportRetries: 0,
+      });
+      const request = new Request("http://example.com/api/metadata", {
+        method: "DELETE",
+      });
+
+      await expect(wrappedFetch(request)).rejects.toThrow("ECONNRESET");
+
+      expect(mockRecordApiRequestTime).toHaveBeenCalledTimes(1);
+      const [method, uri, status] = mockRecordApiRequestTime.mock.calls[0];
+      expect(method).toBe("DELETE");
+      expect(uri).toBe("/api/metadata");
+      expect(status).toBe("0");
+    });
+
+    it("should pass template from requestTemplateMap on success", async () => {
+      mockFetch.mockResolvedValue(createMockResponse(200));
+
+      const request = new Request("http://host/api/workflow/abc-123", {
+        method: "GET",
+      });
+      requestTemplateMap.set(request, "/workflow/{workflowId}");
+
+      const wrappedFetch = wrapFetchWithRetry(mockFetch);
+      await wrappedFetch(request);
+
+      expect(mockRecordApiRequestTime).toHaveBeenCalledTimes(1);
+      const [, , , , template] = mockRecordApiRequestTime.mock.calls[0];
+      expect(template).toBe("/workflow/{workflowId}");
+    });
+
+    it("should pass template from requestTemplateMap on network failure", async () => {
+      mockFetch.mockRejectedValue(new Error("ECONNRESET"));
+
+      const request = new Request("http://host/api/workflow/abc-123", {
+        method: "GET",
+      });
+      requestTemplateMap.set(request, "/workflow/{workflowId}");
+
+      const wrappedFetch = wrapFetchWithRetry(mockFetch, {
+        maxTransportRetries: 0,
+      });
+
+      await expect(wrappedFetch(request)).rejects.toThrow("ECONNRESET");
+
+      expect(mockRecordApiRequestTime).toHaveBeenCalledTimes(1);
+      const [, , , , template] = mockRecordApiRequestTime.mock.calls[0];
+      expect(template).toBe("/workflow/{workflowId}");
+    });
+
+    it("should pass undefined template when requestTemplateMap has no entry", async () => {
+      mockFetch.mockResolvedValue(createMockResponse(200));
+
+      const request = new Request("http://host/api/workflow/abc-123", {
+        method: "GET",
+      });
+      // Do NOT set requestTemplateMap
+
+      const wrappedFetch = wrapFetchWithRetry(mockFetch);
+      await wrappedFetch(request);
+
+      expect(mockRecordApiRequestTime).toHaveBeenCalledTimes(1);
+      const [, , , , template] = mockRecordApiRequestTime.mock.calls[0];
+      expect(template).toBeUndefined();
+    });
+
+    it("should not break fetch when no observer is registered", async () => {
+      httpObserver.setHttpMetricsObserver(undefined);
+
+      mockFetch.mockResolvedValue(createMockResponse(200));
+      const wrappedFetch = wrapFetchWithRetry(mockFetch);
+      const result = await wrappedFetch("http://test.com");
+
+      expect(result.status).toBe(200);
+    });
+
+    it("should not record metrics when no observer is registered", async () => {
+      httpObserver.setHttpMetricsObserver(undefined);
+
+      mockFetch.mockResolvedValue(createMockResponse(200));
+      const wrappedFetch = wrapFetchWithRetry(mockFetch);
+      await wrappedFetch("http://test.com");
+
+      expect(mockRecordApiRequestTime).not.toHaveBeenCalled();
+    });
+
+    it("should still resolve the response when the collector throws on success", async () => {
+      const warnSpy = jest.spyOn(console, "warn").mockImplementation(() => undefined);
+      mockRecordApiRequestTime.mockImplementation(() => {
+        throw new Error("collector blew up");
+      });
+      mockFetch.mockResolvedValue(createMockResponse(200));
+
+      const wrappedFetch = wrapFetchWithRetry(mockFetch);
+      const result = await wrappedFetch("http://test.com/api/tasks");
+
+      expect(result.status).toBe(200);
+      expect(warnSpy).toHaveBeenCalled();
+      warnSpy.mockRestore();
+    });
+
+    it("should propagate the original error (not the metrics error) when the collector throws on failure", async () => {
+      const warnSpy = jest.spyOn(console, "warn").mockImplementation(() => undefined);
+      mockRecordApiRequestTime.mockImplementation(() => {
+        throw new Error("collector blew up");
+      });
+      mockFetch.mockRejectedValue(new Error("ECONNRESET"));
+
+      const wrappedFetch = wrapFetchWithRetry(mockFetch, {
+        maxTransportRetries: 0,
+      });
+
+      await expect(
+        wrappedFetch("http://test.com/api/workflow")
+      ).rejects.toThrow("ECONNRESET");
+
+      expect(warnSpy).toHaveBeenCalled();
+      warnSpy.mockRestore();
     });
   });
 });

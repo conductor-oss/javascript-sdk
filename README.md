@@ -386,12 +386,12 @@ await handler.startWorkers();
 
 ## Monitoring Workers
 
-Enable Prometheus metrics with the built-in `MetricsCollector`:
+Enable Prometheus metrics with the built-in metrics collector:
 
 ```typescript
-import { MetricsCollector, MetricsServer, TaskHandler } from "@io-orkes/conductor-javascript";
+import { createMetricsCollector, MetricsServer, TaskHandler } from "@io-orkes/conductor-javascript";
 
-const metrics = new MetricsCollector();
+const metrics = createMetricsCollector();
 const server = new MetricsServer(metrics, 9090);
 await server.start();
 
@@ -405,7 +405,7 @@ await handler.startWorkers();
 // GET http://localhost:9090/health  — {"status":"UP"}
 ```
 
-Collects 18 metric types: poll counts, execution durations, error rates, output sizes, and more — with p50/p75/p90/p95/p99 quantiles. See [METRICS.md](METRICS.md) for the full reference.
+The SDK has two metric surfaces: **legacy** (default, prefixed `conductor_worker_` names, Summary type) and **canonical** (opt-in via `WORKER_CANONICAL_METRICS=true`, unprefixed names, Histogram type). See [METRICS.md](METRICS.md) for the full reference.
 
 ## Managing Workflow Executions
 
@@ -542,7 +542,7 @@ See [examples/agentic-workflows/](examples/agentic-workflows/) for all examples.
 | Document | Description |
 |----------|-------------|
 | [SDK Development Guide](SDK_DEVELOPMENT.md) | Architecture, patterns, pitfalls, testing |
-| [Metrics Reference](METRICS.md) | All 18 Prometheus metrics with descriptions |
+| [Metrics Reference](METRICS.md) | Legacy and canonical Prometheus metrics with migration guide |
 | [Breaking Changes](BREAKING_CHANGES.md) | v3.x migration guide |
 | [Workflow Management](docs/api-reference/workflow-executor.md) | Start, pause, resume, terminate, retry, search, signal |
 | [Task Management](docs/api-reference/task-client.md) | Task operations, logs, queue management |

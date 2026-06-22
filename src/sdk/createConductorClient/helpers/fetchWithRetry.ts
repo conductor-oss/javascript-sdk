@@ -1,3 +1,6 @@
+import { getHttpMetricsObserver, safeEmit } from "../../worker/metrics/httpObserver";
+import { requestTemplateMap } from "./metricsInterceptors";
+
 type Input = Parameters<typeof fetch>[0];
 type Init = Parameters<typeof fetch>[1];
 
@@ -7,6 +10,7 @@ export interface RetryFetchOptions {
   maxRateLimitRetries?: number; // default 5
   maxTransportRetries?: number; // default 3
   initialRetryDelay?: number; // default 1000ms
+  retryServerErrors?: boolean; // retry 502/503/504 for idempotent methods (default false)
 }
 
 const isTimeoutError = (error: unknown): boolean => {
@@ -95,6 +99,8 @@ const withJitter = (delayMs: number): number => {
   return Math.max(0, Math.round(delayMs + jitter));
 };
 
+const IDEMPOTENT_METHODS = new Set(["GET", "HEAD", "OPTIONS", "PUT", "DELETE"]);
+
 export const retryFetch = async (
   input: Input,
   init: Init,
@@ -157,6 +163,24 @@ export const retryFetch = async (
       return rateLimitResponse;
     }
 
+    // Gateway error retry (502, 503, 504) -- opt-in via retryServerErrors.
+    // Only retries idempotent methods to avoid duplicate side effects when
+    // the upstream may have processed the request.
+    if (options.retryServerErrors && response.status >= 502 && response.status <= 504) {
+      const reqMethod = (input instanceof Request
+        ? input.method
+        : init?.method ?? "GET"
+      ).toUpperCase();
+      if (IDEMPOTENT_METHODS.has(reqMethod) && transportAttempt < maxTransportRetries) {
+        lastError = new Error(`Server error: HTTP ${response.status}`);
+        await new Promise((resolve) =>
+          setTimeout(resolve, withJitter(initialRetryDelay * (transportAttempt + 1)))
+        );
+        continue;
+      }
+      return response;
+    }
+
     // Auth failure retry (401/403) - only refresh+retry when the error is a token
     // problem (EXPIRED_TOKEN or INVALID_TOKEN). Permission errors should propagate
     // immediately without wasting a token refresh + retry round-trip.
@@ -184,11 +208,59 @@ export const retryFetch = async (
   throw lastError ?? new Error("Fetch retry exhausted");
 };
 
+const extractRequestInfo = (input: Input, init?: Init) => {
+  const method = input instanceof Request
+    ? input.method
+    : (init?.method ?? "GET");
+  let uri = "";
+  try {
+    uri = new URL(
+      input instanceof Request ? input.url : String(input),
+    ).pathname;
+  } catch {
+    uri = String(input);
+  }
+  return { method, uri };
+};
+
 export const wrapFetchWithRetry = (
   fetchFn: typeof fetch,
-  options?: RetryFetchOptions
+  options?: RetryFetchOptions,
 ): typeof fetch => {
   return (input: Input, init?: Init): Promise<Response> => {
-    return retryFetch(input, init, fetchFn, options);
+    const observer = getHttpMetricsObserver();
+    if (!observer) {
+      return retryFetch(input, init, fetchFn, options);
+    }
+
+    const start = performance.now();
+    const template = input instanceof Request
+      ? requestTemplateMap.get(input)
+      : undefined;
+
+    return retryFetch(input, init, fetchFn, options).then(
+      (response) => {
+        const durationMs = performance.now() - start;
+        const { method, uri } = extractRequestInfo(input, init);
+        safeEmit(
+          () => observer.recordApiRequestTime(
+            method, uri, String(response.status), durationMs, template,
+          ),
+          "api_request_time",
+        );
+        return response;
+      },
+      (error) => {
+        const durationMs = performance.now() - start;
+        const { method, uri } = extractRequestInfo(input, init);
+        safeEmit(
+          () => observer.recordApiRequestTime(
+            method, uri, "0", durationMs, template,
+          ),
+          "api_request_time",
+        );
+        throw error;
+      },
+    );
   };
 };

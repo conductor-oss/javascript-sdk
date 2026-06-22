@@ -11,16 +11,16 @@ import {
   WorkflowExecutor,
   clearWorkerRegistry,
   OrkesClients,
-  orkesConductorClient,
   simpleTask,
   worker,
 } from "../sdk";
 import { cleanupWorkflowsAndTasks } from "./utils/cleanup";
 import { waitForWorkflowStatus } from "./utils/waitForWorkflowStatus";
 import { describeForOrkesV5 } from "./utils/customJestDescribe";
+import { createClientWithRetry } from "./utils/createClientWithRetry";
 
 describeForOrkesV5("E2E: 5-task workflow × 50 executions", () => {
-  const clientPromise: Promise<Client> = orkesConductorClient();
+  const clientPromise: Promise<Client> = createClientWithRetry();
   let executor: WorkflowExecutor;
   let handler: TaskHandler | undefined;
 
@@ -120,10 +120,17 @@ describeForOrkesV5("E2E: 5-task workflow × 50 executions", () => {
 
       expect(workflowIds.length).toBe(WORKFLOW_COUNT);
 
-      // Wait for all 50 to complete (600s in CI-friendly timeout, poll every 2s)
+      // Wait for all 50 to complete (600s per workflow, poll every 2s)
+      let completed = 0;
       const results = await Promise.all(
         workflowIds.map((id) =>
-          waitForWorkflowStatus(executor, id, "COMPLETED", 600_000, 2000)
+          waitForWorkflowStatus(executor, id, "COMPLETED", 600_000, 2000).then(
+            (wf) => {
+              completed++;
+              console.log(`[E2E] workflow ${completed}/${WORKFLOW_COUNT} completed (${id})`);
+              return wf;
+            }
+          )
         )
       );
 
@@ -168,7 +175,6 @@ describeForOrkesV5("E2E: 5-task workflow × 50 executions", () => {
         workflows: [{ name: workflowName, version: 1 }],
         tasks: taskNames,
       });
-    },
-    330_000 // 5.5 minute timeout for the entire test
+    }
   );
 });

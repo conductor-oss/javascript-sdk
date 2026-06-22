@@ -189,6 +189,7 @@ export class Poller<T> {
           this.logger.debug(
             `Worker ${this._pollerId} is paused, skipping poll`
           );
+          this.options.onPaused?.();
           await this.sleep(
             this.options.pollInterval ?? DEFAULT_POLL_INTERVAL
           );

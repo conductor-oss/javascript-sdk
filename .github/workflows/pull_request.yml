@@ -79,8 +79,9 @@ jobs:
           name: codecov-unit-node-${{ matrix.node-version }}
           fail_ci_if_error: false
 
-  # Integration tests (v5): one job at a time (max-parallel: 1) to avoid 502/503 on shared Conductor.
-  # Sharding (--shard i/N) splits the suite so each job runs ~1/N of tests — keeps per-job under timeout.
+  # Integration tests (v5): lower max-parallel reduces 502/503 from the shared Conductor server
+  # but makes CI slower without eliminating flakes entirely — feel free to experiment.
+  # Sharding (--shard i/N) splits the suite so each job runs ~1/N of tests.
   integration-tests:
     runs-on: ubuntu-latest
     timeout-minutes: 25
@@ -118,6 +119,7 @@ jobs:
           CONDUCTOR_AUTH_KEY: ${{ secrets.AUTH_KEY }}
           CONDUCTOR_AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
           CONDUCTOR_REQUEST_TIMEOUT_MS: "120000"
+          CONDUCTOR_RETRY_SERVER_ERRORS: "true"
           JEST_JUNIT_OUTPUT_NAME: integration-v5-node-${{ matrix.node-version }}-shard-${{ matrix.shard }}-test-results.xml
       - name: Publish Test Results
         uses: dorny/test-reporter@v2
@@ -175,6 +177,7 @@ jobs:
           CONDUCTOR_AUTH_KEY: ${{ secrets.AUTH_KEY_V4 }}
           CONDUCTOR_AUTH_SECRET: ${{ secrets.AUTH_SECRET_V4 }}
           CONDUCTOR_REQUEST_TIMEOUT_MS: "120000"
+          CONDUCTOR_RETRY_SERVER_ERRORS: "true"
           JEST_JUNIT_OUTPUT_NAME: integration-v4-node-${{ matrix.node-version }}-shard-${{ matrix.shard }}-test-results.xml
       - name: Publish Test Results
         uses: dorny/test-reporter@v2

@@ -22,9 +22,9 @@ import {
   TaskClient,
   MetadataClient,
   WorkflowExecutor,
-  orkesConductorClient,
 } from "../sdk";
 import { cleanupWorkflowsAndTasks } from "./utils/cleanup";
+import { createClientWithRetry } from "./utils/createClientWithRetry";
 import { waitForWorkflowStatus } from "./utils/waitForWorkflowStatus";
 import { getComplexSignalTestWfDef } from "./metadata/complex_wf_signal_test";
 import { getComplexSignalTestSubWf1Def } from "./metadata/complex_wf_signal_test_subworkflow_1";
@@ -33,7 +33,7 @@ import { getWaitSignalTestWfDef } from "./metadata/wait_signal_test";
 import { describeForOrkesV4, describeForOrkesV5 } from "./utils/customJestDescribe";
 
 describe("WorkflowExecutor", () => {
-  const clientPromise = orkesConductorClient();
+  const clientPromise = createClientWithRetry();
 
   jest.setTimeout(60000);
 
@@ -291,7 +291,7 @@ describe("WorkflowExecutor", () => {
       WAIT_SIGNAL_TEST: getWaitSignalTestWfDef(now),
     };
 
-    const clientPromise = orkesConductorClient();
+    const clientPromise = createClientWithRetry();
     jest.setTimeout(300000);
 
     let client: Client;

@@ -96,6 +96,12 @@ export class TaskRunner {
       {
         concurrency: worker.concurrency ?? this.options.concurrency,
         pollInterval: worker.pollInterval ?? this.options.pollInterval,
+        onPaused: () => {
+          void this.eventDispatcher.publishTaskPaused({
+            taskType: this.worker.taskDefName,
+            timestamp: new Date(),
+          });
+        },
       },
       this.logger
     );
@@ -221,15 +227,16 @@ export class TaskRunner {
     const { workerID } = this.options;
     let retryCount = 0;
     let lastError: Error | null = null;
+    let lastAttemptDurationMs = 0;
 
     while (retryCount < this.maxRetries) {
+      const updateStart = Date.now();
       try {
         if (process.env.CI) {
           console.log(
             `[TaskRunner] Submitting task result taskId=${taskResult.taskId} workflowId=${taskResult.workflowInstanceId} taskType=${this.worker.taskDefName} attempt=${retryCount + 1}/${this.maxRetries}`
           );
         }
-        const updateStart = Date.now();
 
         if (TaskRunner.updateV2Available === false) {
           // Already detected a legacy server — skip the probe, call legacy directly.
@@ -328,6 +335,7 @@ export class TaskRunner {
         });
         return nextTask ?? undefined;
       } catch (error: unknown) {
+        lastAttemptDurationMs = Date.now() - updateStart;
         lastError = error as Error;
         this.errorHandler(lastError, task);
         this.logger.error(
@@ -358,6 +366,7 @@ export class TaskRunner {
       workerId: workerID,
       workflowInstanceId: taskResult.workflowInstanceId,
       cause: lastError ?? new Error("Task update failed after all retries"),
+      durationMs: lastAttemptDurationMs,
       retryCount,
       taskResult,
       timestamp: new Date(),
@@ -500,7 +509,7 @@ export class TaskRunner {
 
       // Calculate output size if possible
       const outputSizeBytes = merged.outputData
-        ? JSON.stringify(merged.outputData).length
+        ? Buffer.byteLength(JSON.stringify(merged.outputData), "utf8")
         : undefined;
 
       // Untrack immediately — execution done, update will follow

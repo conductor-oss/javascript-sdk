@@ -1,5 +1,5 @@
-import { LeaseTracker, LeaseInfo } from "@/sdk/clients/worker/LeaseTracker";
-import { LEASE_EXTEND_DURATION_FACTOR, LEASE_EXTEND_RETRY_COUNT, HEARTBEAT_RETRY_DELAY_MS } from "@/sdk/clients/worker/constants";
+import { LeaseTracker } from "@/sdk/clients/worker/LeaseTracker";
+import { LEASE_EXTEND_RETRY_COUNT, HEARTBEAT_RETRY_DELAY_MS } from "@/sdk/clients/worker/constants";
 import { afterEach, beforeEach, describe, expect, jest, test } from "@jest/globals";
 import type { Task } from "@open-api/index";
 import { mockLogger } from "@test-utils/mockLogger";

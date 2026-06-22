@@ -3,12 +3,13 @@ import {
   ConductorWorkflow,
   TaskHandler,
   simpleTask,
-  MetricsCollector,
+  createMetricsCollector,
 } from "../src/sdk";
 import { MetadataResource } from "../src/open-api/generated";
 import type { ConductorWorker } from "../src/sdk/clients/worker/types";
 import { SimulatedTaskWorker } from "./simulatedTaskWorker";
 import { WorkflowGovernor } from "./workflowGovernor";
+import { WorkflowStatusProbe } from "./workflowStatusProbe";
 
 const WORKFLOW_NAME = "js_simulated_tasks_workflow";
 
@@ -93,8 +94,10 @@ async function main(): Promise<void> {
   });
 
   const metricsPort = envIntOrDefault("HARNESS_METRICS_PORT", 9991);
-  const metricsCollector = new MetricsCollector({ httpPort: metricsPort });
-  console.log(`Prometheus metrics server started on port ${metricsPort}`);
+  const usePromClient = process.env.HARNESS_USE_PROM_CLIENT === "true";
+  const metricsCollector = createMetricsCollector({ httpPort: metricsPort, usePromClient });
+  const backend = usePromClient ? "prom-client" : "built-in";
+  console.log(`Prometheus metrics server started on port ${metricsPort} (${metricsCollector.collectorName()} metrics, ${backend} backend)`);
 
   const handler = new TaskHandler({
     client,
@@ -104,15 +107,27 @@ async function main(): Promise<void> {
   });
   await handler.startWorkers();
 
+  const probeRate = envIntOrDefault("HARNESS_PROBE_RATE_PER_SEC", 0);
+  const probe =
+    probeRate > 0 ? new WorkflowStatusProbe(client, probeRate) : undefined;
+
   const governor = new WorkflowGovernor(
     workflowClient,
     WORKFLOW_NAME,
     workflowsPerSec,
+    probe ? probe.offer.bind(probe) : undefined,
   );
   governor.start();
 
+  if (probe) {
+    probe.start();
+  }
+
   const shutdown = async () => {
     console.log("Shutting down...");
+    if (probe) {
+      probe.stop();
+    }
     governor.stop();
     await handler.stopWorkers();
     process.exit(0);
