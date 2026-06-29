@@ -6,6 +6,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write
 
 jobs:
   build-package-and-publish-release:
@@ -17,16 +18,15 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-          registry-url: "https://registry.npmjs.org"
       - name: Bump version to release
         run: sed -i "s/v0.0.0/$RELEASE_VERSION/" ./package.json
         env:
           RELEASE_VERSION: ${{ github.ref_name }}
       - name: Install dependencies required to build package
         run: npm ci
+      - name: Upgrade npm for OIDC trusted publishing
+        run: npm install -g npm@latest
       - name: Build package
         run: npm run build
       - name: Publish package
         run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
