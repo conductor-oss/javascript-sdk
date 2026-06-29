@@ -3,9 +3,16 @@ name: Continuous Delivery
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release, matching the release tag (e.g., v1.2.3)'
+        required: true
+        type: string
 
 permissions:
   contents: read
+  id-token: write
 
 jobs:
   build-package-and-publish-release:
@@ -17,16 +24,18 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-          registry-url: "https://registry.npmjs.org"
+      # RELEASE_VERSION is the v-prefixed tag (e.g. v3.0.3) on a release, or the
+      # manual input on dispatch. The leading "v" lands in package.json but npm
+      # strips it on publish, so the published version is clean (e.g. 3.0.3).
       - name: Bump version to release
         run: sed -i "s/v0.0.0/$RELEASE_VERSION/" ./package.json
         env:
-          RELEASE_VERSION: ${{ github.ref_name }}
+          RELEASE_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
       - name: Install dependencies required to build package
         run: npm ci
+      - name: Upgrade npm for OIDC trusted publishing
+        run: npm install -g npm@latest
       - name: Build package
         run: npm run build
       - name: Publish package
         run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
