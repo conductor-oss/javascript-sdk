@@ -145,7 +145,6 @@ jobs:
   integration-tests-v4-sm:
     runs-on: ubuntu-latest
     timeout-minutes: 25
-    continue-on-error: true
     strategy:
       fail-fast: false
       max-parallel: 1
