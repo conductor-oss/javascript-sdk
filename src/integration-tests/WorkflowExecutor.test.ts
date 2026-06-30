@@ -175,17 +175,12 @@ describe("WorkflowExecutor", () => {
     const workflowName = `jsSdkTest-wf_with_asyncComplete_http_task-${Date.now()}`;
     const taskName = `jsSdkTest-http_task_with_asyncComplete_true-${Date.now()}`;
 
-    // v5 uses the internal httpbin service. For v4 we fall back to a public URL
-    // (http://www.yahoo.com).
-    // NOTE: httpbin-server IS now deployed in the v4 test cluster, but the HTTP
-    // task inexplicably cannot talk to it there - the task stays SCHEDULED and
-    // never reaches IN_PROGRESS, even though `curl`-ing the same URL from inside
-    // the worker pod succeeds and the SSRF blocklist logs nothing. Requires
-    // further investigation; until then v4 keeps using the public URL.
-    const asyncHttpUri =
-      Number(process.env.ORKES_BACKEND_VERSION) >= 5
-        ? `${HTTPBIN_BASE_URL}/api/hello?name=test1`
-        : "http://www.yahoo.com";
+    // Both v4 and v5 target the same in-cluster httpbin service. (An earlier note
+    // here claimed v4 couldn't reach httpbin-server and fell back to a public URL;
+    // that was a misdiagnosis. The HTTP call to httpbin actually succeeds on v4 with
+    // a 200 - the task simply never *surfaces* as IN_PROGRESS. See the version-specific
+    // readiness check below for the real reason.)
+    const asyncHttpUri = `${HTTPBIN_BASE_URL}/api/hello?name=test1`;
 
     await executor.registerWorkflow(true, {
       name: workflowName,
@@ -216,29 +211,81 @@ describe("WorkflowExecutor", () => {
 
     await waitForWorkflowStatus(executor, executionId, "RUNNING");
 
-    // Wait for the task to be IN_PROGRESS before updating (V4 may take longer; server requires "running" task)
+    // Wait for the async HTTP task to finish executing and sit "open", awaiting an
+    // external completion. CRUCIALLY, the *observable* shape of that open state
+    // differs between server versions:
+    //
+    //   - v5: the task reports status === "IN_PROGRESS".
+    //   - v4: the task reports status === "SCHEDULED", with callbackAfterSeconds ===
+    //         Integer.MAX_VALUE (2147483647, ~68 years). An HTTP task literally
+    //         cannot be made to show IN_PROGRESS on a v4 server.
+    //
+    // Why: when a worker returns an IN_PROGRESS result, OrkesWorkflowExecutor.updateTask
+    // treats *system tasks* and *worker tasks* differently:
+    //     if (!systemTaskRegistry.isSystemTask(type) && result == IN_PROGRESS)
+    //         task.setStatus(SCHEDULED);   // worker task -> re-queued / deferred
+    //     else
+    //         task.setStatus(result);      // system task -> IN_PROGRESS preserved
+    // For asyncComplete=true the HTTP worker returns IN_PROGRESS with
+    // callbackAfterSeconds = Integer.MAX_VALUE, so a *worker-task* HTTP gets rewritten
+    // to SCHEDULED and parked ~68 years out.
+    //
+    // The deciding factor is whether HTTP is a registered in-server system task:
+    //   - v5 ships the api-orchestration module, which registers HTTP as a
+    //     WorkflowSystemTask -> isSystemTask("HTTP") === true -> IN_PROGRESS sticks.
+    //   - v4 has no api-orchestration module, so HTTP is purely an external
+    //     orkes-workers task -> isSystemTask("HTTP") === false -> the worker's
+    //     IN_PROGRESS is rewritten to SCHEDULED.
+    // Note: the updateTask branch itself is identical in v4 and v5; the behavioral
+    // difference comes entirely from that system-task registration, not from a change
+    // in the status-handling code.
+    const isV5 = Number(process.env.ORKES_BACKEND_VERSION) >= 5;
+    const INTEGER_MAX_VALUE = 2147483647; // Integer.MAX_VALUE; v4's "park forever" callbackAfterSeconds
     const taskReadyTimeout = 30000;
     const pollInterval = 3000;
     const taskReadyStart = Date.now();
     let taskStatus: string | undefined;
+    let taskCallbackAfterSeconds: number | undefined;
+    let taskPollCount: number | undefined;
     while (Date.now() - taskReadyStart < taskReadyTimeout) {
       const wf = await executor.getWorkflow(executionId, true);
-      taskStatus = wf?.tasks?.[0]?.status;
-      if (taskStatus === "IN_PROGRESS") break;
+      const task = wf?.tasks?.[0];
+      taskStatus = task?.status;
+      taskCallbackAfterSeconds = task?.callbackAfterSeconds;
+      taskPollCount = task?.pollCount;
+      // v5 surfaces IN_PROGRESS directly; on v4 the only observable "open" signal is
+      // a SCHEDULED task that has been polled (executed) and parked indefinitely.
+      const taskReady = isV5
+        ? taskStatus === "IN_PROGRESS"
+        : taskStatus === "SCHEDULED" &&
+          (taskPollCount ?? 0) > 0 &&
+          taskCallbackAfterSeconds === INTEGER_MAX_VALUE;
+      if (taskReady) break;
       if (taskStatus === "FAILED" || taskStatus === "COMPLETED") {
-        const failedTask = wf?.tasks?.[0];
         throw new Error(
           `Task ended in unexpected state: ${taskStatus} ` +
             `(workflowId=${executionId}, workflow=${workflowName}, task=${taskName}` +
-            (failedTask?.reasonForIncompletion
-              ? `, reason=${failedTask.reasonForIncompletion}`
+            (task?.reasonForIncompletion
+              ? `, reason=${task.reasonForIncompletion}`
               : "") +
             ")"
         );
       }
       await new Promise((resolve) => setTimeout(resolve, pollInterval));
     }
-    expect(taskStatus).toEqual("IN_PROGRESS");
+
+    // Assert the version-specific "open" shape explicitly, so the divergence stays
+    // documented and this fails loudly if v4 ever starts reporting IN_PROGRESS (e.g.
+    // if HTTP becomes a registered system task there too).
+    if (isV5) {
+      console.log("V5: expecting HTTP task to be IN_PROGRESS");
+      expect(taskStatus).toEqual("IN_PROGRESS");
+    } else {
+      console.log("V4: expecting HTTP task to be SCHEDULED");
+      expect(taskStatus).toEqual("SCHEDULED");
+      expect(taskPollCount ?? 0).toBeGreaterThan(0);
+      expect(taskCallbackAfterSeconds).toEqual(INTEGER_MAX_VALUE);
+    }
 
     const taskClient = new TaskClient(client);
     await taskClient.updateTaskResult(executionId, taskName, "COMPLETED", {
