@@ -169,142 +169,109 @@ describe("WorkflowExecutor", () => {
     expect(workflowStatus?.status).toBeTruthy();
     expect(workflowStatus?.tasks?.length).toBe(1);
   });
-  test("Should run workflow with http task with asyncComplete true", async () => {
-    const client = await clientPromise;
-    const executor = new WorkflowExecutor(client);
-    const workflowName = `jsSdkTest-wf_with_asyncComplete_http_task-${Date.now()}`;
-    const taskName = `jsSdkTest-http_task_with_asyncComplete_true-${Date.now()}`;
+  // Gated to v5 only. An asyncComplete HTTP task settles differently depending on
+  // whether HTTP is a registered in-server *system task*:
+  //   - v5 ships the api-orchestration module, so HTTP is a system task
+  //     (isSystemTask("HTTP") === true). An asyncComplete HTTP task genuinely
+  //     *settles* as IN_PROGRESS, awaiting external completion. That is a stable,
+  //     observable state we can assert on.
+  //   - v4 has no api-orchestration module, so HTTP is a plain external worker task
+  //     (isSystemTask("HTTP") === false). When the worker returns IN_PROGRESS with
+  //     callbackAfterSeconds = Integer.MAX_VALUE, OrkesWorkflowExecutor.updateTask
+  //     rewrites it to SCHEDULED and parks it ~68 years out. It therefore never
+  //     *settles* as IN_PROGRESS.
+  //
+  // We deliberately do NOT run this on v4. The old (yahoo.com) version of this test
+  // only ever "passed" on v4 by catching the task in the transient IN_PROGRESS window
+  // between the worker polling it (server sets IN_PROGRESS) and the worker returning
+  // its result (server rewrites to SCHEDULED) - i.e. it was exploiting a race, not
+  // checking the settled state of this task type on v4. Rather than assert two
+  // different shapes in one test, we scope this to the version where IN_PROGRESS is
+  // the real, settled outcome.
+  describeForOrkesV5("asyncComplete HTTP task (v5 system-task semantics)", () => {
+    test("Should run workflow with http task with asyncComplete true", async () => {
+      const client = await clientPromise;
+      const executor = new WorkflowExecutor(client);
+      const workflowName = `jsSdkTest-wf_with_asyncComplete_http_task-${Date.now()}`;
+      const taskName = `jsSdkTest-http_task_with_asyncComplete_true-${Date.now()}`;
 
-    // Both v4 and v5 target the same in-cluster httpbin service. (An earlier note
-    // here claimed v4 couldn't reach httpbin-server and fell back to a public URL;
-    // that was a misdiagnosis. The HTTP call to httpbin actually succeeds on v4 with
-    // a 200 - the task simply never *surfaces* as IN_PROGRESS. See the version-specific
-    // readiness check below for the real reason.)
-    const asyncHttpUri = `${HTTPBIN_BASE_URL}/api/hello?name=test1`;
+      const asyncHttpUri = `${HTTPBIN_BASE_URL}/api/hello?name=test1`;
 
-    await executor.registerWorkflow(true, {
-      name: workflowName,
-      version: 1,
-      ownerEmail: "developers@orkes.io",
-      tasks: [
-        httpTask(taskName, { uri: asyncHttpUri, method: "GET" }, true),
-      ],
-      inputParameters: [],
-      outputParameters: {},
-      timeoutSeconds: 30,
-    });
+      await executor.registerWorkflow(true, {
+        name: workflowName,
+        version: 1,
+        ownerEmail: "developers@orkes.io",
+        tasks: [
+          httpTask(taskName, { uri: asyncHttpUri, method: "GET" }, true),
+        ],
+        inputParameters: [],
+        outputParameters: {},
+        timeoutSeconds: 30,
+      });
 
-    const executionId = await executor.startWorkflow({
-      name: workflowName,
-      input: {},
-      version: 1,
-    });
+      const executionId = await executor.startWorkflow({
+        name: workflowName,
+        input: {},
+        version: 1,
+      });
 
-    if (!executionId) {
-      throw new Error("Execution ID is undefined");
-    }
-
-    // Log the id so a failed/incomplete run can be inspected in the Conductor UI.
-    console.log(
-      `[asyncComplete http] workflowId=${executionId} workflow=${workflowName} task=${taskName}`
-    );
-
-    await waitForWorkflowStatus(executor, executionId, "RUNNING");
-
-    // Wait for the async HTTP task to finish executing and sit "open", awaiting an
-    // external completion. CRUCIALLY, the *observable* shape of that open state
-    // differs between server versions:
-    //
-    //   - v5: the task reports status === "IN_PROGRESS".
-    //   - v4: the task reports status === "SCHEDULED", with callbackAfterSeconds ===
-    //         Integer.MAX_VALUE (2147483647, ~68 years). An HTTP task literally
-    //         cannot be made to show IN_PROGRESS on a v4 server.
-    //
-    // Why: when a worker returns an IN_PROGRESS result, OrkesWorkflowExecutor.updateTask
-    // treats *system tasks* and *worker tasks* differently:
-    //     if (!systemTaskRegistry.isSystemTask(type) && result == IN_PROGRESS)
-    //         task.setStatus(SCHEDULED);   // worker task -> re-queued / deferred
-    //     else
-    //         task.setStatus(result);      // system task -> IN_PROGRESS preserved
-    // For asyncComplete=true the HTTP worker returns IN_PROGRESS with
-    // callbackAfterSeconds = Integer.MAX_VALUE, so a *worker-task* HTTP gets rewritten
-    // to SCHEDULED and parked ~68 years out.
-    //
-    // The deciding factor is whether HTTP is a registered in-server system task:
-    //   - v5 ships the api-orchestration module, which registers HTTP as a
-    //     WorkflowSystemTask -> isSystemTask("HTTP") === true -> IN_PROGRESS sticks.
-    //   - v4 has no api-orchestration module, so HTTP is purely an external
-    //     orkes-workers task -> isSystemTask("HTTP") === false -> the worker's
-    //     IN_PROGRESS is rewritten to SCHEDULED.
-    // Note: the updateTask branch itself is identical in v4 and v5; the behavioral
-    // difference comes entirely from that system-task registration, not from a change
-    // in the status-handling code.
-    const isV5 = Number(process.env.ORKES_BACKEND_VERSION) >= 5;
-    const INTEGER_MAX_VALUE = 2147483647; // Integer.MAX_VALUE; v4's "park forever" callbackAfterSeconds
-    const taskReadyTimeout = 30000;
-    const pollInterval = 3000;
-    const taskReadyStart = Date.now();
-    let taskStatus: string | undefined;
-    let taskCallbackAfterSeconds: number | undefined;
-    let taskPollCount: number | undefined;
-    while (Date.now() - taskReadyStart < taskReadyTimeout) {
-      const wf = await executor.getWorkflow(executionId, true);
-      const task = wf?.tasks?.[0];
-      taskStatus = task?.status;
-      taskCallbackAfterSeconds = task?.callbackAfterSeconds;
-      taskPollCount = task?.pollCount;
-      // v5 surfaces IN_PROGRESS directly; on v4 the only observable "open" signal is
-      // a SCHEDULED task that has been polled (executed) and parked indefinitely.
-      const taskReady = isV5
-        ? taskStatus === "IN_PROGRESS"
-        : taskStatus === "SCHEDULED" &&
-          (taskPollCount ?? 0) > 0 &&
-          taskCallbackAfterSeconds === INTEGER_MAX_VALUE;
-      if (taskReady) break;
-      if (taskStatus === "FAILED" || taskStatus === "COMPLETED") {
-        throw new Error(
-          `Task ended in unexpected state: ${taskStatus} ` +
-            `(workflowId=${executionId}, workflow=${workflowName}, task=${taskName}` +
-            (task?.reasonForIncompletion
-              ? `, reason=${task.reasonForIncompletion}`
-              : "") +
-            ")"
-        );
+      if (!executionId) {
+        throw new Error("Execution ID is undefined");
       }
-      await new Promise((resolve) => setTimeout(resolve, pollInterval));
-    }
 
-    // Assert the version-specific "open" shape explicitly, so the divergence stays
-    // documented and this fails loudly if v4 ever starts reporting IN_PROGRESS (e.g.
-    // if HTTP becomes a registered system task there too).
-    if (isV5) {
-      console.log("V5: expecting HTTP task to be IN_PROGRESS");
+      // Log the id so a failed/incomplete run can be inspected in the Conductor UI.
+      console.log(
+        `[asyncComplete http] workflowId=${executionId} workflow=${workflowName} task=${taskName}`
+      );
+
+      await waitForWorkflowStatus(executor, executionId, "RUNNING");
+
+      // Wait for the async HTTP task to finish executing and settle as IN_PROGRESS,
+      // awaiting external completion (see the block comment above for why this is the
+      // stable, settled state on v5).
+      const taskReadyTimeout = 30000;
+      const pollInterval = 3000;
+      const taskReadyStart = Date.now();
+      let taskStatus: string | undefined;
+      while (Date.now() - taskReadyStart < taskReadyTimeout) {
+        const wf = await executor.getWorkflow(executionId, true);
+        const task = wf?.tasks?.[0];
+        taskStatus = task?.status;
+        if (taskStatus === "IN_PROGRESS") break;
+        if (taskStatus === "FAILED" || taskStatus === "COMPLETED") {
+          throw new Error(
+            `Task ended in unexpected state: ${taskStatus} ` +
+              `(workflowId=${executionId}, workflow=${workflowName}, task=${taskName}` +
+              (task?.reasonForIncompletion
+                ? `, reason=${task.reasonForIncompletion}`
+                : "") +
+              ")"
+          );
+        }
+        await new Promise((resolve) => setTimeout(resolve, pollInterval));
+      }
+
       expect(taskStatus).toEqual("IN_PROGRESS");
-    } else {
-      console.log("V4: expecting HTTP task to be SCHEDULED");
-      expect(taskStatus).toEqual("SCHEDULED");
-      expect(taskPollCount ?? 0).toBeGreaterThan(0);
-      expect(taskCallbackAfterSeconds).toEqual(INTEGER_MAX_VALUE);
-    }
 
-    const taskClient = new TaskClient(client);
-    await taskClient.updateTaskResult(executionId, taskName, "COMPLETED", {
-      hello: "From manuall api call updating task result",
-    });
+      const taskClient = new TaskClient(client);
+      await taskClient.updateTaskResult(executionId, taskName, "COMPLETED", {
+        hello: "From manuall api call updating task result",
+      });
 
-    const workflowStatusAfter = await waitForWorkflowStatus(
-      executor,
-      executionId,
-      "COMPLETED",
-      30000,
-      5000
-    );
+      const workflowStatusAfter = await waitForWorkflowStatus(
+        executor,
+        executionId,
+        "COMPLETED",
+        30000,
+        5000
+      );
 
-    expect(workflowStatusAfter.tasks?.[0]?.status).toEqual("COMPLETED");
+      expect(workflowStatusAfter.tasks?.[0]?.status).toEqual("COMPLETED");
 
-    await cleanupWorkflowsAndTasks(metadataClient, {
-      workflows: [{ name: workflowName, version: 1 }],
-      tasks: [taskName],
+      await cleanupWorkflowsAndTasks(metadataClient, {
+        workflows: [{ name: workflowName, version: 1 }],
+        tasks: [taskName],
+      });
     });
   });
 
