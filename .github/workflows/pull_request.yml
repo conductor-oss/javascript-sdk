@@ -261,8 +261,9 @@ jobs:
                 timeout: 5s
                 retries: 12
             httpbin:
-              image: mccutchen/go-httpbin:v2.15.0
-              command: ["-port", "8081"]
+              image: ghcr.io/orkes-io/test-utils/httpbin:latest
+              expose:
+                - "8081"
           EOF
       - name: Start Conductor OSS stack
         run: docker compose -f docker-compose-oss.yaml up -d
