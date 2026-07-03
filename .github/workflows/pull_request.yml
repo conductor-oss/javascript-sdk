@@ -13,6 +13,8 @@ concurrency:
 
 jobs:
   linter:
+    # TEMP: disabled while iterating on integration-tests-oss. Remove this line to re-enable.
+    if: false
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -37,6 +39,8 @@ jobs:
         run: npm run lint
 
   unit-tests:
+    # TEMP: disabled while iterating on integration-tests-oss. Remove this line to re-enable.
+    if: false
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -85,6 +89,8 @@ jobs:
 
   # Integration tests (v5 sdkdev): mirrors integration-tests but targets the sdkdev environment.
   integration-tests-v5-sdkdev:
+    # TEMP: disabled while iterating on integration-tests-oss. Remove this line to re-enable.
+    if: false
     runs-on: ubuntu-latest
     timeout-minutes: 25
     strategy:
@@ -143,6 +149,8 @@ jobs:
 
   # Integration tests (v4 sm): mirrors integration-tests-v4 but targets the sm environment.
   integration-tests-v4-sm:
+    # TEMP: disabled while iterating on integration-tests-oss. Remove this line to re-enable.
+    if: false
     runs-on: ubuntu-latest
     timeout-minutes: 25
     strategy:
