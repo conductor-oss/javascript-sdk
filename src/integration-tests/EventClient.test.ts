@@ -14,7 +14,11 @@ import type {
 } from "../open-api";
 import { EventClient } from "../sdk";
 import { createClientWithRetry } from "./utils/createClientWithRetry";
-import { describeForOrkesV4, describeForOrkesV5 } from "./utils/customJestDescribe";
+import {
+  describeForOrkesV4,
+  describeForOrkesV5,
+  describeForOrkesOnlyV4,
+} from "./utils/customJestDescribe";
 import { pollUntil } from "./utils/pollUntil";
 
 const TEST_HANDLER_NAME_PREFIX = "jsSdkTest:";
@@ -312,7 +316,7 @@ describe("EventClient", () => {
     });
   });
 
-  describeForOrkesV4("Tag Management", () => {
+  describeForOrkesOnlyV4("Tag Management", () => {
     test("Should get tags for an event handler", async () => {
       const handlerName = createUniqueName("event-handler");
       const eventName = createUniqueName("event");

@@ -24,7 +24,11 @@ import { waitForWorkflowStatus } from "./utils/waitForWorkflowStatus";
 import { createClientWithRetry } from "./utils/createClientWithRetry";
 import { registerWorkflowWithRetry } from "./utils/registerWorkflowWithRetry";
 import { startWorkflowWithRetry } from "./utils/startWorkflowWithRetry";
-import { describeForOrkesV4, describeForOrkesV5 } from "./utils/customJestDescribe";
+import {
+  describeForOrkesV4,
+  describeForOrkesV5,
+  describeForOrkesOnlyV4,
+} from "./utils/customJestDescribe";
 import { registerTaskWithRetry } from "./utils/registerTaskWithRetry";
 
 /**
@@ -601,7 +605,7 @@ describe("WorkflowExecutor Complete Coverage", () => {
 
   // ==================== Update Variables ====================
 
-  describeForOrkesV4("Update Variables", () => {
+  describeForOrkesOnlyV4("Update Variables", () => {
     test("updateVariables should update workflow variables", async () => {
       const wfId = await executor.startWorkflow({
         name: waitWfName,
