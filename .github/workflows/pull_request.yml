@@ -214,7 +214,11 @@ jobs:
   integration-tests-oss:
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    name: Node.js v22 - integration oss
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [20, 22, 24]
+    name: Node.js v${{ matrix.node-version }} - integration oss
     env:
       CONDUCTOR_SERVER_URL: http://localhost:8080/api
       CONDUCTOR_SERVER_TYPE: oss
@@ -227,16 +231,16 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: ${{ matrix.node-version }}
           cache: "npm"
       - name: Cache node_modules
         id: cache
         uses: actions/cache@v4
         with:
           path: node_modules
-          key: npm-22-${{ hashFiles('package-lock.json') }}
+          key: npm-${{ matrix.node-version }}-${{ hashFiles('package-lock.json') }}
           restore-keys: |
-            npm-22-
+            npm-${{ matrix.node-version }}-
       - name: Install Dependencies
         if: steps.cache.outputs.cache-hit != 'true'
         run: npm ci
@@ -247,7 +251,7 @@ jobs:
       - name: Run integration tests (OSS)
         run: npm run test:integration:oss -- --ci --runInBand --testTimeout=120000 --reporters=default --reporters=github-actions --reporters=jest-junit
         env:
-          JEST_JUNIT_OUTPUT_NAME: integration-oss-test-results.xml
+          JEST_JUNIT_OUTPUT_NAME: integration-oss-node-${{ matrix.node-version }}-test-results.xml
       - name: Dump Conductor logs
         if: failure()
         run: docker compose -f scripts/docker-compose-oss.yaml logs conductor-server
@@ -255,6 +259,6 @@ jobs:
         uses: dorny/test-reporter@v2
         if: ${{ !cancelled() }}
         with:
-          name: integration oss
-          path: reports/integration-oss-test-results.xml
+          name: integration oss (Node ${{ matrix.node-version }})
+          path: reports/integration-oss-node-${{ matrix.node-version }}-test-results.xml
           reporter: jest-junit
