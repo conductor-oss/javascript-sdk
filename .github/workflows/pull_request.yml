@@ -206,9 +206,11 @@ jobs:
           name: codecov-integration-v4-sm-node-${{ matrix.node-version }}-shard-${{ matrix.shard }}
           fail_ci_if_error: false
 
-  # Integration tests (OSS): spins up Conductor OSS + Postgres via an inline
-  # docker-compose and runs the integration suite unauthenticated, with Orkes-only
-  # tests gated out via CONDUCTOR_SERVER_TYPE=oss (see test:integration:oss).
+  # Integration tests (OSS): spins up Conductor OSS + Postgres via
+  # scripts/docker-compose-oss.yaml and runs the integration suite unauthenticated,
+  # with Orkes-only tests gated out via CONDUCTOR_SERVER_TYPE=oss (see
+  # test:integration:oss). The same stack can be run locally with
+  # scripts/run-integration-oss.sh.
   integration-tests-oss:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -238,43 +240,8 @@ jobs:
       - name: Install Dependencies
         if: steps.cache.outputs.cache-hit != 'true'
         run: npm ci
-      - name: Write docker-compose file
-        run: |
-          cat <<'EOF' > docker-compose-oss.yaml
-          services:
-            conductor-server:
-              image: conductoross/conductor:latest
-              environment:
-                - CONFIG_PROP=config-postgres.properties
-              ports:
-                - "8080:8080"
-              healthcheck:
-                test: ["CMD", "curl", "-I", "-XGET", "http://localhost:8080/health"]
-                interval: 10s
-                timeout: 10s
-                retries: 20
-              links:
-                - conductor-postgres:postgresdb
-              depends_on:
-                conductor-postgres:
-                  condition: service_healthy
-            conductor-postgres:
-              image: postgres:16
-              environment:
-                - POSTGRES_USER=conductor
-                - POSTGRES_PASSWORD=conductor
-              healthcheck:
-                test: timeout 5 bash -c 'cat < /dev/null > /dev/tcp/localhost/5432'
-                interval: 5s
-                timeout: 5s
-                retries: 12
-            httpbin:
-              image: ghcr.io/orkes-io/test-utils/httpbin:latest
-              expose:
-                - "8081"
-          EOF
       - name: Start Conductor OSS stack
-        run: docker compose -f docker-compose-oss.yaml up -d
+        run: docker compose -f scripts/docker-compose-oss.yaml up -d
       - name: Wait for Conductor to be healthy
         run: timeout 120 bash -c 'until curl -sf http://localhost:8080/health; do sleep 5; done'
       - name: Run integration tests (OSS)
@@ -283,7 +250,7 @@ jobs:
           JEST_JUNIT_OUTPUT_NAME: integration-oss-test-results.xml
       - name: Dump Conductor logs
         if: failure()
-        run: docker compose -f docker-compose-oss.yaml logs conductor-server
+        run: docker compose -f scripts/docker-compose-oss.yaml logs conductor-server
       - name: Publish Test Results
         uses: dorny/test-reporter@v2
         if: ${{ !cancelled() }}

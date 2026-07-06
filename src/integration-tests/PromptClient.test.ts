@@ -4,16 +4,17 @@ import {
   PromptClient,
 } from "../sdk";
 import type { Tag } from "../open-api";
-import { describeForOrkesV5 } from "./utils/customJestDescribe";
+import { describeForOrkesOnlyV5 } from "./utils/customJestDescribe";
 import { createClientWithRetry } from "./utils/createClientWithRetry";
 
 /**
- * E2E Integration Tests for PromptClient (v5 only).
+ * E2E Integration Tests for PromptClient.
  *
  * Tests prompt CRUD, tag management, and (optionally) prompt testing
- * against a configured LLM integration.
+ * against a configured LLM integration. Orkes-only: the prompt registry
+ * (/api/prompts) does not exist on Conductor OSS.
  */
-describeForOrkesV5("PromptClient", () => {
+describeForOrkesOnlyV5("PromptClient", () => {
   jest.setTimeout(60000);
 
   const clientPromise = createClientWithRetry();

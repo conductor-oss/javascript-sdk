@@ -18,7 +18,7 @@ import {
 } from "../sdk";
 import { createClientWithRetry } from "./utils/createClientWithRetry";
 import { waitForWorkflowStatus } from "./utils/waitForWorkflowStatus";
-import { describeForOrkesV4 } from "./utils/customJestDescribe";
+import { describeForOrkesOnlyV4 } from "./utils/customJestDescribe";
 import { registerWorkflowWithRetry } from "./utils/registerWorkflowWithRetry";
 
 /**
@@ -111,7 +111,7 @@ describe("TaskClient Complete Coverage", () => {
       expect(task.workflowInstanceId).toEqual(workflowId);
     });
 
-    describeForOrkesV4("search (V4+)", () => {
+    describeForOrkesOnlyV4("search (V4+)", () => {
     test("search should find tasks", async () => {
       const result = await taskClient.search(
         0,
@@ -124,7 +124,7 @@ describe("TaskClient Complete Coverage", () => {
       expect(result).toBeDefined();
       expect(result.results).toBeDefined();
     });
-    }); // end describeForOrkesV4
+    }); // end describeForOrkesOnlyV4
 
     test("getQueueSizeForTask should return queue sizes", async () => {
       const sizes = await taskClient.getQueueSizeForTask(["WAIT"]);
@@ -243,7 +243,7 @@ describe("TaskClient Complete Coverage", () => {
       }
     });
 
-    describeForOrkesV4("updateTaskResult error behavior (V4+)", () => {
+    describeForOrkesOnlyV4("updateTaskResult error behavior (V4+)", () => {
     test("updateTaskResult should throw for non-existent workflow", async () => {
       await expect(
         taskClient.updateTaskResult(
@@ -254,7 +254,7 @@ describe("TaskClient Complete Coverage", () => {
         )
       ).rejects.toThrow();
     });
-    }); // end describeForOrkesV4
+    }); // end describeForOrkesOnlyV4
 
     test("updateTaskSync should throw for non-existent workflow", async () => {
       await expect(

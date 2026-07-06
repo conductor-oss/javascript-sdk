@@ -5,7 +5,7 @@ import {
   MetadataClient,
 } from "../sdk";
 import { createClientWithRetry } from "./utils/createClientWithRetry";
-import { describeForOrkesV4 } from "./utils/customJestDescribe";
+import { describeForOrkesOnlyV4 } from "./utils/customJestDescribe";
 import { registerWorkflowDefWithRetry } from "./utils/registerWorkflowWithRetry";
 
 /**
@@ -15,7 +15,7 @@ import { registerWorkflowDefWithRetry } from "./utils/registerWorkflowWithRetry"
  * in a lifecycle order: create → read → update → delete.
  */
 describe("AuthorizationClient", () => {
-  describeForOrkesV4("AuthorizationClient V4+", () => {
+  describeForOrkesOnlyV4("AuthorizationClient V4+", () => {
   jest.setTimeout(60000);
 
   const suffix = Date.now();
@@ -355,5 +355,5 @@ describe("AuthorizationClient", () => {
       ).rejects.toThrow();
     });
   });
-  }); // end describeForOrkesV4
+  }); // end describeForOrkesOnlyV4
 });

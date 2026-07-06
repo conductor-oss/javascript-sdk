@@ -16,6 +16,7 @@ import {
 } from "../sdk";
 import { createClientWithRetry } from "./utils/createClientWithRetry";
 import {
+  describeForOrkesOnly,
   describeForOrkesOnlyV4,
   describeForOssSchedulerWip,
 } from "./utils/customJestDescribe";
@@ -279,7 +280,7 @@ describe("MetadataClient Complete Coverage", () => {
   // ==================== Rate Limits ====================
   // Rate limit API may not be available on all server versions
 
-  describe("Rate Limits", () => {
+  describeForOrkesOnly("Rate Limits", () => {
     let rateLimitSupported = true;
 
     test("setWorkflowRateLimit should configure rate limiting", async () => {

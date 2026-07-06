@@ -15,9 +15,8 @@ import type {
 import { EventClient } from "../sdk";
 import { createClientWithRetry } from "./utils/createClientWithRetry";
 import {
-  describeForOrkesV4,
-  describeForOrkesV5,
   describeForOrkesOnlyV4,
+  describeForOrkesOnlyV5,
 } from "./utils/customJestDescribe";
 import { pollUntil } from "./utils/pollUntil";
 
@@ -83,7 +82,7 @@ describe("EventClient", () => {
     description: `Test event handler: ${name}`,
   });
 
-  describeForOrkesV4("Event Handler Management", () => {
+  describeForOrkesOnlyV4("Event Handler Management", () => {
     test("Should add a single event handler", async () => {
       const handlerName = createUniqueName("event-handler");
       const eventName = createUniqueName("event");
@@ -487,7 +486,7 @@ describe("EventClient", () => {
     });
   });
 
-  describeForOrkesV4("Test Endpoint", () => {
+  describeForOrkesOnlyV4("Test Endpoint", () => {
     test("Should call test endpoint", async () => {
 
       const result = await eventClient.test();
@@ -579,7 +578,7 @@ describe("EventClient", () => {
     });
   });
 
-  describeForOrkesV5("Event Processing", () => {
+  describeForOrkesOnlyV5("Event Processing", () => {
     test("Should handle incoming event", async () => {
       const handlerName = createUniqueName("event-handler");
       const eventName = createUniqueName("event");
@@ -670,7 +669,7 @@ describe("EventClient", () => {
     });
   });
 
-  describeForOrkesV5("Event Executions and Statistics", () => {
+  describeForOrkesOnlyV5("Event Executions and Statistics", () => {
     test("Should get all active event handlers (execution view)", async () => {
 
       const handlerName = createUniqueName("event-handler");

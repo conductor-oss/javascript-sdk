@@ -25,9 +25,9 @@ import { createClientWithRetry } from "./utils/createClientWithRetry";
 import { registerWorkflowWithRetry } from "./utils/registerWorkflowWithRetry";
 import { startWorkflowWithRetry } from "./utils/startWorkflowWithRetry";
 import {
-  describeForOrkesV4,
   describeForOrkesV5,
   describeForOrkesOnlyV4,
+  describeForOrkesOnlyV5,
 } from "./utils/customJestDescribe";
 import { registerTaskWithRetry } from "./utils/registerTaskWithRetry";
 
@@ -231,7 +231,7 @@ describe("WorkflowExecutor Complete Coverage", () => {
       expect(execution.tasks.length).toBeGreaterThan(0);
     });
 
-    describeForOrkesV4("getWorkflowStatus (V4+)", () => {
+    describeForOrkesOnlyV4("getWorkflowStatus (V4+)", () => {
     test("getWorkflowStatus should return status summary", async () => {
       const status = await executor.getWorkflowStatus(
         workflowId,
@@ -242,7 +242,7 @@ describe("WorkflowExecutor Complete Coverage", () => {
       expect(status).toBeDefined();
       expect(status.status).toEqual("COMPLETED");
     });
-    }); // end describeForOrkesV4
+    }); // end describeForOrkesOnlyV4
 
     test("search should find the workflow", async () => {
       const result = await executor.search(
@@ -259,7 +259,7 @@ describe("WorkflowExecutor Complete Coverage", () => {
 
   // ==================== Correlation IDs ====================
 
-  describeForOrkesV4("Correlation IDs", () => {
+  describeForOrkesOnlyV4("Correlation IDs", () => {
     test("getByCorrelationIds should return workflows by correlation", async () => {
       const correlationId = `corr-test-${suffix}-${Date.now()}`;
 
@@ -286,7 +286,7 @@ describe("WorkflowExecutor Complete Coverage", () => {
 
   // ==================== Workflow Control ====================
 
-  describeForOrkesV4("Workflow Control (pause/resume/terminate/restart/retry)", () => {
+  describeForOrkesOnlyV4("Workflow Control (pause/resume/terminate/restart/retry)", () => {
     test("pause and resume should work on a running workflow", async () => {
       const wfId = await executor.startWorkflow({
         name: waitWfName,
@@ -629,7 +629,7 @@ describe("WorkflowExecutor Complete Coverage", () => {
 
   // ==================== Update State ====================
 
-  describeForOrkesV5("Update State", () => {
+  describeForOrkesOnlyV5("Update State", () => {
     test("updateState should update workflow and task state", async () => {
       const wfId = await executor.startWorkflow({
         name: waitWfName,
@@ -717,7 +717,7 @@ describe("WorkflowExecutor Complete Coverage", () => {
 
   // ==================== Signal Async ====================
 
-  describeForOrkesV5("Signal Async", () => {
+  describeForOrkesOnlyV5("Signal Async", () => {
     test("signalAsync should signal a workflow asynchronously", async () => {
       const wfId = await startWorkflowWithRetry(executor, {
         name: waitWfName,

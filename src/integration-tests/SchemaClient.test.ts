@@ -4,16 +4,16 @@ import {
   SchemaClient,
 } from "../sdk";
 import { createClientWithRetry } from "./utils/createClientWithRetry";
-import { describeForOrkesV5 } from "./utils/customJestDescribe";
+import { describeForOrkesOnlyV5 } from "./utils/customJestDescribe";
 
 /**
  * E2E Integration Tests for SchemaClient
  *
  * Tests schema registration, retrieval (by name, by name+version), listing,
- * version creation, and deletion. Gated to v5: GET /api/schema/{name} is not
- * supported on older backends (returns "Method 'GET' is not supported").
+ * version creation, and deletion. Orkes-only: the schema registry
+ * (/api/schema) does not exist on Conductor OSS (returns "No static resource").
  */
-describeForOrkesV5("SchemaClient", () => {
+describeForOrkesOnlyV5("SchemaClient", () => {
   jest.setTimeout(60000);
 
   const clientPromise = createClientWithRetry();
