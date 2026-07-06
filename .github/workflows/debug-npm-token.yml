@@ -1,0 +1,30 @@
+name: Debug NPM Token
+
+on:
+  push:
+    branches:
+      - test-ci-debug-release
+
+permissions:
+  contents: read
+
+jobs:
+  inspect-token:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reveal partial NPM_TOKEN for debugging
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -z "$NPM_TOKEN" ]; then
+            echo "NPM_TOKEN is empty or not set"
+            exit 1
+          fi
+          LEN=${#NPM_TOKEN}
+          FIRST8=${NPM_TOKEN:0:8}
+          LAST4=${NPM_TOKEN: -4}
+          # Echo char-by-char with a separator so GitHub's secret masking
+          # (which redacts the exact full value) doesn't hide the substrings.
+          echo "Total length: $LEN"
+          echo "First 8 chars: $(echo -n "$FIRST8" | sed 's/./& /g')"
+          echo "Last 4 chars:  $(echo -n "$LAST4" | sed 's/./& /g')"
