@@ -1,3 +1,4 @@
+export * from "./agent";
 export * from "./application";
 export * from "./authorization";
 export * from "./event";
