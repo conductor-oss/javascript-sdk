@@ -8,7 +8,7 @@
  * shared Conductor client rather than ad-hoc HTTP on the runtime.
  */
 
-import type { ConductorClient } from "./agent-client.js";
+import type { ConductorClient } from "./AgentClient.js";
 
 /** Conductor workflow shape (subset we read). */
 export interface WorkflowExecution {

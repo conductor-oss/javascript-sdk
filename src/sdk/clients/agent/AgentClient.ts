@@ -20,22 +20,22 @@
  * carry that JWT as `X-Authorization` (see {@link _authHeaders}).
  */
 
-import { createConductorClient } from "../sdk";
-import type { AgentResult, AgentStatus, DeploymentInfo, RunOptions } from "./types.js";
-import { AgentAPIError } from "./errors.js";
-import { AgentConfig } from "./config.js";
-import type { AgentConfigOptions } from "./config.js";
-import { Agent } from "./agent.js";
-import { AgentConfigSerializer } from "./serializer.js";
-import { detectFramework } from "./frameworks/detect.js";
-import { serializeFrameworkAgent } from "./frameworks/serializer.js";
-import { serializeLangGraph } from "./frameworks/langgraph-serializer.js";
-import { serializeLangChain } from "./frameworks/langchain-serializer.js";
-import { Schedule } from "../sdk/clients/agent/schedule.js";
-import { SchedulerClient } from "../sdk/clients/scheduler/SchedulerClient.js";
-import { WorkflowClient } from "./workflow-client.js";
-import { makeAgentResult, TERMINAL_STATUSES } from "./result.js";
-import { AgentStream } from "./stream.js";
+import { createConductorClient } from "../../createConductorClient";
+import type { AgentResult, AgentStatus, DeploymentInfo, RunOptions } from "../../../agents/types.js";
+import { AgentAPIError } from "../../../agents/errors.js";
+import { AgentConfig } from "../../../agents/config.js";
+import type { AgentConfigOptions } from "../../../agents/config.js";
+import { Agent } from "../../../agents/agent.js";
+import { AgentConfigSerializer } from "../../../agents/serializer.js";
+import { detectFramework } from "../../../agents/frameworks/detect.js";
+import { serializeFrameworkAgent } from "../../../agents/frameworks/serializer.js";
+import { serializeLangGraph } from "../../../agents/frameworks/langgraph-serializer.js";
+import { serializeLangChain } from "../../../agents/frameworks/langchain-serializer.js";
+import { Schedule } from "./schedule.js";
+import { SchedulerClient } from "../scheduler/SchedulerClient.js";
+import { WorkflowClient } from "./WorkflowClient.js";
+import { makeAgentResult, TERMINAL_STATUSES } from "../../../agents/result.js";
+import { AgentStream } from "../../../agents/stream.js";
 
 /**
  * The resource client returned by `createConductorClient`. The package's
@@ -77,6 +77,16 @@ export function decodeJwtExp(token: string): number {
 /** Default client-side ceiling for {@link AgentClient.run}/`wait()` when no `timeoutSeconds` is given. */
 const DEFAULT_WAIT_MS = 600_000; // 10 min — mirrors the C# SDK's HttpClient cap
 
+/**
+ * {@link AgentClient} construction options: the agent config plus an optional
+ * pre-built Conductor client to reuse (as handed out by `OrkesClients`). The
+ * injected client must originate from `createConductorClient` — it carries
+ * the attached `*Resource` members the workflow client reads.
+ */
+export type AgentClientOptions = AgentConfigOptions & {
+  client?: ConductorClient;
+};
+
 export class AgentClient {
   readonly config: AgentConfig;
 
@@ -90,8 +100,16 @@ export class AgentClient {
   private _tokenExp = 0; // epoch seconds; 0 == "no decodable expiry" (not cached)
   private _mintPromise?: Promise<string>; // single-flight guard for concurrent mints
 
-  constructor(options?: AgentConfigOptions | AgentConfig) {
-    this.config = options instanceof AgentConfig ? options : new AgentConfig(options);
+  constructor(options?: AgentClientOptions | AgentConfig) {
+    if (options instanceof AgentConfig) {
+      this.config = options;
+    } else {
+      const { client, ...configOptions } = options ?? {};
+      this.config = new AgentConfig(configOptions);
+      // Pre-seed the memoized promise; getClient() then reuses the injected
+      // client instead of building its own via createConductorClient.
+      if (client) this._clientPromise = Promise.resolve(client);
+    }
     this.serializer = new AgentConfigSerializer();
   }
 
@@ -362,7 +380,7 @@ export class AgentClient {
     if (opts?.credentials) payload.credentials = opts.credentials;
     if (opts?.context) payload.context = opts.context;
     if (opts?.plan !== undefined) {
-      const { coercePlan } = await import("./plans.js");
+      const { coercePlan } = await import("../../../agents/plans.js");
       payload.static_plan = coercePlan(opts.plan as Parameters<typeof coercePlan>[0]);
     }
 

@@ -1,6 +1,9 @@
 import type { Client } from "../open-api";
 import type { OrkesApiConfig } from "./types";
 import { createConductorClient } from "./createConductorClient";
+import { AgentClient } from "./clients/agent/AgentClient";
+import type { ConductorClient } from "./clients/agent/AgentClient";
+import { WorkflowClient as AgentWorkflowClient } from "./clients/agent/WorkflowClient";
 import { ApplicationClient } from "./clients/application";
 import { AuthorizationClient } from "./clients/authorization";
 import { EventClient } from "./clients/event";
@@ -62,6 +65,25 @@ export class OrkesClients {
 
   getSchedulerClient(): SchedulerClient {
     return new SchedulerClient(this._client);
+  }
+
+  /**
+   * Agent control-plane client (`/agent/*`: run/deploy/schedule/status),
+   * reusing this factory's Conductor client for the Conductor-side calls.
+   * The client must have been built by `createConductorClient` (always true
+   * for `OrkesClients.from(...)`).
+   */
+  getAgentClient(): AgentClient {
+    return new AgentClient({ client: this._client as ConductorClient });
+  }
+
+  /**
+   * Agent-flavored workflow reads (agent-execution 404 fallback + token
+   * rollup) — the same instance `getAgentClient().workflows` returns. For
+   * general workflow operations use `getWorkflowClient()` (WorkflowExecutor).
+   */
+  getAgentWorkflowClient(): AgentWorkflowClient {
+    return this.getAgentClient().workflows;
   }
 
   getSecretClient(): SecretClient {

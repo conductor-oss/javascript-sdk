@@ -1,5 +1,5 @@
 import { describe, it, expect, jest, beforeEach, afterEach } from "@jest/globals";
-import { AgentClient, decodeJwtExp } from "../agent-client.js";
+import { AgentClient, decodeJwtExp } from "../../sdk/clients/agent/AgentClient.js";
 
 /** Build a minimal JWT with the given `exp` (epoch seconds). */
 function makeJwt(exp: number): string {

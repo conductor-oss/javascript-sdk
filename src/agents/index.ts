@@ -146,10 +146,10 @@ export {
 } from "./runtime.js";
 
 // ── Control-plane / Workflow clients ────────────────────
-export type { ClientHandle } from "./agent-client.js";
-export { AgentClient, decodeJwtExp } from "./agent-client.js";
-export type { WorkflowExecution, WorkflowTokenUsage } from "./workflow-client.js";
-export { WorkflowClient } from "./workflow-client.js";
+export type { ClientHandle, AgentClientOptions } from "../sdk/clients/agent/AgentClient.js";
+export { AgentClient, decodeJwtExp } from "../sdk/clients/agent/AgentClient.js";
+export type { WorkflowExecution, WorkflowTokenUsage } from "../sdk/clients/agent/WorkflowClient.js";
+export { WorkflowClient } from "../sdk/clients/agent/WorkflowClient.js";
 
 // ── Scheduling ──────────────────────────────────────────
 export {
