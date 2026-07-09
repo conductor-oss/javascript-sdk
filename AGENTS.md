@@ -40,13 +40,51 @@ src/open-api/                    # OpenAPI layer
   types.ts                       # Extended types - add custom fields here
 src/integration-tests/           # E2E tests against real Conductor server
   utils/                         # waitForWorkflowStatus, executeWorkflowWithRetry, etc.
+src/agents/                      # Durable agent layer (merged Agentspan TS SDK)
+  index.ts                       # Agent, AgentRuntime, tool, guardrails, handoffs, ...
+  frameworks/                    # LangGraph/LangChain/generic serializers + detection
+  testing/                       # Agent testing toolkit (/agents/testing subpath)
+  wrappers/                      # Vercel AI / LangGraph / LangChain drop-in wrappers
+  __tests__/                     # Colocated jest unit tests (picked up by test:unit)
+e2e/                             # Agent e2e suites vs live agentspan server (jest.e2e.config.mjs)
+cli-bin/                         # agentspan CLI helper scripts (Go CLI walk-up probe target)
+examples/agents/                 # Agent examples (own tsconfig; run via npx tsx)
+docs/agents/                     # Agent layer documentation
 ```
+
+### The agent layer (`src/agents/`)
+
+- **Subpath-only exports**: everything agent-flavored ships via `./agents`,
+  `./agents/testing`, `./agents/vercel-ai`, `./agents/langgraph`,
+  `./agents/langchain` (see `exports` in package.json + `tsup.config.ts`).
+  **Never re-export agent symbols from the root** — the agent layer has an
+  `Action` class that collides with the OpenAPI-generated `Action` type, and
+  the root re-exports the whole generated surface, which changes with the
+  server spec.
+- Source keeps upstream's ESM-style `.js`-suffixed relative imports (resolved
+  by `nodenext` for tsc and a `moduleNameMapper` suffix-strip for jest).
+- The only coupling to the workflow layer is in `agent-client.ts` and
+  `worker.ts` (imports from `../sdk` and `../open-api`) — keep it that way.
+- Unit tests are colocated in `src/agents/__tests__/` so the existing
+  `test:unit` glob and per-PR CI matrix pick them up with zero workflow
+  changes. Agent e2e lives in repo-root `e2e/` and runs only via
+  `npm run test:agent-e2e` (its own `.github/workflows/agent-e2e.yml` boots a
+  pinned release server JAR; needs `OPENAI_API_KEY`/`ANTHROPIC_API_KEY`
+  secrets).
+- Agent examples resolve the package name straight to `src/agents` sources via
+  `examples/agents/tsconfig.json` paths: `npx tsx examples/agents/<file>.ts`.
+  Framework subdirs (adk/, langgraph/, openai/, vercel-ai/) install their own
+  deps (`scripts/install-example-deps.sh`); `examples/agents` is excluded from
+  the root tsconfig.
+- `AGENTSPAN_*` env vars (`AGENTSPAN_SERVER_URL`, default
+  `http://localhost:6767/api`) are the agent layer's config surface — kept
+  working as-is; `CONDUCTOR_*` aliases are a possible follow-up.
 
 ## Commands
 
 ```bash
 npm test                           # Unit tests (482+ tests)
-npm run build                      # tsup (ESM + CJS dual output)
+npm run build                      # tsup (root + 5 agent entries, ESM + CJS) + verify:dist
 npm run lint                       # ESLint
 npm run generate-openapi-layer     # Regenerate from OpenAPI spec
 
@@ -55,6 +93,10 @@ CONDUCTOR_SERVER_URL=http://localhost:8080 \
 CONDUCTOR_AUTH_KEY=key CONDUCTOR_AUTH_SECRET=secret \
 ORKES_BACKEND_VERSION=5 \
 npm run test:integration:orkes-v5
+
+# Agent e2e (requires a running agentspan server + LLM keys; CI does this
+# against the pinned release JAR — see .github/workflows/agent-e2e.yml)
+AGENTSPAN_SERVER_URL=http://localhost:8080/api npm run test:agent-e2e
 ```
 
 ## Post-Change Verification (Required)

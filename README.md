@@ -22,6 +22,7 @@ If you find [Conductor](https://github.com/conductor-oss/conductor) useful, plea
 * [Examples](#examples)
 * [API Journey Examples](#api-journey-examples)
 * [AI & LLM Workflows](#ai--llm-workflows)
+* [Durable AI Agents](#durable-ai-agents)
 * [Documentation](#documentation)
 * [Support](#support)
 * [Frequently Asked Questions](#frequently-asked-questions)
@@ -537,11 +538,50 @@ See [examples/agentic-workflows/](examples/agentic-workflows/) for all examples.
 | [rag-workflow.ts](examples/advanced/rag-workflow.ts) | End-to-end RAG: document indexing → semantic search → LLM answer |
 | [vector-db.ts](examples/advanced/vector-db.ts) | Vector DB operations: embedding generation, storage, search |
 
+## Durable AI Agents
+
+The SDK also ships a durable agent authoring layer — long-running, plan-execute,
+and event-driven AI agents whose steps run as Conductor workflow tasks, so they
+survive restarts and are observable like any workflow. It lives under the
+`/agents` subpath export:
+
+```typescript
+import { Agent, AgentRuntime } from "@io-orkes/conductor-javascript/agents";
+
+const agent = new Agent({
+  name: "greeter",
+  model: "openai/gpt-4o-mini",
+  instructions: "You are a friendly assistant. Keep responses brief.",
+});
+
+const runtime = new AgentRuntime(); // AGENTSPAN_SERVER_URL, default http://localhost:6767/api
+try {
+  const result = await runtime.run(agent, "Hello! What can you do?");
+  result.printResult();
+} finally {
+  await runtime.shutdown();
+}
+```
+
+The layer includes tools (`tool()`, with optional Zod schemas), multi-agent
+strategies (sequential, parallel, handoffs, swarm), guardrails,
+human-in-the-loop, streaming, memory, schedules, and drop-in wrappers for
+agents written with the Vercel AI SDK, LangGraph, and LangChain
+(`/agents/vercel-ai`, `/agents/langgraph`, `/agents/langchain`), plus a
+testing toolkit (`/agents/testing`).
+
+- **Docs:** [docs/agents/](docs/agents/README.md) — start with
+  [getting-started.md](docs/agents/getting-started.md)
+- **Examples:** [examples/agents/](examples/agents/) — 60+ runnable examples,
+  from a basic agent to the full [kitchen sink](examples/agents/kitchen-sink.ts);
+  run them with `npx tsx examples/agents/01-basic-agent.ts`
+
 ## Documentation
 
 | Document | Description |
 |----------|-------------|
 | [SDK Development Guide](SDK_DEVELOPMENT.md) | Architecture, patterns, pitfalls, testing |
+| [Durable AI Agents](docs/agents/README.md) | Agent authoring layer: tools, guardrails, multi-agent, HITL, framework wrappers |
 | [Metrics Reference](METRICS.md) | Legacy and canonical Prometheus metrics with migration guide |
 | [Breaking Changes](BREAKING_CHANGES.md) | v3.x migration guide |
 | [Workflow Management](docs/api-reference/workflow-executor.md) | Start, pause, resume, terminate, retry, search, signal |
