@@ -209,12 +209,12 @@ describe('Suite 10: Code Execution', () => {
       { timeout: TIMEOUT },
     );
 
-    const _diag = runDiagnostic(result as unknown as Record<string, unknown>);
+    const diag = runDiagnostic(result as unknown as Record<string, unknown>);
     expect(result.executionId).toBeTruthy();
     expectMsg(result.status, `[Local Python] ${diag}`).toBe('COMPLETED');
 
     // Check that execute_code task output contains "3066"
-    const _codeOutputs = await getCodeExecutionOutputs(result.executionId);
+    const codeOutputs = await getCodeExecutionOutputs(result.executionId);
     const outputText = getOutputText(result as unknown as { output: unknown });
     const combinedOutput = `${codeOutputs}\n${outputText}`;
 
@@ -252,12 +252,12 @@ describe('Suite 10: Code Execution', () => {
       { timeout: TIMEOUT },
     );
 
-    const _diag = runDiagnostic(result as unknown as Record<string, unknown>);
+    const diag = runDiagnostic(result as unknown as Record<string, unknown>);
     expect(result.executionId).toBeTruthy();
     expectMsg(result.status, `[Local Bash] ${diag}`).toBe('COMPLETED');
 
     // Check that execute_code task output contains "46"
-    const _codeOutputs = await getCodeExecutionOutputs(result.executionId);
+    const codeOutputs = await getCodeExecutionOutputs(result.executionId);
     const outputText = getOutputText(result as unknown as { output: unknown });
     const combinedOutput = `${codeOutputs}\n${outputText}`;
 
@@ -295,7 +295,7 @@ describe('Suite 10: Code Execution', () => {
       { timeout: TIMEOUT },
     );
 
-    const _diag = runDiagnostic(result as unknown as Record<string, unknown>);
+    const diag = runDiagnostic(result as unknown as Record<string, unknown>);
     expect(result.executionId).toBeTruthy();
 
     // The agent should complete (possibly with an error message about bash being blocked).
@@ -345,7 +345,7 @@ describe('Suite 10: Code Execution', () => {
       { timeout: 60_000 }, // Generous — we expect the 3s executor timeout to kill it
     );
 
-    const _diag = runDiagnostic(result as unknown as Record<string, unknown>);
+    const diag = runDiagnostic(result as unknown as Record<string, unknown>);
     expect(result.executionId).toBeTruthy();
 
     // Agent should either complete (with timeout error in output) or
@@ -357,7 +357,7 @@ describe('Suite 10: Code Execution', () => {
     ).toContain(result.status);
 
     if (result.status === 'COMPLETED') {
-      const _codeOutputs = await getCodeExecutionOutputs(result.executionId);
+      const codeOutputs = await getCodeExecutionOutputs(result.executionId);
       const timedOut = !codeOutputs.includes('done');
       const hasTimeoutError = codeOutputs.toLowerCase().includes('timeout') ||
         codeOutputs.toLowerCase().includes('timed out') ||
@@ -398,11 +398,11 @@ describe('Suite 10: Code Execution', () => {
       { timeout: TIMEOUT },
     );
 
-    const _diag = runDiagnostic(result as unknown as Record<string, unknown>);
+    const diag = runDiagnostic(result as unknown as Record<string, unknown>);
     expect(result.executionId).toBeTruthy();
     expectMsg(result.status, `[Docker Python] ${diag}`).toBe('COMPLETED');
 
-    const _codeOutputs = await getCodeExecutionOutputs(result.executionId);
+    const codeOutputs = await getCodeExecutionOutputs(result.executionId);
     const outputText = getOutputText(result as unknown as { output: unknown });
     const combinedOutput = `${codeOutputs}\n${outputText}`;
 
@@ -499,7 +499,7 @@ describe('Suite 10: Code Execution', () => {
     // With network disabled, the urllib call should fail.
     // The code should fail with a network or syntax error (no successful output).
     // Check that stdout doesn't contain "connected" (may appear in error traceback).
-    const _codeOutputs = await getCodeExecutionOutputs(result.executionId);
+    const codeOutputs = await getCodeExecutionOutputs(result.executionId);
 
     // Check stdout field only (not full error traceback which may contain source code)
     const hasSuccessOutput = codeOutputs.includes('"output":"connected"') ||
@@ -544,12 +544,12 @@ describe('Suite 10: Code Execution', () => {
       { timeout: TIMEOUT },
     );
 
-    const _diag = runDiagnostic(result as unknown as Record<string, unknown>);
+    const diag = runDiagnostic(result as unknown as Record<string, unknown>);
     expect(result.executionId).toBeTruthy();
     expectMsg(result.status, `[Jupyter] ${diag}`).toBe('COMPLETED');
 
     // The second execution should print the value from the first
-    const _codeOutputs = await getCodeExecutionOutputs(result.executionId);
+    const codeOutputs = await getCodeExecutionOutputs(result.executionId);
     const outputText = getOutputText(result as unknown as { output: unknown });
     const combinedOutput = `${codeOutputs}\n${outputText}`;
 
