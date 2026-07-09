@@ -32,8 +32,9 @@ export default defineConfig(
     // serializers walk arbitrary langgraph/langchain object graphs, so it keeps
     // the upstream lint contract for these two rules (upstream pins both to
     // "warn" in its eslint config); everything else lints at this repo's level.
-    // cli-bin/ is the same upstream codebase (Go CLI helper scripts, not shipped).
-    files: ["src/agents/**", "cli-bin/**"],
+    // cli-bin/ and e2e/ are the same upstream codebase (Go CLI helper scripts
+    // and live-server e2e suites, neither shipped to npm).
+    files: ["src/agents/**", "cli-bin/**", "e2e/**"],
     rules: {
       "@typescript-eslint/no-explicit-any": "warn",
       "@typescript-eslint/no-unsafe-function-type": "warn",
@@ -44,7 +45,7 @@ export default defineConfig(
     // `!` for test-convenience narrowing, and `delete env[k]` teardown
     // throughout (ported verbatim from upstream). Stylistic-only relaxation,
     // scoped to the migrated tests.
-    files: ["src/agents/__tests__/**"],
+    files: ["src/agents/__tests__/**", "e2e/**"],
     rules: {
       "@typescript-eslint/no-empty-function": "off",
       "@typescript-eslint/no-non-null-assertion": "off",

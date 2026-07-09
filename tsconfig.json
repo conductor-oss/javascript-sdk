@@ -26,6 +26,7 @@
   "exclude": [
     "dist",
     "src/open-api/spec",
-    "examples/agents"
+    "examples/agents",
+    "e2e/tools/_subgraph-debug.ts"
   ]
 }
