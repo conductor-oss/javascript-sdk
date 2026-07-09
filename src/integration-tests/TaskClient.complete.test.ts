@@ -15,10 +15,11 @@ import {
   MetadataClient,
   WorkflowExecutor,
   TaskClient,
-  orkesConductorClient,
 } from "../sdk";
+import { createClientWithRetry } from "./utils/createClientWithRetry";
 import { waitForWorkflowStatus } from "./utils/waitForWorkflowStatus";
 import { describeForOrkesV4 } from "./utils/customJestDescribe";
+import { registerWorkflowWithRetry } from "./utils/registerWorkflowWithRetry";
 
 /**
  * E2E Integration Tests for TaskClient — Complete Coverage
@@ -41,7 +42,7 @@ describe("TaskClient Complete Coverage", () => {
   let taskId: string;
 
   beforeAll(async () => {
-    client = await orkesConductorClient();
+    client = await createClientWithRetry();
     executor = new WorkflowExecutor(client);
     metadataClient = new MetadataClient(client);
     taskClient = new TaskClient(client);
@@ -61,7 +62,7 @@ describe("TaskClient Complete Coverage", () => {
       outputParameters: {},
       timeoutSeconds: 600,
     };
-    await executor.registerWorkflow(true, wfDef);
+    await registerWorkflowWithRetry(executor, wfDef);
 
     // Start workflow — WAIT task will be IN_PROGRESS
     workflowId = await executor.startWorkflow({

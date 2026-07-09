@@ -14,6 +14,7 @@ import {
   simpleTask,
   worker,
 } from "../sdk";
+import { registerWorkflowWithRetry } from "./utils/registerWorkflowWithRetry";
 import { cleanupWorkflowsAndTasks } from "./utils/cleanup";
 import { waitForWorkflowStatus } from "./utils/waitForWorkflowStatus";
 import { describeForOrkesV5 } from "./utils/customJestDescribe";
@@ -91,7 +92,7 @@ describeForOrkesV5("E2E: 5-task workflow × 50 executions", () => {
         );
       }
 
-      await executor.registerWorkflow(true, {
+      await registerWorkflowWithRetry(executor, {
         name: workflowName,
         version: 1,
         ownerEmail: "test@test.com",

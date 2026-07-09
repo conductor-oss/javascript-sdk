@@ -10,6 +10,7 @@ export default {
     "!src/**/generated/**",
     "!src/**/spec/**",
     "!src/**/*.test.{ts,tsx}",
+    "!src/integration-tests/**",
     "!src/**/index.ts",
     "!src/**/types.ts",
     "!src/**/*.types.ts",

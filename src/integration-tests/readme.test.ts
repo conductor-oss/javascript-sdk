@@ -13,8 +13,9 @@ import { waitForWorkflowStatus } from "./utils/waitForWorkflowStatus";
 describe("TaskManager", () => {
   const clientPromise = createClientWithRetry();
   const workflowsToCleanup: { name: string; version: number }[] = [];
+  const tasksToCleanup: string[] = [];
 
-  jest.setTimeout(60000);
+  jest.setTimeout(120000);
 
   afterAll(async () => {
     const client = await clientPromise;
@@ -24,13 +25,17 @@ describe("TaskManager", () => {
         metadataClient.unregisterWorkflow(w.name, w.version)
       )
     );
-  });
+    await Promise.allSettled(
+      tasksToCleanup.map((t) => metadataClient.unregisterTask(t))
+    );
+  }, 120000);
 
   test("worker example ", async () => {
     const client = await clientPromise;
     const executor = new WorkflowExecutor(client);
     const workflowName = `jsSdkTest-my_first_js_wf-${Date.now()}`;
     const taskName = `jsSdkTest-taskmanager-test-${Date.now()}`;
+    tasksToCleanup.push(taskName);
 
     const taskRunner = new TaskRunner({
       client: client,

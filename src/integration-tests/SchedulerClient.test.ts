@@ -6,14 +6,14 @@ import {
 } from "../open-api";
 import {
   MetadataClient,
-  orkesConductorClient,
   SchedulerClient,
 } from "../sdk";
 import { describeForOrkesV4 } from "./utils/customJestDescribe";
+import { createClientWithRetry } from "./utils/createClientWithRetry";
 
 describe("SchedulerClient", () => {
   describeForOrkesV4("SchedulerClient V4+", () => {
-  const clientPromise = orkesConductorClient();
+  const clientPromise = createClientWithRetry();
   jest.setTimeout(60000);
 
   const now = Date.now();

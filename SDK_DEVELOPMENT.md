@@ -416,18 +416,88 @@ npm run test:unit       # Unit tests only
 
 ### Integration tests (E2E)
 
-Against a real Conductor server. Location: `src/integration-tests/`.
+Against a real Orkes Conductor (enterprise) server. Location: `src/integration-tests/`.
 
 ```bash
 # Full suite
-CONDUCTOR_SERVER_URL=http://localhost:8080 \
-CONDUCTOR_AUTH_KEY=key CONDUCTOR_AUTH_SECRET=secret \
-ORKES_BACKEND_VERSION=5 \
-npm run test:integration:orkes-v5
+npm run test:integration:v5
 
 # Single file
-npx jest --force-exit --testPathPatterns="AuthorizationClient"
+npx jest --force-exit --detectOpenHandles --testPathPatterns="AuthorizationClient"
 ```
+
+Server credentials are read from environment variables. You can export them in your
+shell or put them in a `.env` file in the repo root (loaded automatically by
+`jest.config.mjs` via `dotenv`). To use a `.env` file, copy the example:
+
+```bash
+cp .env.example .env
+```
+
+Required variables plus two that CI sets for flake resilience:
+
+```bash
+CONDUCTOR_SERVER_URL="https://your-cluster.orkesconductor.io/api"
+CONDUCTOR_AUTH_KEY="your-key"
+CONDUCTOR_AUTH_SECRET="your-secret"
+CONDUCTOR_REQUEST_TIMEOUT_MS=120000
+CONDUCTOR_RETRY_SERVER_ERRORS=true
+```
+
+### Replicating CI matrix shards locally
+
+CI runs integration tests as a matrix of **3 Node versions (20, 22, 24) x 3 shards**,
+using Jest's built-in `--shard=i/N` flag. Each shard runs ~1/3 of the test files
+deterministically, so shard 1/3 always contains the same files for a given test suite.
+
+To reproduce a specific CI cell locally you need two things: the right Node version
+and the right shard flag.
+
+#### Node version switching with fnm
+
+Install [fnm](https://github.com/Schniz/fnm) (Fast Node Manager) if you don't have it.
+If you currently have Node installed directly via Homebrew, remove it first so the two
+don't conflict:
+
+```bash
+brew remove node                    # remove Homebrew-managed Node if present
+brew install fnm
+eval "$(fnm env --use-on-cd)"      # add this line to ~/.zshrc for persistence
+```
+
+Then install the versions CI uses:
+
+```bash
+fnm install 20 && fnm install 22 && fnm install 24
+```
+
+#### Running a shard
+
+Example: reproduce **"Node.js v22 — integration v5 (shard 1/3)"**:
+
+```bash
+fnm use 22
+node --version                     # confirm v22.x.x
+
+npm run test:integration:v5 -- --runInBand --testTimeout=120000 --shard=1/3
+```
+
+Run all three shards sequentially to cover the full suite:
+
+```bash
+for shard in 1 2 3; do
+  npm run test:integration:v5 -- --runInBand --testTimeout=120000 --shard=$shard/3
+done
+```
+
+Switch back to your default Node when done:
+
+```bash
+fnm use default                    # or: fnm use system
+node --version                     # confirm you're back to your usual version
+```
+
+The same pattern works for v4 — swap `test:integration:v5` with `test:integration:v4`.
 
 ### Integration test template
 

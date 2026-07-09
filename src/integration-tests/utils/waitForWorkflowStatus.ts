@@ -12,6 +12,7 @@ export const waitForWorkflowStatus = async (
   pollIntervalMs = 3000
 ): Promise<Workflow> => {
   const startTime = Date.now();
+  let diagnosticLogged = false;
 
   let lastError: unknown;
   while (Date.now() - startTime < maxWaitTimeMs) {
@@ -25,6 +26,21 @@ export const waitForWorkflowStatus = async (
       if (workflow?.status === "FAILED" || workflow?.status === "TERMINATED") {
         throw new Error(
           `Workflow ended in unexpected state: ${workflow?.status}`
+        );
+      }
+
+      // Log diagnostics once when we've used 80% of the wait budget
+      const elapsed = Date.now() - startTime;
+      if (!diagnosticLogged && elapsed > maxWaitTimeMs * 0.8) {
+        diagnosticLogged = true;
+        const pendingTasks = workflow?.tasks
+          ?.filter((t) => t.status !== "COMPLETED")
+          .map((t) => `${t.referenceTaskName}(${t.taskType}): ${t.status}`)
+          .join(", ");
+        console.warn(
+          `[waitForWorkflowStatus] ${workflowId} still ${workflow?.status} after ${Math.round(elapsed / 1000)}s ` +
+            `(waiting for ${expectedStatus}, timeout ${Math.round(maxWaitTimeMs / 1000)}s). ` +
+            `Pending tasks: [${pendingTasks ?? "none"}]`
         );
       }
 

@@ -7,6 +7,10 @@ on:
   pull_request:
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   linter:
     runs-on: ubuntu-latest
@@ -79,19 +83,17 @@ jobs:
           name: codecov-unit-node-${{ matrix.node-version }}
           fail_ci_if_error: false
 
-  # Integration tests (v5): lower max-parallel reduces 502/503 from the shared Conductor server
-  # but makes CI slower without eliminating flakes entirely — feel free to experiment.
-  # Sharding (--shard i/N) splits the suite so each job runs ~1/N of tests.
-  integration-tests:
+  # Integration tests (v5 sdkdev): mirrors integration-tests but targets the sdkdev environment.
+  integration-tests-v5-sdkdev:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     strategy:
       fail-fast: false
-      max-parallel: 2
+      max-parallel: 3
       matrix:
         node-version: [20, 22, 24]
         shard: [1, 2, 3]
-    name: Node.js v${{ matrix.node-version }} - integration v5 (shard ${{ matrix.shard }}/3)
+    name: Node.js v${{ matrix.node-version }} - integration v5 sdkdev (shard ${{ matrix.shard }}/3)
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -111,22 +113,23 @@ jobs:
       - name: Install Dependencies
         if: steps.cache.outputs.cache-hit != 'true'
         run: npm ci
-      - name: Run integration tests (v5) shard ${{ matrix.shard }}/3
+      - name: Run integration tests (v5 sdkdev) shard ${{ matrix.shard }}/3
         run: npm run test:integration:v5 -- --ci --coverage --runInBand --testTimeout=120000 --shard=${{ matrix.shard }}/3 --reporters=default --reporters=github-actions --reporters=jest-junit
         env:
           ORKES_BACKEND_VERSION: "5"
-          CONDUCTOR_SERVER_URL: ${{ vars.SERVER_URL }}
-          CONDUCTOR_AUTH_KEY: ${{ secrets.AUTH_KEY }}
-          CONDUCTOR_AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+          CONDUCTOR_SERVER_URL: ${{ vars.SDKDEV_V5_SERVER_URL }}
+          CONDUCTOR_AUTH_KEY: ${{ vars.SDKDEV_V5_AUTH_KEY }}
+          CONDUCTOR_AUTH_SECRET: ${{ secrets.SDKDEV_V5_AUTH_SECRET }}
           CONDUCTOR_REQUEST_TIMEOUT_MS: "120000"
           CONDUCTOR_RETRY_SERVER_ERRORS: "true"
-          JEST_JUNIT_OUTPUT_NAME: integration-v5-node-${{ matrix.node-version }}-shard-${{ matrix.shard }}-test-results.xml
+          HTTPBIN_SERVICE_HOSTNAME: "httpbin"
+          JEST_JUNIT_OUTPUT_NAME: integration-v5-sdkdev-node-${{ matrix.node-version }}-shard-${{ matrix.shard }}-test-results.xml
       - name: Publish Test Results
         uses: dorny/test-reporter@v2
         if: ${{ !cancelled() }}
         with:
-          name: integration v5 Node ${{ matrix.node-version }} shard ${{ matrix.shard }}/3
-          path: reports/integration-v5-node-${{ matrix.node-version }}-shard-${{ matrix.shard }}-test-results.xml
+          name: integration v5 sdkdev Node ${{ matrix.node-version }} shard ${{ matrix.shard }}/3
+          path: reports/integration-v5-sdkdev-node-${{ matrix.node-version }}-shard-${{ matrix.shard }}-test-results.xml
           reporter: jest-junit
       - name: Upload coverage to Codecov
         if: always()
@@ -134,22 +137,21 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage/lcov.info
-          flags: integration-v5
-          name: codecov-integration-v5-node-${{ matrix.node-version }}-shard-${{ matrix.shard }}
+          flags: integration-v5-sdkdev
+          name: codecov-integration-v5-sdkdev-node-${{ matrix.node-version }}-shard-${{ matrix.shard }}
           fail_ci_if_error: false
 
-  # Integration tests (v4): same sharding as v5. v4 fails in CI (passes locally); do not block PRs.
-  integration-tests-v4:
+  # Integration tests (v4 sm): mirrors integration-tests-v4 but targets the sm environment.
+  integration-tests-v4-sm:
     runs-on: ubuntu-latest
     timeout-minutes: 25
-    continue-on-error: true
     strategy:
       fail-fast: false
       max-parallel: 1
       matrix:
         node-version: [20, 22, 24]
         shard: [1, 2, 3]
-    name: Node.js v${{ matrix.node-version }} - integration v4 (shard ${{ matrix.shard }}/3)
+    name: Node.js v${{ matrix.node-version }} - integration v4 sm (shard ${{ matrix.shard }}/3)
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -169,22 +171,22 @@ jobs:
       - name: Install Dependencies
         if: steps.cache.outputs.cache-hit != 'true'
         run: npm ci
-      - name: Run integration tests (v4) shard ${{ matrix.shard }}/3
+      - name: Run integration tests (v4 sm) shard ${{ matrix.shard }}/3
         run: npm run test:integration:v4 -- --ci --coverage --runInBand --testTimeout=120000 --shard=${{ matrix.shard }}/3 --reporters=default --reporters=github-actions --reporters=jest-junit
         env:
           ORKES_BACKEND_VERSION: "4"
-          CONDUCTOR_SERVER_URL: ${{ vars.SERVER_URL_V4 }}
-          CONDUCTOR_AUTH_KEY: ${{ secrets.AUTH_KEY_V4 }}
-          CONDUCTOR_AUTH_SECRET: ${{ secrets.AUTH_SECRET_V4 }}
+          CONDUCTOR_SERVER_URL: ${{ vars.SM_V4_SERVER_URL }}
+          CONDUCTOR_AUTH_KEY: ${{ vars.SM_V4_AUTH_KEY }}
+          CONDUCTOR_AUTH_SECRET: ${{ secrets.SM_V4_AUTH_SECRET }}
           CONDUCTOR_REQUEST_TIMEOUT_MS: "120000"
           CONDUCTOR_RETRY_SERVER_ERRORS: "true"
-          JEST_JUNIT_OUTPUT_NAME: integration-v4-node-${{ matrix.node-version }}-shard-${{ matrix.shard }}-test-results.xml
+          JEST_JUNIT_OUTPUT_NAME: integration-v4-sm-node-${{ matrix.node-version }}-shard-${{ matrix.shard }}-test-results.xml
       - name: Publish Test Results
         uses: dorny/test-reporter@v2
         if: ${{ !cancelled() }}
         with:
-          name: integration v4 Node ${{ matrix.node-version }} shard ${{ matrix.shard }}/3
-          path: reports/integration-v4-node-${{ matrix.node-version }}-shard-${{ matrix.shard }}-test-results.xml
+          name: integration v4 sm Node ${{ matrix.node-version }} shard ${{ matrix.shard }}/3
+          path: reports/integration-v4-sm-node-${{ matrix.node-version }}-shard-${{ matrix.shard }}-test-results.xml
           reporter: jest-junit
       - name: Upload coverage to Codecov
         if: always()
@@ -192,6 +194,6 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage/lcov.info
-          flags: integration-v4
-          name: codecov-integration-v4-node-${{ matrix.node-version }}-shard-${{ matrix.shard }}
+          flags: integration-v4-sm
+          name: codecov-integration-v4-sm-node-${{ matrix.node-version }}-shard-${{ matrix.shard }}
           fail_ci_if_error: false

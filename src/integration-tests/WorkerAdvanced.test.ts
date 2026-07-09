@@ -17,7 +17,6 @@ import {
   clearWorkerRegistry,
   getTaskContext,
   OrkesClients,
-  orkesConductorClient,
   simpleTask,
   worker,
 } from "../sdk";
@@ -25,6 +24,7 @@ import { cleanupWorkflowsAndTasks } from "./utils/cleanup";
 import { waitForWorkflowStatus } from "./utils/waitForWorkflowStatus";
 import { executeWorkflowWithRetry } from "./utils/executeWorkflowWithRetry";
 import { describeForOrkesV5 } from "./utils/customJestDescribe";
+import { createClientWithRetry } from "./utils/createClientWithRetry";
 
 /**
  * E2E Integration Tests for Advanced Worker Features (v5 only).
@@ -38,7 +38,7 @@ import { describeForOrkesV5 } from "./utils/customJestDescribe";
 describeForOrkesV5("Worker Advanced Features", () => {
   jest.setTimeout(120000);
 
-  const clientPromise = orkesConductorClient();
+  const clientPromise = createClientWithRetry();
   let executor: WorkflowExecutor;
   let metadataClient: MetadataClient;
   let taskClient: TaskClient;

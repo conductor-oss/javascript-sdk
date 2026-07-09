@@ -6,8 +6,8 @@ import { orkesConductorClient } from "../../sdk";
  * tolerate transient auth/503 failures in CI.
  */
 export async function createClientWithRetry(
-  maxAttempts = 3,
-  delayMs = 2000
+  maxAttempts = 5,
+  initialDelayMs = 2000
 ): Promise<Client> {
   let lastError: unknown;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -16,7 +16,12 @@ export async function createClientWithRetry(
     } catch (e) {
       lastError = e;
       if (attempt === maxAttempts) break;
-      await new Promise((r) => setTimeout(r, delayMs * attempt));
+      const backoffMs = initialDelayMs * Math.pow(2, attempt - 1);
+      const jitter = Math.random() * 500;
+      console.warn(
+        `createClientWithRetry failed (attempt ${attempt}/${maxAttempts}), retrying in ${Math.round(backoffMs + jitter)}ms...`
+      );
+      await new Promise((r) => setTimeout(r, backoffMs + jitter));
     }
   }
   throw lastError;

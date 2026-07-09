@@ -22,7 +22,10 @@ import {
 } from "../sdk";
 import { waitForWorkflowStatus } from "./utils/waitForWorkflowStatus";
 import { createClientWithRetry } from "./utils/createClientWithRetry";
+import { registerWorkflowWithRetry } from "./utils/registerWorkflowWithRetry";
+import { startWorkflowWithRetry } from "./utils/startWorkflowWithRetry";
 import { describeForOrkesV4, describeForOrkesV5 } from "./utils/customJestDescribe";
+import { registerTaskWithRetry } from "./utils/registerTaskWithRetry";
 
 /**
  * E2E Integration Tests for WorkflowExecutor — Complete Coverage
@@ -67,7 +70,7 @@ describe("WorkflowExecutor Complete Coverage", () => {
     _taskClient = new TaskClient(client);
 
     // Register task definition for SIMPLE tasks
-    await metadataClient.registerTask({
+    await registerTaskWithRetry(metadataClient, {
       name: taskDefName,
       retryCount: 3,
       timeoutSeconds: 600,
@@ -92,7 +95,7 @@ describe("WorkflowExecutor Complete Coverage", () => {
       outputParameters: {},
       timeoutSeconds: 600,
     };
-    await executor.registerWorkflow(true, waitWfDef);
+    await registerWorkflowWithRetry(executor, waitWfDef);
     workflowsToCleanup.push({ name: waitWfName, version: 1 });
 
     // Register SET_VARIABLE workflow (completes instantly)
@@ -112,7 +115,7 @@ describe("WorkflowExecutor Complete Coverage", () => {
       timeoutSeconds: 60,
       variables: { counter: 0 },
     };
-    await executor.registerWorkflow(true, simpleWfDef);
+    await registerWorkflowWithRetry(executor, simpleWfDef);
     workflowsToCleanup.push({ name: simpleWfName, version: 1 });
 
     // Register SIMPLE task workflow (blocks on task poll)
@@ -127,7 +130,7 @@ describe("WorkflowExecutor Complete Coverage", () => {
       outputParameters: {},
       timeoutSeconds: 600,
     };
-    await executor.registerWorkflow(true, taskWfDef);
+    await registerWorkflowWithRetry(executor, taskWfDef);
     workflowsToCleanup.push({ name: taskWfName, version: 1 });
   });
 
@@ -712,7 +715,7 @@ describe("WorkflowExecutor Complete Coverage", () => {
 
   describeForOrkesV5("Signal Async", () => {
     test("signalAsync should signal a workflow asynchronously", async () => {
-      const wfId = await executor.startWorkflow({
+      const wfId = await startWorkflowWithRetry(executor, {
         name: waitWfName,
         version: 1,
       });
@@ -796,7 +799,7 @@ describe("WorkflowExecutor Complete Coverage", () => {
     });
 
     test("goBackToTask should throw when no matching task found", async () => {
-      const wfId = await executor.startWorkflow({
+      const wfId = await startWorkflowWithRetry(executor, {
         name: simpleWfName,
         version: 1,
       });

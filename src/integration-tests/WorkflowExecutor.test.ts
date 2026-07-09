@@ -31,6 +31,8 @@ import { getComplexSignalTestSubWf1Def } from "./metadata/complex_wf_signal_test
 import { getComplexSignalTestSubWf2Def } from "./metadata/complex_wf_signal_test_subworkflow_2";
 import { getWaitSignalTestWfDef } from "./metadata/wait_signal_test";
 import { describeForOrkesV4, describeForOrkesV5 } from "./utils/customJestDescribe";
+import { registerWorkflowDefWithRetry, registerWorkflowWithRetry } from "./utils/registerWorkflowWithRetry";
+import { HTTPBIN_BASE_URL } from "./utils/testConstants";
 
 describe("WorkflowExecutor", () => {
   const clientPromise = createClientWithRetry();
@@ -72,6 +74,9 @@ describe("WorkflowExecutor", () => {
       timeoutSeconds: 15,
     };
 
+    // No retry wrapper here — this call IS the thing under test.
+    // If the server is flaky, this test should fail honestly.
+    // (subject to future reconsiderations)
     await expect(
       executor.registerWorkflow(true, workflowDefinition)
     ).resolves.not.toThrow();
@@ -164,73 +169,109 @@ describe("WorkflowExecutor", () => {
     expect(workflowStatus?.status).toBeTruthy();
     expect(workflowStatus?.tasks?.length).toBe(1);
   });
-  test("Should run workflow with http task with asyncComplete true", async () => {
-    const client = await clientPromise;
-    const executor = new WorkflowExecutor(client);
-    const workflowName = `jsSdkTest-wf_with_asyncComplete_http_task-${Date.now()}`;
-    const taskName = `jsSdkTest-http_task_with_asyncComplete_true-${Date.now()}`;
+  // Gated to v5 only. An asyncComplete HTTP task settles differently depending on
+  // whether HTTP is a registered in-server *system task*:
+  //   - v5 ships the api-orchestration module, so HTTP is a system task
+  //     (isSystemTask("HTTP") === true). An asyncComplete HTTP task genuinely
+  //     *settles* as IN_PROGRESS, awaiting external completion. That is a stable,
+  //     observable state we can assert on.
+  //   - v4 has no api-orchestration module, so HTTP is a plain external worker task
+  //     (isSystemTask("HTTP") === false). When the worker returns IN_PROGRESS with
+  //     callbackAfterSeconds = Integer.MAX_VALUE, OrkesWorkflowExecutor.updateTask
+  //     rewrites it to SCHEDULED and parks it ~68 years out. It therefore never
+  //     *settles* as IN_PROGRESS.
+  //
+  // We deliberately do NOT run this on v4. The old (yahoo.com) version of this test
+  // only ever "passed" on v4 by catching the task in the transient IN_PROGRESS window
+  // between the worker polling it (server sets IN_PROGRESS) and the worker returning
+  // its result (server rewrites to SCHEDULED) - i.e. it was exploiting a race, not
+  // checking the settled state of this task type on v4. Rather than assert two
+  // different shapes in one test, we scope this to the version where IN_PROGRESS is
+  // the real, settled outcome.
+  describeForOrkesV5("asyncComplete HTTP task (v5 system-task semantics)", () => {
+    test("Should run workflow with http task with asyncComplete true", async () => {
+      const client = await clientPromise;
+      const executor = new WorkflowExecutor(client);
+      const workflowName = `jsSdkTest-wf_with_asyncComplete_http_task-${Date.now()}`;
+      const taskName = `jsSdkTest-http_task_with_asyncComplete_true-${Date.now()}`;
 
-    await executor.registerWorkflow(true, {
-      name: workflowName,
-      version: 1,
-      ownerEmail: "developers@orkes.io",
-      tasks: [
-        httpTask(
-          taskName,
-          { uri: "http://www.yahoo.com", method: "GET" },
-          true
-        ),
-      ],
-      inputParameters: [],
-      outputParameters: {},
-      timeoutSeconds: 300,
-    });
+      const asyncHttpUri = `${HTTPBIN_BASE_URL}/api/hello?name=test1`;
 
-    const executionId = await executor.startWorkflow({
-      name: workflowName,
-      input: {},
-      version: 1,
-    });
+      await executor.registerWorkflow(true, {
+        name: workflowName,
+        version: 1,
+        ownerEmail: "developers@orkes.io",
+        tasks: [
+          httpTask(taskName, { uri: asyncHttpUri, method: "GET" }, true),
+        ],
+        inputParameters: [],
+        outputParameters: {},
+        timeoutSeconds: 30,
+      });
 
-    if (!executionId) {
-      throw new Error("Execution ID is undefined");
-    }
+      const executionId = await executor.startWorkflow({
+        name: workflowName,
+        input: {},
+        version: 1,
+      });
 
-    await waitForWorkflowStatus(executor, executionId, "RUNNING");
+      if (!executionId) {
+        throw new Error("Execution ID is undefined");
+      }
 
-    // Wait for the task to be IN_PROGRESS before updating (V4 may take longer; server requires "running" task)
-    const taskReadyTimeout = 60000;
-    const pollInterval = 1000;
-    const taskReadyStart = Date.now();
-    let taskStatus: string | undefined;
-    while (Date.now() - taskReadyStart < taskReadyTimeout) {
-      const wf = await executor.getWorkflow(executionId, true);
-      taskStatus = wf?.tasks?.[0]?.status;
-      if (taskStatus === "IN_PROGRESS") break;
-      if (taskStatus === "FAILED" || taskStatus === "COMPLETED")
-        throw new Error(`Task ended in unexpected state: ${taskStatus}`);
-      await new Promise((resolve) => setTimeout(resolve, pollInterval));
-    }
-    expect(taskStatus).toEqual("IN_PROGRESS");
+      // Log the id so a failed/incomplete run can be inspected in the Conductor UI.
+      console.log(
+        `[asyncComplete http] workflowId=${executionId} workflow=${workflowName} task=${taskName}`
+      );
 
-    const taskClient = new TaskClient(client);
-    await taskClient.updateTaskResult(executionId, taskName, "COMPLETED", {
-      hello: "From manuall api call updating task result",
-    });
+      await waitForWorkflowStatus(executor, executionId, "RUNNING");
 
-    const workflowStatusAfter = await waitForWorkflowStatus(
-      executor,
-      executionId,
-      "COMPLETED",
-      120000,
-      5000
-    );
+      // Wait for the async HTTP task to finish executing and settle as IN_PROGRESS,
+      // awaiting external completion (see the block comment above for why this is the
+      // stable, settled state on v5).
+      const taskReadyTimeout = 30000;
+      const pollInterval = 3000;
+      const taskReadyStart = Date.now();
+      let taskStatus: string | undefined;
+      while (Date.now() - taskReadyStart < taskReadyTimeout) {
+        const wf = await executor.getWorkflow(executionId, true);
+        const task = wf?.tasks?.[0];
+        taskStatus = task?.status;
+        if (taskStatus === "IN_PROGRESS") break;
+        if (taskStatus === "FAILED" || taskStatus === "COMPLETED") {
+          throw new Error(
+            `Task ended in unexpected state: ${taskStatus} ` +
+              `(workflowId=${executionId}, workflow=${workflowName}, task=${taskName}` +
+              (task?.reasonForIncompletion
+                ? `, reason=${task.reasonForIncompletion}`
+                : "") +
+              ")"
+          );
+        }
+        await new Promise((resolve) => setTimeout(resolve, pollInterval));
+      }
 
-    expect(workflowStatusAfter.tasks?.[0]?.status).toEqual("COMPLETED");
+      expect(taskStatus).toEqual("IN_PROGRESS");
 
-    await cleanupWorkflowsAndTasks(metadataClient, {
-      workflows: [{ name: workflowName, version: 1 }],
-      tasks: [taskName],
+      const taskClient = new TaskClient(client);
+      await taskClient.updateTaskResult(executionId, taskName, "COMPLETED", {
+        hello: "From manuall api call updating task result",
+      });
+
+      const workflowStatusAfter = await waitForWorkflowStatus(
+        executor,
+        executionId,
+        "COMPLETED",
+        30000,
+        5000
+      );
+
+      expect(workflowStatusAfter.tasks?.[0]?.status).toEqual("COMPLETED");
+
+      await cleanupWorkflowsAndTasks(metadataClient, {
+        workflows: [{ name: workflowName, version: 1 }],
+        tasks: [taskName],
+      });
     });
   });
 
@@ -239,7 +280,7 @@ describe("WorkflowExecutor", () => {
     const workflowName = `jsSdkTest-wf_with_optional_http_task-${Date.now()}`;
     const taskName = `jsSdkTest-optional_http_task-${Date.now()}`;
 
-    await executor.registerWorkflow(true, {
+    await registerWorkflowWithRetry(executor, {
       name: workflowName,
       version: 1,
       ownerEmail: "developers@orkes.io",
@@ -253,7 +294,7 @@ describe("WorkflowExecutor", () => {
       ],
       inputParameters: [],
       outputParameters: {},
-      timeoutSeconds: 300,
+      timeoutSeconds: 30,
     });
 
     const executionId = await executor.startWorkflow({
@@ -307,7 +348,7 @@ describe("WorkflowExecutor", () => {
 
       // Register all test workflows
       await registerAllWorkflows();
-    });
+    }, 30000);
 
     afterEach(async () => {
       // Clean up executions first
@@ -342,15 +383,15 @@ describe("WorkflowExecutor", () => {
     afterAll(async () => {
       // Cleanup all workflows
       await cleanupAllWorkflows();
-    });
+    }, 120_000);
 
     async function registerAllWorkflows(): Promise<void> {
       try {
         await Promise.all([
-          metadataClient.registerWorkflowDef(WORKFLOWS.COMPLEX_WF, true),
-          metadataClient.registerWorkflowDef(WORKFLOWS.SUB_WF_1, true),
-          metadataClient.registerWorkflowDef(WORKFLOWS.SUB_WF_2, true),
-          metadataClient.registerWorkflowDef(WORKFLOWS.WAIT_SIGNAL_TEST, true),
+          registerWorkflowDefWithRetry(metadataClient, WORKFLOWS.COMPLEX_WF),
+          registerWorkflowDefWithRetry(metadataClient, WORKFLOWS.SUB_WF_1),
+          registerWorkflowDefWithRetry(metadataClient, WORKFLOWS.SUB_WF_2),
+          registerWorkflowDefWithRetry(metadataClient, WORKFLOWS.WAIT_SIGNAL_TEST),
         ]);
 
         // Add to cleanup list
@@ -606,9 +647,7 @@ describe("WorkflowExecutor", () => {
         const finalWorkflow = await waitForWorkflowStatus(
           executor,
           workflowId,
-          "COMPLETED",
-          300000, // 5 min max wait
-          200 // 200ms poll interval
+          "COMPLETED"
         );
 
         expect(finalWorkflow.status).toEqual("COMPLETED");
@@ -692,7 +731,7 @@ describe("WorkflowExecutor", () => {
           await new Promise((r) => setTimeout(r, 2000));
           const signalWithRetry = async (
             output: Record<string, unknown>,
-            maxAttempts = 3
+            maxAttempts = 5
           ) => {
             let lastErr: unknown;
             for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -718,9 +757,7 @@ describe("WorkflowExecutor", () => {
           await waitForWorkflowStatus(
             executor,
             workflowId,
-            "COMPLETED",
-            300000,
-            200
+            "COMPLETED"
           );
           console.log(`✓ ${testCase.name} test completed successfully`);
         });

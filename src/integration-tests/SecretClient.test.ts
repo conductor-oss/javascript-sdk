@@ -1,9 +1,9 @@
 import { expect, describe, test, jest, beforeAll, afterAll } from "@jest/globals";
 import {
-  orkesConductorClient,
   OrkesClients,
   SecretClient,
 } from "../sdk";
+import { createClientWithRetry } from "./utils/createClientWithRetry";
 import type { Tag } from "../open-api";
 import { describeForOrkesV4 } from "./utils/customJestDescribe";
 
@@ -16,7 +16,7 @@ describe("SecretClient", () => {
   describeForOrkesV4("SecretClient V4+", () => {
   jest.setTimeout(60000);
 
-  const clientPromise = orkesConductorClient();
+  const clientPromise = createClientWithRetry();
   const suffix = Date.now();
 
   let secretClient: SecretClient;

@@ -11,11 +11,12 @@ import {
   MetadataClient,
   SchedulerClient,
   WorkflowExecutor,
-  orkesConductorClient,
   taskDefinition,
   OrkesClients,
 } from "../sdk";
+import { createClientWithRetry } from "./utils/createClientWithRetry";
 import { describeForOrkesV4 } from "./utils/customJestDescribe";
+import { registerWorkflowDefWithRetry } from "./utils/registerWorkflowWithRetry";
 
 /**
  * E2E Integration Tests for MetadataClient — Complete Coverage
@@ -48,14 +49,15 @@ describe("MetadataClient Complete Coverage", () => {
   const schedulesToCleanup: string[] = [];
 
   beforeAll(async () => {
-    const client = await orkesConductorClient();
+    const client = await createClientWithRetry();
     const clients = new OrkesClients(client);
     metadataClient = clients.getMetadataClient();
     schedulerClient = clients.getSchedulerClient();
     _executor = clients.getWorkflowClient();
 
     // Register a workflow for tag and rate limit tests
-    await metadataClient.registerWorkflowDef(
+    await registerWorkflowDefWithRetry(
+      metadataClient,
       {
         name: wfName,
         version: 1,
@@ -70,20 +72,22 @@ describe("MetadataClient Complete Coverage", () => {
         inputParameters: [],
         outputParameters: {},
         timeoutSeconds: 60,
-      },
-      true
+      }
     );
     workflowsToCleanup.push({ name: wfName, version: 1 });
   });
 
   afterAll(async () => {
-    for (const name of schedulesToCleanup) {
-      try {
-        await schedulerClient.deleteSchedule(name);
-      } catch (e) {
-        console.debug(`Cleanup schedule '${name}' failed:`, e);
+    if (schedulerClient) {
+      for (const name of schedulesToCleanup) {
+        try {
+          await schedulerClient.deleteSchedule(name);
+        } catch (e) {
+          console.debug(`Cleanup schedule '${name}' failed:`, e);
+        }
       }
     }
+    if (!metadataClient) return;
     for (const name of tasksToCleanup) {
       try {
         await metadataClient.unregisterTask(name);
@@ -318,6 +322,10 @@ describe("MetadataClient Complete Coverage", () => {
 
   describeForOrkesV4("Scheduler Extended", () => {
     beforeAll(async () => {
+      if (!schedulerClient) {
+        console.warn("schedulerClient is undefined (client creation likely failed), skipping Scheduler Extended setup");
+        return;
+      }
       // Create a schedule for tag tests
       await schedulerClient.saveSchedule({
         name: scheduleName,

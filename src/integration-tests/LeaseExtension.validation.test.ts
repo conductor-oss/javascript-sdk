@@ -36,8 +36,8 @@ import type { Client } from "../open-api";
 import {
   MetadataClient,
   WorkflowExecutor,
-  orkesConductorClient,
 } from "../sdk";
+import { createClientWithRetry } from "./utils/createClientWithRetry";
 import { LeaseTracker } from "../sdk/clients/worker/LeaseTracker";
 import type { ConductorLogger } from "../sdk/helpers/logger";
 import { DefaultLogger } from "../sdk/helpers/logger";
@@ -62,7 +62,7 @@ describe("Lease Extension — end-to-end validation", () => {
   const wfName      = `lease_val_wf_${suffix}`;
 
   beforeAll(async () => {
-    client         = await orkesConductorClient();
+    client         = await createClientWithRetry();
     executor       = new WorkflowExecutor(client);
     metadataClient = new MetadataClient(client);
 
@@ -78,8 +78,9 @@ describe("Lease Extension — end-to-end validation", () => {
       ownerEmail:             "sdk-validation@example.com",
     });
 
+    const { registerWorkflowWithRetry } = await import("./utils/registerWorkflowWithRetry");
     const { simpleTask } = await import("../sdk/builders/tasks/simple");
-    await executor.registerWorkflow(true, {
+    await registerWorkflowWithRetry(executor, {
       name:             wfName,
       version:          1,
       tasks:            [simpleTask("task_ref", taskDefName, {})],

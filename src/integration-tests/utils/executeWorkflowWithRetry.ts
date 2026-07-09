@@ -38,13 +38,15 @@ export async function executeWorkflowWithRetry(
       lastError = error as Error;
       const errorMessage = lastError.message?.toLowerCase() || "";
 
-      // Only retry on transient network errors, not business logic errors
       const isRetryable =
         errorMessage.includes("fetch failed") ||
         errorMessage.includes("network") ||
         errorMessage.includes("timeout") ||
         errorMessage.includes("econnrefused") ||
-        errorMessage.includes("econnreset");
+        errorMessage.includes("econnreset") ||
+        errorMessage.includes("503") ||
+        errorMessage.includes("502") ||
+        errorMessage.includes("service temporarily unavailable");
 
       if (!isRetryable || attempt === maxRetries) {
         throw lastError;
