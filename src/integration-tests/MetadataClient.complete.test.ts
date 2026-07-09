@@ -15,7 +15,11 @@ import {
   OrkesClients,
 } from "../sdk";
 import { createClientWithRetry } from "./utils/createClientWithRetry";
-import { describeForOrkesV4 } from "./utils/customJestDescribe";
+import {
+  describeForOrkesOnly,
+  describeForOrkesOnlyV4,
+  describeForOssSchedulerWip,
+} from "./utils/customJestDescribe";
 import { registerWorkflowDefWithRetry } from "./utils/registerWorkflowWithRetry";
 
 /**
@@ -168,7 +172,7 @@ describe("MetadataClient Complete Coverage", () => {
 
   // ==================== Workflow Tags ====================
 
-  describeForOrkesV4("Workflow Tags", () => {
+  describeForOrkesOnlyV4("Workflow Tags", () => {
     test("addWorkflowTag should add a tag to a workflow definition", async () => {
       await expect(
         metadataClient.addWorkflowTag(
@@ -222,7 +226,7 @@ describe("MetadataClient Complete Coverage", () => {
 
   // ==================== Task Tags ====================
 
-  describeForOrkesV4("Task Tags", () => {
+  describeForOrkesOnlyV4("Task Tags", () => {
     test("addTaskTag should add a tag to a task definition", async () => {
       await expect(
         metadataClient.addTaskTag(
@@ -276,7 +280,7 @@ describe("MetadataClient Complete Coverage", () => {
   // ==================== Rate Limits ====================
   // Rate limit API may not be available on all server versions
 
-  describe("Rate Limits", () => {
+  describeForOrkesOnly("Rate Limits", () => {
     let rateLimitSupported = true;
 
     test("setWorkflowRateLimit should configure rate limiting", async () => {
@@ -320,7 +324,7 @@ describe("MetadataClient Complete Coverage", () => {
 
   // ==================== Scheduler Extended ====================
 
-  describeForOrkesV4("Scheduler Extended", () => {
+  describeForOssSchedulerWip("Scheduler Extended", () => {
     beforeAll(async () => {
       if (!schedulerClient) {
         console.warn("schedulerClient is undefined (client creation likely failed), skipping Scheduler Extended setup");

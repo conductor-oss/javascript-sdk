@@ -30,7 +30,11 @@ import { getComplexSignalTestWfDef } from "./metadata/complex_wf_signal_test";
 import { getComplexSignalTestSubWf1Def } from "./metadata/complex_wf_signal_test_subworkflow_1";
 import { getComplexSignalTestSubWf2Def } from "./metadata/complex_wf_signal_test_subworkflow_2";
 import { getWaitSignalTestWfDef } from "./metadata/wait_signal_test";
-import { describeForOrkesV4, describeForOrkesV5 } from "./utils/customJestDescribe";
+import {
+  describeForOrkesV5,
+  describeForOrkesOnlyV4,
+  describeForOrkesOnlyV5,
+} from "./utils/customJestDescribe";
 import { registerWorkflowDefWithRetry, registerWorkflowWithRetry } from "./utils/registerWorkflowWithRetry";
 import { HTTPBIN_BASE_URL } from "./utils/testConstants";
 
@@ -122,7 +126,7 @@ describe("WorkflowExecutor", () => {
     expect(workflowRun.status).toEqual("COMPLETED");
   });
 
-  describeForOrkesV4("V4+ features", () => {
+  describeForOrkesOnlyV4("V4+ features", () => {
   test("Should be able to get workflow execution status ", async () => {
     const client = await clientPromise;
     const executor = new WorkflowExecutor(client);
@@ -155,7 +159,7 @@ describe("WorkflowExecutor", () => {
     const executionDetails = await executor.getWorkflow(executionId, true);
     expect(executionDetails?.idempotencyKey).toEqual(idempotencyKey);
   });
-  }); // end describeForOrkesV4
+  }); // end describeForOrkesOnlyV4
 
   test("Should return workflow status detail", async () => {
     const client = await clientPromise;
@@ -322,7 +326,7 @@ describe("WorkflowExecutor", () => {
     });
   });
 
-  describeForOrkesV5("Execute with Return Strategy and Consistency", () => {
+  describeForOrkesOnlyV5("Execute with Return Strategy and Consistency", () => {
     // Constants specific to this test suite
     const now = Date.now();
     const WORKFLOWS = {

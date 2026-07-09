@@ -4,7 +4,7 @@ import { createClientWithRetry } from "./utils/createClientWithRetry";
 import { ServiceType } from "../open-api";
 import * as fs from "fs";
 import * as path from "path";
-import { describeForOrkesV5 } from "./utils/customJestDescribe";
+import { describeForOrkesOnlyV5 } from "./utils/customJestDescribe";
 import { HTTPBIN_BASE_URL } from "./utils/testConstants";
 
 // Conductor must be able to fetch this URL for discovery; use CONDUCTOR_TEST_SERVICE_URI
@@ -13,7 +13,7 @@ const TEST_SERVICE_URI =
   process.env.CONDUCTOR_TEST_SERVICE_URI ??
   `${HTTPBIN_BASE_URL}/api-docs`;
 
-describeForOrkesV5("ServiceRegistryClient", () => {
+describeForOrkesOnlyV5("ServiceRegistryClient", () => {
   const clientPromise = createClientWithRetry();
   let serviceRegistryClient: ServiceRegistryClient;
 

@@ -5,7 +5,7 @@ import {
 } from "../sdk";
 import { createClientWithRetry } from "./utils/createClientWithRetry";
 import type { Tag } from "../open-api";
-import { describeForOrkesV4 } from "./utils/customJestDescribe";
+import { describeForOrkesOnlyV4 } from "./utils/customJestDescribe";
 
 /**
  * E2E Integration Tests for SecretClient
@@ -13,7 +13,7 @@ import { describeForOrkesV4 } from "./utils/customJestDescribe";
  * Tests secret CRUD operations, existence checks, listing, and tag management.
  */
 describe("SecretClient", () => {
-  describeForOrkesV4("SecretClient V4+", () => {
+  describeForOrkesOnlyV4("SecretClient V4+", () => {
   jest.setTimeout(60000);
 
   const clientPromise = createClientWithRetry();

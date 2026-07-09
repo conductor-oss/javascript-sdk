@@ -197,3 +197,60 @@ jobs:
           flags: integration-v4-sm
           name: codecov-integration-v4-sm-node-${{ matrix.node-version }}-shard-${{ matrix.shard }}
           fail_ci_if_error: false
+
+  # Integration tests (OSS): spins up Conductor OSS + Postgres via
+  # scripts/docker-compose-oss.yaml and runs the integration suite unauthenticated,
+  # with Orkes-only tests gated out via CONDUCTOR_SERVER_TYPE=oss (see
+  # test:integration:oss). The same stack can be run locally with
+  # scripts/run-integration-oss.sh.
+  integration-tests-oss:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [20, 22, 24]
+    name: Node.js v${{ matrix.node-version }} - integration oss
+    env:
+      CONDUCTOR_SERVER_URL: http://localhost:8080/api
+      CONDUCTOR_SERVER_TYPE: oss
+      CONDUCTOR_REQUEST_TIMEOUT_MS: "120000"
+      CONDUCTOR_RETRY_SERVER_ERRORS: "true"
+      HTTPBIN_SERVICE_HOSTNAME: httpbin
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+      - name: Cache node_modules
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: npm-${{ matrix.node-version }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            npm-${{ matrix.node-version }}-
+      - name: Install Dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: npm ci
+      - name: Start Conductor OSS stack
+        run: docker compose -f scripts/docker-compose-oss.yaml up -d
+      - name: Wait for Conductor to be healthy
+        run: timeout 120 bash -c 'until curl -sf http://localhost:8080/health; do sleep 5; done'
+      - name: Run integration tests (OSS)
+        run: npm run test:integration:oss -- --ci --runInBand --testTimeout=120000 --reporters=default --reporters=github-actions --reporters=jest-junit
+        env:
+          JEST_JUNIT_OUTPUT_NAME: integration-oss-node-${{ matrix.node-version }}-test-results.xml
+      - name: Dump Conductor logs
+        if: failure()
+        run: docker compose -f scripts/docker-compose-oss.yaml logs conductor-server
+      - name: Publish Test Results
+        uses: dorny/test-reporter@v2
+        if: ${{ !cancelled() }}
+        with:
+          name: integration oss (Node ${{ matrix.node-version }})
+          path: reports/integration-oss-node-${{ matrix.node-version }}-test-results.xml
+          reporter: jest-junit

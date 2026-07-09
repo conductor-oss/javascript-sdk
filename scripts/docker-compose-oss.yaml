@@ -1,0 +1,37 @@
+# Conductor OSS stack used to run the SDK integration tests against open-source
+# Conductor. Shared by scripts/run-integration-oss.sh and the
+# integration-tests-oss job in .github/workflows/pull_request.yml.
+#
+# The Conductor server reaches httpbin over the compose network at
+# http://httpbin:8081, which matches HTTPBIN_SERVICE_HOSTNAME=httpbin.
+services:
+  conductor-server:
+    image: conductoross/conductor:latest
+    environment:
+      - CONFIG_PROP=config-postgres.properties
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-I", "-XGET", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 10s
+      retries: 20
+    links:
+      - conductor-postgres:postgresdb
+    depends_on:
+      conductor-postgres:
+        condition: service_healthy
+  conductor-postgres:
+    image: postgres:16
+    environment:
+      - POSTGRES_USER=conductor
+      - POSTGRES_PASSWORD=conductor
+    healthcheck:
+      test: timeout 5 bash -c 'cat < /dev/null > /dev/tcp/localhost/5432'
+      interval: 5s
+      timeout: 5s
+      retries: 12
+  httpbin:
+    image: ghcr.io/orkes-io/test-utils/httpbin:latest
+    expose:
+      - "8081"
