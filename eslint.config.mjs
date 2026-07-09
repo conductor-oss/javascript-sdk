@@ -28,6 +28,17 @@ export default defineConfig(
     },
   },
   {
+    // src/agents is the Agentspan agent SDK merged in-tree. Its framework
+    // serializers walk arbitrary langgraph/langchain object graphs, so it keeps
+    // the upstream lint contract for these two rules (upstream pins both to
+    // "warn" in its eslint config); everything else lints at this repo's level.
+    files: ["src/agents/**"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-unsafe-function-type": "warn",
+    },
+  },
+  {
     files: ["scripts/**/*.mjs"],
     languageOptions: {
       globals: {
