@@ -22,7 +22,7 @@ new AgentRuntime(options?: AgentConfigOptions)
 | `plan` | `(agent) => Promise<object>` | Compile to workflow def without executing. |
 | `serve` | `(...agents) => Promise<void>` | Register workers, poll forever (blocks). |
 | `getStatus` | `(executionId, signal?) => Promise<AgentStatus>` | Current execution status. |
-| `schedulesClient` | `() => ScheduleClient` | Schedule lifecycle client. |
+| `schedulesClient` | `() => SchedulerClient` | Schedule lifecycle client (the SDK scheduler client). |
 | `shutdown` | `() => Promise<void>` | Stop worker polling. |
 
 `agent` is an `Agent` or a detected framework object. Module-level helpers `configure`, `run`, `start`, `stream`, `deploy`, `plan`, `serve`, `shutdown` operate on a shared singleton runtime.
@@ -39,7 +39,7 @@ new AgentClient(options?: AgentConfigOptions | AgentConfig)
 |---|---|---|
 | `config` | `AgentConfig` | Resolved config. |
 | `workflows` | `WorkflowClient` | Read-only workflow client. |
-| `schedules` | `ScheduleClient` | Cron lifecycle client. |
+| `schedules` | `SchedulerClient` | Cron lifecycle client (SDK scheduler client over the shared Conductor client). |
 | `run` | `(agent, prompt, opts?) => Promise<AgentResult>` | Compile + start + poll to result. |
 | `start` | `(agent, prompt, opts?) => Promise<ClientHandle>` | Compile + start; returns a handle. |
 | `deploy` | `(...agents) => Promise<DeploymentInfo[]>` | Compile + register agents. |
@@ -227,13 +227,13 @@ abstract class CallbackHandler {
 
 `CALLBACK_POSITIONS` maps hook names to wire positions; `getCallbackWorkerNames(agentName, handler)` lists registered worker names.
 
-## Schedules / ScheduleClient
+## Schedules / SchedulerClient
 
 ```ts
 new Schedule({ name, cron, timezone?, input?, catchup?, paused?, startAt?, endAt?, description? })
 ```
 
-`ScheduleClient` methods: `save(schedule, agentName)`, `get(wireName, agentName?)`, `listForAgent(agentName)`, `pause(wireName, reason?)`, `resume(wireName)`, `delete(wireName)`, `runNow(info)`, `previewNext(cron, { n?, startAt?, endAt? })`, `reconcile(agentName, desired)`.
+Agent schedules ride the SDK `SchedulerClient` (also available via `OrkesClients.getSchedulerClient()`). Its typed lifecycle methods: `save(schedule, agentName)`, `get(wireName, agentName?)`, `listForAgent(agentName)`, `pause(wireName, reason?)`, `resume(wireName)`, `delete(wireName)`, `runNow(info)`, `previewNext(cron, { n?, startAt?, endAt? })`, `reconcile(agentName, desired)` — plus the endpoint-level wrappers (`saveSchedule`, `getSchedule`, `pauseSchedule`, ...). Pause/resume issue PUT first and fall back to GET on HTTP 405 (per-schedule verbs differ by Conductor server family), so one client works against both OSS/embedded and Orkes servers.
 
 The `schedules` namespace is a convenience layer over the singleton runtime: `schedules.list({ agent })`, `.get(name, { runtime? })`, `.pause(name, { reason?, runtime? })`, `.resume`, `.delete`, `.runNow`, `.previewNext(cron, { n? })`, `.save(schedule, agent)`. Lifecycle calls key on the **wire name** (the prefixed `name` in `ScheduleInfo`).
 

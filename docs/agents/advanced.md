@@ -83,7 +83,7 @@ import { Schedule } from '@io-orkes/conductor-javascript/agents';
 await client.schedule(agent, [new Schedule({ name: 'nightly', cron: '0 0 0 * * *' })]);
 ```
 
-Low-level endpoints are available too: `startAgent`, `deployAgent`, `compile`, `status`, `respond`, `getExecution`, `stream`. The `client.schedules` accessor is a `ScheduleClient`; `client.workflows` is a `WorkflowClient` (below).
+Low-level endpoints are available too: `startAgent`, `deployAgent`, `compile`, `status`, `respond`, `getExecution`, `stream`. The `client.schedules` accessor is the SDK `SchedulerClient` (shared with `OrkesClients.getSchedulerClient()`); `client.workflows` is a `WorkflowClient` (below).
 
 ## `WorkflowClient` — execution reads
 
