@@ -12,7 +12,7 @@
  * Same graph structure: validate → refine → answer (3 nodes, 2 with LLM calls)
  *
  * Requirements:
- *   - AGENTSPAN_SERVER_URL=http://localhost:6767/api
+ *   - AGENTSPAN_SERVER_URL=http://localhost:8080/api
  *   - OPENAI_API_KEY for ChatOpenAI
  */
 

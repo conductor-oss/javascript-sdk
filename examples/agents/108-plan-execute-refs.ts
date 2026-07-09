@@ -19,7 +19,7 @@
  * required — because we pass `plan` directly to `runtime.run`.
  *
  * Requirements:
- *   - Agentspan server running on http://localhost:6767 (or
+ *   - Agentspan server running on http://localhost:8080 (or
  *     AGENTSPAN_SERVER_URL)
  *   - AGENTSPAN_LLM_MODEL set (default: openai/gpt-4o-mini)
  *
@@ -151,7 +151,7 @@ async function main() {
 }
 
 async function showPipelineOutputs(executionId: string) {
-  const base = (process.env.AGENTSPAN_SERVER_URL ?? "http://localhost:6767/api")
+  const base = (process.env.AGENTSPAN_SERVER_URL ?? "http://localhost:8080/api")
     .replace(/\/api$/, "")
     .replace(/\/$/, "");
   const parent = (await (await fetch(`${base}/api/workflow/${executionId}?includeTasks=true`)).json()) as {

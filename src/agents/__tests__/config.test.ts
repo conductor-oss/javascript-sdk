@@ -3,20 +3,20 @@ import { AgentConfig, normalizeServerUrl } from "../config.js";
 
 describe("normalizeServerUrl", () => {
   it("appends /api when missing", () => {
-    expect(normalizeServerUrl("http://localhost:6767")).toBe("http://localhost:6767/api");
+    expect(normalizeServerUrl("http://localhost:8080")).toBe("http://localhost:8080/api");
   });
 
   it("does not double-append /api", () => {
-    expect(normalizeServerUrl("http://localhost:6767/api")).toBe("http://localhost:6767/api");
+    expect(normalizeServerUrl("http://localhost:8080/api")).toBe("http://localhost:8080/api");
   });
 
   it("strips trailing slashes before appending", () => {
-    expect(normalizeServerUrl("http://localhost:6767/")).toBe("http://localhost:6767/api");
-    expect(normalizeServerUrl("http://localhost:6767///")).toBe("http://localhost:6767/api");
+    expect(normalizeServerUrl("http://localhost:8080/")).toBe("http://localhost:8080/api");
+    expect(normalizeServerUrl("http://localhost:8080///")).toBe("http://localhost:8080/api");
   });
 
   it("strips trailing slash after /api", () => {
-    expect(normalizeServerUrl("http://localhost:6767/api/")).toBe("http://localhost:6767/api");
+    expect(normalizeServerUrl("http://localhost:8080/api/")).toBe("http://localhost:8080/api");
   });
 
   it("handles custom paths before /api", () => {
@@ -72,7 +72,7 @@ describe("AgentConfig", () => {
     it("uses default values when no options or env vars", () => {
       const config = new AgentConfig();
 
-      expect(config.serverUrl).toBe("http://localhost:6767/api");
+      expect(config.serverUrl).toBe("http://localhost:8080/api");
       expect(config.apiKey).toBe("");
       expect(config.authKey).toBe("");
       expect(config.authSecret).toBe("");
@@ -219,7 +219,7 @@ describe("AgentConfig", () => {
     it("uses defaults when no env vars set", () => {
       const config = AgentConfig.fromEnv();
 
-      expect(config.serverUrl).toBe("http://localhost:6767/api");
+      expect(config.serverUrl).toBe("http://localhost:8080/api");
       expect(config.apiKey).toBe("");
       expect(config.logLevel).toBe("INFO");
     });

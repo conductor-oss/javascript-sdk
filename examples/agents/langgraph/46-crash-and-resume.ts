@@ -36,7 +36,7 @@
  *   await runtime.start(graph, "prompt");  // or via server API / UI
  *
  * Requirements:
- *   - AGENTSPAN_SERVER_URL=http://localhost:6767/api
+ *   - AGENTSPAN_SERVER_URL=http://localhost:8080/api
  *   - OPENAI_API_KEY for ChatOpenAI
  */
 
@@ -49,7 +49,7 @@ import * as fs from 'node:fs';
 import * as readline from 'node:readline';
 
 const SESSION_FILE = '/tmp/agentspan_langgraph_resume.session';
-const SERVER_URL = process.env.AGENTSPAN_SERVER_URL ?? 'http://localhost:6767/api';
+const SERVER_URL = process.env.AGENTSPAN_SERVER_URL ?? 'http://localhost:8080/api';
 const UI_BASE = SERVER_URL.replace('/api', '');
 
 function sleep(ms: number): Promise<void> {

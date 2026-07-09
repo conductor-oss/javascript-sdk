@@ -73,7 +73,7 @@ Read-only client for Conductor workflow executions. Available as `runtime.workfl
 
 ```ts
 interface AgentConfigOptions {
-  serverUrl?: string;            // AGENTSPAN_SERVER_URL (default http://localhost:6767/api)
+  serverUrl?: string;            // AGENTSPAN_SERVER_URL (default http://localhost:8080/api)
   apiKey?: string;               // AGENTSPAN_API_KEY (pre-minted token)
   authKey?: string;              // AGENTSPAN_AUTH_KEY
   authSecret?: string;           // AGENTSPAN_AUTH_SECRET

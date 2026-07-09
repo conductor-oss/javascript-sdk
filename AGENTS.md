@@ -77,7 +77,7 @@ docs/agents/                     # Agent layer documentation
   deps (`scripts/install-example-deps.sh`); `examples/agents` is excluded from
   the root tsconfig.
 - `AGENTSPAN_*` env vars (`AGENTSPAN_SERVER_URL`, default
-  `http://localhost:6767/api`) are the agent layer's config surface — kept
+  `http://localhost:8080/api`) are the agent layer's config surface — kept
   working as-is; `CONDUCTOR_*` aliases are a possible follow-up.
 
 ## Commands

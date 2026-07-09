@@ -25,7 +25,7 @@
  * Mirrors sdk/python/examples/115_plan_execute_planner_context.py.
  *
  * Requirements:
- *   - Agentspan server running on http://localhost:6767 (or
+ *   - Agentspan server running on http://localhost:8080 (or
  *     AGENTSPAN_SERVER_URL)
  *   - AGENTSPAN_LLM_MODEL set (default: openai/gpt-4o-mini)
  *
@@ -215,7 +215,7 @@ async function main(): Promise<void> {
 
 async function showExecutedSteps(executionId: string): Promise<void> {
   const baseUrl = (
-    process.env.AGENTSPAN_SERVER_URL ?? "http://localhost:6767/api"
+    process.env.AGENTSPAN_SERVER_URL ?? "http://localhost:8080/api"
   )
     .replace(/\/$/, "")
     .replace(/\/api$/, "");

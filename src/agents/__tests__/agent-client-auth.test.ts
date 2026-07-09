@@ -30,7 +30,7 @@ describe("AgentClient auth headers (Orkes JWT)", () => {
 
   it("mints a JWT from keyId/keySecret and sends X-Authorization; caches/reuses it", async () => {
     const client = new AgentClient({
-      serverUrl: "http://localhost:6767/api",
+      serverUrl: "http://localhost:8080/api",
       authKey: "KEY",
       authSecret: "SECRET",
     });
@@ -76,7 +76,7 @@ describe("AgentClient auth headers (Orkes JWT)", () => {
 
   it("uses an explicit apiKey verbatim as X-Authorization (no minting)", async () => {
     const client = new AgentClient({
-      serverUrl: "http://localhost:6767/api",
+      serverUrl: "http://localhost:8080/api",
       apiKey: "explicit-token",
     });
     const generateToken = jest.fn();
@@ -96,7 +96,7 @@ describe("AgentClient auth headers (Orkes JWT)", () => {
   });
 
   it("COUNTERFACTUAL: no creds → no auth header", async () => {
-    const client = new AgentClient({ serverUrl: "http://localhost:6767/api" });
+    const client = new AgentClient({ serverUrl: "http://localhost:8080/api" });
     // getClient must NOT be needed for the anonymous path.
     const getClientSpy = jest.spyOn(client, "getClient");
 

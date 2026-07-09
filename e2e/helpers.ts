@@ -37,7 +37,7 @@ export function expectMsg(actual: unknown, message?: string): ReturnType<typeof 
   }) as ReturnType<typeof expect>;
 }
 
-const SERVER_URL = process.env.AGENTSPAN_SERVER_URL ?? 'http://localhost:6767/api';
+const SERVER_URL = process.env.AGENTSPAN_SERVER_URL ?? 'http://localhost:8080/api';
 const BASE_URL = SERVER_URL.replace(/\/api$/, '');
 export const MODEL = process.env.AGENTSPAN_LLM_MODEL ?? 'openai/gpt-4o-mini';
 export const CLI_PATH = process.env.AGENTSPAN_CLI_PATH ?? 'agentspan';

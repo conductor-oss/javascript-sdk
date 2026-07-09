@@ -77,7 +77,7 @@ export class AgentConfig {
   constructor(options?: AgentConfigOptions) {
     const env = process.env;
 
-    const rawUrl = options?.serverUrl ?? env.AGENTSPAN_SERVER_URL ?? "http://localhost:6767/api";
+    const rawUrl = options?.serverUrl ?? env.AGENTSPAN_SERVER_URL ?? "http://localhost:8080/api";
 
     this.serverUrl = normalizeServerUrl(rawUrl);
 

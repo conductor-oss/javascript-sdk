@@ -36,4 +36,4 @@ try {
 }
 ```
 
-You need a running Agentspan server (default `http://localhost:6767/api`). See [getting-started.md](getting-started.md).
+You need a running Agentspan server (default `http://localhost:8080/api`). See [getting-started.md](getting-started.md).

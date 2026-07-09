@@ -34,7 +34,7 @@ async function invokeWorker(
 }
 
 function createRuntime(): AgentRuntime {
-  return new AgentRuntime({ serverUrl: "http://localhost:6767/api" });
+  return new AgentRuntime({ serverUrl: "http://localhost:8080/api" });
 }
 
 // ── OnToolResult.shouldHandoff ──────────────────────────

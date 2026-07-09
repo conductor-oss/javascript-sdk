@@ -600,7 +600,7 @@ describe('Suite 20: Plan-Execute Refs (deterministic)', () => {
   }
 
   async function fetchStepOutputs(executionId: string): Promise<Record<string, unknown>> {
-    const base = (process.env.AGENTSPAN_SERVER_URL ?? 'http://localhost:6767/api')
+    const base = (process.env.AGENTSPAN_SERVER_URL ?? 'http://localhost:8080/api')
       .replace(/\/api$/, '')
       .replace(/\/$/, '');
     const parent = (await (await fetch(`${base}/api/workflow/${executionId}?includeTasks=true`)).json()) as {

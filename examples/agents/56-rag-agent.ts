@@ -8,7 +8,7 @@
  * Requirements:
  *   - Conductor server with RAG system tasks enabled
  *   - A configured vector database (e.g., pgvector)
- *   - AGENTSPAN_SERVER_URL=http://localhost:6767/api as environment variable
+ *   - AGENTSPAN_SERVER_URL=http://localhost:8080/api as environment variable
  *   - AGENTSPAN_LLM_MODEL=openai/gpt-4o-mini as environment variable
  */
 

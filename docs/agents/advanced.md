@@ -10,7 +10,7 @@ Runtime configuration, the control-plane and workflow clients, the deploy/serve/
 import { AgentRuntime } from '@io-orkes/conductor-javascript/agents';
 
 const runtime = new AgentRuntime({
-  serverUrl: 'http://localhost:6767/api',   // AGENTSPAN_SERVER_URL
+  serverUrl: 'http://localhost:8080/api',   // AGENTSPAN_SERVER_URL
   authKey: '…',                             // AGENTSPAN_AUTH_KEY
   authSecret: '…',                          // AGENTSPAN_AUTH_SECRET
   apiKey: '…',                              // AGENTSPAN_API_KEY (pre-minted token)
@@ -27,7 +27,7 @@ There is also a module-level singleton API for convenience — `configure(option
 
 ```ts
 import { configure, run, shutdown } from '@io-orkes/conductor-javascript/agents';
-configure({ serverUrl: 'http://localhost:6767/api' });
+configure({ serverUrl: 'http://localhost:8080/api' });
 const result = await run(agent, 'hi');
 await shutdown();
 ```

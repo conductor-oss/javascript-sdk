@@ -40,7 +40,7 @@ let z: any;
 let serializeLangGraph: any;
 let detectFramework: any;
 
-const SERVER_URL = process.env.AGENTSPAN_SERVER_URL ?? 'http://localhost:6767/api';
+const SERVER_URL = process.env.AGENTSPAN_SERVER_URL ?? 'http://localhost:8080/api';
 const BASE_URL = SERVER_URL.replace(/\/api$/, '');
 
 try {

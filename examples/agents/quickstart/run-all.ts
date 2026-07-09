@@ -42,7 +42,7 @@ const tests: TestCase[] = [
 
 // ── Helpers ─────────────────────────────────────────────
 
-const serverUrl = process.env.AGENTSPAN_SERVER_URL ?? 'http://localhost:6767/api';
+const serverUrl = process.env.AGENTSPAN_SERVER_URL ?? 'http://localhost:8080/api';
 
 async function fetchExecutionTasks(executionId: string): Promise<any> {
   const url = `${serverUrl}/agent/executions/${executionId}/full`;

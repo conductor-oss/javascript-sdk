@@ -17,7 +17,7 @@ import {
 } from '@io-orkes/conductor-javascript/agents';
 
 import { expectMsg } from './helpers';
-const SERVER_URL = process.env.AGENTSPAN_SERVER_URL ?? 'http://localhost:6767/api';
+const SERVER_URL = process.env.AGENTSPAN_SERVER_URL ?? 'http://localhost:8080/api';
 
 async function schedulerAvailable(): Promise<boolean> {
   try {
