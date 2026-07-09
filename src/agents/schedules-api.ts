@@ -60,7 +60,7 @@ async function deleteSchedule(name: string, opts: { runtime?: AgentRuntime } = {
  */
 export async function runNow(
   name: string,
-  opts: { runtime?: AgentRuntime; wait?: false },
+  opts?: { runtime?: AgentRuntime; wait?: false },
 ): Promise<string>;
 export async function runNow(
   name: string,

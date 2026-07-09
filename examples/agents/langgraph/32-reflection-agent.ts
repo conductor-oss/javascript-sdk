@@ -1,0 +1,146 @@
+/**
+ * Reflection Agent -- self-critique and iterative improvement.
+ *
+ * Demonstrates:
+ *   - A generate -> reflect -> improve loop
+ *   - Stopping when the critic judges the output acceptable or after max rounds
+ *   - How to track iteration count in state
+ *   - Practical use case: essay generation with quality self-improvement
+ */
+
+import { StateGraph, START, END, Annotation } from '@langchain/langgraph';
+import { ChatOpenAI } from '@langchain/openai';
+import { HumanMessage, SystemMessage } from '@langchain/core/messages';
+import { AgentRuntime } from '@io-orkes/conductor-javascript/agents';
+
+// ---------------------------------------------------------------------------
+// LLM
+// ---------------------------------------------------------------------------
+const llm = new ChatOpenAI({ model: 'gpt-4o-mini', temperature: 0.3 });
+
+const MAX_ITERATIONS = 3;
+
+// ---------------------------------------------------------------------------
+// State schema
+// ---------------------------------------------------------------------------
+const ReflectionState = Annotation.Root({
+  topic: Annotation<string>({
+    reducer: (_prev: string, next: string) => next ?? _prev,
+    default: () => '',
+  }),
+  draft: Annotation<string>({
+    reducer: (_prev: string, next: string) => next ?? _prev,
+    default: () => '',
+  }),
+  critique: Annotation<string>({
+    reducer: (_prev: string, next: string) => next ?? _prev,
+    default: () => '',
+  }),
+  iterations: Annotation<number>({
+    reducer: (_prev: number, next: number) => next ?? _prev,
+    default: () => 0,
+  }),
+  final_output: Annotation<string>({
+    reducer: (_prev: string, next: string) => next ?? _prev,
+    default: () => '',
+  }),
+});
+
+type State = typeof ReflectionState.State;
+
+// ---------------------------------------------------------------------------
+// Node functions
+// ---------------------------------------------------------------------------
+async function generate(state: State): Promise<Partial<State>> {
+  const iterations = state.iterations || 0;
+  let prompt: string;
+
+  if (iterations === 0) {
+    prompt = `Write a concise, well-structured paragraph about: ${state.topic}`;
+  } else {
+    prompt =
+      `Improve this paragraph about '${state.topic}' based on the critique below.\n\n` +
+      `Current draft:\n${state.draft}\n\n` +
+      `Critique:\n${state.critique}\n\n` +
+      'Return only the improved paragraph.';
+  }
+
+  const response = await llm.invoke([
+    new SystemMessage('You are a skilled writer. Produce clear, engaging prose.'),
+    new HumanMessage(prompt),
+  ]);
+  return { draft: String(response.content).trim(), iterations: iterations + 1 };
+}
+
+async function reflect(state: State): Promise<Partial<State>> {
+  const response = await llm.invoke([
+    new SystemMessage(
+      'You are a rigorous editor. Critique the paragraph on:\n' +
+        '1. Clarity\n2. Accuracy\n3. Engagement\n4. Conciseness\n\n' +
+        "If the paragraph is already excellent, start your response with 'APPROVE'. " +
+        "Otherwise start with 'REVISE' and list specific improvements.",
+    ),
+    new HumanMessage(`Topic: ${state.topic}\n\nParagraph:\n${state.draft}`),
+  ]);
+  return { critique: String(response.content).trim() };
+}
+
+function shouldContinue(state: State): string {
+  if ((state.iterations || 0) >= MAX_ITERATIONS) return 'done';
+  const critique = state.critique || '';
+  if (critique.toUpperCase().startsWith('APPROVE')) return 'done';
+  return 'improve';
+}
+
+function finalize(state: State): Partial<State> {
+  return { final_output: state.draft };
+}
+
+// ---------------------------------------------------------------------------
+// Build the graph
+// ---------------------------------------------------------------------------
+const graph = new StateGraph(ReflectionState)
+  .addNode('generate', generate)
+  .addNode('reflect', reflect)
+  .addNode('finalize', finalize)
+  .addEdge(START, 'generate')
+  .addEdge('generate', 'reflect')
+  .addConditionalEdges('reflect', shouldContinue, {
+    improve: 'generate',
+    done: 'finalize',
+  })
+  .addEdge('finalize', END)
+  .compile({ name: "reflection_agent" });
+
+// Add agentspan metadata for extraction
+(graph as any)._agentspan = {
+  model: 'anthropic/claude-sonnet-4-6',
+  framework: 'langgraph',
+};
+
+const PROMPT = 'the importance of open-source software in modern technology';
+
+// ---------------------------------------------------------------------------
+// Run on agentspan
+// ---------------------------------------------------------------------------
+async function main() {
+  const runtime = new AgentRuntime();
+  try {
+    const result = await runtime.run(graph, PROMPT);
+    console.log('Status:', result.status);
+    result.printResult();
+
+    // Production pattern:
+    // 1. Deploy once during CI/CD:
+    // await runtime.deploy(graph);
+    // CLI alternative:
+    // agentspan deploy --package sdk/typescript/examples/langgraph --agents reflection_agent
+    //
+    // 2. In a separate long-lived worker process:
+    // await runtime.serve(graph);
+  } finally {
+    await runtime.shutdown();
+  }
+}
+
+main().catch(console.error);

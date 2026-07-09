@@ -1,0 +1,73 @@
+/**
+ * Parallel Agents — fan-out / fan-in.
+ *
+ * Demonstrates the parallel strategy where all sub-agents run concurrently
+ * on the same input and their results are aggregated.
+ *
+ * Requirements:
+ *   - Conductor server with LLM support
+ *   - AGENTSPAN_SERVER_URL=http://localhost:6767/api as environment variable
+ *   - AGENTSPAN_LLM_MODEL=openai/gpt-4o-mini as environment variable
+ */
+
+import { Agent, AgentRuntime } from '@io-orkes/conductor-javascript/agents';
+import { llmModel } from './settings';
+
+// -- Specialist analysts -----------------------------------------------------
+
+export const marketAnalyst = new Agent({
+  name: 'market_analyst',
+  model: llmModel,
+  instructions:
+    'You are a market analyst. Analyze the given topic from a market perspective: ' +
+    'market size, growth trends, key players, and opportunities.',
+});
+
+export const riskAnalyst = new Agent({
+  name: 'risk_analyst',
+  model: llmModel,
+  instructions:
+    'You are a risk analyst. Analyze the given topic for risks: ' +
+    'regulatory risks, technical risks, competitive threats, and mitigation strategies.',
+});
+
+export const complianceChecker = new Agent({
+  name: 'compliance',
+  model: llmModel,
+  instructions:
+    'You are a compliance specialist. Check the given topic for compliance considerations: ' +
+    'data privacy, regulatory requirements, and industry standards.',
+});
+
+// -- Parallel analysis -------------------------------------------------------
+
+export const analysis = new Agent({
+  name: 'analysis',
+  model: llmModel,
+  agents: [marketAnalyst, riskAnalyst, complianceChecker],
+  strategy: 'parallel',
+});
+
+async function main() {
+  const runtime = new AgentRuntime();
+  try {
+    const result = await runtime.run(
+    analysis,
+    'Launching an AI-powered healthcare diagnostic tool in the US market',
+    );
+    result.printResult();
+
+    // Production pattern:
+    // 1. Deploy once during CI/CD:
+    // await runtime.deploy(analysis);
+    // CLI alternative:
+    // agentspan deploy --package sdk/typescript/examples --agents analysis
+    //
+    // 2. In a separate long-lived worker process:
+    // await runtime.serve(analysis);
+  } finally {
+    await runtime.shutdown();
+  }
+}
+
+main().catch(console.error);

@@ -14,7 +14,7 @@
  * SDKs.
  *
  * @example
- *   import { Plan, Step, Op, Ref } from "@conductor-oss/conductor-agent-sdk";
+ *   import { Plan, Step, Op, Ref } from "@io-orkes/conductor-javascript/agents";
  *
  *   const plan = new Plan({
  *     steps: [

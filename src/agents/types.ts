@@ -260,7 +260,7 @@ export interface RunOptions {
   /**
    * LLM model hint for framework agents where automatic detection fails.
    * Accepts a model string ('anthropic/claude-sonnet-4-6') or an LLM object (e.g. ChatOpenAI instance).
-   * Required for LangGraph agents that don't use the @conductor-oss/conductor-agent-sdk/langgraph wrapper.
+   * Required for LangGraph agents that don't use the @io-orkes/conductor-javascript/agents/langgraph wrapper.
    */
   model?: unknown;
   /**

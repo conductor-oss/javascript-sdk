@@ -8,7 +8,7 @@
  * Usage:
  *   // BEFORE: import { generateText } from 'ai';
  *   // AFTER:
- *   import { generateText } from '@conductor-oss/conductor-agent-sdk/vercel-ai';
+ *   import { generateText } from '@io-orkes/conductor-javascript/agents/vercel-ai';
  *
  * Everything else in user code stays UNCHANGED.
  */
@@ -25,7 +25,7 @@ async function _loadAI(): Promise<any> {
     return _ai;
   } catch {
     throw new Error(
-      `The 'ai' package is required by @conductor-oss/conductor-agent-sdk/vercel-ai but was not found. ` +
+      `The 'ai' package is required by @io-orkes/conductor-javascript/agents/vercel-ai but was not found. ` +
         `Install it with: npm install ai`,
     );
   }
@@ -253,7 +253,7 @@ export function getAIModule(): Record<string, unknown> {
     return mod;
   } catch {
     throw new Error(
-      `The 'ai' package is required by @conductor-oss/conductor-agent-sdk/vercel-ai but was not found. ` +
+      `The 'ai' package is required by @io-orkes/conductor-javascript/agents/vercel-ai but was not found. ` +
         `Install it with: npm install ai`,
     );
   }

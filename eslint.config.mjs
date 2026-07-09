@@ -52,6 +52,19 @@ export default defineConfig(
     },
   },
   {
+    // Migrated agent examples. Upstream excluded examples/ from linting
+    // entirely; here they lint at repo level minus four rules the ~220
+    // didactic files break en masse (deliberate partial snippets, `any`-typed
+    // agent I/O). Everything else still reports as errors.
+    files: ["examples/agents/**"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-unused-vars": "off",
+      "@typescript-eslint/no-non-null-assertion": "off",
+      "@typescript-eslint/no-empty-function": "off",
+    },
+  },
+  {
     files: ["scripts/**/*.mjs"],
     languageOptions: {
       globals: {

@@ -1,0 +1,98 @@
+/**
+ * 07 - Memory
+ *
+ * Demonstrates ConversationMemory with maxMessages windowing,
+ * and SemanticMemory with InMemoryStore for similarity search.
+ */
+
+import {
+  Agent,
+  AgentRuntime,
+  ConversationMemory,
+  SemanticMemory,
+  InMemoryStore,
+  tool,
+} from '@io-orkes/conductor-javascript/agents';
+
+const MODEL = process.env.AGENTSPAN_LLM_MODEL ?? 'openai/gpt-4o';
+
+// ── ConversationMemory ──────────────────────────────────
+
+const conversationMem = new ConversationMemory({ maxMessages: 20 });
+
+// Pre-populate with some context
+conversationMem.addSystemMessage('You are a helpful research assistant.');
+conversationMem.addUserMessage('I need help researching quantum computing.');
+conversationMem.addAssistantMessage('I can help with that! What specific aspect?');
+
+// ── SemanticMemory with InMemoryStore ───────────────────
+
+const store = new InMemoryStore();
+const semanticMem = new SemanticMemory({ store });
+
+// Index some past articles
+semanticMem.add('Quantum computing uses qubits instead of classical bits.');
+semanticMem.add('Machine learning models can classify images with high accuracy.');
+semanticMem.add('Quantum error correction is essential for practical quantum computers.');
+
+// ── Tool that queries semantic memory ───────────────────
+
+const recallTool = tool(
+  async (args: { query: string }) => {
+    const found = semanticMem.search(args.query, 3);
+    return { results: found };
+  },
+  {
+    name: 'recall_articles',
+    description: 'Search past articles by topic.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'Search query' },
+      },
+      required: ['query'],
+    },
+  },
+);
+
+// ── Agent with memory ───────────────────────────────────
+
+export const researchAgent = new Agent({
+  name: 'research_agent',
+  model: MODEL,
+  instructions: 'Use your memory and recall tool to answer questions.',
+  tools: [recallTool],
+  memory: conversationMem,
+});
+
+async function main() {
+  const runtime = new AgentRuntime();
+  try {
+    const result = await runtime.run(
+    researchAgent,
+    'What do we know about quantum error correction?',
+    );
+    result.printResult();
+
+    // Production pattern:
+    // 1. Deploy once during CI/CD:
+    // await runtime.deploy(researchAgent);
+    // CLI alternative:
+    // agentspan deploy --package sdk/typescript/examples --agents research_agent
+    //
+    // 2. In a separate long-lived worker process:
+    // await runtime.serve(researchAgent);
+  } finally {
+    await runtime.shutdown();
+  }
+}
+
+console.log('Conversation messages:', conversationMem.toChatMessages().length);
+
+const results = semanticMem.searchEntries('quantum error', 2);
+console.log('\nSemantic search results:');
+for (const entry of results) {
+  console.log(`  - ${entry.content}`);
+}
+
+main().catch(console.error);

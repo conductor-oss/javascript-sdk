@@ -1,0 +1,75 @@
+/**
+ * System Prompt -- createReactAgent with a detailed persona via prompt option.
+ *
+ * Demonstrates:
+ *   - Using the prompt parameter on createReactAgent to set a system prompt
+ *   - Creating a specialized persona (Socratic tutor)
+ *   - How the system prompt shapes all LLM responses
+ */
+
+import { createReactAgent } from '@langchain/langgraph/prebuilt';
+import { ChatOpenAI } from '@langchain/openai';
+import { SystemMessage } from '@langchain/core/messages';
+import { AgentRuntime } from '@io-orkes/conductor-javascript/agents';
+
+// ---------------------------------------------------------------------------
+// System prompt (Socratic tutor persona)
+// ---------------------------------------------------------------------------
+const TUTOR_SYSTEM_PROMPT = `You are Socrates, an ancient Greek philosopher and skilled tutor.
+
+Your teaching style:
+- Never give direct answers; instead guide students through questions
+- Use the Socratic method: ask probing questions that lead to insight
+- When a student is close to an answer, acknowledge their progress
+- Celebrate intellectual curiosity
+- Use analogies from everyday ancient Greek life when helpful
+- Speak with wisdom and calm, occasionally referencing your own experiences
+
+Remember: your goal is to help the student discover the answer themselves,
+not to provide it for them.`;
+
+// ---------------------------------------------------------------------------
+// Build the graph
+// ---------------------------------------------------------------------------
+const llm = new ChatOpenAI({ model: 'gpt-4o-mini', temperature: 0.7 });
+const graph = createReactAgent({
+  llm,
+  tools: [],
+  prompt: new SystemMessage(TUTOR_SYSTEM_PROMPT),
+  name: "socratic_tutor",
+});
+
+// Add agentspan metadata for extraction
+(graph as any)._agentspan = {
+  model: 'anthropic/claude-sonnet-4-6',
+  tools: [],
+  instructions: TUTOR_SYSTEM_PROMPT,
+  framework: 'langgraph',
+};
+
+const PROMPT = 'I want to understand why 1 + 1 = 2. Can you just tell me?';
+
+// ---------------------------------------------------------------------------
+// Run on agentspan
+// ---------------------------------------------------------------------------
+async function main() {
+  const runtime = new AgentRuntime();
+  try {
+    const result = await runtime.run(graph, PROMPT);
+    console.log('Status:', result.status);
+    result.printResult();
+
+    // Production pattern:
+    // 1. Deploy once during CI/CD:
+    // await runtime.deploy(graph);
+    // CLI alternative:
+    // agentspan deploy --package sdk/typescript/examples/langgraph --agents system_prompt
+    //
+    // 2. In a separate long-lived worker process:
+    // await runtime.serve(graph);
+  } finally {
+    await runtime.shutdown();
+  }
+}
+
+main().catch(console.error);

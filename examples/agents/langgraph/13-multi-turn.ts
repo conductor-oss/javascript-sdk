@@ -1,0 +1,94 @@
+/**
+ * Multi-Turn Conversation -- MemorySaver + sessionId for continuity.
+ *
+ * Demonstrates:
+ *   - Using MemorySaver checkpointer for persistent conversation history
+ *   - Passing sessionId to runtime.run for scoped memory
+ *   - How different session IDs maintain separate conversation threads
+ *   - A practical use case: interview preparation assistant
+ */
+
+import { MemorySaver } from '@langchain/langgraph';
+import { createReactAgent } from '@langchain/langgraph/prebuilt';
+import { ChatOpenAI } from '@langchain/openai';
+import { AgentRuntime } from '@io-orkes/conductor-javascript/agents';
+
+// ---------------------------------------------------------------------------
+// Build the graph with checkpointer
+// ---------------------------------------------------------------------------
+const llm = new ChatOpenAI({ model: 'gpt-4o-mini', temperature: 0 });
+const checkpointer = new MemorySaver();
+const graph = createReactAgent({
+  llm,
+  tools: [],
+  checkpointer,
+  prompt:
+    'You are an interview preparation coach. ' +
+    'Remember what the user tells you about their background, skills, and target role. ' +
+    'Build on previous messages to give increasingly personalized advice.',
+  name: "interview_coach",
+});
+
+// Add agentspan metadata for extraction
+(graph as any)._agentspan = {
+  model: 'anthropic/claude-sonnet-4-6',
+  tools: [],
+  framework: 'langgraph',
+};
+
+// ---------------------------------------------------------------------------
+// Run on agentspan
+// ---------------------------------------------------------------------------
+async function main() {
+  const SESSION_A = 'candidate-alice';
+  const SESSION_B = 'candidate-bob';
+
+  const runtime = new AgentRuntime();
+  try {
+    console.log("=== Alice's session ===");
+    let result = await runtime.run(
+    graph,
+    "I'm applying for a senior backend engineer role at a fintech startup. " +
+    'I have 5 years of Python experience.',
+    { sessionId: SESSION_A },
+    );
+    result.printResult();
+
+    console.log("\n=== Bob's session (separate memory) ===");
+    result = await runtime.run(
+    graph,
+    'I want to become a product manager. I have a marketing background.',
+    { sessionId: SESSION_B },
+    );
+    result.printResult();
+
+    console.log("\n=== Alice's session — follow-up (remembers context) ===");
+    result = await runtime.run(
+    graph,
+    'What technical topics should I review for my upcoming interviews?',
+    { sessionId: SESSION_A },
+    );
+    result.printResult();
+
+    console.log("\n=== Bob's session — follow-up (remembers context) ===");
+    result = await runtime.run(
+    graph,
+    'What skills gap should I address first?',
+    { sessionId: SESSION_B },
+    );
+    result.printResult();
+
+    // Production pattern:
+    // 1. Deploy once during CI/CD:
+    // await runtime.deploy(graph);
+    // CLI alternative:
+    // agentspan deploy --package sdk/typescript/examples/langgraph --agents multi_turn
+    //
+    // 2. In a separate long-lived worker process:
+    // await runtime.serve(graph);
+  } finally {
+    await runtime.shutdown();
+  }
+}
+
+main().catch(console.error);

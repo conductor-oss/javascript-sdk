@@ -1,0 +1,12 @@
+{
+  "name": "agentspan-examples-vercel-ai",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@io-orkes/conductor-javascript": "file:../../..",
+    "ai": "^4.0.0",
+    "@ai-sdk/openai": "^1.3.0",
+    "zod": "^3.23.0",
+    "dotenv": "^16.0.0"
+  }
+}

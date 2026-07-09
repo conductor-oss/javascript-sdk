@@ -25,6 +25,7 @@
   },
   "exclude": [
     "dist",
-    "src/open-api/spec"
+    "src/open-api/spec",
+    "examples/agents"
   ]
 }

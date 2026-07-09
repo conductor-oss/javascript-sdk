@@ -1,4 +1,4 @@
-// ── Testing framework for @conductor-oss/conductor-agent-sdk ────────────────
+// ── Testing framework for @io-orkes/conductor-javascript/agents ────────────────
 
 // Mock execution
 export type { MockRunOptions } from "./mock.js";

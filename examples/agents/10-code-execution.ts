@@ -1,0 +1,64 @@
+/**
+ * 10 - Code Execution
+ *
+ * Demonstrates LocalCodeExecutor.asTool() attached to an agent.
+ * The agent can execute code to answer questions.
+ */
+
+import {
+  Agent,
+  AgentRuntime,
+  LocalCodeExecutor,
+} from '@io-orkes/conductor-javascript/agents';
+
+const MODEL = process.env.AGENTSPAN_LLM_MODEL ?? 'openai/gpt-4o';
+
+// -- Create a local code executor --
+const executor = new LocalCodeExecutor({ timeout: 10 });
+
+// -- Wrap as a tool --
+const codeTool = executor.asTool('run_code');
+
+// -- Agent with code execution --
+export const codeAgent = new Agent({
+  name: 'code_agent',
+  model: MODEL,
+  instructions:
+    'You can execute code to solve problems. ' +
+    'Use the run_code tool to execute JavaScript code.',
+  tools: [codeTool],
+  codeExecutionConfig: {
+    enabled: true,
+    allowedLanguages: ['javascript', 'python'],
+    timeout: 10,
+  },
+});
+
+async function main() {
+  const runtime = new AgentRuntime();
+  try {
+    const result = await runtime.run(
+    codeAgent,
+    'Calculate the first 10 Fibonacci numbers using code.',
+    );
+    result.printResult();
+
+    // Production pattern:
+    // 1. Deploy once during CI/CD:
+    // await runtime.deploy(codeAgent);
+    // CLI alternative:
+    // agentspan deploy --package sdk/typescript/examples --agents code_agent
+    //
+    // 2. In a separate long-lived worker process:
+    // await runtime.serve(codeAgent);
+  } finally {
+    await runtime.shutdown();
+  }
+}
+
+// Test executor directly
+const directResult = executor.execute('console.log("Hello from code executor!")', 'javascript');
+console.log('Direct execution:', directResult.output);
+console.log('Success:', directResult.success);
+
+main().catch(console.error);

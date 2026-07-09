@@ -8,7 +8,7 @@
  * Usage:
  *   // BEFORE: import { createReactAgent } from '@langchain/langgraph/prebuilt';
  *   // AFTER:
- *   import { createReactAgent } from '@conductor-oss/conductor-agent-sdk/langgraph';
+ *   import { createReactAgent } from '@io-orkes/conductor-javascript/agents/langgraph';
  *
  * Everything else in user code stays UNCHANGED.
  */
@@ -26,7 +26,7 @@ function _loadLangGraph(): Record<string, unknown> {
     return mod;
   } catch {
     throw new Error(
-      `The '@langchain/langgraph' package is required by @conductor-oss/conductor-agent-sdk/langgraph but was not found. ` +
+      `The '@langchain/langgraph' package is required by @io-orkes/conductor-javascript/agents/langgraph but was not found. ` +
         `Install it with: npm install @langchain/langgraph`,
     );
   }

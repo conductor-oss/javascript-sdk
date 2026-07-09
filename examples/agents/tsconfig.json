@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ESNext", "DOM"],
+    "types": ["node"],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "noEmit": true,
+    "paths": {
+      "@io-orkes/conductor-javascript/agents": ["../../src/agents/index.ts"],
+      "@io-orkes/conductor-javascript/agents/langgraph": ["../../src/agents/wrappers/langgraph.ts"],
+      "@io-orkes/conductor-javascript/agents/langchain": ["../../src/agents/wrappers/langchain.ts"],
+      "@io-orkes/conductor-javascript/agents/vercel-ai": ["../../src/agents/wrappers/ai.ts"],
+      "@io-orkes/conductor-javascript/agents/testing": ["../../src/agents/testing/index.ts"],
+      "@io-orkes/conductor-javascript": ["../../index.ts"]
+    }
+  },
+  "include": ["*.ts", "quickstart/**/*.ts", "../../src/agents/optional-peer-modules.d.ts"],
+  "exclude": ["node_modules", "adk", "langgraph", "openai", "vercel-ai"]
+}
