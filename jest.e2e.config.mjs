@@ -13,6 +13,9 @@ export default {
   // Upstream ran 3 vitest forks (credential names are unique per suite; 3
   // keeps server load manageable on the shared SQLite-backed Conductor).
   maxWorkers: 3,
+  // The package.json "jest-junit" block outranks these reporter options, so
+  // the test:agent-e2e script pins JEST_JUNIT_OUTPUT_DIR/NAME env vars
+  // (which outrank everything) to results/junit-e2e.xml.
   reporters: [
     "default",
     ["jest-junit", { outputDirectory: "results", outputName: "junit-e2e.xml" }],
