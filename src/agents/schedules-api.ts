@@ -14,7 +14,7 @@
  */
 
 import { getRuntime, AgentRuntime } from "./runtime.js";
-import type { Schedule as ScheduleClass, ScheduleInfo } from "./schedule.js";
+import type { Schedule as ScheduleClass, ScheduleInfo } from "../sdk/clients/agent/schedule.js";
 import type { AgentResult, Status } from "./types.js";
 import { makeAgentResult, TERMINAL_STATUSES } from "./result.js";
 

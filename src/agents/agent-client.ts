@@ -31,8 +31,8 @@ import { detectFramework } from "./frameworks/detect.js";
 import { serializeFrameworkAgent } from "./frameworks/serializer.js";
 import { serializeLangGraph } from "./frameworks/langgraph-serializer.js";
 import { serializeLangChain } from "./frameworks/langchain-serializer.js";
-import { Schedule, ScheduleClient } from "./schedule.js";
-import type { SchedulerFetcher } from "./schedule.js";
+import { Schedule } from "../sdk/clients/agent/schedule.js";
+import { SchedulerClient } from "../sdk/clients/scheduler/SchedulerClient.js";
 import { WorkflowClient } from "./workflow-client.js";
 import { makeAgentResult, TERMINAL_STATUSES } from "./result.js";
 import { AgentStream } from "./stream.js";
@@ -82,7 +82,7 @@ export class AgentClient {
 
   private _clientPromise?: Promise<ConductorClient>;
   private _workflowClient?: WorkflowClient;
-  private _scheduleClient?: ScheduleClient;
+  private _scheduleClient?: SchedulerClient;
   private readonly serializer: AgentConfigSerializer;
 
   // Cached minted JWT (auth-key/secret path).
@@ -127,13 +127,10 @@ export class AgentClient {
     return this._workflowClient;
   }
 
-  /** Cron schedule lifecycle client (shares this client's HTTP plumbing). */
-  get schedules(): ScheduleClient {
+  /** Cron schedule lifecycle client (shares this client's Conductor client). */
+  get schedules(): SchedulerClient {
     if (!this._scheduleClient) {
-      const fetcher: SchedulerFetcher = {
-        request: (method, path, body) => this._rawRequestUntyped(method, path, body),
-      };
-      this._scheduleClient = new ScheduleClient(fetcher);
+      this._scheduleClient = new SchedulerClient(this.getClient());
     }
     return this._scheduleClient;
   }
@@ -249,7 +246,7 @@ export class AgentClient {
     }
   }
 
-  /** Untyped request (scheduler endpoints sometimes return arrays). */
+  /** Untyped request against the agent control-plane (used by the runtime). */
   async _rawRequestUntyped(method: string, path: string, body?: unknown): Promise<unknown> {
     const url = `${this.config.serverUrl}${path}`;
     const headers: Record<string, string> = {
@@ -397,7 +394,7 @@ export class AgentClient {
    * Deploy *agent* and reconcile its cron *schedules* declaratively.
    *
    * Upserts the listed schedules and prunes the others; `[]` purges all;
-   * `null`/`undefined` leaves them untouched. Reuses the {@link ScheduleClient}.
+   * `null`/`undefined` leaves them untouched. Reuses the {@link SchedulerClient}.
    */
   async schedule(
     agent: Agent | object,

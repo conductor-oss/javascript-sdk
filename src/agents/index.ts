@@ -154,13 +154,13 @@ export { WorkflowClient } from "./workflow-client.js";
 // ── Scheduling ──────────────────────────────────────────
 export {
   Schedule,
-  ScheduleClient,
   ScheduleError,
   ScheduleNameConflict,
   ScheduleNotFound,
   InvalidCronExpression,
-} from "./schedule.js";
-export type { ScheduleOptions, ScheduleInfo, SchedulerFetcher } from "./schedule.js";
+} from "../sdk/clients/agent/schedule.js";
+export type { ScheduleOptions, ScheduleInfo } from "../sdk/clients/agent/schedule.js";
+export { SchedulerClient } from "../sdk/clients/scheduler/SchedulerClient.js";
 import * as schedules from "./schedules-api.js";
 export { schedules };
 

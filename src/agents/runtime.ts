@@ -22,7 +22,8 @@ import { TERMINAL_STATUSES } from "./result.js";
 import type { TerminationCondition } from "./termination.js";
 import type { HandoffContext } from "./handoff.js";
 import { detectFramework } from "./frameworks/detect.js";
-import { Schedule, ScheduleClient } from "./schedule.js";
+import type { Schedule } from "../sdk/clients/agent/schedule.js";
+import type { SchedulerClient } from "../sdk/clients/scheduler/SchedulerClient.js";
 import { AgentClient } from "./agent-client.js";
 import { WorkflowClient } from "./workflow-client.js";
 import { serializeFrameworkAgent } from "./frameworks/serializer.js";
@@ -425,8 +426,8 @@ export class AgentRuntime {
     return info;
   }
 
-  /** `ScheduleClient` — shares the control-plane client's schedule surface. */
-  schedulesClient(): ScheduleClient {
+  /** `SchedulerClient` — shares the control-plane client's Conductor client. */
+  schedulesClient(): SchedulerClient {
     return this.client.schedules;
   }
 

@@ -11,7 +11,7 @@ import { describe, it, expect, beforeAll, beforeEach, afterAll } from '@jest/glo
 import {
   AgentRuntime,
   Schedule,
-  ScheduleClient,
+  SchedulerClient,
   ScheduleNameConflict,
   ScheduleNotFound,
 } from '@io-orkes/conductor-javascript/agents';
@@ -40,7 +40,7 @@ describe('Suite 21: scheduling', () => {
   });
   const agentName = `e2e_ts_sched_noop_${Math.random().toString(36).slice(2, 10)}`;
   let runtime: AgentRuntime;
-  let client: ScheduleClient;
+  let client: SchedulerClient;
 
   beforeAll(async () => {
     runtime = new AgentRuntime();

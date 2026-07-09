@@ -1,7 +1,6 @@
 import { describe, it, expect } from "@jest/globals";
 import {
   Schedule,
-  ScheduleClient,
   ScheduleNameConflict,
   ScheduleNotFound,
   InvalidCronExpression,
@@ -11,8 +10,9 @@ import {
   _fromWorkflowSchedule,
   _checkUniqueNames,
   _translate,
-  type SchedulerFetcher,
-} from "../schedule.js";
+} from "../schedule";
+import { SchedulerClient } from "../../scheduler/SchedulerClient";
+import type { Client } from "../../../../open-api";
 
 describe("Schedule construction", () => {
   it("minimal", () => {
@@ -197,86 +197,109 @@ describe("Error translation", () => {
 
 class RuntimeError extends Error {}
 
-// ── Reconcile (mocked fetcher) ─────────────────────────────────────────
+// ── Reconcile against a store-backed mock client ────────────────────────
 
-function mockFetcher(): { fetcher: SchedulerFetcher; calls: [string, string, unknown][]; store: Map<string, Record<string, unknown>> } {
+interface RawResult {
+  data?: unknown;
+  error?: unknown;
+  response: { ok: boolean; status: number };
+}
+
+function ok(data?: unknown): RawResult {
+  return { data, response: { ok: true, status: 200 } };
+}
+
+/**
+ * Store-backed mock of the hey-api client raw verbs — mimics the server's
+ * schedule CRUD so reconcile()'s upsert/prune behavior is exercised end to
+ * end (keyed by wire name).
+ */
+function mockStoreClient(): {
+  client: Client;
+  calls: [string, string][];
+  store: Map<string, Record<string, unknown>>;
+} {
   const store = new Map<string, Record<string, unknown>>();
-  const calls: [string, string, unknown][] = [];
-  const fetcher: SchedulerFetcher = {
-    async request(method, path, body) {
-      calls.push([method, path, body]);
-      if (method === "POST" && path === "/scheduler/schedules") {
-        const req = body as Record<string, unknown>;
-        store.set(req.name as string, req);
-        return;
-      }
-      if (method === "GET" && path.startsWith("/scheduler/schedules?workflowName=")) {
-        const wf = decodeURIComponent(path.split("=")[1]);
-        return [...store.values()].filter(
-          (r) => (r.startWorkflowRequest as Record<string, unknown>).name === wf,
-        );
-      }
-      if (method === "DELETE" && path.startsWith("/scheduler/schedules/")) {
-        const name = decodeURIComponent(path.split("/").pop()!);
-        store.delete(name);
-        return;
-      }
-      throw new Error(`Unexpected ${method} ${path}`);
+  const calls: [string, string][] = [];
+  const client = {
+    async post(opts: { url: string; body?: unknown }) {
+      calls.push(["POST", opts.url]);
+      const req = opts.body as Record<string, unknown>;
+      store.set(req.name as string, req);
+      return ok();
     },
-  };
-  return { fetcher, calls, store };
+    async get(opts: { url: string; query?: { workflowName?: string } }) {
+      calls.push(["GET", opts.url]);
+      const wf = opts.query?.workflowName;
+      return ok(
+        [...store.values()].filter(
+          (r) => (r.startWorkflowRequest as Record<string, unknown>).name === wf,
+        ),
+      );
+    },
+    async delete(opts: { url: string; path?: { name?: string } }) {
+      calls.push(["DELETE", opts.url]);
+      store.delete(opts.path?.name ?? "");
+      return ok();
+    },
+    async put(opts: { url: string }) {
+      calls.push(["PUT", opts.url]);
+      return ok();
+    },
+  } as unknown as Client;
+  return { client, calls, store };
 }
 
 describe("Reconcile (declarative)", () => {
   it("null is no-op", async () => {
-    const { fetcher, calls, store } = mockFetcher();
+    const { client, calls, store } = mockStoreClient();
     store.set("digest-x", { name: "digest-x", startWorkflowRequest: { name: "digest" } });
-    const client = new ScheduleClient(fetcher);
-    await client.reconcile("digest", null);
+    const scheduler = new SchedulerClient(client);
+    await scheduler.reconcile("digest", null);
     expect(calls.filter((c) => c[0] !== "GET")).toEqual([]);
   });
 
   it("empty list purges", async () => {
-    const { fetcher, store } = mockFetcher();
-    const client = new ScheduleClient(fetcher);
-    await client.save(new Schedule({ name: "a", cron: "* * * * * ?" }), "digest");
-    await client.save(new Schedule({ name: "b", cron: "* * * * * ?" }), "digest");
+    const { client, store } = mockStoreClient();
+    const scheduler = new SchedulerClient(client);
+    await scheduler.save(new Schedule({ name: "a", cron: "* * * * * ?" }), "digest");
+    await scheduler.save(new Schedule({ name: "b", cron: "* * * * * ?" }), "digest");
     expect(store.size).toBe(2);
-    await client.reconcile("digest", []);
+    await scheduler.reconcile("digest", []);
     expect(store.size).toBe(0);
   });
 
   it("upsert and prune", async () => {
-    const { fetcher, store } = mockFetcher();
-    const client = new ScheduleClient(fetcher);
-    await client.save(new Schedule({ name: "a", cron: "0 0 1 * * ?" }), "digest");
-    await client.save(new Schedule({ name: "b", cron: "0 0 2 * * ?" }), "digest");
+    const { client, store } = mockStoreClient();
+    const scheduler = new SchedulerClient(client);
+    await scheduler.save(new Schedule({ name: "a", cron: "0 0 1 * * ?" }), "digest");
+    await scheduler.save(new Schedule({ name: "b", cron: "0 0 2 * * ?" }), "digest");
 
-    await client.reconcile("digest", [
+    await scheduler.reconcile("digest", [
       new Schedule({ name: "a", cron: "0 0 9 * * ?" }),
       new Schedule({ name: "c", cron: "0 0 17 * * ?" }),
     ]);
 
     expect([...store.keys()].sort()).toEqual(["digest-a", "digest-c"]);
-    expect(store.get("digest-a")!.cronExpression).toBe("0 0 9 * * ?");
+    expect(store.get("digest-a")?.cronExpression).toBe("0 0 9 * * ?");
   });
 
   it("only affects this agent's schedules", async () => {
-    const { fetcher, store } = mockFetcher();
-    const client = new ScheduleClient(fetcher);
-    await client.save(new Schedule({ name: "x", cron: "* * * * * ?" }), "digest");
-    await client.save(new Schedule({ name: "x", cron: "* * * * * ?" }), "other");
+    const { client, store } = mockStoreClient();
+    const scheduler = new SchedulerClient(client);
+    await scheduler.save(new Schedule({ name: "x", cron: "* * * * * ?" }), "digest");
+    await scheduler.save(new Schedule({ name: "x", cron: "* * * * * ?" }), "other");
 
-    await client.reconcile("digest", []);
+    await scheduler.reconcile("digest", []);
     expect(store.has("digest-x")).toBe(false);
     expect(store.has("other-x")).toBe(true);
   });
 
   it("duplicate names raise before any IO", async () => {
-    const { fetcher, calls, store } = mockFetcher();
-    const client = new ScheduleClient(fetcher);
+    const { client, calls, store } = mockStoreClient();
+    const scheduler = new SchedulerClient(client);
     await expect(
-      client.reconcile("digest", [
+      scheduler.reconcile("digest", [
         new Schedule({ name: "a", cron: "* * * * * ?" }),
         new Schedule({ name: "a", cron: "0 0 9 * * ?" }),
       ]),

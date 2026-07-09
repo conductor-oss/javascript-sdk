@@ -4,7 +4,7 @@
 import { describe, it, expect, jest } from "@jest/globals";
 import * as schedules from "../schedules-api.js";
 import type { AgentRuntime } from "../runtime.js";
-import type { ScheduleInfo } from "../schedule.js";
+import type { ScheduleInfo } from "../../sdk/clients/agent/schedule.js";
 import type { AgentResult } from "../types.js";
 
 const INFO: ScheduleInfo = {
