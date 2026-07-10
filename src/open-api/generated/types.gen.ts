@@ -2188,6 +2188,12 @@ export type Task = {
     outputData?: {
         [key: string]: unknown;
     };
+    /**
+     * Secret values the server resolved for this task at poll time and delivered on the wire only (never persisted). Populated when the task's TaskDef.runtimeMetadata declares secret names the host resolves from its secret store (conductor-oss PR #1255).
+     */
+    runtimeMetadata?: {
+        [key: string]: string;
+    };
     parentTaskId?: string;
     pollCount?: number;
     queueWaitTime?: number;

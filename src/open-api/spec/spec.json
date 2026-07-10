@@ -16847,6 +16847,13 @@
               "type": "object",
               "additionalProperties": {}
             },
+            "runtimeMetadata": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              },
+              "description": "Secret values the server resolved for this task at poll time and delivered on the wire only (never persisted). Populated when the task's TaskDef.runtimeMetadata declares secret names the host resolves from its secret store (conductor-oss PR #1255)."
+            },
             "parentTaskId": {
               "type": "string"
             },
