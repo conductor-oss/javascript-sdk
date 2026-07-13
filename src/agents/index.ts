@@ -188,6 +188,21 @@ export { guardrail, RegexGuardrail, LLMGuardrail, Guardrail, guardrailsFrom } fr
 export type { MemoryEntry, MemoryStore, SemanticMemoryOptions } from "./memory.js";
 export { ConversationMemory, SemanticMemory, InMemoryStore } from "./memory.js";
 
+// ── OCG-backed long-term memory ─────────────────────────
+export type {
+  OCGMemoryStoreOptions,
+  OCGMemoryInput,
+  FeedbackEvent,
+  FeedbackLinks,
+  MemorySummary,
+} from "./ocg-memory.js";
+export {
+  OCGMemoryStore,
+  buildMemorySummarizer,
+  MEMORY_SUMMARY_SCHEMA,
+  MEMORY_SUMMARIZER_INSTRUCTIONS,
+} from "./ocg-memory.js";
+
 // ── Plans (Strategy.PLAN_EXECUTE typed builders) ────────
 export type {
   GenerateOptions,

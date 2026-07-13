@@ -2,6 +2,9 @@ import { describe, it, expect } from "@jest/globals";
 import { z } from "zod";
 import { AgentConfigSerializer } from "../serializer.js";
 import { Agent, PromptTemplate, scatterGather } from "../agent.js";
+import { OCGMemoryStore } from "../ocg-memory.js";
+import { SemanticMemory } from "../memory.js";
+import type { MemoryStore } from "../memory.js";
 import type { CallbackHandler, TerminationCondition, HandoffCondition } from "../agent.js";
 import {
   tool,
@@ -703,6 +706,79 @@ describe("serializeAgent() — memory", () => {
       ],
       maxMessages: 50,
     });
+  });
+});
+
+// ── Long-term (OCG-backed) memory serialization ────────────
+
+describe("serializeAgent() — longTermMemory", () => {
+  it("serializes OCG-backed semanticMemory to longTermMemory + feedbackSink", () => {
+    const store = new OCGMemoryStore({
+      url: "https://ocg.example.com/",
+      agent: "agent:ce-ticket-resolution",
+      user: "user:alice",
+      scope: "agent",
+      maxResults: 7,
+    });
+    const a = new Agent({
+      name: "ce_agent",
+      model: "openai/gpt-4o",
+      instructions: "Resolve tickets.",
+      semanticMemory: store,
+      memorySummaryModel: "openai/gpt-4o-mini",
+      feedbackSink: () => {},
+    });
+    const config = serializer.serializeAgent(a);
+
+    const ltm = config.longTermMemory as Record<string, unknown>;
+    expect(ltm.ocgUrl).toBe("https://ocg.example.com"); // trailing slash stripped
+    expect(ltm.credential).toBe("OCG_PUBLIC_KEY"); // server-resolvable name, not token
+    expect(ltm.agent).toBe("agent:ce-ticket-resolution");
+    expect(ltm.user).toBe("user:alice");
+    expect(ltm.scope).toBe("agent");
+    expect(ltm.maxResults).toBe(7);
+    expect(ltm.summaryModel).toBe("openai/gpt-4o-mini");
+
+    expect(config.feedbackSink).toEqual({ taskName: "ce_agent_feedback_sink" });
+  });
+
+  it("also accepts a SemanticMemory wrapping an OCG store", () => {
+    const store = new OCGMemoryStore({ url: "https://ocg.example.com", agent: "agent:x" });
+    // OCGMemoryStore is async and does not implement the sync MemoryStore
+    // interface, so the wrap goes through an unknown cast.
+    const sm = new SemanticMemory({ store: store as unknown as MemoryStore, maxResults: 3 });
+    const a = new Agent({ name: "wrapped", model: "openai/gpt-4o", semanticMemory: sm });
+    const config = serializer.serializeAgent(a);
+
+    const ltm = config.longTermMemory as Record<string, unknown>;
+    expect(ltm.ocgUrl).toBe("https://ocg.example.com");
+    expect(ltm.maxResults).toBe(3);
+  });
+
+  it("no semanticMemory -> no longTermMemory / feedbackSink keys", () => {
+    const a = new Agent({ name: "plain", model: "openai/gpt-4o", instructions: "Hi." });
+    const config = serializer.serializeAgent(a);
+    expect(config).not.toHaveProperty("longTermMemory");
+    expect(config).not.toHaveProperty("feedbackSink");
+  });
+
+  it("summaryModel falls back to the agent's own model; no sink -> no feedbackSink", () => {
+    const store = new OCGMemoryStore({ url: "https://ocg.example.com", agent: "agent:x" });
+    const a = new Agent({ name: "a", model: "anthropic/claude", semanticMemory: store });
+    const config = serializer.serializeAgent(a);
+
+    expect((config.longTermMemory as Record<string, unknown>).summaryModel).toBe("anthropic/claude");
+    expect(config).not.toHaveProperty("feedbackSink");
+  });
+
+  it("non-OCG semanticMemory (plain SemanticMemory) emits nothing", () => {
+    const a = new Agent({
+      name: "plain2",
+      model: "openai/gpt-4o",
+      semanticMemory: new SemanticMemory(),
+    });
+    const config = serializer.serializeAgent(a);
+    expect(config).not.toHaveProperty("longTermMemory");
   });
 });
 

@@ -5,6 +5,8 @@ import { ClaudeCode } from "./claude-code.js";
 import type { CliConfigOptions } from "./cli-config.js";
 import { makeCliTool } from "./cli-config.js";
 import { Context } from "./plans.js";
+import type { SemanticMemory } from "./memory.js";
+import type { OCGMemoryStore, FeedbackEvent } from "./ocg-memory.js";
 
 // ── Validation constants ──────────────────────────────────
 
@@ -98,6 +100,27 @@ export interface AgentOptions {
   outputType?: unknown; // ZodSchema or JSON Schema object
   guardrails?: unknown[];
   memory?: ConversationMemory;
+  /**
+   * OCG-backed long-term memory handle. When set to an OCG-backed store, the
+   * server-side compiler auto-injects relevant memories into the prompt before
+   * a run and, after the run, summarizes the conversation into a memory.
+   * Accepts an {@link OCGMemoryStore} directly, or a {@link SemanticMemory}
+   * wrapping one. See `serializer.ts` → `longTermMemory` for the wire contract.
+   */
+  semanticMemory?: SemanticMemory | OCGMemoryStore;
+  /**
+   * Optional model override for the internal conversation summarizer (the
+   * "distiller"). Falls back to the agent's own model when unset. Emitted as
+   * `longTermMemory.summaryModel` on the wire.
+   */
+  memorySummaryModel?: string;
+  /**
+   * Receives the good/bad capability links for a saved conversation memory,
+   * for out-of-band human delivery (e.g. into a Zendesk ticket). The URLs are
+   * NEVER shown to the agent's LLM. Emitted as `feedbackSink` (a WorkerRef) on
+   * the wire so the compiled path can call this sink.
+   */
+  feedbackSink?: (event: FeedbackEvent) => void | Promise<void>;
   maxTurns?: number;
   maxTokens?: number;
   /**
@@ -208,6 +231,12 @@ export class Agent {
   readonly outputType?: unknown;
   readonly guardrails: unknown[];
   readonly memory?: ConversationMemory;
+  /** OCG-backed long-term memory handle (see {@link AgentOptions.semanticMemory}). */
+  readonly semanticMemory?: SemanticMemory | OCGMemoryStore;
+  /** Optional model override for the conversation summarizer. */
+  readonly memorySummaryModel?: string;
+  /** Sink that receives good/bad capability links for saved memories. */
+  readonly feedbackSink?: (event: FeedbackEvent) => void | Promise<void>;
   readonly maxTurns: number;
   readonly maxTokens?: number;
   readonly reasoningEffort?: string;
@@ -277,6 +306,13 @@ export class Agent {
     this.outputType = options.outputType;
     this.guardrails = options.guardrails ?? [];
     this.memory = options.memory;
+    // OCG-backed long-term memory (see agents/ocg-memory.ts). When set, the
+    // server-side compiler auto-injects relevant memories into the prompt before
+    // a run and, after the run, summarizes the conversation into a memory.
+    // feedbackSink, if provided, receives the good/bad capability links.
+    this.semanticMemory = options.semanticMemory;
+    this.memorySummaryModel = options.memorySummaryModel;
+    this.feedbackSink = options.feedbackSink;
     this.maxTurns = options.maxTurns ?? 25;
     this.maxTokens = options.maxTokens;
     this.reasoningEffort = options.reasoningEffort;

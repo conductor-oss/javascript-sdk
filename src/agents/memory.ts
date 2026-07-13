@@ -216,7 +216,8 @@ export interface SemanticMemoryOptions {
  * Supports session-scoped memories and prompt-ready context generation.
  */
 export class SemanticMemory {
-  private store: MemoryStore;
+  /** The backing store. Read by the serializer to detect OCG-backed memory. */
+  readonly store: MemoryStore;
   readonly maxResults: number;
   readonly sessionId?: string;
 
