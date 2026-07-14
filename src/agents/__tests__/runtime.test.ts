@@ -431,6 +431,335 @@ describe("AgentRuntime", () => {
       expect(body.framework).toBe("openai");
     });
   });
+
+  describe("RunSettings (spec R8)", () => {
+    it("run(): full override lands in the start payload", async () => {
+      mockAgentServer("wf-rs-full");
+      const runtime = new AgentRuntime({ serverUrl: "http://localhost:8080/api" });
+      jest.spyOn((runtime as any).workerManager, "startPolling").mockImplementation(() => {});
+      jest.spyOn((runtime as any).workerManager, "stopPolling").mockImplementation(() => {});
+      const { Agent } = await import("../agent.js");
+      const agent = new Agent({ name: "rs_full_agent", model: "gpt-4o", temperature: 0.5 });
+
+      await runtime.run(agent, "test prompt", {
+        runSettings: {
+          model: "anthropic/claude-sonnet-4-6",
+          temperature: 0.9,
+          maxTokens: 2048,
+          reasoningEffort: "high",
+          thinkingBudgetTokens: 1024,
+        },
+      });
+
+      const startCall = (global.fetch as any).mock.calls.find(([url]: [string]) =>
+        url.includes("/agent/start"),
+      );
+      const body = JSON.parse(startCall[1].body as string);
+      expect(body.agentConfig.model).toBe("anthropic/claude-sonnet-4-6");
+      expect(body.agentConfig.temperature).toBe(0.9);
+      expect(body.agentConfig.maxTokens).toBe(2048);
+      expect(body.agentConfig.reasoningEffort).toBe("high");
+      expect(body.agentConfig.thinkingConfig).toEqual({ enabled: true, budgetTokens: 1024 });
+    });
+
+    it("no runSettings → payload equals the agent's own settings", async () => {
+      mockAgentServer("wf-rs-none");
+      const runtime = new AgentRuntime({ serverUrl: "http://localhost:8080/api" });
+      jest.spyOn((runtime as any).workerManager, "startPolling").mockImplementation(() => {});
+      jest.spyOn((runtime as any).workerManager, "stopPolling").mockImplementation(() => {});
+      const { Agent } = await import("../agent.js");
+      const agent = new Agent({ name: "rs_none_agent", model: "gpt-4o", temperature: 0.5 });
+
+      await runtime.run(agent, "test prompt");
+
+      const startCall = (global.fetch as any).mock.calls.find(([url]: [string]) =>
+        url.includes("/agent/start"),
+      );
+      const body = JSON.parse(startCall[1].body as string);
+      expect(body.agentConfig.model).toBe("gpt-4o");
+      expect(body.agentConfig.temperature).toBe(0.5);
+      expect(body.agentConfig.thinkingConfig).toBeUndefined();
+    });
+
+    it("partial override changes only provided fields; temperature: 0 applies", async () => {
+      mockAgentServer("wf-rs-partial");
+      const runtime = new AgentRuntime({ serverUrl: "http://localhost:8080/api" });
+      jest.spyOn((runtime as any).workerManager, "startPolling").mockImplementation(() => {});
+      jest.spyOn((runtime as any).workerManager, "stopPolling").mockImplementation(() => {});
+      const { Agent } = await import("../agent.js");
+      const agent = new Agent({
+        name: "rs_partial_agent",
+        model: "gpt-4o",
+        temperature: 0.5,
+        maxTokens: 100,
+      });
+
+      await runtime.run(agent, "test prompt", { runSettings: { temperature: 0 } });
+
+      const startCall = (global.fetch as any).mock.calls.find(([url]: [string]) =>
+        url.includes("/agent/start"),
+      );
+      const body = JSON.parse(startCall[1].body as string);
+      expect(body.agentConfig.temperature).toBe(0);
+      expect(body.agentConfig.model).toBe("gpt-4o");
+      expect(body.agentConfig.maxTokens).toBe(100);
+    });
+
+    it("start(): forwards runSettings to the same start flow", async () => {
+      mockAgentServer("wf-rs-start");
+      const runtime = new AgentRuntime({ serverUrl: "http://localhost:8080/api" });
+      jest.spyOn((runtime as any).workerManager, "startPolling").mockImplementation(() => {});
+      const { Agent } = await import("../agent.js");
+      const agent = new Agent({ name: "rs_start_agent", model: "gpt-4o" });
+
+      await runtime.start(agent, "test prompt", { runSettings: { model: "openai/gpt-5" } });
+
+      const startCall = (global.fetch as any).mock.calls.find(([url]: [string]) =>
+        url.includes("/agent/start"),
+      );
+      const body = JSON.parse(startCall[1].body as string);
+      expect(body.agentConfig.model).toBe("openai/gpt-5");
+    });
+
+    it("throws on an unknown RunSettings key", async () => {
+      mockAgentServer("wf-rs-unknown");
+      const runtime = new AgentRuntime({ serverUrl: "http://localhost:8080/api" });
+      jest.spyOn((runtime as any).workerManager, "startPolling").mockImplementation(() => {});
+      const { Agent } = await import("../agent.js");
+      const agent = new Agent({ name: "rs_unknown_agent", model: "gpt-4o" });
+
+      await expect(
+        runtime.run(agent, "test prompt", { runSettings: { topP: 0.9 } as any }),
+      ).rejects.toThrow(/Unknown RunSettings key/);
+    });
+
+    it("RunOptions.model is sugar for runSettings.model on the native path", async () => {
+      mockAgentServer("wf-rs-model-sugar");
+      const runtime = new AgentRuntime({ serverUrl: "http://localhost:8080/api" });
+      jest.spyOn((runtime as any).workerManager, "startPolling").mockImplementation(() => {});
+      jest.spyOn((runtime as any).workerManager, "stopPolling").mockImplementation(() => {});
+      const { Agent } = await import("../agent.js");
+      const agent = new Agent({ name: "rs_model_sugar_agent", model: "gpt-4o" });
+
+      await runtime.run(agent, "test prompt", { model: "anthropic/claude-sonnet-4-6" });
+
+      const startCall = (global.fetch as any).mock.calls.find(([url]: [string]) =>
+        url.includes("/agent/start"),
+      );
+      const body = JSON.parse(startCall[1].body as string);
+      expect(body.agentConfig.model).toBe("anthropic/claude-sonnet-4-6");
+    });
+
+    it("explicit runSettings.model wins over RunOptions.model when both are set (native path)", async () => {
+      mockAgentServer("wf-rs-model-precedence");
+      const runtime = new AgentRuntime({ serverUrl: "http://localhost:8080/api" });
+      jest.spyOn((runtime as any).workerManager, "startPolling").mockImplementation(() => {});
+      jest.spyOn((runtime as any).workerManager, "stopPolling").mockImplementation(() => {});
+      const { Agent } = await import("../agent.js");
+      const agent = new Agent({ name: "rs_model_precedence_agent", model: "gpt-4o" });
+
+      await runtime.run(agent, "test prompt", {
+        model: "openai/gpt-5",
+        runSettings: { model: "anthropic/claude-sonnet-4-6" },
+      });
+
+      const startCall = (global.fetch as any).mock.calls.find(([url]: [string]) =>
+        url.includes("/agent/start"),
+      );
+      const body = JSON.parse(startCall[1].body as string);
+      expect(body.agentConfig.model).toBe("anthropic/claude-sonnet-4-6");
+    });
+
+    it("runSettings.model wins over RunOptions.model when resolving the framework path's model option", async () => {
+      mockAgentServer("wf-rs-model-framework");
+      const runtime = new AgentRuntime({ serverUrl: "http://localhost:8080/api" });
+      jest.spyOn((runtime as any).workerManager, "startPolling").mockImplementation(() => {});
+      jest.spyOn((runtime as any).workerManager, "stopPolling").mockImplementation(() => {});
+      const serializeSpy = jest.spyOn(runtime as any, "_serializeFramework");
+
+      const openAiAgent = {
+        name: "rs_framework_agent",
+        instructions: "You are helpful.",
+        model: "gpt-4o",
+        tools: [],
+        handoffs: [],
+      };
+
+      await runtime.run(openAiAgent, "test prompt", {
+        model: "openai/gpt-5",
+        runSettings: { model: "anthropic/claude-sonnet-4-6" },
+      });
+
+      expect(serializeSpy).toHaveBeenCalledWith(
+        openAiAgent,
+        "openai",
+        expect.objectContaining({ model: "anthropic/claude-sonnet-4-6" }),
+      );
+    });
+  });
+
+  describe("AgentHandle.stop() (spec T6)", () => {
+    it("calls client.stop then best-effort client.signal, swallowing signal failures", async () => {
+      mockAgentServer("wf-stop-test");
+      const runtime = new AgentRuntime({ serverUrl: "http://localhost:8080/api" });
+      jest.spyOn((runtime as any).workerManager, "startPolling").mockImplementation(() => {});
+      const stopSpy = jest.spyOn(runtime.client, "stop").mockResolvedValue(undefined);
+      const signalSpy = jest
+        .spyOn(runtime.client, "signal")
+        .mockRejectedValue(new Error("signal failed"));
+
+      const { Agent } = await import("../agent.js");
+      const agent = new Agent({ name: "stop_test_agent", model: "gpt-4o" });
+      const handle = await runtime.start(agent, "test prompt");
+
+      await expect(handle.stop()).resolves.toBeUndefined();
+
+      expect(stopSpy).toHaveBeenCalledWith("wf-stop-test", undefined);
+      expect(signalSpy).toHaveBeenCalledWith("wf-stop-test", "stopped", undefined);
+    });
+
+    it("also wires stop() on framework-agent handles", async () => {
+      mockAgentServer("wf-stop-framework-test");
+      const runtime = new AgentRuntime({ serverUrl: "http://localhost:8080/api" });
+      jest.spyOn((runtime as any).workerManager, "startPolling").mockImplementation(() => {});
+      const stopSpy = jest.spyOn(runtime.client, "stop").mockResolvedValue(undefined);
+      jest.spyOn(runtime.client, "signal").mockResolvedValue(undefined);
+
+      const openAiAgent = {
+        name: "stop_framework_agent",
+        instructions: "You are helpful.",
+        model: "gpt-4o",
+        tools: [],
+        handoffs: [],
+      };
+      const handle = await runtime.start(openAiAgent, "test prompt");
+
+      await handle.stop();
+
+      expect(stopSpy).toHaveBeenCalledWith("wf-stop-framework-test", undefined);
+    });
+  });
+
+  describe("deploy() (spec R9)", () => {
+    it("single-agent form deploys and returns a DeploymentInfo (3 active example calls compile unchanged)", async () => {
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(jsonResponse({ agentName: "a", workflowName: "wf_a" }));
+      const runtime = new AgentRuntime({ serverUrl: "http://localhost:8080/api" });
+      const { Agent } = await import("../agent.js");
+      const agent = new Agent({ name: "a", model: "gpt-4o" });
+
+      const info = await runtime.deploy(agent);
+
+      expect(info).toEqual({ agentName: "a", workflowName: "wf_a" });
+      expect(global.fetch).toHaveBeenCalledWith(
+        "http://localhost:8080/api/agent/deploy",
+        expect.anything(),
+      );
+    });
+
+    it("variadic form deploys each agent and returns an array", async () => {
+      global.fetch = jest.fn().mockResolvedValue(jsonResponse({ agentName: "x" }));
+      const runtime = new AgentRuntime({ serverUrl: "http://localhost:8080/api" });
+      const { Agent } = await import("../agent.js");
+      const a = new Agent({ name: "a", model: "gpt-4o" });
+      const b = new Agent({ name: "b", model: "gpt-4o" });
+
+      const infos = await runtime.deploy(a, b);
+
+      expect(Array.isArray(infos)).toBe(true);
+      expect(infos).toHaveLength(2);
+      const deployCalls = (global.fetch as any).mock.calls.filter(([url]: [string]) =>
+        String(url).includes("/agent/deploy"),
+      );
+      expect(deployCalls).toHaveLength(2);
+    });
+
+    it("single-agent form with {schedules} reconciles via SchedulerClient", async () => {
+      global.fetch = jest.fn().mockResolvedValue(jsonResponse({ agentName: "a" }));
+      const runtime = new AgentRuntime({ serverUrl: "http://localhost:8080/api" });
+      const { Agent } = await import("../agent.js");
+      const agent = new Agent({ name: "a", model: "gpt-4o" });
+      const reconcile = jest.fn().mockResolvedValue(undefined);
+      jest.spyOn(runtime, "schedulesClient").mockReturnValue({ reconcile } as any);
+
+      await runtime.deploy(agent, { schedules: [] });
+
+      expect(reconcile).toHaveBeenCalledWith("a", []);
+    });
+  });
+
+  describe("serve() (spec R9)", () => {
+    it("deploys before starting workers, then returns when blocking:false", async () => {
+      const order: string[] = [];
+      global.fetch = jest.fn().mockImplementation(async (url: string) => {
+        if (String(url).includes("/agent/deploy")) order.push("deploy");
+        return jsonResponse({});
+      });
+      const runtime = new AgentRuntime({ serverUrl: "http://localhost:8080/api" });
+      jest.spyOn((runtime as any).workerManager, "startPolling").mockImplementation(async () => {
+        order.push("startPolling");
+      });
+
+      const { Agent } = await import("../agent.js");
+      const agent = new Agent({ name: "serve_order_agent", model: "gpt-4o" });
+
+      await expect(runtime.serve(agent, { blocking: false })).resolves.toBeUndefined();
+
+      expect(order).toEqual(["deploy", "startPolling"]);
+    });
+
+    it("deploys once per agent when multiple agents are served", async () => {
+      global.fetch = jest.fn().mockResolvedValue(jsonResponse({}));
+      const runtime = new AgentRuntime({ serverUrl: "http://localhost:8080/api" });
+      jest.spyOn((runtime as any).workerManager, "startPolling").mockImplementation(async () => {});
+
+      const { Agent } = await import("../agent.js");
+      const a = new Agent({ name: "serve_multi_a", model: "gpt-4o" });
+      const b = new Agent({ name: "serve_multi_b", model: "gpt-4o" });
+
+      await runtime.serve(a, b, { blocking: false });
+
+      const deployCalls = (global.fetch as any).mock.calls.filter(([url]: [string]) =>
+        String(url).includes("/agent/deploy"),
+      );
+      expect(deployCalls).toHaveLength(2);
+    });
+
+    it("treats a trailing {blocking:false} object as ServeOptions, not a second agent", async () => {
+      global.fetch = jest.fn().mockResolvedValue(jsonResponse({}));
+      const runtime = new AgentRuntime({ serverUrl: "http://localhost:8080/api" });
+      const startPolling = jest
+        .spyOn((runtime as any).workerManager, "startPolling")
+        .mockImplementation(async () => {});
+      const { Agent } = await import("../agent.js");
+      const agent = new Agent({ name: "serve_duck_agent", model: "gpt-4o" });
+
+      await runtime.serve(agent, { blocking: false });
+
+      const deployCalls = (global.fetch as any).mock.calls.filter(([url]: [string]) =>
+        String(url).includes("/agent/deploy"),
+      );
+      expect(deployCalls).toHaveLength(1);
+      expect(startPolling).toHaveBeenCalled();
+    });
+
+    it("does not misclassify a second real Agent as ServeOptions", async () => {
+      global.fetch = jest.fn().mockResolvedValue(jsonResponse({}));
+      const runtime = new AgentRuntime({ serverUrl: "http://localhost:8080/api" });
+      jest.spyOn((runtime as any).workerManager, "startPolling").mockImplementation(async () => {});
+      const { Agent } = await import("../agent.js");
+      const a = new Agent({ name: "serve_real_a", model: "gpt-4o" });
+      const b = new Agent({ name: "serve_real_b", model: "gpt-4o" });
+
+      await runtime.serve(a, b, { blocking: false });
+
+      const deployCalls = (global.fetch as any).mock.calls.filter(([url]: [string]) =>
+        String(url).includes("/agent/deploy"),
+      );
+      expect(deployCalls).toHaveLength(2);
+    });
+  });
 });
 
 // ── Singleton functions ─────────────────────────────────

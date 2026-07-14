@@ -32,6 +32,8 @@ import { serializeFrameworkAgent } from "./frameworks/serializer.js";
 import { serializeLangGraph } from "./frameworks/langgraph-serializer.js";
 import { serializeLangChain } from "./frameworks/langchain-serializer.js";
 import { createSkillWorkers } from "./skill.js";
+import { applyRunSettings } from "./run-settings.js";
+import type { RunSettings } from "./run-settings.js";
 
 /**
  * Callback method → wire position mapping (must match serializer.ts).
@@ -66,7 +68,52 @@ export interface AgentHandle {
   pause(): Promise<void>;
   resume(): Promise<void>;
   cancel(): Promise<void>;
+  stop(): Promise<void>;
   stream(): AgentStream;
+}
+
+// ── serve() options ─────────────────────────────────────
+
+/** Trailing options accepted by `serve(...agents, options?)`. */
+export interface ServeOptions {
+  /** `false` returns once agents are deployed, workers registered, and polling started (default: blocks until SIGINT/SIGTERM). */
+  blocking?: boolean;
+}
+
+const SERVE_OPTIONS_KEYS = new Set(["blocking"]);
+const DEPLOY_OPTS_KEYS = new Set(["schedules"]);
+
+/**
+ * True iff `x` is a plain options object rather than an agent — a native
+ * `Agent` or a framework agent object has far more (or framework-detected)
+ * shape, so `detectFramework` returning non-null and the keys-subset check
+ * both have to hold before we treat a trailing arg as options (design DD10's
+ * misclassification guard).
+ */
+function _isPlainOptionsObject(x: unknown, allowedKeys: Set<string>): boolean {
+  if (x == null || typeof x !== "object" || Array.isArray(x)) return false;
+  if (x instanceof Agent) return false;
+  if (detectFramework(x) !== null) return false;
+  return Object.keys(x).every((k) => allowedKeys.has(k));
+}
+
+function _isServeOptions(x: unknown): x is ServeOptions {
+  return _isPlainOptionsObject(x, SERVE_OPTIONS_KEYS);
+}
+
+function _isDeployOpts(x: unknown): x is { schedules?: Schedule[] | null } {
+  return _isPlainOptionsObject(x, DEPLOY_OPTS_KEYS);
+}
+
+/**
+ * Resolve the effective per-run `RunSettings`, folding `RunOptions.model` in
+ * as `runSettings.model` sugar — an explicit `runSettings.model` wins when
+ * both are set (spec R8).
+ */
+function _resolveRunSettings(options?: RunOptions): RunSettings {
+  const rs = options?.runSettings;
+  const modelFallback = typeof options?.model === "string" ? options.model : undefined;
+  return { ...rs, model: rs?.model ?? modelFallback };
 }
 
 // ── AgentRuntime ────────────────────────────────────────
@@ -141,6 +188,7 @@ export class AgentRuntime {
       media: options?.media,
       idempotencyKey: options?.idempotencyKey,
     });
+    applyRunSettings(payload.agentConfig as Record<string, unknown>, _resolveRunSettings(options));
 
     if (options?.timeoutSeconds !== undefined) {
       payload.timeoutSeconds = options.timeoutSeconds;
@@ -268,6 +316,7 @@ export class AgentRuntime {
       media: options?.media,
       idempotencyKey: options?.idempotencyKey,
     });
+    applyRunSettings(payload.agentConfig as Record<string, unknown>, _resolveRunSettings(options));
 
     if (options?.timeoutSeconds !== undefined) {
       payload.timeoutSeconds = options.timeoutSeconds;
@@ -374,6 +423,17 @@ export class AgentRuntime {
           options?.signal,
         ).then(() => undefined),
 
+      stop: async () => {
+        await this.client.stop(executionId, options?.signal);
+        try {
+          // Best-effort unblock for any pending wait — failures are
+          // swallowed (the stop above already terminated the execution).
+          await this.client.signal(executionId, "stopped", options?.signal);
+        } catch {
+          // Non-fatal.
+        }
+      },
+
       stream: () => {
         const apiBaseUrl = this._agentClient.apiBaseUrlSync();
         return new AgentStream(
@@ -405,7 +465,7 @@ export class AgentRuntime {
   // ── deploy() ──────────────────────────────────────────
 
   /**
-   * Deploy an agent workflow definition.
+   * Deploy one agent, optionally reconciling its cron schedules.
    * Accepts native Agent instances or framework agent objects.
    *
    * @param agent The agent to deploy.
@@ -417,10 +477,40 @@ export class AgentRuntime {
    */
   async deploy(
     agent: Agent | object,
-    opts: { schedules?: Schedule[] | null } = {},
-  ): Promise<DeploymentInfo> {
-    const framework = detectFramework(agent);
+    opts?: { schedules?: Schedule[] | null },
+  ): Promise<DeploymentInfo>;
+  /** Deploy one or more agents (no schedules option in this form). */
+  async deploy(...agents: (Agent | object)[]): Promise<DeploymentInfo[]>;
+  async deploy(
+    first: Agent | object,
+    ...rest: unknown[]
+  ): Promise<DeploymentInfo | DeploymentInfo[]> {
+    // Single-agent form: deploy(agent, opts?) — the schedules-reconciling shape.
+    if (rest.length === 0 || (rest.length === 1 && _isDeployOpts(rest[0]))) {
+      const opts = (rest[0] as { schedules?: Schedule[] | null } | undefined) ?? {};
+      const info = await this._deployViaServer(first);
+      if (opts.schedules !== undefined) {
+        const agentName = (first as Agent).name ?? info.agentName;
+        if (!agentName) {
+          throw new Error("deploy(..., {schedules}) requires the agent to have a name");
+        }
+        await this.schedulesClient().reconcile(agentName, opts.schedules);
+      }
+      return info;
+    }
 
+    // Variadic form: deploy(...agents) — no schedules reconciliation.
+    const agents = [first, ...rest] as (Agent | object)[];
+    const results: DeploymentInfo[] = [];
+    for (const agent of agents) {
+      results.push(await this._deployViaServer(agent));
+    }
+    return results;
+  }
+
+  /** Compile + register one agent on the server (no execution, no workers). Shared by `deploy` and `serve`. */
+  private async _deployViaServer(agent: Agent | object): Promise<DeploymentInfo> {
+    const framework = detectFramework(agent);
     let payload: Record<string, unknown>;
     if (framework !== null) {
       const [rawConfig] = this._serializeFramework(agent, framework);
@@ -428,18 +518,8 @@ export class AgentRuntime {
     } else {
       payload = this.serializer.serialize(agent as Agent);
     }
-
     const response = await this._httpRequest("POST", "/agent/deploy", payload);
-    const info = response as unknown as DeploymentInfo;
-
-    if (opts.schedules !== undefined) {
-      const agentName = (agent as Agent).name ?? info.agentName;
-      if (!agentName) {
-        throw new Error("deploy(..., {schedules}) requires the agent to have a name");
-      }
-      await this.schedulesClient().reconcile(agentName, opts.schedules);
-    }
-    return info;
+    return response as unknown as DeploymentInfo;
   }
 
   /** `SchedulerClient` — shares the control-plane client's Conductor client. */
@@ -473,11 +553,24 @@ export class AgentRuntime {
   // ── serve() ───────────────────────────────────────────
 
   /**
-   * Register workers for the provided agents, start polling, and keep the process alive.
-   * When no agents are provided, starts polling with any workers already registered.
+   * Deploy the provided agents, register their workers, and start polling.
+   * When no agents are provided, starts polling with any workers already
+   * registered. Blocks until SIGINT/SIGTERM by default; pass a trailing
+   * `{blocking: false}` to return once deploy + registration + polling have
+   * started (spec R9).
    */
-  async serve(...agents: (Agent | object)[]): Promise<void> {
+  async serve(...args: (Agent | object | ServeOptions)[]): Promise<void> {
+    let options: ServeOptions = {};
+    let agents = args as (Agent | object)[];
+    const last = args[args.length - 1];
+    if (_isServeOptions(last)) {
+      options = last;
+      agents = args.slice(0, -1) as (Agent | object)[];
+    }
+
     for (const agent of agents) {
+      await this._deployViaServer(agent);
+
       const framework = detectFramework(agent);
       if (framework !== null) {
         const [, workers] = this._serializeFramework(agent, framework);
@@ -491,6 +584,10 @@ export class AgentRuntime {
     }
 
     await this.workerManager.startPolling();
+
+    if (options.blocking === false) {
+      return;
+    }
 
     // Keep process alive until SIGINT/SIGTERM
     return new Promise<void>((resolve) => {
@@ -1415,7 +1512,7 @@ export class AgentRuntime {
   ): Promise<AgentResult> {
     const correlationId = generateCorrelationId();
     const [rawConfig, workers] = this._serializeFramework(agent, frameworkId, {
-      model: options?.model,
+      model: _resolveRunSettings(options).model ?? options?.model,
     });
 
     this._registerExtractedWorkers(workers, options?.credentials);
@@ -1517,7 +1614,7 @@ export class AgentRuntime {
   ): Promise<AgentHandle> {
     const correlationId = generateCorrelationId();
     const [rawConfig, workers] = this._serializeFramework(agent, frameworkId, {
-      model: options?.model,
+      model: _resolveRunSettings(options).model ?? options?.model,
     });
 
     this._registerExtractedWorkers(workers, options?.credentials);
@@ -1612,6 +1709,17 @@ export class AgentRuntime {
           options?.signal,
         ).then(() => undefined),
 
+      stop: async () => {
+        await this.client.stop(executionId, options?.signal);
+        try {
+          // Best-effort unblock for any pending wait — failures are
+          // swallowed (the stop above already terminated the execution).
+          await this.client.signal(executionId, "stopped", options?.signal);
+        } catch {
+          // Non-fatal.
+        }
+      },
+
       stream: () => {
         const apiBaseUrl = this._agentClient.apiBaseUrlSync();
         return new AgentStream(
@@ -1689,13 +1797,17 @@ export function stream(
 }
 
 /**
- * Deploy an agent using the singleton runtime.
+ * Deploy one or more agents using the singleton runtime.
  */
 export function deploy(
   agent: Agent | object,
   opts?: { schedules?: Schedule[] | null },
-): Promise<DeploymentInfo> {
-  return getRuntime().deploy(agent, opts ?? {});
+): Promise<DeploymentInfo>;
+export function deploy(...agents: (Agent | object)[]): Promise<DeploymentInfo[]>;
+export function deploy(...args: unknown[]): Promise<DeploymentInfo | DeploymentInfo[]> {
+  return (
+    getRuntime().deploy as (...a: unknown[]) => Promise<DeploymentInfo | DeploymentInfo[]>
+  )(...args);
 }
 
 /**
@@ -1706,10 +1818,11 @@ export function plan(agent: Agent): Promise<object> {
 }
 
 /**
- * Register workers on the singleton runtime and start polling.
+ * Deploy the provided agents, register workers on the singleton runtime, and
+ * start polling. See {@link AgentRuntime.serve}.
  */
-export function serve(...agents: (Agent | object)[]): Promise<void> {
-  return getRuntime().serve(...agents);
+export function serve(...args: (Agent | object | ServeOptions)[]): Promise<void> {
+  return getRuntime().serve(...args);
 }
 
 /**

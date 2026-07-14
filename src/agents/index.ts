@@ -132,7 +132,7 @@ export type { RespondFn } from "./stream.js";
 export { AgentStream } from "./stream.js";
 
 // ── Runtime ─────────────────────────────────────────────
-export type { AgentHandle } from "./runtime.js";
+export type { AgentHandle, ServeOptions } from "./runtime.js";
 export {
   AgentRuntime,
   configure,
@@ -144,6 +144,10 @@ export {
   serve,
   shutdown,
 } from "./runtime.js";
+
+// ── Run Settings ─────────────────────────────────────────
+export type { RunSettings } from "./run-settings.js";
+export { applyRunSettings } from "./run-settings.js";
 
 // ── Control-plane / Workflow clients ────────────────────
 export type { ClientHandle, AgentClient } from "../sdk/clients/agent/AgentClient.js";

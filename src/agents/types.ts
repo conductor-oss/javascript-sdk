@@ -1,3 +1,5 @@
+import type { RunSettings } from "./run-settings.js";
+
 // ── String union types ────────────────────────────────────
 
 /**
@@ -258,11 +260,22 @@ export interface RunOptions {
   /** AbortSignal for cancellation/timeout. */
   signal?: AbortSignal;
   /**
-   * LLM model hint for framework agents where automatic detection fails.
-   * Accepts a model string ('anthropic/claude-sonnet-4-6') or an LLM object (e.g. ChatOpenAI instance).
-   * Required for LangGraph agents that don't use the @io-orkes/conductor-javascript/agents/langgraph wrapper.
+   * LLM model hint. For framework agents, accepts a model string
+   * ('anthropic/claude-sonnet-4-6') or an LLM object (e.g. ChatOpenAI
+   * instance) — required for LangGraph agents that don't use the
+   * @io-orkes/conductor-javascript/agents/langgraph wrapper. For native
+   * agents, a model string overrides the agent's own model on the wire.
+   * Sugar for `runSettings.model` — an explicit `runSettings.model` wins
+   * when both are set.
    */
   model?: unknown;
+  /**
+   * Per-run LLM overrides (model/temperature/maxTokens/reasoningEffort/
+   * thinkingBudgetTokens) applied to the serialized agent config before
+   * `startAgent`. Only set fields override; unset fields keep the agent's
+   * own values.
+   */
+  runSettings?: RunSettings;
   /**
    * Optional deterministic plan for `Strategy.PLAN_EXECUTE` harnesses.
    * Accepts a typed `Plan` (recommended) or a raw JSON-shaped dict. When
