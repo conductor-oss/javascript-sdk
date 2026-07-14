@@ -3,7 +3,7 @@
   "compilerOptions": {
     "strict": true,
     "lib": [
-      "es2022",
+      "es2023",
       "dom"
     ],
     "noEmit": true,
@@ -14,11 +14,19 @@
     "paths": {
       "@/*": ["src/*"],
       "@open-api/*": ["src/open-api/*"],
-      "@test-utils/*": ["src/integration-tests/utils/*"]
+      "@test-utils/*": ["src/integration-tests/utils/*"],
+      "@io-orkes/conductor-javascript/agents": ["src/agents/index.ts"],
+      "@io-orkes/conductor-javascript/agents/testing": ["src/agents/testing/index.ts"],
+      "@io-orkes/conductor-javascript/agents/vercel-ai": ["src/agents/wrappers/ai.ts"],
+      "@io-orkes/conductor-javascript/agents/langgraph": ["src/agents/wrappers/langgraph.ts"],
+      "@io-orkes/conductor-javascript/agents/langchain": ["src/agents/wrappers/langchain.ts"],
+      "@io-orkes/conductor-javascript": ["index.ts"]
     }
   },
   "exclude": [
     "dist",
-    "src/open-api/spec"
+    "src/open-api/spec",
+    "examples/agents",
+    "e2e/tools/_subgraph-debug.ts"
   ]
 }

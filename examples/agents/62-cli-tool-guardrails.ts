@@ -1,0 +1,89 @@
+/**
+ * 62 - CLI Tool with Guardrails — safe command execution.
+ *
+ * Demonstrates tool-level guardrails on CLI commands. The agent can run
+ * whitelisted commands, but guardrails block dangerous patterns.
+ *
+ * Requirements:
+ *   - Conductor server with LLM support
+ *   - AGENTSPAN_SERVER_URL=http://localhost:8080/api as environment variable
+ *   - AGENTSPAN_LLM_MODEL=openai/gpt-4o-mini as environment variable
+ */
+
+import { Agent, AgentRuntime, RegexGuardrail } from '@io-orkes/conductor-javascript/agents';
+import { llmModel } from './settings';
+
+// -- Guardrails --------------------------------------------------------------
+
+const blockDestructive = new RegexGuardrail({
+  patterns: [
+    'rm\\s+-rf\\s+/',      // rm -rf /
+    'mkfs\\.',              // mkfs.ext4, mkfs.xfs, ...
+    '\\bdd\\s+if=',        // dd if=/dev/zero ...
+  ],
+  mode: 'block',
+  name: 'block_destructive',
+  message: 'Destructive system commands are not allowed.',
+  onFail: 'raise',         // hard stop -- no retry
+});
+
+const reviewSudo = new RegexGuardrail({
+  patterns: ['\\bsudo\\b'],
+  mode: 'block',
+  name: 'review_sudo',
+  message:
+    'Commands requiring sudo are not permitted. ' +
+    'Rewrite the command without elevated privileges.',
+  onFail: 'retry',         // LLM gets another chance
+  maxRetries: 2,
+});
+
+// -- Agent -------------------------------------------------------------------
+
+export const opsAgent = new Agent({
+  name: 'ops_agent',
+  model: llmModel,
+  instructions:
+    'You are a DevOps assistant. Use the run_command tool to help ' +
+    'the user inspect and manage their system. You can list files, ' +
+    'check disk usage, read logs, and run git commands.\n\n' +
+    'IMPORTANT: Never use sudo or destructive commands like rm -rf.',
+  cliConfig: {
+    enabled: true,
+    allowedCommands: ['ls', 'cat', 'df', 'du', 'git', 'ps', 'uname', 'wc'],
+    timeout: 15,
+  },
+  // Guardrails are declared at the agent level; they gate the CLI tool's input.
+  guardrails: [blockDestructive, reviewSudo],
+});
+
+// -- Run ---------------------------------------------------------------------
+
+const prompt = 'Show me the disk usage summary and list files in the current directory.';
+
+async function main() {
+  const runtime = new AgentRuntime();
+  try {
+    console.log('='.repeat(60));
+    console.log('  CLI Tool with Guardrails');
+    console.log('  Allowed: ls, cat, df, du, git, ps, uname, wc');
+    console.log('  Blocked: rm -rf, sudo, mkfs, dd');
+    console.log('='.repeat(60));
+    console.log(`\nPrompt: ${prompt}\n`);
+    const result = await runtime.run(opsAgent, prompt);
+    result.printResult();
+
+    // Production pattern:
+    // 1. Deploy once during CI/CD (optional -- serve() below also deploys):
+    // await runtime.deploy(opsAgent);
+    // CLI alternative:
+    // agentspan deploy --package sdk/typescript/examples --agents ops_agent
+    //
+    // 2. In a separate long-lived worker process (deploys + registers workers + starts polling):
+    // await runtime.serve(opsAgent);
+  } finally {
+    await runtime.shutdown();
+  }
+}
+
+main().catch(console.error);

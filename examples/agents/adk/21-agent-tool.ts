@@ -1,0 +1,152 @@
+/**
+ * Google ADK AgentTool -- agent-as-tool invocation.
+ *
+ * Demonstrates:
+ *   - Using AgentTool to wrap an agent as a callable tool
+ *   - The parent agent's LLM invokes the child agent like a function
+ *   - The child agent runs its own tools and returns the result
+ *   - Unlike subAgents (handoff), AgentTool runs inline and returns
+ *
+ * Architecture:
+ *   manager (parent agent)
+ *     tools:
+ *       - AgentTool(researcher)   <- child agent with its own tools
+ *       - AgentTool(calculator)   <- another child agent
+ *
+ * Requirements:
+ *   - npm install @google/adk zod
+ *   - AGENTSPAN_SERVER_URL for agentspan path
+ */
+
+import { LlmAgent, FunctionTool, AgentTool } from '@google/adk';
+import { z } from 'zod';
+import { AgentRuntime } from '@io-orkes/conductor-javascript/agents';
+
+const model = process.env.AGENTSPAN_LLM_MODEL ?? 'gemini-2.5-flash';
+
+// ── Child agents (each has their own tools) ──────────────────────
+
+const searchKnowledgeBase = new FunctionTool({
+  name: 'search_knowledge_base',
+  description: 'Search an internal knowledge base for information.',
+  parameters: z.object({
+    query: z.string().describe('The search query'),
+  }),
+  execute: async (args: { query: string }) => {
+    const data: Record<string, {
+      summary: string;
+      popularity: string;
+      key_use_cases: string[];
+    }> = {
+      python: {
+        summary: 'Python is a high-level programming language created by Guido van Rossum in 1991.',
+        popularity: 'Most popular language on TIOBE index (2024)',
+        key_use_cases: ['web development', 'data science', 'AI/ML', 'automation'],
+      },
+      rust: {
+        summary: 'Rust is a systems programming language focused on safety and performance.',
+        popularity: 'Most admired language on Stack Overflow survey (2024)',
+        key_use_cases: ['systems programming', 'WebAssembly', 'CLI tools', 'embedded'],
+      },
+    };
+    for (const [key, val] of Object.entries(data)) {
+      if (args.query.toLowerCase().includes(key)) {
+        return { query: args.query, found: true, ...val };
+      }
+    }
+    return { query: args.query, found: false, summary: 'No results found.' };
+  },
+});
+
+export const researcher = new LlmAgent({
+  name: 'researcher',
+  model,
+  instruction:
+    'You are a research assistant. Use the knowledge base tool to find ' +
+    'information and provide concise, factual answers.',
+  tools: [searchKnowledgeBase],
+});
+
+const compute = new FunctionTool({
+  name: 'compute',
+  description: 'Evaluate a mathematical expression.',
+  parameters: z.object({
+    expression: z.string().describe("A math expression like '2 + 3 * 4'"),
+  }),
+  execute: async (args: { expression: string }) => {
+    // Safe subset of math operations
+    const safeMath: Record<string, unknown> = {
+      abs: Math.abs,
+      round: Math.round,
+      min: Math.min,
+      max: Math.max,
+      sqrt: Math.sqrt,
+      pow: Math.pow,
+      PI: Math.PI,
+      E: Math.E,
+    };
+    try {
+      // Simple expression evaluation (for demo purposes)
+      const expr = args.expression
+        .replace(/pi/gi, String(Math.PI))
+        .replace(/e(?![a-z])/gi, String(Math.E));
+      // Use Function constructor for basic math evaluation
+      const result = new Function(`"use strict"; return (${expr})`)();
+      return { expression: args.expression, result };
+    } catch (e: unknown) {
+      return { expression: args.expression, error: String(e) };
+    }
+  },
+});
+
+export const calculator = new LlmAgent({
+  name: 'calculator',
+  model,
+  instruction: 'You are a math assistant. Use the compute tool for calculations.',
+  tools: [compute],
+});
+
+// ── Parent agent with AgentTool wrappers ─────────────────────────
+
+export const manager = new LlmAgent({
+  name: 'manager',
+  model,
+  instruction:
+    'You are a manager agent. You have two specialist agents available as tools:\n' +
+    '- researcher: for looking up information\n' +
+    '- calculator: for math computations\n\n' +
+    'Use the appropriate agent tool to answer the user\'s question. ' +
+    'You can call multiple agent tools if needed.',
+  tools: [
+    new AgentTool({ agent: researcher }),
+    new AgentTool({ agent: calculator }),
+  ],
+});
+
+// ── Run on agentspan ───────────────────────────────────────────────
+
+async function main() {
+  const runtime = new AgentRuntime();
+  try {
+    const result = await runtime.run(
+    manager,
+    'Look up information about Python and Rust, then calculate ' +
+    "what percentage of Python's 4 key use cases overlap with Rust's 4 use cases.",
+    );
+    console.log('Status:', result.status);
+    result.printResult();
+
+    // Production pattern:
+    // 1. Deploy once during CI/CD:
+    // await runtime.deploy(manager);
+    // CLI alternative:
+    // agentspan deploy --package sdk/typescript/examples/adk --agents manager
+    //
+    // 2. In a separate long-lived worker process:
+    // await runtime.serve(manager);
+  } finally {
+    await runtime.shutdown();
+  }
+}
+
+main().catch(console.error);

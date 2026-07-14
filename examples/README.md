@@ -2,6 +2,14 @@
 
 Quick reference for example files demonstrating SDK features.
 
+> **Looking for the durable AI-agent examples?** They live in
+> [`agents/`](agents/) and demonstrate the `@io-orkes/conductor-javascript/agents`
+> layer (`Agent`, `AgentRuntime`, tools, guardrails, handoffs) — run them with
+> `npx tsx examples/agents/01-basic-agent.ts`. The examples in this directory
+> demonstrate the workflow/worker orchestration layer (workflows as code,
+> workers, task handlers). Each layer has its own kitchen sink:
+> `kitchensink.ts` here (workflow DSL) vs `agents/kitchen-sink.ts` (agents).
+
 ## :rocket: Quick Start
 
 ```bash

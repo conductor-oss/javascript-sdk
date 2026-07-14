@@ -436,6 +436,41 @@ describe("handleAuth", () => {
     });
   });
 
+  // ─── getToken() accessor (R2) ──────────────────────────────────────
+
+  describe("getToken() accessor", () => {
+    it("is the same TTL-aware function wired as the request-time auth callback", async () => {
+      mockedGenerateToken.mockResolvedValue(mockSuccess("token-1"));
+
+      const result = await handleAuth(
+        mockClient as unknown as Client, "key-id", "key-secret", 3600000, mockLogger
+      );
+      expect(result).toBeDefined();
+      expect(result!.getToken).toBeInstanceOf(Function);
+
+      // Borrows the same cached token as the auth callback -- no independent mint.
+      expect(await result!.getToken()).toBe("token-1");
+      expect(mockedGenerateToken).toHaveBeenCalledTimes(1);
+    });
+
+    it("refreshes inline past TTL, same as the auth callback", async () => {
+      let callCount = 0;
+      mockedGenerateToken.mockImplementation(async () => {
+        callCount++;
+        return mockSuccess(`token-${callCount}`);
+      });
+
+      const result = await handleAuth(
+        mockClient as unknown as Client, "key-id", "key-secret", 0, mockLogger
+      );
+
+      expect(await result!.getToken()).toBe("token-1");
+      jest.advanceTimersByTime(TOKEN_TTL_MS + 1);
+      expect(await result!.getToken()).toBe("token-2");
+      expect(callCount).toBe(2);
+    });
+  });
+
   // ─── stopBackgroundRefresh ─────────────────────────────────────────
 
   describe("stopBackgroundRefresh", () => {

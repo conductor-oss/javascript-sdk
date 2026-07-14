@@ -27,7 +27,9 @@
       "name": "James Stuart Milne"
     }
   ],
-  "sideEffects": false,
+  "sideEffects": [
+    "./dist/agents/**"
+  ],
   "engines": {
     "node": ">=18"
   },
@@ -40,6 +42,31 @@
       "types": "./dist/index.d.ts",
       "require": "./dist/index.js",
       "import": "./dist/index.mjs"
+    },
+    "./agents": {
+      "types": "./dist/agents/index.d.ts",
+      "require": "./dist/agents/index.js",
+      "import": "./dist/agents/index.mjs"
+    },
+    "./agents/testing": {
+      "types": "./dist/agents/testing/index.d.ts",
+      "require": "./dist/agents/testing/index.js",
+      "import": "./dist/agents/testing/index.mjs"
+    },
+    "./agents/vercel-ai": {
+      "types": "./dist/agents/wrappers/ai.d.ts",
+      "require": "./dist/agents/wrappers/ai.js",
+      "import": "./dist/agents/wrappers/ai.mjs"
+    },
+    "./agents/langgraph": {
+      "types": "./dist/agents/wrappers/langgraph.d.ts",
+      "require": "./dist/agents/wrappers/langgraph.js",
+      "import": "./dist/agents/wrappers/langgraph.mjs"
+    },
+    "./agents/langchain": {
+      "types": "./dist/agents/wrappers/langchain.d.ts",
+      "require": "./dist/agents/wrappers/langchain.js",
+      "import": "./dist/agents/wrappers/langchain.mjs"
     }
   },
   "main": "dist/index.js",
@@ -54,8 +81,10 @@
     "test:integration:oss": "cross-env ORKES_BACKEND_VERSION=5 CONDUCTOR_SERVER_TYPE=oss npm run test:integration:base --",
     "test:integration:v5:batch": "cross-env ORKES_BACKEND_VERSION=5 node scripts/run-integration-batch.mjs",
     "test:integration:v4:batch": "cross-env ORKES_BACKEND_VERSION=4 node scripts/run-integration-batch.mjs",
+    "test:agent-e2e": "cross-env JEST_JUNIT_OUTPUT_DIR=results JEST_JUNIT_OUTPUT_NAME=junit-e2e.xml jest --config jest.e2e.config.mjs --forceExit",
     "ci": "npm run lint && npm run test",
-    "build": "tsup index.ts",
+    "build": "tsup && npm run verify:dist",
+    "verify:dist": "node scripts/verify-dist.mjs",
     "generate-openapi-layer": "openapi-ts",
     "generate-docs": "typedoc --plugin typedoc-plugin-markdown",
     "prepublishOnly": "npm run build"
@@ -67,34 +96,46 @@
     "@types/node": "^22.0.0",
     "@types/uuid": "^9.0.1",
     "cross-env": "^10.1.0",
-    "dotenv": "^16.0.1",
     "eslint": "^9.34.0",
     "jest": "^30.1.3",
     "jest-junit": "^16.0.0",
     "prom-client": "^15.1.3",
     "ts-jest": "^29.4.2",
     "tsup": "^8.5.0",
+    "tsx": "^4.21.0",
     "typedoc": "^0.28.11",
     "typescript": "^5.9.2",
     "typescript-eslint": "^8.41.0",
-    "uuid": "^9.0.0"
+    "uuid": "^9.0.0",
+    "zod": "^3.25.76",
+    "zod-to-json-schema": "^3.23.5"
+  },
+  "peerDependencies": {
+    "@langchain/core": ">=0.2.0",
+    "@langchain/langgraph": ">=0.2.0",
+    "ai": ">=3.0.0",
+    "zod": "^3.22.0",
+    "zod-to-json-schema": "^3.23.0"
+  },
+  "peerDependenciesMeta": {
+    "zod": {
+      "optional": true
+    },
+    "zod-to-json-schema": {
+      "optional": true
+    },
+    "ai": {
+      "optional": true
+    },
+    "@langchain/core": {
+      "optional": true
+    },
+    "@langchain/langgraph": {
+      "optional": true
+    }
   },
   "optionalDependencies": {
     "undici": "^7.16.0"
-  },
-  "tsup": {
-    "target": "node24",
-    "sourcemap": true,
-    "format": [
-      "esm",
-      "cjs"
-    ],
-    "dts": true,
-    "clean": true,
-    "splitting": false,
-    "external": [
-      "undici"
-    ]
   },
   "jest-junit": {
     "outputDirectory": "reports",
@@ -106,6 +147,7 @@
     "titleTemplate": "{title}"
   },
   "dependencies": {
+    "dotenv": "^16.0.1",
     "reflect-metadata": "^0.2.2"
   }
 }

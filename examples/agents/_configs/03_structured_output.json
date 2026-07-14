@@ -1,0 +1,52 @@
+{
+  "external": false,
+  "instructions": "You are a weather reporter. Get the weather and provide a recommendation.",
+  "maxTurns": 25,
+  "model": "anthropic/claude-sonnet-4-6",
+  "name": "weather_reporter",
+  "outputType": {
+    "className": "Output",
+    "schema": {
+      "properties": {
+        "city": {
+          "type": "string"
+        },
+        "condition": {
+          "type": "string"
+        },
+        "recommendation": {
+          "type": "string"
+        },
+        "temperature": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "city",
+        "temperature",
+        "condition",
+        "recommendation"
+      ],
+      "type": "object"
+    }
+  },
+  "timeoutSeconds": 0,
+  "tools": [
+    {
+      "description": "Get current weather data for a city.",
+      "inputSchema": {
+        "properties": {
+          "city": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "city"
+        ],
+        "type": "object"
+      },
+      "name": "get_weather",
+      "toolType": "worker"
+    }
+  ]
+}

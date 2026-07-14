@@ -1,0 +1,200 @@
+/**
+ * 55 - ML Engineering Pipeline — multi-agent ML workflow.
+ *
+ * Architecture:
+ *   mlPipeline (sequential)
+ *     1. dataAnalyst        — Analyze dataset, recommend approaches
+ *     2. modelExploration   — (parallel) 3 model strategies concurrently
+ *     3. evaluator          — Compare and select best model
+ *     4. refinement rounds  — optimizer -> validator x 2 rounds
+ *     5. reporter           — Final summary report
+ *
+ * Requirements:
+ *   - Conductor server
+ *   - AGENTSPAN_SERVER_URL=http://localhost:8080/api as environment variable
+ *   - AGENTSPAN_LLM_MODEL=openai/gpt-4o-mini as environment variable
+ */
+
+import { Agent, AgentRuntime } from '@io-orkes/conductor-javascript/agents';
+import { llmModel } from './settings';
+
+// -- Phase 1: Data Analysis --------------------------------------------------
+
+export const dataAnalyst = new Agent({
+  name: 'data_analyst_55',
+  model: llmModel,
+  instructions:
+    'You are a data scientist performing exploratory data analysis. ' +
+    'Given a dataset description, analyze it and provide:\n' +
+    '1. Key features and their likely importance\n' +
+    '2. Data quality considerations (missing values, outliers, scaling)\n' +
+    '3. Recommended preprocessing steps\n' +
+    '4. Which model families are most promising and why\n\n' +
+    'Be concise and structured. Output a numbered analysis.',
+});
+
+// -- Phase 2: Parallel Model Strategy Exploration ----------------------------
+
+export const linearModeler = new Agent({
+  name: 'linear_modeler_55',
+  model: llmModel,
+  instructions:
+    'You are a machine learning engineer specializing in linear models. ' +
+    'Based on the data analysis in the conversation, propose a linear modeling approach:\n' +
+    '- Model choice (e.g., Ridge, Lasso, ElasticNet, Logistic Regression)\n' +
+    '- Feature engineering strategy\n' +
+    '- Expected strengths and weaknesses\n' +
+    '- Estimated performance range\n' +
+    'Keep it to 4-5 bullet points.',
+});
+
+export const treeModeler = new Agent({
+  name: 'tree_modeler_55',
+  model: llmModel,
+  instructions:
+    'You are a machine learning engineer specializing in tree-based models. ' +
+    'Based on the data analysis in the conversation, propose a tree-based approach:\n' +
+    '- Model choice (e.g., Random Forest, XGBoost, LightGBM, CatBoost)\n' +
+    '- Feature engineering strategy\n' +
+    '- Key hyperparameters to tune\n' +
+    '- Expected strengths and weaknesses\n' +
+    'Keep it to 4-5 bullet points.',
+});
+
+export const nnModeler = new Agent({
+  name: 'nn_modeler_55',
+  model: llmModel,
+  instructions:
+    'You are a machine learning engineer specializing in neural networks. ' +
+    'Based on the data analysis in the conversation, propose a neural network approach:\n' +
+    '- Architecture choice (e.g., MLP, TabNet, FT-Transformer)\n' +
+    '- Input preprocessing and embedding strategy\n' +
+    '- Training considerations (learning rate, batch size, regularization)\n' +
+    '- Expected strengths and weaknesses\n' +
+    'Keep it to 4-5 bullet points.',
+});
+
+export const modelExploration = new Agent({
+  name: 'model_exploration_55',
+  model: llmModel,
+  agents: [linearModeler, treeModeler, nnModeler],
+  strategy: 'parallel',
+});
+
+// -- Phase 3: Evaluation & Selection -----------------------------------------
+
+export const evaluator = new Agent({
+  name: 'evaluator_55',
+  model: llmModel,
+  instructions:
+    'You are a senior ML engineer evaluating model proposals. ' +
+    'Review the three modeling approaches (linear, tree-based, neural network) ' +
+    'from the conversation and:\n' +
+    '1. Compare their expected performance on this specific dataset\n' +
+    '2. Consider training cost, interpretability, and maintenance\n' +
+    '3. Select the BEST approach with a clear justification\n' +
+    '4. Identify the top 3 hyperparameters to tune for the selected model\n\n' +
+    "Output your selection clearly as: 'Selected model: [name]' followed by reasoning.",
+});
+
+// -- Phase 4: Iterative Refinement -------------------------------------------
+
+export const optimizerR1 = new Agent({
+  name: 'optimizer_r1_55',
+  model: llmModel,
+  instructions:
+    'You are a hyperparameter optimization specialist. Based on the selected ' +
+    'model from the conversation:\n' +
+    '1. Suggest specific hyperparameter values to try\n' +
+    '2. Explain the rationale (e.g., reduce overfitting, increase capacity)\n' +
+    '3. Predict the expected improvement',
+});
+
+export const validatorR1 = new Agent({
+  name: 'validator_r1_55',
+  model: llmModel,
+  instructions:
+    "You are a model validation expert. Review the optimizer's suggestions:\n" +
+    '1. Are the hyperparameter choices reasonable?\n' +
+    '2. Is there risk of overfitting or underfitting?\n' +
+    '3. Suggest one additional tweak that could help\n\n' +
+    'Provide brief, actionable feedback.',
+});
+
+export const optimizerR2 = new Agent({
+  name: 'optimizer_r2_55',
+  model: llmModel,
+  instructions:
+    "You are a hyperparameter optimization specialist. Based on the validator's " +
+    'feedback from the previous round:\n' +
+    '1. Refine the hyperparameter values\n' +
+    '2. Explain what changed and why\n' +
+    '3. Predict the expected improvement over the previous round',
+});
+
+export const validatorR2 = new Agent({
+  name: 'validator_r2_55',
+  model: llmModel,
+  instructions:
+    'You are a model validation expert. Review the second round of optimization:\n' +
+    '1. Are the refined hyperparameters an improvement?\n' +
+    '2. Is the model ready for deployment or does it need more tuning?\n' +
+    '3. Give a final recommendation.\n\n' +
+    'Provide brief, actionable feedback.',
+});
+
+// Two rounds: optimizer -> validator -> optimizer -> validator
+const refinementLoop = optimizerR1.pipe(validatorR1).pipe(optimizerR2).pipe(validatorR2);
+
+// -- Phase 5: Final Report ---------------------------------------------------
+
+export const reporter = new Agent({
+  name: 'reporter_55',
+  model: llmModel,
+  instructions:
+    'You are a technical writer producing an ML project summary. ' +
+    'Based on the entire conversation (data analysis, model exploration, ' +
+    'evaluation, and refinement), write a concise final report:\n\n' +
+    '## ML Pipeline Report\n' +
+    '- **Dataset**: Brief description\n' +
+    '- **Selected Model**: Name and rationale\n' +
+    '- **Key Hyperparameters**: Final recommended values\n' +
+    '- **Expected Performance**: Estimated metrics\n' +
+    '- **Next Steps**: 2-3 recommendations for production deployment\n\n' +
+    'Keep the report under 200 words.',
+});
+
+// -- Full Pipeline -----------------------------------------------------------
+
+const mlPipeline = dataAnalyst
+  .pipe(modelExploration)
+  .pipe(evaluator)
+  .pipe(refinementLoop)
+  .pipe(reporter);
+
+async function main() {
+  const runtime = new AgentRuntime();
+  try {
+    const result = await runtime.run(
+    mlPipeline,
+    'Build a model to predict California housing prices. The dataset has 20,640 samples ' +
+    'with 8 features: MedInc, HouseAge, AveRooms, AveBedrms, Population, AveOccup, ' +
+    'Latitude, Longitude. Target: MedianHouseValue (continuous, in $100k units). ' +
+    'Metric: RMSE. Some features have skewed distributions.',
+    );
+    result.printResult();
+
+    // Production pattern:
+    // 1. Deploy once during CI/CD (optional -- serve() below also deploys):
+    // await runtime.deploy(mlPipeline);
+    // CLI alternative:
+    // agentspan deploy --package sdk/typescript/examples --agents data_analyst_55
+    //
+    // 2. In a separate long-lived worker process (deploys + registers workers + starts polling):
+    // await runtime.serve(mlPipeline);
+  } finally {
+    await runtime.shutdown();
+  }
+}
+
+main().catch(console.error);

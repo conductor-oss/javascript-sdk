@@ -1,0 +1,13 @@
+{
+  "name": "agentspan-examples-langgraph",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@io-orkes/conductor-javascript": "file:../../..",
+    "dotenv": "^16.0.0",
+    "@langchain/core": "^0.3.40",
+    "@langchain/langgraph": "^0.2.74",
+    "@langchain/openai": "^0.3.17",
+    "zod": "^3.23.0"
+  }
+}

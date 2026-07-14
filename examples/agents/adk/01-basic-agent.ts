@@ -1,0 +1,50 @@
+/**
+ * Basic Google ADK Agent -- simplest possible agent with instructions.
+ *
+ * Demonstrates:
+ *   - Defining an agent using Google's Agent Development Kit (ADK)
+ *   - Running via Agentspan passthrough
+ *   - The runtime serializes the ADK agent and the server normalizes it
+ *
+ * Requirements:
+ *   - npm install @google/adk zod
+ *   - AGENTSPAN_SERVER_URL for agentspan path
+ */
+
+import { LlmAgent } from '@google/adk';
+import { AgentRuntime } from '@io-orkes/conductor-javascript/agents';
+
+const model = process.env.AGENTSPAN_LLM_MODEL ?? 'gemini-2.5-flash';
+
+export const agent = new LlmAgent({
+  name: 'greeter',
+  model,
+  instruction: 'You are a friendly assistant. Keep your responses concise and helpful.',
+});
+
+// ── Run on agentspan ───────────────────────────────────────────────
+
+async function main() {
+  const runtime = new AgentRuntime();
+  try {
+    const result = await runtime.run(
+    agent,
+    'Say hello and tell me a fun fact about machine learning.',
+    );
+    console.log('Status:', result.status);
+    result.printResult();
+
+    // Production pattern:
+    // 1. Deploy once during CI/CD:
+    // await runtime.deploy(agent);
+    // CLI alternative:
+    // agentspan deploy --package sdk/typescript/examples/adk --agents greeter
+    //
+    // 2. In a separate long-lived worker process:
+    // await runtime.serve(agent);
+  } finally {
+    await runtime.shutdown();
+  }
+}
+
+main().catch(console.error);

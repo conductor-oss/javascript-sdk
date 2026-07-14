@@ -85,3 +85,7 @@ fabric.properties
 .env.development.local
 
 /.idea
+
+# jest-junit output (unit CI uses reports/, agent e2e uses results/)
+reports/
+results/

@@ -1,0 +1,104 @@
+/**
+ * 53 - Agent Lifecycle Callbacks — composable handler classes.
+ *
+ * Demonstrates using CallbackHandler subclasses to hook into agent
+ * and model lifecycle events. Multiple handlers chain per-position
+ * in list order.
+ *
+ * Requirements:
+ *   - Conductor server with callback support
+ *   - AGENTSPAN_SERVER_URL=http://localhost:8080/api as environment variable
+ *   - AGENTSPAN_LLM_MODEL=openai/gpt-4o-mini as environment variable
+ */
+
+import { Agent, AgentRuntime, CallbackHandler, tool } from '@io-orkes/conductor-javascript/agents';
+import { llmModel } from './settings';
+
+// -- Handler 1: Timing -------------------------------------------------------
+
+class TimingHandler extends CallbackHandler {
+  private t0 = 0;
+
+  async onAgentStart(_agentName: string, _prompt: string): Promise<void> {
+    this.t0 = Date.now();
+    console.log('  [timing] Agent started');
+  }
+
+  async onAgentEnd(_agentName: string, _result: unknown): Promise<void> {
+    const elapsed = ((Date.now() - this.t0) / 1000).toFixed(2);
+    console.log(`  [timing] Agent finished -- ${elapsed}s`);
+  }
+}
+
+// -- Handler 2: Logging ------------------------------------------------------
+
+class LoggingHandler extends CallbackHandler {
+  async onModelStart(_agentName: string, messages: unknown[]): Promise<void> {
+    console.log(`  [log] Sending ${(messages ?? []).length} messages to LLM`);
+  }
+
+  async onModelEnd(_agentName: string, response: unknown): Promise<void> {
+    const snippet = String(response ?? '').slice(0, 80);
+    console.log(`  [log] LLM responded: "${snippet}"`);
+  }
+
+  async onToolStart(_agentName: string, toolName: string, _args: unknown): Promise<void> {
+    console.log(`  [log] Tool executing: ${toolName}...`);
+  }
+
+  async onToolEnd(_agentName: string, toolName: string, _result: unknown): Promise<void> {
+    console.log(`  [log] Tool finished: ${toolName}`);
+  }
+}
+
+// -- Tool --------------------------------------------------------------------
+
+const lookupWeather = tool(
+  async (args: { city: string }) => {
+    return { city: args.city, temperature: '22C', condition: 'sunny' };
+  },
+  {
+    name: 'lookup_weather',
+    description: 'Get the current weather for a city.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        city: { type: 'string', description: 'Name of the city' },
+      },
+      required: ['city'],
+    },
+  },
+);
+
+// -- Agent with chained handlers ---------------------------------------------
+
+export const agent = new Agent({
+  name: 'lifecycle_agent_53',
+  model: llmModel,
+  instructions: 'You are a helpful assistant. Use lookup_weather for weather queries.',
+  tools: [lookupWeather],
+  callbacks: [new TimingHandler(), new LoggingHandler()],
+});
+
+// -- Run ---------------------------------------------------------------------
+
+async function main() {
+  const runtime = new AgentRuntime();
+  try {
+    const result = await runtime.run(agent, "What's the weather like in Tokyo?");
+    result.printResult();
+
+    // Production pattern:
+    // 1. Deploy once during CI/CD (optional -- serve() below also deploys):
+    // await runtime.deploy(agent);
+    // CLI alternative:
+    // agentspan deploy --package sdk/typescript/examples --agents lifecycle_agent_53
+    //
+    // 2. In a separate long-lived worker process (deploys + registers workers + starts polling):
+    // await runtime.serve(agent);
+  } finally {
+    await runtime.shutdown();
+  }
+}
+
+main().catch(console.error);

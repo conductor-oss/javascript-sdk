@@ -86,5 +86,25 @@ export const createConductorClient = async (
 
   // Legacy compatibility: Adds resource-based API methods for backward compatibility.
   // The modern API is available directly on openApiClient, but legacy methods are maintained.
-  return addResourcesBackwardCompatibility(openApiClient);
+  const client = addResourcesBackwardCompatibility(openApiClient);
+
+  return Object.assign(client, {
+    /**
+     * The same `X-Authorization` header the standard call path attaches,
+     * exposed for transports that can't go through `client.request` (SSE).
+     * Borrows the client's TTL-aware token — mints/caches nothing of its own.
+     */
+    getAuthenticationHeaders: async (): Promise<Record<string, string> | null> => {
+      const token = await authResult?.getToken();
+      return token ? { "X-Authorization": token } : null;
+    },
+    /**
+     * Stops this client's background token-refresh interval. `handleAuth`'s
+     * handle was previously captured locally and dropped, leaking the
+     * interval for the life of the process.
+     */
+    stopBackgroundRefresh: (): void => {
+      authResult?.stopBackgroundRefresh();
+    },
+  });
 };

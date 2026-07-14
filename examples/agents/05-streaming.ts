@@ -1,0 +1,96 @@
+/**
+ * 05 - Streaming
+ *
+ * Demonstrates runtime.stream() with for-await-of loop
+ * and event type switching.
+ */
+
+import {
+  Agent,
+  AgentRuntime,
+  EventTypes,
+} from '@io-orkes/conductor-javascript/agents';
+
+const MODEL = process.env.AGENTSPAN_LLM_MODEL ?? 'openai/gpt-4o';
+
+export const agent = new Agent({
+  name: 'streaming_agent',
+  model: MODEL,
+  instructions: 'Answer the question thoroughly.',
+});
+
+async function main() {
+  const runtime = new AgentRuntime();
+  try {
+    const result = await runtime.run(agent, 'Explain how quantum computers work.');
+    result.printResult();
+
+    // Production pattern:
+    // 1. Deploy once during CI/CD (optional -- serve() below also deploys):
+    // await runtime.deploy(agent);
+    // CLI alternative:
+    // agentspan deploy --package sdk/typescript/examples --agents streaming_agent
+    //
+    // 2. In a separate long-lived worker process (deploys + registers workers + starts polling):
+    // await runtime.serve(agent);
+
+    // Streaming alternative:
+    // const agentStream = await runtime.stream(
+    // agent,
+    // 'Explain how quantum computers work.',
+    // );
+
+    // console.log(`Execution: ${agentStream.executionId}\n`);
+
+    // for await (const event of agentStream) {
+    // switch (event.type) {
+    // case EventTypes.THINKING:
+    // console.log(`[thinking] ${(event.content ?? '').slice(0, 80)}...`);
+    // break;
+
+    // case EventTypes.TOOL_CALL:
+    // console.log(`[tool_call] ${event.toolName}(${JSON.stringify(event.args)})`);
+    // break;
+
+    // case EventTypes.TOOL_RESULT:
+    // console.log(`[tool_result] ${event.toolName} -> ${String(event.result).slice(0, 80)}`);
+    // break;
+
+    // case EventTypes.HANDOFF:
+    // console.log(`[handoff] -> ${event.target}`);
+    // break;
+
+    // case EventTypes.GUARDRAIL_PASS:
+    // console.log(`[guardrail_pass] ${event.guardrailName}`);
+    // break;
+
+    // case EventTypes.GUARDRAIL_FAIL:
+    // console.log(`[guardrail_fail] ${event.guardrailName}: ${event.content}`);
+    // break;
+
+    // case EventTypes.MESSAGE:
+    // console.log(`[message] ${(event.content ?? '').slice(0, 120)}`);
+    // break;
+
+    // case EventTypes.WAITING:
+    // console.log('[waiting] Approval required');
+    // break;
+
+    // case EventTypes.ERROR:
+    // console.log(`[error] ${event.content}`);
+    // break;
+
+    // case EventTypes.DONE:
+    // console.log('[done] Stream complete');
+    // break;
+    // }
+    // }
+
+    // const result = await agentStream.getResult();
+    // result.printResult();
+  } finally {
+    await runtime.shutdown();
+  }
+}
+
+main().catch(console.error);

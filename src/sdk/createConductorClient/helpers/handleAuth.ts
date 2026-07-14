@@ -11,6 +11,7 @@ import {
 
 export interface HandleAuthResult {
   refreshToken: () => Promise<string | undefined>;
+  getToken: () => Promise<string | undefined>;
   stopBackgroundRefresh: () => void;
 }
 
@@ -144,25 +145,32 @@ export const handleAuth = async (
     return undefined;
   }
 
-  // Set auth as a callback so token is checked before each request
-  openApiClient.setConfig({
-    auth: async () => {
-      if (isOss) return undefined;
-      // If token is close to expiry, refresh inline before the request
-      if (Date.now() - tokenObtainedAt >= TOKEN_TTL_MS) {
-        if (!shouldBackoff()) {
-          try {
-            await getNewTokenGuarded();
-            consecutiveFailures = 0;
-          } catch {
-            consecutiveFailures++;
-            lastRefreshFailureAt = Date.now();
-            logger?.warn?.("Pre-request token refresh failed, using existing token");
-          }
+  /**
+   * TTL-aware token accessor: refreshes inline when the cached token is past
+   * its TTL (respecting backoff), otherwise returns the cached token as-is.
+   * Shared by the request-time `auth` callback and the public `getToken()`
+   * accessor (R2) — neither mints/caches independently of the other.
+   */
+  const getToken = async (): Promise<string | undefined> => {
+    if (isOss) return undefined;
+    if (Date.now() - tokenObtainedAt >= TOKEN_TTL_MS) {
+      if (!shouldBackoff()) {
+        try {
+          await getNewTokenGuarded();
+          consecutiveFailures = 0;
+        } catch {
+          consecutiveFailures++;
+          lastRefreshFailureAt = Date.now();
+          logger?.warn?.("Pre-request token refresh failed, using existing token");
         }
       }
-      return token;
-    },
+    }
+    return token;
+  };
+
+  // Set auth as a callback so token is checked before each request
+  openApiClient.setConfig({
+    auth: getToken,
   });
 
   // Background refresh -- use the shorter of the configured interval and 80% of token TTL
@@ -212,5 +220,5 @@ export const handleAuth = async (
     }
   };
 
-  return { refreshToken, stopBackgroundRefresh };
+  return { refreshToken, getToken, stopBackgroundRefresh };
 };
