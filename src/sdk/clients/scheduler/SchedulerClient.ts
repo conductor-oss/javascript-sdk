@@ -25,11 +25,6 @@ interface RawResult {
   response: Response;
 }
 
-/** Same security metadata the generated `SchedulerResource` methods declare. */
-const X_AUTHORIZATION_SECURITY = [
-  { name: "X-Authorization", type: "apiKey" as const },
-];
-
 function _rawError(res: RawResult): Error & { status: number; body: string } {
   const body =
     typeof res.error === "string"
@@ -470,6 +465,21 @@ export class SchedulerClient {
   // ── Transport helpers ─────────────────────────────────────────────────
 
   /**
+   * Auth header for the raw calls below, borrowed from the shared client's
+   * `getAuthenticationHeaders()` accessor (same TTL-aware token the generated
+   * call path attaches via its `security` metadata). A client without the
+   * accessor or without a token (bare hey-api client / anonymous server)
+   * yields no header — matching the generated path when no `auth` callback
+   * is configured.
+   */
+  private async authHeaders(): Promise<Record<string, string>> {
+    const client = (await this.client()) as Client & {
+      getAuthenticationHeaders?: () => Promise<Record<string, string> | null>;
+    };
+    return (await client.getAuthenticationHeaders?.()) ?? {};
+  }
+
+  /**
    * Per-schedule pause/resume verbs differ by server family: OSS/embedded
    * Conductor maps them PUT-only, Orkes Conductor GET-only. Try PUT first;
    * on HTTP 405 — and only 405 — retry via GET (`reason` is re-applied on
@@ -489,7 +499,7 @@ export class SchedulerClient {
       url: `/api/scheduler/schedules/{name}/${action}`,
       path: { name },
       ...(reason !== undefined ? { query: { reason } } : {}),
-      security: X_AUTHORIZATION_SECURITY,
+      headers: await this.authHeaders(),
       throwOnError: false as const,
     };
     const put = (await client.put(options)) as unknown as RawResult;
@@ -513,14 +523,14 @@ export class SchedulerClient {
     } = {}
   ): Promise<unknown> {
     const client = await this.client();
+    const auth = await this.authHeaders();
     const res = (await client[method]({
       url,
       ...(opts.path ? { path: opts.path } : {}),
       ...(opts.query ? { query: opts.query } : {}),
       ...(opts.body !== undefined
-        ? { body: opts.body, headers: { "Content-Type": "application/json" } }
-        : {}),
-      security: X_AUTHORIZATION_SECURITY,
+        ? { body: opts.body, headers: { "Content-Type": "application/json", ...auth } }
+        : { headers: auth }),
       throwOnError: false,
     })) as unknown as RawResult;
     if (!res.response.ok) throw _rawError(res);

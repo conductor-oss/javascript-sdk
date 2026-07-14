@@ -233,3 +233,57 @@ describe("SchedulerClient promise-based construction", () => {
     expect(client.put).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("SchedulerClient raw-call auth (borrowed from the shared client)", () => {
+  function authedMockClient(token = "jwt-1") {
+    return {
+      ...mockClient(),
+      getAuthenticationHeaders: jest.fn(async () => ({
+        "X-Authorization": token,
+      })),
+    };
+  }
+
+  it("attaches X-Authorization on the PUT and its 405→GET fallback", async () => {
+    const client = authedMockClient();
+    client.put.mockResolvedValueOnce(fail(405));
+
+    await schedulerFor(client).pauseSchedule("s1");
+    expect(client.put.mock.calls[0][0]).toMatchObject({
+      headers: { "X-Authorization": "jwt-1" },
+    });
+    expect(client.get.mock.calls[0][0]).toMatchObject({
+      headers: { "X-Authorization": "jwt-1" },
+    });
+  });
+
+  it("attaches X-Authorization on raw() calls, alongside Content-Type on bodied ones", async () => {
+    const client = authedMockClient();
+    const scheduler = schedulerFor(client);
+
+    client.get.mockResolvedValueOnce(
+      ok({ name: "digest-daily", startWorkflowRequest: { name: "digest" } })
+    );
+    await scheduler.get("digest-daily");
+    expect(client.get.mock.calls[0][0]).toMatchObject({
+      headers: { "X-Authorization": "jwt-1" },
+    });
+
+    await scheduler.save(
+      new Schedule({ name: "daily", cron: "0 0 9 * * ?" }),
+      "digest"
+    );
+    expect(client.post.mock.calls[0][0]).toMatchObject({
+      headers: {
+        "X-Authorization": "jwt-1",
+        "Content-Type": "application/json",
+      },
+    });
+  });
+
+  it("sends no auth header when the client lacks the accessor (anonymous/bare client)", async () => {
+    const client = mockClient();
+    await schedulerFor(client).pauseSchedule("s1");
+    expect(client.put.mock.calls[0][0]).toMatchObject({ headers: {} });
+  });
+});
