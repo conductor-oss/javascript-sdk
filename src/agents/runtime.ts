@@ -14,6 +14,7 @@ import { AgentConfig } from "./config.js";
 import type { AgentConfigOptions } from "./config.js";
 import { Agent } from "./agent.js";
 import type { CallbackHandler } from "./agent.js";
+import type { FeedbackEvent } from "./ocg-memory.js";
 import { AgentConfigSerializer } from "./serializer.js";
 import { getToolDef } from "./tool.js";
 import { WorkerManager } from "./worker.js";
@@ -998,6 +999,16 @@ export class AgentRuntime {
       }
     }
 
+    // Long-term (OCG) memory feedbackSink — the compiled server path hands the
+    // human good/bad capability links to this worker after a conversation
+    // memory is saved, for out-of-band delivery via the agent's sink.
+    if (agent.semanticMemory && typeof agent.feedbackSink === "function") {
+      const taskName = `${agent.name}_feedback_sink`;
+      if (isNeeded(taskName)) {
+        await this._registerFeedbackSinkWorker(agent.name, agent.feedbackSink, domain);
+      }
+    }
+
     // Router (function, not Agent)
     if (agent.router && typeof agent.router === "function") {
       const taskName = `${agent.name}_router_fn`;
@@ -1198,6 +1209,44 @@ export class AgentRuntime {
         return { decision: decision ? "continue" : "stop" };
       } catch {
         return { decision: "continue" };
+      }
+    }, undefined, domain);
+  }
+
+  /**
+   * Register a long-term-memory feedbackSink worker.
+   *
+   * The compiled (server-side) memory path emits a SIMPLE task that, after
+   * saving a conversation memory and minting the signed good/bad capability
+   * URLs, invokes this worker with the FeedbackEvent fields. The worker rebuilds
+   * a {@link FeedbackEvent} and hands it to the user's `feedbackSink`.
+   * Best-effort: failures are swallowed so memory never fails the run.
+   */
+  private async _registerFeedbackSinkWorker(
+    agentName: string,
+    feedbackSink: (event: FeedbackEvent) => void | Promise<void>,
+    domain?: string,
+  ): Promise<void> {
+    const taskName = `${agentName}_feedback_sink`;
+    this.workerManager.addWorker(taskName, async (inputData) => {
+      try {
+        const facts = inputData["facts"];
+        const tags = inputData["tags"];
+        const event: FeedbackEvent = {
+          memoryKey: String(inputData["memory_key"] ?? ""),
+          summary: String(inputData["summary"] ?? ""),
+          facts: Array.isArray(facts) ? (facts as string[]) : [],
+          tags: Array.isArray(tags) ? (tags as string[]) : [],
+          goodUrl: inputData["good_url"] != null ? String(inputData["good_url"]) : undefined,
+          badUrl: inputData["bad_url"] != null ? String(inputData["bad_url"]) : undefined,
+          expiresAt: inputData["expires_at"] != null ? String(inputData["expires_at"]) : undefined,
+          agent: inputData["agent"] != null ? String(inputData["agent"]) : undefined,
+          user: inputData["user"] != null ? String(inputData["user"]) : undefined,
+        };
+        await feedbackSink(event);
+        return { delivered: true };
+      } catch {
+        return { delivered: false };
       }
     }, undefined, domain);
   }

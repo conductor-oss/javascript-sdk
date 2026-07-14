@@ -27,6 +27,30 @@ const CALLBACK_POSITION_MAP: Record<string, string> = {
 // ── Helpers ───────────────────────────────────────────────
 
 /**
+ * Structural shape of an OCG-backed memory store the serializer reads to emit
+ * `longTermMemory`. Duck-typed so the serializer stays decoupled from the
+ * concrete `OCGMemoryStore` class.
+ */
+interface OcgBackedStore {
+  ocgUrl: string;
+  credential: string;
+  agent: string;
+  user?: string;
+  scope: string;
+  maxResults: number;
+}
+
+/** True when `x` looks like an OCG-backed store (has a non-empty `ocgUrl`). */
+function isOcgBackedStore(x: unknown): x is OcgBackedStore {
+  return (
+    x != null &&
+    typeof x === "object" &&
+    typeof (x as Record<string, unknown>).ocgUrl === "string" &&
+    ((x as Record<string, unknown>).ocgUrl as string).length > 0
+  );
+}
+
+/**
  * Omit keys with null or undefined values from an object.
  */
 function omitNulls(obj: Record<string, unknown>): Record<string, unknown> {
@@ -178,9 +202,23 @@ export class AgentConfigSerializer {
       config.guardrails = agent.guardrails.map((g) => this.serializeGuardrail(g));
     }
 
-    // Memory
+    // Memory (short-term conversation)
     if (agent.memory) {
       config.memory = this.serializeMemory(agent.memory);
+    }
+
+    // Long-term (OCG-backed) memory. When present, the server-side compiler
+    // inlines retrieval (pre-loop) + distill/save/feedback (post-loop) steps so
+    // memory works on the deployed/webhook path — and on the client run() path,
+    // since run() sends this same config to the server.
+    const ltm = this.serializeLongTermMemory(agent);
+    if (ltm) {
+      config.longTermMemory = ltm;
+      // feedbackSink delivers the human good/bad capability links out-of-band.
+      // Emit a worker ref so the compiled path can call the local sink worker.
+      if (agent.feedbackSink) {
+        config.feedbackSink = { taskName: `${agent.name}_feedback_sink` };
+      }
     }
 
     // Scalar fields — always emit maxTurns, timeoutSeconds, external (match Python)
@@ -485,6 +523,45 @@ export class AgentConfigSerializer {
       result.maxMessages = memory.maxMessages;
     }
     return result;
+  }
+
+  /**
+   * Serialize an agent's OCG-backed semantic memory to a LongTermMemoryConfig
+   * dict, matching the server's `LongTermMemoryConfig` / `AgentConfig`.
+   *
+   * Returns `undefined` (no-op) unless the agent has a `semanticMemory` whose
+   * store exposes an OCG base url. Reads the OCG instance url, scope owner, user
+   * and scope off the store; the credential is a SERVER-resolvable secret NAME
+   * (e.g. `OCG_PUBLIC_KEY`) — never the raw client token. The summary model
+   * falls back to the agent's own model when not explicitly set.
+   */
+  private serializeLongTermMemory(agent: Agent): Record<string, unknown> | undefined {
+    const sm = agent.semanticMemory;
+    if (!sm) return undefined;
+
+    // The handle is either an OCG store directly, or a SemanticMemory wrapping
+    // one. Only OCG-backed stores compile server-side (need a base url to call).
+    const asRecord = sm as unknown as Record<string, unknown>;
+    const store = isOcgBackedStore(sm)
+      ? sm
+      : isOcgBackedStore(asRecord.store)
+        ? (asRecord.store as OcgBackedStore)
+        : undefined;
+    if (!store) return undefined;
+
+    const maxResults =
+      typeof asRecord.maxResults === "number" ? (asRecord.maxResults as number) : store.maxResults;
+
+    const result: Record<string, unknown> = {
+      ocgUrl: store.ocgUrl,
+      credential: store.credential || "OCG_PUBLIC_KEY",
+      agent: store.agent,
+      scope: store.scope || "agent",
+      maxResults,
+      summaryModel: agent.memorySummaryModel ?? agent.model ?? undefined,
+    };
+    if (store.user) result.user = store.user;
+    return omitNulls(result);
   }
 
   private serializeCallbacks(
