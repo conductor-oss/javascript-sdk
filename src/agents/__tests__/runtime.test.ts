@@ -166,35 +166,32 @@ describe("AgentRuntime", () => {
   });
 
   describe("constructor", () => {
-    it("creates with default config", () => {
+    it("creates with default config (zero-arg — 232 example constructions rely on this)", () => {
       const runtime = new AgentRuntime();
       expect(runtime.config).toBeInstanceOf(AgentConfig);
-      expect(runtime.config.serverUrl).toBe("http://localhost:8080/api");
+      expect(runtime.config.workerThreadCount).toBe(1);
+      expect(runtime.config.autoStartWorkers).toBe(true);
     });
 
-    it("creates with custom config", () => {
-      const runtime = new AgentRuntime({
-        serverUrl: "https://custom.com",
-        apiKey: "my-key",
-      });
-      expect(runtime.config.serverUrl).toBe("https://custom.com/api");
-      expect(runtime.config.apiKey).toBe("my-key");
+    it("settings (2nd param) apply behavior knobs; configuration (1st param) is connection-only", () => {
+      const runtime = new AgentRuntime(
+        { serverUrl: "https://custom.com" },
+        { workerThreadCount: 4, autoStartWorkers: false },
+      );
+      expect(runtime.config.workerThreadCount).toBe(4);
+      expect(runtime.config.autoStartWorkers).toBe(false);
     });
 
-    it("builds Bearer auth headers for apiKey", () => {
-      const runtime = new AgentRuntime({ apiKey: "test-key" });
-      // Access private field indirectly via _httpRequest
-      // We'll test this by checking the runtime was created without error
-      expect(runtime.config.apiKey).toBe("test-key");
-    });
+    it("resolves the connection config against the shared client (verified via _httpRequest URL)", async () => {
+      global.fetch = jest.fn().mockResolvedValue(jsonResponse({}));
+      const runtime = new AgentRuntime({ serverUrl: "https://custom.com" });
 
-    it("builds X-Auth-Key/Secret headers for authKey/authSecret", () => {
-      const runtime = new AgentRuntime({
-        authKey: "key",
-        authSecret: "secret",
-      });
-      expect(runtime.config.authKey).toBe("key");
-      expect(runtime.config.authSecret).toBe("secret");
+      await runtime._httpRequest("GET", "/test");
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        "https://custom.com/api/test",
+        expect.anything(),
+      );
     });
   });
 
@@ -231,30 +228,13 @@ describe("AgentRuntime", () => {
       expect(result).toEqual({});
     });
 
-    it("sends an explicit apiKey as X-Authorization (Orkes contract)", async () => {
-      global.fetch = jest.fn().mockResolvedValue(jsonResponse({}));
-
-      const runtime = new AgentRuntime({ apiKey: "test-api-key" });
-      await runtime._httpRequest("POST", "/agent/start", { prompt: "hi" });
-
-      expect(global.fetch).toHaveBeenCalledWith(
-        "http://localhost:8080/api/agent/start",
-        expect.objectContaining({
-          method: "POST",
-          headers: expect.objectContaining({
-            "X-Authorization": "test-api-key",
-          }),
-        }),
-      );
-    });
-
-    it("mints a JWT from authKey/authSecret and sends X-Authorization", async () => {
+    it("mints a JWT from keyId/keySecret and sends X-Authorization", async () => {
       mockedGenerateToken.mockResolvedValue(tokenSuccess("minted-jwt"));
       global.fetch = jest.fn().mockResolvedValue(jsonResponse({}));
 
       const runtime = new AgentRuntime({
-        authKey: "my-auth-key",
-        authSecret: "my-auth-secret",
+        keyId: "my-auth-key",
+        keySecret: "my-auth-secret",
       });
 
       await runtime._httpRequest("GET", "/test");
@@ -477,12 +457,9 @@ describe("Singleton functions", () => {
   });
 
   it("configure creates a new singleton runtime", () => {
-    const runtime = configure({
-      serverUrl: "https://singleton.com",
-      apiKey: "singleton-key",
-    });
+    const runtime = configure({ serverUrl: "https://singleton.com" }, { workerThreadCount: 2 });
     expect(runtime).toBeInstanceOf(AgentRuntime);
-    expect(runtime.config.serverUrl).toBe("https://singleton.com/api");
+    expect(runtime.config.workerThreadCount).toBe(2);
   });
 
   it("run is a function", () => {

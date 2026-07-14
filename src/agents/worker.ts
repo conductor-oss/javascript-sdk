@@ -1,5 +1,6 @@
-import { createConductorClient, TaskManager, NonRetryableException } from "../sdk";
+import { TaskManager, NonRetryableException } from "../sdk";
 import type { ConductorWorker } from "../sdk";
+import type { ConductorClient } from "../sdk/clients/agent/AgentClient.js";
 import type { Task, TaskResult } from "../open-api";
 import type { ToolContext } from "./types.js";
 import { TerminalToolError } from "./errors.js";
@@ -235,25 +236,25 @@ interface PendingWorker {
  * each worker's ``execute()`` callback.
  */
 export class WorkerManager {
-  readonly serverUrl: string;
-  readonly headers: Record<string, string>;
   readonly pollIntervalMs: number;
-  /** Optional async provider for auth headers (e.g. minted Orkes JWT). */
-  private readonly headersProvider?: () => Promise<Record<string, string>>;
+  readonly concurrency: number;
+  private readonly getClient: () => Promise<ConductorClient>;
 
   private pendingWorkers: PendingWorker[] = [];
   private taskManager: TaskManager | null = null;
+  /**
+   * Server root (with `/api`) resolved from the shared client, for
+   * `resolveCredentials`'s raw fetch (pre-S4 pull path). `headers` stays `{}`
+   * — the pull path authenticates via the execution token in its body, not
+   * headers (unchanged from the prior behavior).
+   */
+  private _serverUrl = "http://localhost:8080/api";
+  private readonly headers: Record<string, string> = {};
 
-  constructor(
-    serverUrl: string,
-    headers: Record<string, string>,
-    pollIntervalMs = 100,
-    headersProvider?: () => Promise<Record<string, string>>,
-  ) {
-    this.serverUrl = serverUrl;
-    this.headers = headers;
+  constructor(getClient: () => Promise<ConductorClient>, pollIntervalMs = 100, concurrency = 1) {
+    this.getClient = getClient;
     this.pollIntervalMs = pollIntervalMs;
-    this.headersProvider = headersProvider;
+    this.concurrency = concurrency;
   }
 
   /**
@@ -271,39 +272,17 @@ export class WorkerManager {
   }
 
   /**
-   * Create conductor client, build workers, start polling.
+   * Build workers, start polling — on the shared control-plane
+   * {@link ConductorClient} (spec R5: one client, both planes; no client of
+   * its own, no auth plumbing, no `CONDUCTOR_SERVER_URL` env clobber).
    */
   async startPolling(): Promise<void> {
     await this.stopPolling();
     if (this.pendingWorkers.length === 0) return;
 
-    // Conductor SDK reads CONDUCTOR_SERVER_URL env var with priority over
-    // config.serverUrl.  Override it so the SDK uses our configured URL
-    // (from AgentConfig, which reads AGENTSPAN_SERVER_URL).
-    const baseUrl = this.serverUrl.replace(/\/api\/?$/, "");
-    process.env.CONDUCTOR_SERVER_URL = baseUrl;
-
-    // Resolve auth headers per-request: the provider (when present) mints/
-    // caches an Orkes JWT (`X-Authorization`) and refreshes it near expiry.
-    // Falls back to the static headers passed at construction.
-    const resolveHeaders = async (): Promise<Record<string, string>> =>
-      this.headersProvider ? await this.headersProvider() : this.headers;
-
-    const client = await createConductorClient(
-      { serverUrl: baseUrl, disableHttp2: true },
-      async (url: string | URL | Request, init?: RequestInit) => {
-        const authHeaders = await resolveHeaders();
-        // Conductor SDK passes Request objects — inject auth headers.
-        if (url instanceof Request) {
-          const h = new Headers(url.headers);
-          for (const [k, v] of Object.entries(authHeaders)) h.set(k, v);
-          return globalThis.fetch(new Request(url, { headers: h }));
-        }
-        const h = new Headers(init?.headers);
-        for (const [k, v] of Object.entries(authHeaders)) h.set(k, v);
-        return globalThis.fetch(url, { ...init, headers: h });
-      },
-    );
+    const client = await this.getClient();
+    const baseUrl = (client.getConfig().baseUrl as string | undefined) ?? "http://localhost:8080";
+    this._serverUrl = `${baseUrl}/api`;
 
     const workers = this.pendingWorkers.map((pw) => this._wrapWorker(pw));
     this.taskManager = new TaskManager(client, workers, {
@@ -329,11 +308,12 @@ export class WorkerManager {
    * credential injection, state capture, error mapping.
    */
   private _wrapWorker(pw: PendingWorker): ConductorWorker {
-    const { serverUrl, headers } = this;
+    const serverUrl = this._serverUrl;
+    const { headers, concurrency } = this;
     const worker: ConductorWorker & { leaseExtendEnabled?: boolean } = {
       taskDefName: pw.taskName,
       pollInterval: this.pollIntervalMs,
-      concurrency: 1,
+      concurrency,
       leaseExtendEnabled: true,
       ...(pw.domain ? { domain: pw.domain } : {}),
 

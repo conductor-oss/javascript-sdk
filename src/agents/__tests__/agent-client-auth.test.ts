@@ -129,8 +129,8 @@ describe("OrkesAgentClient auth (borrows the shared client's R2 accessor)", () =
 
     const client = new OrkesAgentClient({
       serverUrl: "http://localhost:8080/api",
-      authKey: "KEY",
-      authSecret: "SECRET",
+      keyId: "KEY",
+      keySecret: "SECRET",
     });
 
     await client.startAgent({ prompt: "hi" });

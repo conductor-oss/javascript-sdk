@@ -74,7 +74,7 @@ export class OrkesClients {
    * for `OrkesClients.from(...)`).
    */
   getAgentClient(): AgentClient {
-    return new OrkesAgentClient({ client: this._client as ConductorClient });
+    return new OrkesAgentClient(this._client as ConductorClient);
   }
 
   /**
@@ -83,7 +83,7 @@ export class OrkesClients {
    * general workflow operations use `getWorkflowClient()` (WorkflowExecutor).
    */
   getAgentWorkflowClient(): AgentWorkflowClient {
-    return new OrkesAgentClient({ client: this._client as ConductorClient }).workflows;
+    return new OrkesAgentClient(this._client as ConductorClient).workflows;
   }
 
   getSecretClient(): SecretClient {

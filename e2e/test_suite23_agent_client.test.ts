@@ -90,6 +90,8 @@ describe('Suite 23: AgentClient / WorkflowClient', () => {
     expect(runtime.client).toBeInstanceOf(OrkesAgentClient);
     expect(runtime.workflows).toBeInstanceOf(WorkflowClient);
     // The runtime's workflow accessor is the client's workflow client.
-    expect(runtime.workflows).toBe(runtime.client.workflows);
+    // (`runtime.client` is the narrow AgentClient interface — spec R1 surface
+    // — so the concrete-class-only `.workflows` needs a cast here.)
+    expect(runtime.workflows).toBe((runtime.client as OrkesAgentClient).workflows);
   });
 });

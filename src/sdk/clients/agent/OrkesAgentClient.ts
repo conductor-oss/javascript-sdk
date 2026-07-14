@@ -22,10 +22,9 @@
  */
 
 import { createConductorClient } from "../../createConductorClient";
+import type { OrkesApiConfig } from "../../types";
 import type { AgentResult, AgentStatus, DeploymentInfo, RunOptions } from "../../../agents/types.js";
 import { AgentAPIError, AgentNotFoundError } from "../../../agents/errors.js";
-import { AgentConfig } from "../../../agents/config.js";
-import type { AgentConfigOptions } from "../../../agents/config.js";
 import { Agent } from "../../../agents/agent.js";
 import { AgentConfigSerializer } from "../../../agents/serializer.js";
 import { detectFramework } from "../../../agents/frameworks/detect.js";
@@ -47,21 +46,14 @@ const AGENT_SECURITY = [{ name: "X-Authorization", type: "apiKey" as const }];
 /** Default client-side ceiling for {@link OrkesAgentClient.run}/`wait()` when no `timeoutSeconds` is given. */
 const DEFAULT_WAIT_MS = 600_000; // 10 min — mirrors the C# SDK's HttpClient cap
 
-/**
- * {@link OrkesAgentClient} construction options: the agent config plus an
- * optional pre-built Conductor client to reuse (as handed out by
- * `OrkesClients`). The injected client must originate from
- * `createConductorClient` — it carries the `*Resource` members the workflow
- * client reads and the R2 auth accessors.
- */
-export type AgentClientOptions = AgentConfigOptions & {
-  client?: ConductorClient;
-};
+/** True when `x` is an already-built {@link ConductorClient} rather than a config to build one from. */
+function isConductorClient(x: unknown): x is ConductorClient {
+  return typeof x === "object" && x !== null && typeof (x as { request?: unknown }).request === "function";
+}
 
 export class OrkesAgentClient implements AgentClient {
-  readonly config: AgentConfig;
-
   private _clientPromise?: Promise<ConductorClient>;
+  private readonly _connectionConfig?: OrkesApiConfig;
   private _workflowClient?: WorkflowClient;
   private _scheduleClient?: SchedulerClient;
   private readonly serializer: AgentConfigSerializer;
@@ -71,61 +63,49 @@ export class OrkesAgentClient implements AgentClient {
   /**
    * The resolved client's real `baseUrl` (set once `getClient()` settles).
    * `ClientHandle.stream()` is synchronous by contract, so it reads this
-   * cache rather than `this.config.serverUrl` — which, on the injected-client
-   * path (`OrkesClients`), may not match the actual client's host.
+   * cache rather than re-deriving a URL from config.
    */
   private _resolvedBaseUrl?: string;
 
-  constructor(options?: AgentClientOptions | AgentConfig) {
-    if (options instanceof AgentConfig) {
-      this.config = options;
-      this._ownsClient = true;
-    } else {
-      const { client, ...configOptions } = options ?? {};
-      this.config = new AgentConfig(configOptions);
-      this._ownsClient = !client;
-      // Pre-seed the memoized promise; getClient() then reuses the injected
-      // client instead of building its own via createConductorClient.
-      if (client) this._clientPromise = this._withResolvedBaseUrl(Promise.resolve(client));
-    }
+  /**
+   * @param configuration a connection config to build a client from, or an
+   *   already-built shared {@link ConductorClient} to reuse (the
+   *   `OrkesClients` injection pattern). This client is control-plane-only —
+   *   it carries no behavior knobs of its own (spec R4 knobs live on
+   *   `AgentRuntime`/`AgentConfig`).
+   */
+  constructor(configuration?: OrkesApiConfig | ConductorClient) {
     this.serializer = new AgentConfigSerializer();
+    if (isConductorClient(configuration)) {
+      this._ownsClient = false;
+      this._clientPromise = this._withResolvedBaseUrl(Promise.resolve(configuration));
+    } else {
+      this._ownsClient = true;
+      this._connectionConfig = configuration;
+    }
   }
 
   // ── Conductor client (lazy, memoized) ──────────────────────────────
 
-  /**
-   * Captures the client's real `baseUrl` once resolved (for
-   * {@link _makeHandle}'s sync `stream()`), and — when `config.apiKey` is an
-   * explicit already-minted token — wires it onto the client's own `auth` so
-   * `client.request(...)` (the REST path) carries it too, not just
-   * {@link authHeaders}'s SSE-only header map.
-   */
+  /** Captures the client's real `baseUrl` once resolved, for {@link _makeHandle}'s sync `stream()`. */
   private _withResolvedBaseUrl(p: Promise<ConductorClient>): Promise<ConductorClient> {
     p.then((c) => {
       this._resolvedBaseUrl = c.getConfig().baseUrl as string | undefined;
-      if (this.config.apiKey) {
-        c.setConfig({ auth: this.config.apiKey });
-      }
     });
     return p;
   }
 
   /**
    * Lazily create (once) and return the shared {@link ConductorClient}.
-   * `createConductorClient` is async, so we memoize the promise.
+   * `createConductorClient` is async, so we memoize the promise. Env-resolved
+   * (`AGENTSPAN_SERVER_URL`/`AGENTSPAN_AUTH_KEY`/`AGENTSPAN_AUTH_SECRET`
+   * fallbacks, `localhost:8080` default) via `resolveOrkesConfig` (R3) when
+   * no explicit connection config was given.
    */
   getClient(): Promise<ConductorClient> {
     if (!this._clientPromise) {
-      // Conductor SDK reads CONDUCTOR_SERVER_URL with priority; baseUrl is the
-      // server root WITHOUT the trailing `/api` (agent endpoints add `/api`).
-      const baseUrl = this.config.serverUrl.replace(/\/api\/?$/, "");
       this._clientPromise = this._withResolvedBaseUrl(
-        createConductorClient({
-          serverUrl: baseUrl,
-          disableHttp2: true,
-          keyId: this.config.authKey || undefined,
-          keySecret: this.config.authSecret || undefined,
-        }),
+        createConductorClient({ disableHttp2: true, ...this._connectionConfig }),
       );
     }
     return this._clientPromise;
@@ -155,18 +135,10 @@ export class OrkesAgentClient implements AgentClient {
   /**
    * `X-Authorization` header for secured hosts (Orkes); `{}` when anonymous.
    *
-   * An explicit `config.apiKey` (an already-minted token, not a keyId/secret
-   * pair) wins verbatim — `getClient()` wires the same value onto the shared
-   * client's own `auth` config, so `/agent/*` REST calls carry it too.
-   * Otherwise borrowed verbatim from the shared client's R2 accessor — this
-   * class mints and caches nothing of its own. Kept as a thin delegate
-   * (rather than inlined at call sites) because the runtime's worker
-   * plumbing still calls it directly until S2 removes that plumbing.
+   * Borrowed verbatim from the shared client's R2 accessor — this class
+   * mints and caches nothing of its own.
    */
   async authHeaders(): Promise<Record<string, string>> {
-    if (this.config.apiKey) {
-      return { "X-Authorization": this.config.apiKey };
-    }
     const client = await this.getClient();
     const headers = await client.getAuthenticationHeaders();
     return headers ?? {};
@@ -287,10 +259,9 @@ export class OrkesAgentClient implements AgentClient {
 
   /** A connected {@link AgentStream} for an execution's SSE feed. */
   async stream(executionId: string, lastEventId?: string, signal?: AbortSignal): Promise<AgentStream> {
-    const baseUrl = await this._httpBaseUrl();
     // AgentStream's polling-fallback paths append `/agent/...` directly, so
     // `serverUrl` carries the `/api` prefix (matches the historical contract).
-    const apiBaseUrl = `${baseUrl}/api`;
+    const apiBaseUrl = await this.apiBaseUrl();
     const s = new AgentStream(
       `${apiBaseUrl}/agent/stream/${executionId}`,
       () => this.authHeaders(),
@@ -322,18 +293,32 @@ export class OrkesAgentClient implements AgentClient {
 
   private async _httpBaseUrl(): Promise<string> {
     await this.getClient();
-    return this._resolvedBaseUrl ?? this.config.serverUrl.replace(/\/api\/?$/, "");
+    return this._resolvedBaseUrl ?? this._connectionConfig?.serverUrl ?? "http://localhost:8080";
   }
 
   /**
    * Synchronous best-effort base URL for {@link ClientHandle.stream}, which
    * is sync by contract. By the time a handle exists, `start()` has already
    * awaited `getClient()` at least once, so `_resolvedBaseUrl` is populated
-   * in every real call path; the config fallback only applies to
-   * hand-constructed handles in tests.
+   * in every real call path; the fallback only applies to hand-constructed
+   * handles in tests.
    */
   private _httpBaseUrlSync(): string {
-    return this._resolvedBaseUrl ?? this.config.serverUrl.replace(/\/api\/?$/, "");
+    return this._resolvedBaseUrl ?? this._connectionConfig?.serverUrl ?? "http://localhost:8080";
+  }
+
+  /**
+   * The shared client's real server root WITH the `/api` prefix (the
+   * `serverUrl` shape `AgentStream`'s polling fallback expects). Exposed for
+   * `AgentRuntime`, which builds its own SSE URLs on the same client.
+   */
+  async apiBaseUrl(): Promise<string> {
+    return `${await this._httpBaseUrl()}/api`;
+  }
+
+  /** Synchronous counterpart of {@link apiBaseUrl}, for sync handle closures. */
+  apiBaseUrlSync(): string {
+    return `${this._httpBaseUrlSync()}/api`;
   }
 
   // ── Agent-level convenience (control-plane only — NO local workers) ─
@@ -444,7 +429,7 @@ export class OrkesAgentClient implements AgentClient {
         }
       },
       stream: () => {
-        const apiBaseUrl = `${this._httpBaseUrlSync()}/api`;
+        const apiBaseUrl = this.apiBaseUrlSync();
         const s = new AgentStream(
           `${apiBaseUrl}/agent/stream/${executionId}`,
           () => this.authHeaders(),

@@ -5,7 +5,12 @@ import { WorkflowClient } from "../clients/agent/WorkflowClient";
 import { SchedulerClient } from "../clients/scheduler/SchedulerClient";
 import type { Client } from "../../open-api";
 
-const fakeClient = { getConfig: () => ({}) } as unknown as Client;
+// `request` is required — it's how OrkesAgentClient's isConductorClient()
+// distinguishes an already-built client from a plain connection config.
+const fakeClient = {
+  getConfig: () => ({}),
+  request: () => Promise.resolve({ data: {}, request: {}, response: {} }),
+} as unknown as Client;
 
 describe("OrkesClients agent getters", () => {
   it("getAgentClient returns an AgentClient reusing the factory's client", async () => {

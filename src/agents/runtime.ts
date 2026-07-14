@@ -24,6 +24,8 @@ import type { HandoffContext } from "./handoff.js";
 import { detectFramework } from "./frameworks/detect.js";
 import type { Schedule } from "../sdk/clients/agent/schedule.js";
 import type { SchedulerClient } from "../sdk/clients/scheduler/SchedulerClient.js";
+import type { OrkesApiConfig } from "../sdk/types.js";
+import type { AgentClient, ConductorClient } from "../sdk/clients/agent/AgentClient.js";
 import { OrkesAgentClient } from "../sdk/clients/agent/OrkesAgentClient.js";
 import { WorkflowClient } from "../sdk/clients/agent/WorkflowClient.js";
 import { serializeFrameworkAgent } from "./frameworks/serializer.js";
@@ -75,26 +77,39 @@ export interface AgentHandle {
  */
 export class AgentRuntime {
   readonly config: AgentConfig;
-  /** Control-plane client for `/agent/*` (compile/deploy/start/status/...). */
-  readonly client: OrkesAgentClient;
+  /** Control-plane client for `/agent/*` (spec R1 surface — 11 ops + close()). */
+  readonly client: AgentClient;
+  /** Full surface (workflows/schedules/convenience methods/escape-hatch request()) for internal use. */
+  private readonly _agentClient: OrkesAgentClient;
   private readonly serializer: AgentConfigSerializer;
   private readonly workerManager: WorkerManager;
 
-  constructor(options?: AgentConfigOptions) {
-    this.config = new AgentConfig(options);
-    this.client = new OrkesAgentClient(this.config);
+  /**
+   * @param configuration a connection config to build the shared client from,
+   *   or an already-built {@link ConductorClient} to reuse (the
+   *   `OrkesClients` injection pattern). Env-resolved when omitted
+   *   (`AGENTSPAN_SERVER_URL`/`AGENTSPAN_AUTH_KEY`/`AGENTSPAN_AUTH_SECRET`
+   *   fallbacks, `localhost:8080` default — spec R3).
+   * @param settings behavior knobs only (spec R4) — no connection/auth here.
+   */
+  constructor(configuration?: OrkesApiConfig | ConductorClient, settings?: AgentConfigOptions) {
+    this.config = new AgentConfig(settings);
+    const agentClient = new OrkesAgentClient(configuration);
+    this._agentClient = agentClient;
+    this.client = agentClient;
     this.serializer = new AgentConfigSerializer();
+    // One client, both planes (spec R5) — the worker plane rides the exact
+    // same shared client the control plane does.
     this.workerManager = new WorkerManager(
-      this.config.serverUrl,
-      {},
+      () => agentClient.getClient(),
       this.config.workerPollIntervalMs,
-      () => this.client.authHeaders(),
+      this.config.workerThreadCount,
     );
   }
 
   /** Read-only workflow client (Conductor workflow executions). */
   get workflows(): WorkflowClient {
-    return this.client.workflows;
+    return this._agentClient.workflows;
   }
 
   // ── run() ─────────────────────────────────────────────
@@ -162,17 +177,19 @@ export class AgentRuntime {
 
     // Register system workers with domain
     await this._registerSystemWorkers(nativeAgent, requiredWorkers, runId);
-    await this.workerManager.startPolling();
+    if (this.config.autoStartWorkers) await this.workerManager.startPolling();
 
     try {
       // Create SSE stream
-      const sseUrl = `${this.config.serverUrl}/agent/stream/${executionId}`;
+      const apiBaseUrl = await this._agentClient.apiBaseUrl();
       const agentStream = new AgentStream(
-        sseUrl,
-        () => this.client.authHeaders(),
+        `${apiBaseUrl}/agent/stream/${executionId}`,
+        () => this._agentClient.authHeaders(),
         executionId,
         async (body) => this._respond(executionId, body, options?.signal),
-        this.config.serverUrl,
+        apiBaseUrl,
+        undefined,
+        !this.config.streamingEnabled,
       );
 
       // Drain all events
@@ -285,7 +302,7 @@ export class AgentRuntime {
 
     // Register system workers with domain
     await this._registerSystemWorkers(nativeAgent, requiredWorkers, runId);
-    await this.workerManager.startPolling();
+    if (this.config.autoStartWorkers) await this.workerManager.startPolling();
 
     const handle: AgentHandle = {
       executionId,
@@ -358,13 +375,15 @@ export class AgentRuntime {
         ).then(() => undefined),
 
       stream: () => {
-        const sseUrl = `${this.config.serverUrl}/agent/stream/${executionId}`;
+        const apiBaseUrl = this._agentClient.apiBaseUrlSync();
         return new AgentStream(
-          sseUrl,
-          () => this.client.authHeaders(),
+          `${apiBaseUrl}/agent/stream/${executionId}`,
+          () => this._agentClient.authHeaders(),
           executionId,
           async (body) => this._respond(executionId, body, options?.signal),
-          this.config.serverUrl,
+          apiBaseUrl,
+          undefined,
+          !this.config.streamingEnabled,
         );
       },
     };
@@ -425,12 +444,12 @@ export class AgentRuntime {
 
   /** `SchedulerClient` — shares the control-plane client's Conductor client. */
   schedulesClient(): SchedulerClient {
-    return this.client.schedules;
+    return this._agentClient.schedules;
   }
 
   /** HTTP request returning unknown — delegates to the control-plane client. */
   async _httpRequestUntyped(method: string, path: string, body?: unknown): Promise<unknown> {
-    return this.client.request(method as "GET" | "POST" | "PUT" | "DELETE", path, body);
+    return this._agentClient.request(method as "GET" | "POST" | "PUT" | "DELETE", path, body);
   }
 
   // ── plan() ────────────────────────────────────────────
@@ -505,7 +524,7 @@ export class AgentRuntime {
     body?: unknown,
     signal?: AbortSignal,
   ): Promise<Record<string, unknown>> {
-    const result = await this.client.request(
+    const result = await this._agentClient.request(
       method as "GET" | "POST" | "PUT" | "DELETE",
       path,
       body,
@@ -1401,7 +1420,7 @@ export class AgentRuntime {
 
     this._registerExtractedWorkers(workers, options?.credentials);
 
-    await this.workerManager.startPolling();
+    if (this.config.autoStartWorkers) await this.workerManager.startPolling();
 
     try {
       // POST /agent/start with extracted config
@@ -1423,13 +1442,15 @@ export class AgentRuntime {
       const executionId = startResponse.executionId as string;
 
       // Create SSE stream to drain events and wait for completion
-      const sseUrl = `${this.config.serverUrl}/agent/stream/${executionId}`;
+      const apiBaseUrl = await this._agentClient.apiBaseUrl();
       const agentStream = new AgentStream(
-        sseUrl,
-        () => this.client.authHeaders(),
+        `${apiBaseUrl}/agent/stream/${executionId}`,
+        () => this._agentClient.authHeaders(),
         executionId,
         async (body) => this._respond(executionId, body, options?.signal),
-        this.config.serverUrl,
+        apiBaseUrl,
+        undefined,
+        !this.config.streamingEnabled,
       );
 
       // Drain all events
@@ -1501,7 +1522,7 @@ export class AgentRuntime {
 
     this._registerExtractedWorkers(workers, options?.credentials);
 
-    await this.workerManager.startPolling();
+    if (this.config.autoStartWorkers) await this.workerManager.startPolling();
 
     // POST /agent/start with extracted config
     const startPayload = {
@@ -1592,13 +1613,15 @@ export class AgentRuntime {
         ).then(() => undefined),
 
       stream: () => {
-        const sseUrl = `${this.config.serverUrl}/agent/stream/${executionId}`;
+        const apiBaseUrl = this._agentClient.apiBaseUrlSync();
         return new AgentStream(
-          sseUrl,
-          () => this.client.authHeaders(),
+          `${apiBaseUrl}/agent/stream/${executionId}`,
+          () => this._agentClient.authHeaders(),
           executionId,
           async (body) => this._respond(executionId, body, options?.signal),
-          this.config.serverUrl,
+          apiBaseUrl,
+          undefined,
+          !this.config.streamingEnabled,
         );
       },
     };
@@ -1621,8 +1644,11 @@ export function getRuntime(): AgentRuntime {
 /**
  * Configure the singleton AgentRuntime.
  */
-export function configure(options: AgentConfigOptions): AgentRuntime {
-  _singletonRuntime = new AgentRuntime(options);
+export function configure(
+  configuration?: OrkesApiConfig | ConductorClient,
+  settings?: AgentConfigOptions,
+): AgentRuntime {
+  _singletonRuntime = new AgentRuntime(configuration, settings);
   return _singletonRuntime;
 }
 

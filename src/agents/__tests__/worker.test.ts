@@ -440,6 +440,9 @@ describe("stripInternalKeys", () => {
 
 // ── WorkerManager ────────────────────────────────────────
 
+/** A `getClient` resolver stub for tests that never call `startPolling()`. */
+const unusedGetClient = () => Promise.reject(new Error("getClient() should not be called in this test"));
+
 describe("WorkerManager", () => {
   afterEach(() => {
     jest.restoreAllMocks();
@@ -451,7 +454,7 @@ describe("WorkerManager", () => {
 
   describe("addWorker deduplication", () => {
     it("replaces existing worker with same task name", () => {
-      const manager = new WorkerManager("http://test", {}, 100);
+      const manager = new WorkerManager(unusedGetClient, 100);
       const handler1 = jest.fn();
       const handler2 = jest.fn();
 
@@ -465,7 +468,7 @@ describe("WorkerManager", () => {
     });
 
     it("keeps different task names as separate workers", () => {
-      const manager = new WorkerManager("http://test", {}, 100);
+      const manager = new WorkerManager(unusedGetClient, 100);
       const handler1 = jest.fn();
       const handler2 = jest.fn();
 
@@ -481,7 +484,7 @@ describe("WorkerManager", () => {
 
   describe("startPolling idempotency", () => {
     it("clears existing pollers before creating new ones", async () => {
-      const manager = new WorkerManager("http://test", {}, 5000);
+      const manager = new WorkerManager(unusedGetClient, 5000);
       const handler = jest.fn();
       manager.addWorker("my_task", handler);
 
@@ -493,6 +496,43 @@ describe("WorkerManager", () => {
     });
   });
 
+  // ── Shared client, no client of its own (spec R5/R12) ──
+
+  describe("startPolling on the shared client", () => {
+    it("resolves the client via the injected getClient() and hands it straight to TaskManager", async () => {
+      const fakeClient = {
+        getConfig: () => ({ baseUrl: "http://shared-client:8080" }),
+      };
+      const getClient = jest.fn().mockResolvedValue(fakeClient);
+      const manager = new WorkerManager(getClient as any, 100);
+      manager.addWorker("my_task", jest.fn());
+
+      await manager.startPolling();
+
+      expect(getClient).toHaveBeenCalledTimes(1);
+      // No env clobber (T4 fix): CONDUCTOR_SERVER_URL is never touched.
+      expect(process.env.CONDUCTOR_SERVER_URL).toBeUndefined();
+
+      await manager.stopPolling();
+    });
+
+    it("wires workerThreadCount to ConductorWorker.concurrency (spec R4/T11)", () => {
+      const manager = new WorkerManager(unusedGetClient, 100, 3);
+      manager.addWorker("my_task", jest.fn());
+
+      const wrapped = (manager as any)._wrapWorker((manager as any).pendingWorkers[0]);
+      expect(wrapped.concurrency).toBe(3);
+    });
+
+    it("defaults concurrency to 1 when not provided", () => {
+      const manager = new WorkerManager(unusedGetClient, 100);
+      manager.addWorker("my_task", jest.fn());
+
+      const wrapped = (manager as any)._wrapWorker((manager as any).pendingWorkers[0]);
+      expect(wrapped.concurrency).toBe(1);
+    });
+  });
+
   // ── Credential context injection (fix #3) ─────────────
   // These tests exercise the _wrapWorker execute() callback directly
   // by accessing it through the private API, without starting the
@@ -500,9 +540,7 @@ describe("WorkerManager", () => {
 
   describe("credential context during execution", () => {
     it("sets credential context when execution token is present", async () => {
-      const serverUrl = "http://cred-test";
-      const headers = { Authorization: "Bearer tok" };
-      const manager = new WorkerManager(serverUrl, headers, 100);
+      const manager = new WorkerManager(unusedGetClient, 100);
 
       let contextAvailable = false;
 
@@ -552,7 +590,7 @@ describe("WorkerManager", () => {
     });
 
     it("clears credential context after handler completes", async () => {
-      const manager = new WorkerManager("http://test", {}, 100);
+      const manager = new WorkerManager(unusedGetClient, 100);
 
       manager.addWorker("clear_task", async () => {
         return { ok: true };
@@ -574,7 +612,7 @@ describe("WorkerManager", () => {
     });
 
     it("clears credential context even when handler throws", async () => {
-      const manager = new WorkerManager("http://test", {}, 100);
+      const manager = new WorkerManager(unusedGetClient, 100);
 
       manager.addWorker("error_task", async () => {
         throw new Error("handler boom");
@@ -612,8 +650,7 @@ describe("WorkerManager", () => {
       // handlers are mid-flight at the same time, then have each call
       // getCredential() and verify each got *its own* execution token's
       // resolved value back.
-      const serverUrl = "http://cred-race";
-      const manager = new WorkerManager(serverUrl, {}, 100);
+      const manager = new WorkerManager(unusedGetClient, 100);
 
       const NUM = 5;
       const barrier = new Promise<void>((resolve) => {
@@ -677,7 +714,7 @@ describe("WorkerManager", () => {
     });
 
     it("does not set credential context when no execution token", async () => {
-      const manager = new WorkerManager("http://test", {}, 100);
+      const manager = new WorkerManager(unusedGetClient, 100);
 
       let handlerCalled = false;
       manager.addWorker("no_token_task", async () => {

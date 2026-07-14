@@ -45,8 +45,8 @@ export {
 } from "./errors.js";
 
 // ── Config ───────────────────────────────────────────────
-export type { AgentConfigOptions, LogLevel } from "./config.js";
-export { AgentConfig, normalizeServerUrl } from "./config.js";
+export type { AgentConfigOptions } from "./config.js";
+export { AgentConfig } from "./config.js";
 
 // ── Tool System ─────────────────────────────────────────
 export type { ToolFunction, ToolOptions } from "./tool.js";
@@ -147,7 +147,6 @@ export {
 
 // ── Control-plane / Workflow clients ────────────────────
 export type { ClientHandle, AgentClient } from "../sdk/clients/agent/AgentClient.js";
-export type { AgentClientOptions } from "../sdk/clients/agent/OrkesAgentClient.js";
 export { OrkesAgentClient } from "../sdk/clients/agent/OrkesAgentClient.js";
 export type { WorkflowExecution, WorkflowTokenUsage } from "../sdk/clients/agent/WorkflowClient.js";
 export { WorkflowClient } from "../sdk/clients/agent/WorkflowClient.js";

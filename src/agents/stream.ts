@@ -29,6 +29,7 @@ export class AgentStream implements AsyncIterable<AgentEvent> {
   private readonly respondFn: RespondFn;
   private readonly serverUrl: string;
   private readonly initialLastEventId: string;
+  private readonly skipSse: boolean;
   private done = false;
 
   constructor(
@@ -38,6 +39,8 @@ export class AgentStream implements AsyncIterable<AgentEvent> {
     respondFn: RespondFn,
     serverUrl?: string,
     initialLastEventId?: string,
+    /** `AgentConfig.streamingEnabled === false` — go straight to the status-polling fallback, never attempt SSE. */
+    skipSse?: boolean,
   ) {
     this.url = url;
     this.headerProvider = headerProvider;
@@ -45,6 +48,7 @@ export class AgentStream implements AsyncIterable<AgentEvent> {
     this.respondFn = respondFn;
     this.serverUrl = serverUrl ?? "";
     this.initialLastEventId = initialLastEventId ?? "";
+    this.skipSse = skipSse ?? false;
   }
 
   /** Best-effort stop: marks the stream done so active reads/polls exit at their next check. */
@@ -59,6 +63,11 @@ export class AgentStream implements AsyncIterable<AgentEvent> {
   }
 
   private async *_streamEvents(): AsyncIterableIterator<AgentEvent> {
+    if (this.skipSse) {
+      yield* this._pollForCompletion();
+      return;
+    }
+
     let lastEventId = this.initialLastEventId;
     let retries = 0;
 
