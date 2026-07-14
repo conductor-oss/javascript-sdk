@@ -91,6 +91,7 @@ import {
   shutdown,
 } from "../runtime.js";
 import { AgentConfig } from "../config.js";
+import { LivenessMonitor } from "../liveness.js";
 import { TokenResource } from "../../open-api/generated";
 
 const mockedGenerateToken = TokenResource.generateToken as jest.MockedFunction<
@@ -758,6 +759,129 @@ describe("AgentRuntime", () => {
         String(url).includes("/agent/deploy"),
       );
       expect(deployCalls).toHaveLength(2);
+    });
+  });
+
+  describe("Liveness monitor wiring (spec R11)", () => {
+    // LivenessMonitor.prototype spies must be restored — unlike the
+    // per-instance spies elsewhere in this file, a prototype spy leaks into
+    // every later test (clearMocks resets call history, not implementations).
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    it("starts a LivenessMonitor for a stateful agent and stops it on completion", async () => {
+      mockAgentServer("wf-liveness-test");
+      const runtime = new AgentRuntime({ serverUrl: "http://localhost:8080/api" });
+      jest.spyOn((runtime as any).workerManager, "startPolling").mockImplementation(() => {});
+      const startSpy = jest.spyOn(LivenessMonitor.prototype, "start").mockImplementation(() => {});
+      const stopSpy = jest.spyOn(LivenessMonitor.prototype, "stop").mockImplementation(() => {});
+      const { Agent } = await import("../agent.js");
+      const agent = new Agent({ name: "liveness_test_agent", model: "gpt-4o", stateful: true });
+
+      const handle = await runtime.start(agent, "test prompt");
+      expect(startSpy).toHaveBeenCalledTimes(1);
+
+      await handle.wait();
+      expect(stopSpy).toHaveBeenCalled();
+    });
+
+    it("does not start a LivenessMonitor for a non-stateful agent (no domain to watch)", async () => {
+      mockAgentServer("wf-liveness-stateless-test");
+      const runtime = new AgentRuntime({ serverUrl: "http://localhost:8080/api" });
+      jest.spyOn((runtime as any).workerManager, "startPolling").mockImplementation(() => {});
+      const startSpy = jest.spyOn(LivenessMonitor.prototype, "start").mockImplementation(() => {});
+      const { Agent } = await import("../agent.js");
+      const agent = new Agent({ name: "stateless_test_agent", model: "gpt-4o" });
+
+      await runtime.start(agent, "test prompt");
+      expect(startSpy).not.toHaveBeenCalled();
+    });
+
+    it("does not start a LivenessMonitor when livenessEnabled is false, even for a stateful agent", async () => {
+      mockAgentServer("wf-liveness-disabled-test");
+      const runtime = new AgentRuntime(
+        { serverUrl: "http://localhost:8080/api" },
+        { livenessEnabled: false },
+      );
+      jest.spyOn((runtime as any).workerManager, "startPolling").mockImplementation(() => {});
+      const startSpy = jest.spyOn(LivenessMonitor.prototype, "start").mockImplementation(() => {});
+      const { Agent } = await import("../agent.js");
+      const agent = new Agent({ name: "liveness_disabled_agent", model: "gpt-4o", stateful: true });
+
+      await runtime.start(agent, "test prompt");
+      expect(startSpy).not.toHaveBeenCalled();
+    });
+
+    it("wait() rejects with WorkerStallError once the monitor detects a genuine stall", async () => {
+      let capturedRunId: string | undefined;
+      global.fetch = jest.fn().mockImplementation(async (url: string, init?: RequestInit) => {
+        if (String(url).includes("/agent/start")) {
+          capturedRunId = JSON.parse(String(init?.body ?? "{}")).runId;
+          return jsonResponse({ executionId: "wf-stall-test" });
+        }
+        if (String(url).includes("/status")) {
+          return jsonResponse({ status: "RUNNING", output: {} });
+        }
+        return jsonResponse({});
+      });
+      const runtime = new AgentRuntime(
+        { serverUrl: "http://localhost:8080/api" },
+        { livenessStallSeconds: 0.05, livenessCheckIntervalSeconds: 0.05 },
+      );
+      jest.spyOn((runtime as any).workerManager, "startPolling").mockImplementation(() => {});
+      const { Agent } = await import("../agent.js");
+      const agent = new Agent({ name: "stall_test_agent", model: "gpt-4o", stateful: true });
+
+      const handle = await runtime.start(agent, "test prompt");
+      expect(capturedRunId).toBeTruthy();
+
+      jest.spyOn(runtime.workflows, "getWorkflow").mockResolvedValue({
+        status: "RUNNING",
+        tasks: [
+          {
+            status: "SCHEDULED",
+            domain: capturedRunId,
+            pollCount: 0,
+            taskId: "task-9",
+            taskDefName: "some_tool",
+            scheduledTime: Date.now() - 1000,
+          },
+        ],
+      });
+
+      await expect(handle.wait()).rejects.toThrow(/Worker stall detected/);
+    });
+  });
+
+  describe("wait() deadline (spec R11)", () => {
+    it("throws AgentAPIError naming the last status once the deadline elapses", async () => {
+      global.fetch = jest.fn().mockImplementation(async (url: string) => {
+        if (String(url).includes("/agent/start")) {
+          return jsonResponse({ executionId: "wf-deadline-test" });
+        }
+        if (String(url).includes("/status")) {
+          return jsonResponse({ status: "RUNNING", output: {} });
+        }
+        return jsonResponse({});
+      });
+      const runtime = new AgentRuntime({ serverUrl: "http://localhost:8080/api" });
+      jest.spyOn((runtime as any).workerManager, "startPolling").mockImplementation(() => {});
+      const { Agent } = await import("../agent.js");
+      const agent = new Agent({ name: "deadline_test_agent", model: "gpt-4o" });
+
+      const handle = await runtime.start(agent, "test prompt", { timeoutSeconds: 5 });
+
+      jest.useFakeTimers();
+      try {
+        const assertion = expect(handle.wait()).rejects.toThrow(
+          /wait\(\) timed out for execution wf-deadline-test \(last status: RUNNING\)/,
+        );
+        await jest.advanceTimersByTimeAsync(40_000); // deadline = 5*1000 + 30_000
+        await assertion;
+      } finally {
+        jest.useRealTimers();
+      }
     });
   });
 });

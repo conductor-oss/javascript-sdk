@@ -42,6 +42,7 @@ export {
   SSETimeoutError,
   TerminalToolError,
   GuardrailFailedError,
+  WorkerStallError,
 } from "./errors.js";
 
 // ── Config ───────────────────────────────────────────────
@@ -116,6 +117,10 @@ export {
   resetCircuitBreaker,
   resetAllCircuitBreakers,
 } from "./worker.js";
+
+// ── Liveness ──────────────────────────────────────────────
+export type { LivenessMonitorOptions } from "./liveness.js";
+export { LivenessMonitor } from "./liveness.js";
 
 // ── Result ──────────────────────────────────────────────
 export type { MakeAgentResultData } from "./result.js";

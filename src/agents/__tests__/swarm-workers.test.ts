@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "@jest/globals";
+import { describe, it, expect, beforeEach, jest } from "@jest/globals";
 import { Agent } from "../agent.js";
 import { AgentRuntime } from "../runtime.js";
 import { OnToolResult, OnTextMention, OnCondition } from "../handoff.js";
@@ -137,7 +137,7 @@ describe("_registerCheckTransferWorker", () => {
     const result = await invokeWorker(runtime, "support_check_transfer", {
       tool_calls: [{ name: "support_transfer_to_billing", arguments: {} }],
     });
-    expect(result).toEqual({ is_transfer: true, transfer_to: "billing" });
+    expect(result).toEqual({ is_transfer: true, transfer_to: "billing", transfer_message: "" });
   });
 
   it("returns is_transfer false when no transfer tool found", async () => {
@@ -146,14 +146,100 @@ describe("_registerCheckTransferWorker", () => {
     const result = await invokeWorker(runtime, "support_check_transfer", {
       tool_calls: [{ name: "search", arguments: {} }],
     });
-    expect(result).toEqual({ is_transfer: false, transfer_to: "" });
+    expect(result).toEqual({ is_transfer: false, transfer_to: "", transfer_message: "" });
   });
 
   it("handles empty tool_calls", async () => {
     await (runtime as any)._registerCheckTransferWorker("support");
 
     const result = await invokeWorker(runtime, "support_check_transfer", {});
-    expect(result).toEqual({ is_transfer: false, transfer_to: "" });
+    expect(result).toEqual({ is_transfer: false, transfer_to: "", transfer_message: "" });
+  });
+
+  it("handles null tool_calls", async () => {
+    await (runtime as any)._registerCheckTransferWorker("support");
+
+    const result = await invokeWorker(runtime, "support_check_transfer", { tool_calls: null });
+    expect(result).toEqual({ is_transfer: false, transfer_to: "", transfer_message: "" });
+  });
+
+  it("returns transfer_message from inputParameters.message (spec R13)", async () => {
+    await (runtime as any)._registerCheckTransferWorker("support");
+
+    const result = await invokeWorker(runtime, "support_check_transfer", {
+      tool_calls: [
+        {
+          name: "support_transfer_to_billing",
+          inputParameters: { message: "Please handle this refund" },
+        },
+      ],
+    });
+    expect(result).toEqual({
+      is_transfer: true,
+      transfer_to: "billing",
+      transfer_message: "Please handle this refund",
+    });
+  });
+
+  it("tolerates the arguments key variant for message (older tool schema)", async () => {
+    await (runtime as any)._registerCheckTransferWorker("support");
+
+    const result = await invokeWorker(runtime, "support_check_transfer", {
+      tool_calls: [
+        { name: "support_transfer_to_billing", arguments: { message: "Legacy schema note" } },
+      ],
+    });
+    expect(result).toEqual({
+      is_transfer: true,
+      transfer_to: "billing",
+      transfer_message: "Legacy schema note",
+    });
+  });
+
+  it("stringifies a non-string message", async () => {
+    await (runtime as any)._registerCheckTransferWorker("support");
+
+    const result = await invokeWorker(runtime, "support_check_transfer", {
+      tool_calls: [{ name: "support_transfer_to_billing", inputParameters: { message: 42 } }],
+    });
+    expect(result).toEqual({ is_transfer: true, transfer_to: "billing", transfer_message: "42" });
+  });
+
+  it("first-wins with a single transfer call: no dropped_transfers key", async () => {
+    await (runtime as any)._registerCheckTransferWorker("support");
+
+    const result = (await invokeWorker(runtime, "support_check_transfer", {
+      tool_calls: [
+        { name: "support_transfer_to_billing", inputParameters: { message: "note" } },
+      ],
+    })) as Record<string, unknown>;
+    expect(result).not.toHaveProperty("dropped_transfers");
+  });
+
+  it("first-wins with two transfer calls: honors first, drops second, logs a warning", async () => {
+    const warnSpy = jest.spyOn(console, "warn").mockImplementation(() => undefined);
+    try {
+      await (runtime as any)._registerCheckTransferWorker("support");
+
+      const result = await invokeWorker(runtime, "support_check_transfer", {
+        tool_calls: [
+          { name: "support_transfer_to_billing", inputParameters: { message: "first note" } },
+          { name: "support_transfer_to_refund", inputParameters: { message: "second note" } },
+        ],
+      });
+      expect(result).toEqual({
+        is_transfer: true,
+        transfer_to: "billing",
+        transfer_message: "first note",
+        dropped_transfers: [{ transfer_to: "refund", message: "second note" }],
+      });
+      expect(warnSpy).toHaveBeenCalledTimes(1);
+      const [warning] = warnSpy.mock.calls[0] as [string];
+      expect(warning).toContain("billing");
+      expect(warning).toContain("refund");
+    } finally {
+      warnSpy.mockRestore();
+    }
   });
 });
 
@@ -202,6 +288,38 @@ describe("_registerSwarmTransferWorkers", () => {
     await (runtime as any)._registerSwarmTransferWorkers(parent);
 
     const result = await invokeWorker(runtime, "support_transfer_to_billing", {});
+    expect(result).toEqual({});
+  });
+
+  it("transfer worker echoes a non-empty message (spec R13)", async () => {
+    const sub1 = new Agent({ name: "billing", model: "gpt-4o" });
+    const parent = new Agent({
+      name: "support",
+      model: "gpt-4o",
+      agents: [sub1],
+      strategy: "swarm",
+    });
+
+    await (runtime as any)._registerSwarmTransferWorkers(parent);
+
+    const result = await invokeWorker(runtime, "support_transfer_to_billing", {
+      message: "Please handle this refund",
+    });
+    expect(result).toEqual({ message: "Please handle this refund" });
+  });
+
+  it("transfer worker returns {} for an empty-string message", async () => {
+    const sub1 = new Agent({ name: "billing", model: "gpt-4o" });
+    const parent = new Agent({
+      name: "support",
+      model: "gpt-4o",
+      agents: [sub1],
+      strategy: "swarm",
+    });
+
+    await (runtime as any)._registerSwarmTransferWorkers(parent);
+
+    const result = await invokeWorker(runtime, "support_transfer_to_billing", { message: "" });
     expect(result).toEqual({});
   });
 

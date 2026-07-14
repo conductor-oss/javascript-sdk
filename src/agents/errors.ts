@@ -143,6 +143,30 @@ export class TerminalToolError extends AgentspanError {
 }
 
 /**
+ * A stateful run's task has sat SCHEDULED/IN_PROGRESS with no worker poll
+ * for longer than the liveness stall window — the local worker process for
+ * this run's domain likely died. Surfaces from a blocking `wait()`.
+ */
+export class WorkerStallError extends AgentspanError {
+  readonly executionId: string;
+  readonly taskDefName: string;
+  readonly taskId: string;
+  readonly secondsQueued: number;
+
+  constructor(executionId: string, taskDefName: string, taskId: string, secondsQueued: number) {
+    super(
+      `Worker stall detected on execution ${executionId}: task '${taskDefName}' (${taskId}) has been queued ${secondsQueued.toFixed(0)}s with no worker polling for it.`,
+    );
+    this.name = "WorkerStallError";
+    this.executionId = executionId;
+    this.taskDefName = taskDefName;
+    this.taskId = taskId;
+    this.secondsQueued = secondsQueued;
+    Object.setPrototypeOf(this, new.target.prototype);
+  }
+}
+
+/**
  * Guardrail validation failed.
  */
 export class GuardrailFailedError extends AgentspanError {

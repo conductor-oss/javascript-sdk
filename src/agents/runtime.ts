@@ -8,7 +8,8 @@ import type {
   GuardrailDef,
   FrameworkId,
 } from "./types.js";
-import { AgentspanError } from "./errors.js";
+import { AgentspanError, AgentAPIError, WorkerStallError } from "./errors.js";
+import { LivenessMonitor } from "./liveness.js";
 import { AgentConfig } from "./config.js";
 import type { AgentConfigOptions } from "./config.js";
 import { Agent } from "./agent.js";
@@ -82,6 +83,9 @@ export interface ServeOptions {
 
 const SERVE_OPTIONS_KEYS = new Set(["blocking"]);
 const DEPLOY_OPTS_KEYS = new Set(["schedules"]);
+
+/** Default client-side ceiling for a handle's `wait()` when no `timeoutSeconds` is given (mirrors `OrkesAgentClient`'s `ClientHandle.wait`). */
+const DEFAULT_WAIT_MS = 600_000;
 
 /**
  * True iff `x` is a plain options object rather than an agent — a native
@@ -353,6 +357,24 @@ export class AgentRuntime {
     await this._registerSystemWorkers(nativeAgent, requiredWorkers, runId);
     if (this.config.autoStartWorkers) await this.workerManager.startPolling();
 
+    // Liveness monitor (spec R11) — only meaningful for stateful, domain-routed
+    // runs; stateless runs have no domain queue for a worker to stall on.
+    let stallError: WorkerStallError | undefined;
+    let livenessMonitor: LivenessMonitor | undefined;
+    if (runId && this.config.livenessEnabled) {
+      livenessMonitor = new LivenessMonitor({
+        workflows: this.workflows,
+        executionId,
+        domain: runId,
+        stallSeconds: this.config.livenessStallSeconds,
+        checkIntervalSeconds: this.config.livenessCheckIntervalSeconds,
+        onStall: (err) => {
+          stallError = err;
+        },
+      });
+      livenessMonitor.start();
+    }
+
     const handle: AgentHandle = {
       executionId,
       correlationId,
@@ -360,9 +382,17 @@ export class AgentRuntime {
       getStatus: () => this.getStatus(executionId, options?.signal),
 
       wait: async (pollIntervalMs = 500) => {
+        const deadline =
+          Date.now() +
+          (options?.timeoutSeconds ? options.timeoutSeconds * 1000 + 30_000 : DEFAULT_WAIT_MS);
         while (true) {
+          if (stallError) {
+            livenessMonitor?.stop();
+            throw stallError;
+          }
           const status = await this.getStatus(executionId, options?.signal);
           if (TERMINAL_STATUSES.has(status.status)) {
+            livenessMonitor?.stop();
             const resultData: Parameters<typeof makeAgentResult>[0] = {
               output: status.output,
               executionId,
@@ -391,6 +421,14 @@ export class AgentRuntime {
             }
 
             return makeAgentResult(resultData);
+          }
+          if (Date.now() >= deadline) {
+            livenessMonitor?.stop();
+            throw new AgentAPIError(
+              `wait() timed out for execution ${executionId} (last status: ${status.status})`,
+              0,
+              "",
+            );
           }
           await sleep(pollIntervalMs);
         }
@@ -424,6 +462,7 @@ export class AgentRuntime {
         ).then(() => undefined),
 
       stop: async () => {
+        livenessMonitor?.stop();
         await this.client.stop(executionId, options?.signal);
         try {
           // Best-effort unblock for any pending wait — failures are
@@ -1190,7 +1229,10 @@ export class AgentRuntime {
    *
    * Each agent in the swarm gets transfer tools for its peers.
    * The transfer tools are no-ops — the actual handoff is detected
-   * by check_transfer which inspects toolCalls output.
+   * by check_transfer which inspects toolCalls output. Reachable targets
+   * accept an optional `message` (the hand-off note) and echo it back so
+   * it is visible in the task output (spec R13); the no-op is otherwise
+   * silent to preserve backward compatibility with pre-`message` schemas.
    *
    * When allowed_transitions is set, transfers to targets that no
    * agent is allowed to reach return an error message so the LLM
@@ -1236,7 +1278,10 @@ export class AgentRuntime {
             result: `ERROR: ${toolName} is not available. Use a different transfer tool, or if you are done, just provide your final response without calling any transfer tool.`,
           }), undefined, domain);
         } else {
-          this.workerManager.addWorker(toolName, async () => ({}), undefined, domain);
+          this.workerManager.addWorker(toolName, async (inputData) => {
+            const message = inputData?.["message"];
+            return message ? { message: String(message) } : {};
+          }, undefined, domain);
         }
       }
     }
@@ -1244,24 +1289,53 @@ export class AgentRuntime {
 
   /**
    * Register a check_transfer worker for hybrid handoff agents.
-   * Server dispatches {agent}_check_transfer with {tool_calls}.
-   * Worker scans for _transfer_to_ in tool call names.
-   * Returns {is_transfer, transfer_to}.
+   * Server dispatches {agent}_check_transfer with {tool_calls} — a list of
+   * objects with at least `name` and `inputParameters` (or `arguments`, an
+   * older tool-call schema variant). Worker scans for _transfer_to_ in
+   * emission order; selection is first-wins since the swarm loop can only
+   * hand off to one agent per turn (spec R13). Non-winning transfer calls
+   * surface as `dropped_transfers` (only when there is more than one) with a
+   * warning naming the honored and dropped targets, so a fan-out intent is
+   * never silently discarded.
    */
   private async _registerCheckTransferWorker(agentName: string, domain?: string): Promise<void> {
     const taskName = `${agentName}_check_transfer`;
     this.workerManager.addWorker(taskName, async (inputData) => {
       const toolCalls = Array.isArray(inputData["tool_calls"]) ? inputData["tool_calls"] : [];
+      const transfers: { transferTo: string; message: string }[] = [];
+
       for (const tc of toolCalls) {
-        const name =
-          typeof tc === "object" && tc !== null
-            ? String((tc as Record<string, unknown>).name ?? "")
-            : "";
-        if (name.includes("_transfer_to_")) {
-          return { is_transfer: true, transfer_to: name.split("_transfer_to_")[1] };
-        }
+        if (typeof tc !== "object" || tc === null) continue;
+        const rec = tc as Record<string, unknown>;
+        const name = String(rec.name ?? "");
+        if (!name.includes("_transfer_to_")) continue;
+
+        const params = (rec.inputParameters ?? rec.arguments ?? {}) as Record<string, unknown>;
+        const message = params.message;
+        transfers.push({
+          transferTo: name.split("_transfer_to_")[1],
+          message: message == null ? "" : String(message),
+        });
       }
-      return { is_transfer: false, transfer_to: "" };
+
+      if (transfers.length === 0) {
+        return { is_transfer: false, transfer_to: "", transfer_message: "" };
+      }
+
+      const [first, ...rest] = transfers;
+      const out: Record<string, unknown> = {
+        is_transfer: true,
+        transfer_to: first.transferTo,
+        transfer_message: first.message,
+      };
+      if (rest.length > 0) {
+        console.warn(
+          `[${taskName}] Multiple transfer calls in one turn; honoring '${first.transferTo}', ` +
+            `dropping ${JSON.stringify(rest.map((t) => t.transferTo))}`,
+        );
+        out.dropped_transfers = rest.map((t) => ({ transfer_to: t.transferTo, message: t.message }));
+      }
+      return out;
     }, undefined, domain);
   }
 
@@ -1646,6 +1720,9 @@ export class AgentRuntime {
       getStatus: () => this.getStatus(executionId, options?.signal),
 
       wait: async (pollIntervalMs = 500) => {
+        const deadline =
+          Date.now() +
+          (options?.timeoutSeconds ? options.timeoutSeconds * 1000 + 30_000 : DEFAULT_WAIT_MS);
         while (true) {
           const status = await this.getStatus(executionId, options?.signal);
           if (TERMINAL_STATUSES.has(status.status)) {
@@ -1677,6 +1754,13 @@ export class AgentRuntime {
             }
 
             return makeAgentResult(resultData);
+          }
+          if (Date.now() >= deadline) {
+            throw new AgentAPIError(
+              `wait() timed out for execution ${executionId} (last status: ${status.status})`,
+              0,
+              "",
+            );
           }
           await sleep(pollIntervalMs);
         }
