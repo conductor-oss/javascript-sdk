@@ -146,8 +146,9 @@ export {
 } from "./runtime.js";
 
 // ── Control-plane / Workflow clients ────────────────────
-export type { ClientHandle, AgentClientOptions } from "../sdk/clients/agent/AgentClient.js";
-export { AgentClient, decodeJwtExp } from "../sdk/clients/agent/AgentClient.js";
+export type { ClientHandle, AgentClient } from "../sdk/clients/agent/AgentClient.js";
+export type { AgentClientOptions } from "../sdk/clients/agent/OrkesAgentClient.js";
+export { OrkesAgentClient } from "../sdk/clients/agent/OrkesAgentClient.js";
 export type { WorkflowExecution, WorkflowTokenUsage } from "../sdk/clients/agent/WorkflowClient.js";
 export { WorkflowClient } from "../sdk/clients/agent/WorkflowClient.js";
 

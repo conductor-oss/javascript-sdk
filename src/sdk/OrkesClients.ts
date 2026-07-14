@@ -1,8 +1,8 @@
 import type { Client } from "../open-api";
 import type { OrkesApiConfig } from "./types";
 import { createConductorClient } from "./createConductorClient";
-import { AgentClient } from "./clients/agent/AgentClient";
-import type { ConductorClient } from "./clients/agent/AgentClient";
+import { OrkesAgentClient } from "./clients/agent/OrkesAgentClient";
+import type { AgentClient, ConductorClient } from "./clients/agent/AgentClient";
 import { WorkflowClient as AgentWorkflowClient } from "./clients/agent/WorkflowClient";
 import { ApplicationClient } from "./clients/application";
 import { AuthorizationClient } from "./clients/authorization";
@@ -74,7 +74,7 @@ export class OrkesClients {
    * for `OrkesClients.from(...)`).
    */
   getAgentClient(): AgentClient {
-    return new AgentClient({ client: this._client as ConductorClient });
+    return new OrkesAgentClient({ client: this._client as ConductorClient });
   }
 
   /**
@@ -83,7 +83,7 @@ export class OrkesClients {
    * general workflow operations use `getWorkflowClient()` (WorkflowExecutor).
    */
   getAgentWorkflowClient(): AgentWorkflowClient {
-    return this.getAgentClient().workflows;
+    return new OrkesAgentClient({ client: this._client as ConductorClient }).workflows;
   }
 
   getSecretClient(): SecretClient {

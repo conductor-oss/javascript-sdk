@@ -24,7 +24,7 @@ import type { HandoffContext } from "./handoff.js";
 import { detectFramework } from "./frameworks/detect.js";
 import type { Schedule } from "../sdk/clients/agent/schedule.js";
 import type { SchedulerClient } from "../sdk/clients/scheduler/SchedulerClient.js";
-import { AgentClient } from "../sdk/clients/agent/AgentClient.js";
+import { OrkesAgentClient } from "../sdk/clients/agent/OrkesAgentClient.js";
 import { WorkflowClient } from "../sdk/clients/agent/WorkflowClient.js";
 import { serializeFrameworkAgent } from "./frameworks/serializer.js";
 import { serializeLangGraph } from "./frameworks/langgraph-serializer.js";
@@ -76,13 +76,13 @@ export interface AgentHandle {
 export class AgentRuntime {
   readonly config: AgentConfig;
   /** Control-plane client for `/agent/*` (compile/deploy/start/status/...). */
-  readonly client: AgentClient;
+  readonly client: OrkesAgentClient;
   private readonly serializer: AgentConfigSerializer;
   private readonly workerManager: WorkerManager;
 
   constructor(options?: AgentConfigOptions) {
     this.config = new AgentConfig(options);
-    this.client = new AgentClient(this.config);
+    this.client = new OrkesAgentClient(this.config);
     this.serializer = new AgentConfigSerializer();
     this.workerManager = new WorkerManager(
       this.config.serverUrl,
@@ -169,7 +169,7 @@ export class AgentRuntime {
       const sseUrl = `${this.config.serverUrl}/agent/stream/${executionId}`;
       const agentStream = new AgentStream(
         sseUrl,
-        await this.client.authHeaders(),
+        () => this.client.authHeaders(),
         executionId,
         async (body) => this._respond(executionId, body, options?.signal),
         this.config.serverUrl,
@@ -287,9 +287,6 @@ export class AgentRuntime {
     await this._registerSystemWorkers(nativeAgent, requiredWorkers, runId);
     await this.workerManager.startPolling();
 
-    // Resolve auth headers once for the (synchronous) stream() closure below.
-    const streamHeaders = await this.client.authHeaders();
-
     const handle: AgentHandle = {
       executionId,
       correlationId,
@@ -364,7 +361,7 @@ export class AgentRuntime {
         const sseUrl = `${this.config.serverUrl}/agent/stream/${executionId}`;
         return new AgentStream(
           sseUrl,
-          streamHeaders,
+          () => this.client.authHeaders(),
           executionId,
           async (body) => this._respond(executionId, body, options?.signal),
           this.config.serverUrl,
@@ -433,7 +430,7 @@ export class AgentRuntime {
 
   /** HTTP request returning unknown — delegates to the control-plane client. */
   async _httpRequestUntyped(method: string, path: string, body?: unknown): Promise<unknown> {
-    return this.client._rawRequestUntyped(method, path, body);
+    return this.client.request(method as "GET" | "POST" | "PUT" | "DELETE", path, body);
   }
 
   // ── plan() ────────────────────────────────────────────
@@ -499,7 +496,8 @@ export class AgentRuntime {
 
   /**
    * Shared HTTP request wrapper for `/agent/*` — delegates to the
-   * control-plane {@link AgentClient} (which owns the Orkes JWT auth).
+   * control-plane {@link OrkesAgentClient} (which rides the shared client's
+   * authenticated call path; see spec R1/R2).
    */
   async _httpRequest(
     method: string,
@@ -507,7 +505,13 @@ export class AgentRuntime {
     body?: unknown,
     signal?: AbortSignal,
   ): Promise<Record<string, unknown>> {
-    return this.client._request(method, path, body, signal);
+    const result = await this.client.request(
+      method as "GET" | "POST" | "PUT" | "DELETE",
+      path,
+      body,
+      signal,
+    );
+    return (result as Record<string, unknown>) ?? {};
   }
 
   /**
@@ -1422,7 +1426,7 @@ export class AgentRuntime {
       const sseUrl = `${this.config.serverUrl}/agent/stream/${executionId}`;
       const agentStream = new AgentStream(
         sseUrl,
-        await this.client.authHeaders(),
+        () => this.client.authHeaders(),
         executionId,
         async (body) => this._respond(executionId, body, options?.signal),
         this.config.serverUrl,
@@ -1517,9 +1521,6 @@ export class AgentRuntime {
 
     const executionId = startResponse.executionId as string;
 
-    // Resolve auth headers once for the (synchronous) stream() closure below.
-    const streamHeaders = await this.client.authHeaders();
-
     const handle: AgentHandle = {
       executionId,
       correlationId,
@@ -1594,7 +1595,7 @@ export class AgentRuntime {
         const sseUrl = `${this.config.serverUrl}/agent/stream/${executionId}`;
         return new AgentStream(
           sseUrl,
-          streamHeaders,
+          () => this.client.authHeaders(),
           executionId,
           async (body) => this._respond(executionId, body, options?.signal),
           this.config.serverUrl,

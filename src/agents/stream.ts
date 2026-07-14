@@ -1,6 +1,6 @@
 import type { AgentEvent, AgentResult, AgentStatus } from "./types.js";
 import { stripInternalEventKeys } from "./types.js";
-import { AgentAPIError, SSETimeoutError, AgentspanError } from "./errors.js";
+import { SSETimeoutError, SSEUnavailableError, AgentspanError } from "./errors.js";
 import { makeAgentResult } from "./result.js";
 
 // ── Constants ───────────────────────────────────────────
@@ -13,6 +13,9 @@ const POLL_INTERVAL_MS = 500;
 
 export type RespondFn = (body: unknown) => Promise<void>;
 
+/** Resolves auth headers fresh for each (re)connect — never a static snapshot. */
+export type HeaderProvider = () => Promise<Record<string, string>>;
+
 /**
  * SSE-based event stream for agent execution.
  * Implements AsyncIterable<AgentEvent> for use with `for await...of`.
@@ -22,23 +25,31 @@ export class AgentStream implements AsyncIterable<AgentEvent> {
   readonly events: AgentEvent[] = [];
 
   private readonly url: string;
-  private readonly headers: Record<string, string>;
+  private readonly headerProvider: HeaderProvider;
   private readonly respondFn: RespondFn;
   private readonly serverUrl: string;
+  private readonly initialLastEventId: string;
   private done = false;
 
   constructor(
     url: string,
-    headers: Record<string, string>,
+    headerProvider: HeaderProvider,
     executionId: string,
     respondFn: RespondFn,
     serverUrl?: string,
+    initialLastEventId?: string,
   ) {
     this.url = url;
-    this.headers = headers;
+    this.headerProvider = headerProvider;
     this.executionId = executionId;
     this.respondFn = respondFn;
     this.serverUrl = serverUrl ?? "";
+    this.initialLastEventId = initialLastEventId ?? "";
+  }
+
+  /** Best-effort stop: marks the stream done so active reads/polls exit at their next check. */
+  close(): void {
+    this.done = true;
   }
 
   // ── AsyncIterable implementation ─────────────────────
@@ -48,7 +59,7 @@ export class AgentStream implements AsyncIterable<AgentEvent> {
   }
 
   private async *_streamEvents(): AsyncIterableIterator<AgentEvent> {
-    let lastEventId = "";
+    let lastEventId = this.initialLastEventId;
     let retries = 0;
 
     try {
@@ -58,8 +69,9 @@ export class AgentStream implements AsyncIterable<AgentEvent> {
           // If _connectAndStream returned without error, we're done
           break;
         } catch (error) {
-          if (error instanceof SSETimeoutError) {
-            // Fall through to polling
+          if (error instanceof SSETimeoutError || error instanceof SSEUnavailableError) {
+            // Fall through to polling — no point retrying a route the server
+            // doesn't serve, or a connection that never received a byte.
             yield* this._pollForCompletion();
             break;
           }
@@ -94,7 +106,7 @@ export class AgentStream implements AsyncIterable<AgentEvent> {
    */
   private async *_connectAndStream(lastEventId: string): AsyncIterableIterator<AgentEvent> {
     const requestHeaders: Record<string, string> = {
-      ...this.headers,
+      ...(await this.headerProvider()),
       Accept: "text/event-stream",
       "Cache-Control": "no-cache",
     };
@@ -110,7 +122,9 @@ export class AgentStream implements AsyncIterable<AgentEvent> {
 
     if (!response.ok) {
       const body = await response.text();
-      throw new AgentAPIError(`SSE connection failed: ${response.status}`, response.status, body);
+      throw new SSEUnavailableError(
+        `SSE connection failed: ${response.status}${body ? ` — ${body.slice(0, 200)}` : ""}`,
+      );
     }
 
     if (!response.body) {
@@ -304,7 +318,7 @@ export class AgentStream implements AsyncIterable<AgentEvent> {
     try {
       const response = await fetch(url, {
         method: "GET",
-        headers: this.headers,
+        headers: await this.headerProvider(),
       });
 
       if (!response.ok) return null;
@@ -367,7 +381,7 @@ export class AgentStream implements AsyncIterable<AgentEvent> {
     if (this.serverUrl && this.executionId) {
       try {
         const statusUrl = `${this.serverUrl}/agent/${this.executionId}/status`;
-        const resp = await fetch(statusUrl, { headers: this.headers });
+        const resp = await fetch(statusUrl, { headers: await this.headerProvider() });
         if (resp.ok) {
           serverStatus = (await resp.json()) as Record<string, unknown>;
         }

@@ -1,3 +1,83 @@
+/**
+ * `runtime.client` rides `OrkesAgentClient` on the shared client's
+ * authenticated `client.request(...)` path (spec R1/R2) — so these tests
+ * mock the generated OpenAPI transport (same pattern as
+ * `agent-client-auth.test.ts`), not `global.fetch` directly.
+ */
+
+jest.mock("../../sdk/createConductorClient/helpers/getUndiciHttp2FetchFn", () => ({
+  getUndiciHttp2FetchFn: async () => globalThis.fetch,
+}));
+
+jest.mock("../../open-api/generated", () => ({
+  TokenResource: {
+    generateToken: jest.fn(),
+  },
+}));
+
+jest.mock("../../open-api/generated/client", () => {
+  const makeClient = (initialConfig: Record<string, unknown>) => {
+    const client = {
+      _config: { ...initialConfig } as Record<string, unknown>,
+      _fetch: (initialConfig.fetch as typeof fetch) ?? (globalThis.fetch as typeof fetch),
+      setConfig(config: Record<string, unknown>) {
+        Object.assign(client._config, config);
+        if (config.fetch) client._fetch = config.fetch as typeof fetch;
+        return client._config;
+      },
+      getConfig() {
+        return client._config;
+      },
+      async request(options: {
+        url: string;
+        method: string;
+        headers?: Record<string, string>;
+        body?: unknown;
+        signal?: AbortSignal;
+      }) {
+        const baseUrl = (client._config.baseUrl as string) || "";
+        const url = `${baseUrl}${options.url}`;
+
+        const headers: Record<string, string> = { ...options.headers };
+        const auth = client._config.auth;
+        if (typeof auth === "function") {
+          const token = await (auth as () => Promise<string | undefined>)();
+          if (token) headers["X-Authorization"] = String(token);
+        } else if (typeof auth === "string") {
+          headers["X-Authorization"] = auth;
+        }
+
+        const fetchFn = client._fetch;
+        const response = await fetchFn(url, {
+          method: options.method,
+          headers,
+          body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+          signal: options.signal,
+        });
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          return { data: undefined, error: data, response, request: {} };
+        }
+        return { data, response, request: {} };
+      },
+      interceptors: {
+        request: { use: jest.fn(), eject: jest.fn(), fns: [] },
+        response: { use: jest.fn(), eject: jest.fn(), fns: [] },
+      },
+    };
+    return client;
+  };
+
+  return {
+    createClient: (config: Record<string, unknown>) => makeClient(config),
+  };
+});
+
+jest.mock("../../sdk/createConductorClient/helpers/addResourcesBackwardCompatibility", () => ({
+  addResourcesBackwardCompatibility: (client: unknown) => client,
+}));
+
 import { describe, it, expect, jest, beforeEach, afterEach } from "@jest/globals";
 import {
   AgentRuntime,
@@ -11,6 +91,25 @@ import {
   shutdown,
 } from "../runtime.js";
 import { AgentConfig } from "../config.js";
+import { TokenResource } from "../../open-api/generated";
+
+const mockedGenerateToken = TokenResource.generateToken as jest.MockedFunction<
+  typeof TokenResource.generateToken
+>;
+
+const tokenSuccess = (token: string) =>
+  ({
+    data: { token },
+    error: undefined,
+    response: { status: 200 } as Response,
+    request: {} as Request,
+  }) as unknown as Awaited<ReturnType<typeof TokenResource.generateToken>>;
+
+const jsonResponse = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
 
 // ── AgentRuntime constructor ────────────────────────────
 
@@ -27,40 +126,24 @@ describe("AgentRuntime", () => {
     global.fetch = jest.fn().mockImplementation(async (url: string) => {
       fetchCalls?.push(url);
       if (url.includes("/agent/start")) {
-        return {
-          ok: true,
-          status: 200,
-          text: async () => JSON.stringify({ executionId }),
-        };
+        return jsonResponse({ executionId });
       }
       if (url.includes("/agent/stream/")) {
         const ssePayload = 'event: done\ndata: {"output":{"result":"ok"},"status":"COMPLETED"}\n\n';
-        return {
-          ok: true,
-          status: 200,
-          headers: new Headers({ "content-type": "text/event-stream" }),
-          body: new ReadableStream({
+        return new Response(
+          new ReadableStream({
             start(controller) {
               controller.enqueue(new TextEncoder().encode(ssePayload));
               controller.close();
             },
           }),
-        };
+          { status: 200, headers: { "content-type": "text/event-stream" } },
+        );
       }
       if (url.includes(`/agent/${executionId}/status`)) {
-        return {
-          ok: true,
-          status: 200,
-          text: async () => JSON.stringify({ status: "COMPLETED", output: { result: "ok" } }),
-          json: async () => ({ status: "COMPLETED", output: { result: "ok" } }),
-        };
+        return jsonResponse({ status: "COMPLETED", output: { result: "ok" } });
       }
-      return {
-        ok: true,
-        status: 200,
-        text: async () => "{}",
-        json: async () => ({}),
-      };
+      return jsonResponse({});
     });
   }
 
@@ -69,6 +152,7 @@ describe("AgentRuntime", () => {
       savedEnv[key] = process.env[key];
       delete process.env[key];
     }
+    mockedGenerateToken.mockReset();
   });
 
   afterEach(() => {
@@ -115,25 +199,24 @@ describe("AgentRuntime", () => {
   });
 
   describe("_httpRequest", () => {
-    it("throws AgentAPIError on non-2xx response", async () => {
-      global.fetch = jest.fn().mockResolvedValue({
-        ok: false,
-        status: 404,
-        text: async () => "Not Found",
-      });
+    it("throws AgentAPIError on a generic non-2xx response", async () => {
+      global.fetch = jest.fn().mockResolvedValue(jsonResponse({ message: "boom" }, 500));
 
       const runtime = new AgentRuntime();
       await expect(runtime._httpRequest("GET", "/test")).rejects.toThrow(
-        /HTTP GET \/test failed: 404/,
+        /HTTP GET \/test failed: 500/,
       );
     });
 
+    it("throws AgentNotFoundError on a 404 response (spec T5)", async () => {
+      global.fetch = jest.fn().mockResolvedValue(jsonResponse({ message: "no such execution" }, 404));
+
+      const runtime = new AgentRuntime();
+      await expect(runtime._httpRequest("GET", "/test")).rejects.toThrow(/Agent not found/);
+    });
+
     it("returns parsed JSON for successful response", async () => {
-      global.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        status: 200,
-        text: async () => '{"executionId":"wf-1"}',
-      });
+      global.fetch = jest.fn().mockResolvedValue(jsonResponse({ executionId: "wf-1" }));
 
       const runtime = new AgentRuntime();
       const result = await runtime._httpRequest("GET", "/test");
@@ -141,11 +224,7 @@ describe("AgentRuntime", () => {
     });
 
     it("returns empty object for empty response", async () => {
-      global.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        status: 204,
-        text: async () => "",
-      });
+      global.fetch = jest.fn().mockResolvedValue(new Response(null, { status: 204 }));
 
       const runtime = new AgentRuntime();
       const result = await runtime._httpRequest("GET", "/test");
@@ -153,11 +232,7 @@ describe("AgentRuntime", () => {
     });
 
     it("sends an explicit apiKey as X-Authorization (Orkes contract)", async () => {
-      global.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        status: 200,
-        text: async () => "{}",
-      });
+      global.fetch = jest.fn().mockResolvedValue(jsonResponse({}));
 
       const runtime = new AgentRuntime({ apiKey: "test-api-key" });
       await runtime._httpRequest("POST", "/agent/start", { prompt: "hi" });
@@ -168,27 +243,19 @@ describe("AgentRuntime", () => {
           method: "POST",
           headers: expect.objectContaining({
             "X-Authorization": "test-api-key",
-            "Content-Type": "application/json",
           }),
         }),
       );
     });
 
     it("mints a JWT from authKey/authSecret and sends X-Authorization", async () => {
-      global.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        status: 200,
-        text: async () => "{}",
-      });
+      mockedGenerateToken.mockResolvedValue(tokenSuccess("minted-jwt"));
+      global.fetch = jest.fn().mockResolvedValue(jsonResponse({}));
 
       const runtime = new AgentRuntime({
         authKey: "my-auth-key",
         authSecret: "my-auth-secret",
       });
-      // Stub the Conductor token mint so no network is needed.
-      jest.spyOn(runtime.client, "getClient").mockResolvedValue({
-        tokenResource: { generateToken: jest.fn().mockResolvedValue({ token: "minted-jwt" }) },
-      } as never);
 
       await runtime._httpRequest("GET", "/test");
 
@@ -202,23 +269,21 @@ describe("AgentRuntime", () => {
       );
     });
 
-    it("passes AbortSignal to fetch", async () => {
-      global.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        status: 200,
-        text: async () => "{}",
-      });
+    it("passes AbortSignal to fetch (propagates through the timeout-combined signal)", async () => {
+      global.fetch = jest.fn().mockResolvedValue(jsonResponse({}));
 
       const controller = new AbortController();
       const runtime = new AgentRuntime();
       await runtime._httpRequest("GET", "/test", undefined, controller.signal);
 
-      expect(global.fetch).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.objectContaining({
-          signal: controller.signal,
-        }),
-      );
+      // The real request pipeline combines the caller's signal with a
+      // request-timeout signal (AbortSignal.any(...)), so fetch doesn't see
+      // the exact same object — verify propagation instead of identity.
+      const [, init] = (global.fetch as jest.Mock).mock.calls[0] as [unknown, RequestInit];
+      expect(init.signal).toBeInstanceOf(AbortSignal);
+      expect(init.signal?.aborted).toBe(false);
+      controller.abort();
+      expect(init.signal?.aborted).toBe(true);
     });
   });
 
@@ -242,49 +307,10 @@ describe("AgentRuntime", () => {
   describe("SSE URL construction", () => {
     it("constructs SSE URL as /agent/stream/{executionId}", async () => {
       const fetchCalls: string[] = [];
-
-      global.fetch = jest.fn().mockImplementation(async (url: string, _init?: RequestInit) => {
-        fetchCalls.push(url);
-
-        if (url.includes("/agent/start")) {
-          return {
-            ok: true,
-            status: 200,
-            text: async () => JSON.stringify({ executionId: "wf-sse-test" }),
-          };
-        }
-        if (url.includes("/agent/stream/") || url.includes("/sse")) {
-          // SSE endpoint — return a stream with a done event
-          const ssePayload = 'event: done\ndata: {"output":"result","status":"COMPLETED"}\n\n';
-          return {
-            ok: true,
-            status: 200,
-            headers: new Headers({ "content-type": "text/event-stream" }),
-            body: new ReadableStream({
-              start(controller) {
-                controller.enqueue(new TextEncoder().encode(ssePayload));
-                controller.close();
-              },
-            }),
-          };
-        }
-        if (url.includes("/status")) {
-          return {
-            ok: true,
-            status: 200,
-            text: async () => JSON.stringify({ status: "COMPLETED", output: "result" }),
-          };
-        }
-        if (url.includes("/metadata/taskdefs")) {
-          return { ok: true, status: 200, text: async () => "" };
-        }
-        if (url.includes("/tasks/poll/")) {
-          return { ok: true, status: 204, text: async () => "" };
-        }
-        return { ok: true, status: 200, text: async () => "{}" };
-      });
+      mockAgentServer("wf-sse-test", fetchCalls);
 
       const runtime = new AgentRuntime({ serverUrl: "http://localhost:8080/api" });
+      jest.spyOn((runtime as any).workerManager, "startPolling").mockImplementation(() => {});
       const { Agent } = await import("../agent.js");
       const agent = new Agent({ name: "test_agent", model: "gpt-4o" });
 

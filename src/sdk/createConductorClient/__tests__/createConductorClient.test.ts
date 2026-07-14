@@ -353,6 +353,102 @@ describe("createConductorClient integration", () => {
     });
   });
 
+  // ─── getAuthenticationHeaders / stopBackgroundRefresh (R2) ─────────
+
+  describe("getAuthenticationHeaders (R2 accessor)", () => {
+    it("returns the borrowed token as X-Authorization; one mint across two calls within TTL", async () => {
+      mockedGenerateToken.mockResolvedValue(tokenSuccess("jwt-1"));
+
+      const client = await createConductorClient(
+        {
+          serverUrl: "http://localhost:8080",
+          keyId: "test-key",
+          keySecret: "test-secret",
+          logger: mockLogger,
+        },
+        async () => jsonResponse({})
+      );
+
+      const h1 = await client.getAuthenticationHeaders();
+      const h2 = await client.getAuthenticationHeaders();
+      expect(h1).toEqual({ "X-Authorization": "jwt-1" });
+      expect(h2).toEqual({ "X-Authorization": "jwt-1" });
+      // Initial auth only -- borrowing getToken() mints nothing extra.
+      expect(mockedGenerateToken).toHaveBeenCalledTimes(1);
+    });
+
+    it("re-mints past TTL", async () => {
+      jest.useFakeTimers();
+      let callCount = 0;
+      mockedGenerateToken.mockImplementation(async () => {
+        callCount++;
+        return tokenSuccess(`jwt-${callCount}`);
+      });
+
+      const client = await createConductorClient(
+        {
+          serverUrl: "http://localhost:8080",
+          keyId: "test-key",
+          keySecret: "test-secret",
+          refreshTokenInterval: 0,
+          logger: mockLogger,
+        },
+        async () => jsonResponse({})
+      );
+
+      expect(await client.getAuthenticationHeaders()).toEqual({ "X-Authorization": "jwt-1" });
+      jest.advanceTimersByTime(60 * 60 * 1000 + 1);
+      expect(await client.getAuthenticationHeaders()).toEqual({ "X-Authorization": "jwt-2" });
+      jest.useRealTimers();
+    });
+
+    it("returns null and mints nothing for an anonymous (no-credentials) config", async () => {
+      const client = await createConductorClient(
+        { serverUrl: "http://localhost:8080" },
+        async () => jsonResponse({})
+      );
+
+      expect(await client.getAuthenticationHeaders()).toBeNull();
+      expect(mockedGenerateToken).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("stopBackgroundRefresh (R2)", () => {
+    it("stops the background refresh interval", async () => {
+      jest.useFakeTimers();
+      let callCount = 0;
+      mockedGenerateToken.mockImplementation(async () => {
+        callCount++;
+        return tokenSuccess(`jwt-${callCount}`);
+      });
+
+      const client = await createConductorClient(
+        {
+          serverUrl: "http://localhost:8080",
+          keyId: "test-key",
+          keySecret: "test-secret",
+          refreshTokenInterval: 1000,
+          logger: mockLogger,
+        },
+        async () => jsonResponse({})
+      );
+
+      client.stopBackgroundRefresh();
+      const callsAtStop = callCount;
+      await jest.advanceTimersByTimeAsync(10_000);
+      expect(callCount).toBe(callsAtStop);
+      jest.useRealTimers();
+    });
+
+    it("is a no-op for an anonymous config", async () => {
+      const client = await createConductorClient(
+        { serverUrl: "http://localhost:8080" },
+        async () => jsonResponse({})
+      );
+      expect(() => client.stopBackgroundRefresh()).not.toThrow();
+    });
+  });
+
   // ─── Config resolution ─────────────────────────────────────────────
 
   describe("config resolution", () => {

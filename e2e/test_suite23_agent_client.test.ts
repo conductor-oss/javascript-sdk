@@ -2,9 +2,9 @@
  * Suite 23: AgentClient / WorkflowClient control-plane surface (TypeScript SDK).
  *
  * Exercises the extracted control-plane client against a live runtime:
- * - AgentClient.run on an LLM-only agent (no local tools) → COMPLETED
+ * - OrkesAgentClient.run on an LLM-only agent (no local tools) → COMPLETED
  * - WorkflowClient.getWorkflow after a completed run → COMPLETED workflow
- * - AgentClient.schedule create → list → purge (counterfactual)
+ * - OrkesAgentClient.schedule create → list → purge (counterfactual)
  * - AgentRuntime exposes `.client` (AgentClient) and `.workflows` (WorkflowClient)
  *
  * Deterministic: asserts on status / structure only — never validates the
@@ -14,7 +14,7 @@
 import { describe, it, expect, beforeAll } from '@jest/globals';
 import {
   Agent,
-  AgentClient,
+  OrkesAgentClient,
   AgentRuntime,
   WorkflowClient,
   Schedule,
@@ -29,7 +29,7 @@ describe('Suite 23: AgentClient / WorkflowClient', () => {
       throw new Error('agentspan server is not healthy — these e2e suites need a running server');
     }
   });
-  const client = new AgentClient();
+  const client = new OrkesAgentClient();
 
   function llmOnlyAgent(name: string): Agent {
     return new Agent({
@@ -39,7 +39,7 @@ describe('Suite 23: AgentClient / WorkflowClient', () => {
     });
   }
 
-  it('AgentClient.run on an LLM-only agent completes', async () => {
+  it('OrkesAgentClient.run on an LLM-only agent completes', async () => {
     const result = await client.run(llmOnlyAgent('ts_ac_run'), 'ping');
     expect(result.status).toBe('COMPLETED');
     expect(result.executionId).toBeTruthy();
@@ -60,7 +60,7 @@ describe('Suite 23: AgentClient / WorkflowClient', () => {
     expect(await client.workflows.getStatus(result.executionId)).toBe('COMPLETED');
   });
 
-  it('AgentClient.schedule create → list → purge (counterfactual)', async () => {
+  it('OrkesAgentClient.schedule create → list → purge (counterfactual)', async () => {
     const agent = llmOnlyAgent(`ts_ac_sched_${Math.random().toString(36).slice(2, 10)}`);
 
     // Counterfactual baseline: no schedules before we create any.
@@ -87,7 +87,7 @@ describe('Suite 23: AgentClient / WorkflowClient', () => {
 
   it('AgentRuntime exposes .client (AgentClient) and .workflows (WorkflowClient)', () => {
     const runtime = new AgentRuntime();
-    expect(runtime.client).toBeInstanceOf(AgentClient);
+    expect(runtime.client).toBeInstanceOf(OrkesAgentClient);
     expect(runtime.workflows).toBeInstanceOf(WorkflowClient);
     // The runtime's workflow accessor is the client's workflow client.
     expect(runtime.workflows).toBe(runtime.client.workflows);

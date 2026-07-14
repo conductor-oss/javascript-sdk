@@ -119,6 +119,18 @@ export class SSETimeoutError extends AgentspanError {
 }
 
 /**
+ * The server rejected the initial SSE connection (non-2xx) — it does not
+ * support streaming for this route. Callers fall back to polling.
+ */
+export class SSEUnavailableError extends AgentspanError {
+  constructor(message = "SSE stream is unavailable") {
+    super(message);
+    this.name = "SSEUnavailableError";
+    Object.setPrototypeOf(this, new.target.prototype);
+  }
+}
+
+/**
  * Terminal tool error — non-retryable failure (e.g., CLI command exited non-zero).
  * Causes the Conductor task to be marked FAILED_WITH_TERMINAL_ERROR.
  */

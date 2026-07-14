@@ -42,7 +42,7 @@ describe("AgentStream", () => {
 
       mockFetch(createSSEStream(sseChunks));
 
-      const stream = new AgentStream("http://localhost/sse", {}, "wf-1", jest.fn());
+      const stream = new AgentStream("http://localhost/sse", async () => ({}), "wf-1", jest.fn());
 
       const events = [];
       for await (const event of stream) {
@@ -63,7 +63,7 @@ describe("AgentStream", () => {
 
       mockFetch(createSSEStream(sseChunks));
 
-      const stream = new AgentStream("http://localhost/sse", {}, "wf-1", jest.fn());
+      const stream = new AgentStream("http://localhost/sse", async () => ({}), "wf-1", jest.fn());
 
       const events = [];
       for await (const event of stream) {
@@ -85,7 +85,7 @@ describe("AgentStream", () => {
 
       mockFetch(createSSEStream(sseChunks));
 
-      const stream = new AgentStream("http://localhost/sse", {}, "wf-1", jest.fn());
+      const stream = new AgentStream("http://localhost/sse", async () => ({}), "wf-1", jest.fn());
 
       const events = [];
       for await (const event of stream) {
@@ -106,7 +106,7 @@ describe("AgentStream", () => {
 
       mockFetch(createSSEStream(sseChunks));
 
-      const stream = new AgentStream("http://localhost/sse", {}, "wf-1", jest.fn());
+      const stream = new AgentStream("http://localhost/sse", async () => ({}), "wf-1", jest.fn());
 
       const events = [];
       for await (const event of stream) {
@@ -123,7 +123,7 @@ describe("AgentStream", () => {
 
       mockFetch(createSSEStream(sseChunks));
 
-      const stream = new AgentStream("http://localhost/sse", {}, "wf-1", jest.fn());
+      const stream = new AgentStream("http://localhost/sse", async () => ({}), "wf-1", jest.fn());
 
       const events = [];
       for await (const event of stream) {
@@ -142,7 +142,7 @@ describe("AgentStream", () => {
 
       mockFetch(createSSEStream(sseChunks));
 
-      const stream = new AgentStream("http://localhost/sse", {}, "wf-1", jest.fn());
+      const stream = new AgentStream("http://localhost/sse", async () => ({}), "wf-1", jest.fn());
 
       const events = [];
       for await (const event of stream) {
@@ -163,7 +163,7 @@ describe("AgentStream", () => {
 
       mockFetch(createSSEStream(sseChunks));
 
-      const stream = new AgentStream("http://localhost/sse", {}, "wf-1", jest.fn());
+      const stream = new AgentStream("http://localhost/sse", async () => ({}), "wf-1", jest.fn());
 
       const events = [];
       for await (const event of stream) {
@@ -179,7 +179,7 @@ describe("AgentStream", () => {
 
       mockFetch(createSSEStream(sseChunks));
 
-      const stream = new AgentStream("http://localhost/sse", {}, "wf-1", jest.fn());
+      const stream = new AgentStream("http://localhost/sse", async () => ({}), "wf-1", jest.fn());
 
       const events = [];
       for await (const event of stream) {
@@ -200,7 +200,7 @@ describe("AgentStream", () => {
 
       mockFetch(createSSEStream(sseChunks));
 
-      const stream = new AgentStream("http://localhost/sse", {}, "wf-1", jest.fn());
+      const stream = new AgentStream("http://localhost/sse", async () => ({}), "wf-1", jest.fn());
 
       const events = [];
       for await (const event of stream) {
@@ -224,7 +224,7 @@ describe("AgentStream", () => {
 
       mockFetch(createSSEStream(sseChunks));
 
-      const stream = new AgentStream("http://localhost/sse", {}, "wf-1", jest.fn());
+      const stream = new AgentStream("http://localhost/sse", async () => ({}), "wf-1", jest.fn());
 
       for await (const _event of stream) {
         // drain
@@ -240,7 +240,7 @@ describe("AgentStream", () => {
   describe("HITL methods", () => {
     it("respond calls respondFn with body", async () => {
       const respondFn = jest.fn().mockResolvedValue(undefined);
-      const stream = new AgentStream("http://localhost/sse", {}, "wf-1", respondFn);
+      const stream = new AgentStream("http://localhost/sse", async () => ({}), "wf-1", respondFn);
 
       await stream.respond({ answer: "yes" });
       expect(respondFn).toHaveBeenCalledWith({ answer: "yes" });
@@ -248,7 +248,7 @@ describe("AgentStream", () => {
 
     it("approve calls respondFn with approved: true", async () => {
       const respondFn = jest.fn().mockResolvedValue(undefined);
-      const stream = new AgentStream("http://localhost/sse", {}, "wf-1", respondFn);
+      const stream = new AgentStream("http://localhost/sse", async () => ({}), "wf-1", respondFn);
 
       await stream.approve({ extra: "data" });
       expect(respondFn).toHaveBeenCalledWith({
@@ -259,7 +259,7 @@ describe("AgentStream", () => {
 
     it("approve works without extra output", async () => {
       const respondFn = jest.fn().mockResolvedValue(undefined);
-      const stream = new AgentStream("http://localhost/sse", {}, "wf-1", respondFn);
+      const stream = new AgentStream("http://localhost/sse", async () => ({}), "wf-1", respondFn);
 
       await stream.approve();
       expect(respondFn).toHaveBeenCalledWith({ approved: true });
@@ -267,7 +267,7 @@ describe("AgentStream", () => {
 
     it("reject calls respondFn with approved: false", async () => {
       const respondFn = jest.fn().mockResolvedValue(undefined);
-      const stream = new AgentStream("http://localhost/sse", {}, "wf-1", respondFn);
+      const stream = new AgentStream("http://localhost/sse", async () => ({}), "wf-1", respondFn);
 
       await stream.reject("not allowed");
       expect(respondFn).toHaveBeenCalledWith({
@@ -278,7 +278,7 @@ describe("AgentStream", () => {
 
     it("reject works without reason", async () => {
       const respondFn = jest.fn().mockResolvedValue(undefined);
-      const stream = new AgentStream("http://localhost/sse", {}, "wf-1", respondFn);
+      const stream = new AgentStream("http://localhost/sse", async () => ({}), "wf-1", respondFn);
 
       await stream.reject();
       expect(respondFn).toHaveBeenCalledWith({
@@ -289,7 +289,7 @@ describe("AgentStream", () => {
 
     it("send calls respondFn with message", async () => {
       const respondFn = jest.fn().mockResolvedValue(undefined);
-      const stream = new AgentStream("http://localhost/sse", {}, "wf-1", respondFn);
+      const stream = new AgentStream("http://localhost/sse", async () => ({}), "wf-1", respondFn);
 
       await stream.send("hello agent");
       expect(respondFn).toHaveBeenCalledWith({ message: "hello agent" });
@@ -305,7 +305,7 @@ describe("AgentStream", () => {
 
       mockFetch(createSSEStream(sseChunks));
 
-      const stream = new AgentStream("http://localhost/sse", {}, "wf-1", jest.fn());
+      const stream = new AgentStream("http://localhost/sse", async () => ({}), "wf-1", jest.fn());
 
       const result = await stream.getResult();
       expect(result.status).toBe("COMPLETED");
@@ -318,7 +318,7 @@ describe("AgentStream", () => {
 
       mockFetch(createSSEStream(sseChunks));
 
-      const stream = new AgentStream("http://localhost/sse", {}, "wf-1", jest.fn());
+      const stream = new AgentStream("http://localhost/sse", async () => ({}), "wf-1", jest.fn());
 
       const result = await stream.getResult();
       expect(result.status).toBe("FAILED");
@@ -328,8 +328,83 @@ describe("AgentStream", () => {
 
   describe("executionId", () => {
     it("exposes executionId", () => {
-      const stream = new AgentStream("http://localhost/sse", {}, "wf-123", jest.fn());
+      const stream = new AgentStream("http://localhost/sse", async () => ({}), "wf-123", jest.fn());
       expect(stream.executionId).toBe("wf-123");
+    });
+  });
+
+  // ── S1c: header provider ─────────────────────────────
+
+  describe("header provider", () => {
+    it("resolves auth headers via the provider for the connect request", async () => {
+      const sseChunks = ["event:done\ndata:{}\n\n"];
+      mockFetch(createSSEStream(sseChunks));
+      const headerProvider = jest.fn(async () => ({ "X-Authorization": "tok-1" }));
+
+      const stream = new AgentStream("http://localhost/sse", headerProvider, "wf-1", jest.fn());
+      for await (const _event of stream) {
+        // drain
+      }
+
+      expect(headerProvider).toHaveBeenCalledTimes(1);
+      const [, init] = (global.fetch as jest.Mock).mock.calls[0] as [unknown, RequestInit];
+      expect(new Headers(init.headers).get("X-Authorization")).toBe("tok-1");
+    });
+  });
+
+  // ── S1c: SSEUnavailableError → polling fallback ──────
+
+  describe("SSE unavailable → polling fallback", () => {
+    it("falls back to polling when the server rejects the initial SSE connection", async () => {
+      let call = 0;
+      global.fetch = jest.fn(async () => {
+        call++;
+        if (call === 1) {
+          // Initial SSE connect: the server doesn't serve this route.
+          return {
+            ok: false,
+            status: 404,
+            body: null,
+            text: async () => "not found",
+            headers: new Headers(),
+          } as unknown as Response;
+        }
+        // Polling fallback hits `${serverUrl}/agent/{id}/status`.
+        return new Response(JSON.stringify({ isComplete: true, output: { ok: true } }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      }) as unknown as typeof fetch;
+
+      const stream = new AgentStream(
+        "http://localhost/api/agent/stream/wf-1",
+        async () => ({}),
+        "wf-1",
+        jest.fn(),
+        "http://localhost/api",
+      );
+
+      const events = [];
+      for await (const event of stream) {
+        events.push(event);
+      }
+
+      expect(events.some((e) => e.type === "done")).toBe(true);
+    });
+  });
+
+  // ── S1b: close() ──────────────────────────────────────
+
+  describe("close()", () => {
+    it("marks the stream done so a subsequent iteration ends immediately", async () => {
+      const stream = new AgentStream("http://localhost/sse", async () => ({}), "wf-1", jest.fn());
+      stream.close();
+
+      const events = [];
+      for await (const event of stream) {
+        events.push(event);
+      }
+      expect(events).toHaveLength(0);
     });
   });
 });
