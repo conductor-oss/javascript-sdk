@@ -13,6 +13,8 @@ import { describe, it, expect, beforeAll, afterAll, jest } from '@jest/globals';
 import { Agent, AgentRuntime, tool, getCredential } from '@io-orkes/conductor-javascript/agents';
 import {
   checkServerHealth,
+  checkRuntimeMetadataCapability,
+  checkSecretWriteCapability,
   MODEL,
   TIMEOUT,
   credentialSet,
@@ -27,10 +29,20 @@ const CRED_A = 'E2E_TS_CRED_A';
 const CRED_B = 'E2E_TS_CRED_B';
 
 let runtime: AgentRuntime;
+let runtimeMetadataCapable = true;
+let secretWriteCapable = true;
 
 beforeAll(async () => {
   const healthy = await checkServerHealth();
   if (!healthy) throw new Error('Server not available');
+  // Capability probes: skip credential-delivery assertions on a server that
+  // doesn't persist TaskDef.runtimeMetadata / deliver Task.runtimeMetadata
+  // (agentspan <= 0.4.2, conductor-oss without PR #1255 — spec R6 SHOULD),
+  // and skip credential-lifecycle steps on a server whose secret store is
+  // env-backed and read-only (a standalone conductor-oss server without a
+  // writable secret backend).
+  runtimeMetadataCapable = await checkRuntimeMetadataCapability();
+  secretWriteCapable = await checkSecretWriteCapability();
   runtime = new AgentRuntime();
 });
 
@@ -97,6 +109,21 @@ function makeAgent() {
 
 describe('Suite 2: Tool Calling / Credential Lifecycle', () => {
   it('full credential lifecycle', async () => {
+    if (!runtimeMetadataCapable) {
+      // Capability probe (spec R6 SHOULD) came back negative — this server
+      // doesn't persist TaskDef.runtimeMetadata / deliver Task.runtimeMetadata,
+      // so credential delivery can't work end-to-end. Skip rather than fail.
+      console.warn('Skipping: server does not support runtimeMetadata credential delivery');
+      return;
+    }
+    if (!secretWriteCapable) {
+      // This lifecycle test adds/updates/removes credentials mid-run via
+      // PUT/DELETE /api/secrets — a standalone conductor-oss server's
+      // env-backed secret store rejects those writes. Skip rather than fail
+      // (Java/C# SDKs hit and documented the same server-capability gap).
+      console.warn('Skipping: server secret store is read-only (env-backed)');
+      return;
+    }
     const agent = makeAgent();
 
     // ── Step 1: Clean slate ──────────────────────────────────────
@@ -155,7 +182,10 @@ describe('Suite 2: Tool Calling / Credential Lifecycle', () => {
     }
 
     // ── Step 4: Add credentials ──────────────────────────────────
-    // Fresh runtime so workers get execution tokens with the new credentials
+    // Credentials are delivered fresh per task poll (runtimeMetadata, spec
+    // R6) — no per-runtime token to go stale. Restart anyway as hygiene, so
+    // this run's workers can't overlap with any in-flight handler from the
+    // previous step.
     await runtime.shutdown();
     await new Promise((r) => setTimeout(r, 2000)); // drain old workers
     runtime = new AgentRuntime();
@@ -187,9 +217,9 @@ describe('Suite 2: Tool Calling / Credential Lifecycle', () => {
     }
 
     // ── Step 5: Update credentials ───────────────────────────────
-    // Shutdown and recreate runtime so workers pick up fresh execution tokens
-    // with the updated credentials. Reusing stale workers causes them to resolve
-    // credentials with the old execution's token (race condition).
+    // Shutdown and recreate runtime as hygiene (same rationale as Step 4) —
+    // updated values are delivered on the next poll's runtimeMetadata
+    // regardless, but this avoids overlap with in-flight handlers.
     await runtime.shutdown();
     // Drain delay: stopPolling() signals the conductor poll loop to stop but
     // in-flight task handlers may still complete asynchronously. Without this,

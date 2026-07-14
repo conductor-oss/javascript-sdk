@@ -4,12 +4,14 @@ import type { ConductorClient } from "../sdk/clients/agent/AgentClient.js";
 import type { Task, TaskResult } from "../open-api";
 import type { ToolContext } from "./types.js";
 import { TerminalToolError } from "./errors.js";
-import {
-  extractExecutionToken,
-  resolveCredentials,
-  injectSecretsForInvocation,
-  runWithCredentialContext,
-} from "./credentials.js";
+import { injectSecretsForInvocation, runWithCredentialContext } from "./credentials.js";
+
+/**
+ * The generated `Task` type predates `runtimeMetadata` (spec R6 — delivered
+ * wire-only at poll time, never persisted). Typed as a local intersection
+ * rather than an OpenAPI regen (out of scope; regen churn is its own PR).
+ */
+type TaskWithRuntimeMetadata = Task & { runtimeMetadata?: Record<string, string> };
 
 // ── Type coercion (base spec §14.1) ─────────────────────
 
@@ -242,14 +244,6 @@ export class WorkerManager {
 
   private pendingWorkers: PendingWorker[] = [];
   private taskManager: TaskManager | null = null;
-  /**
-   * Server root (with `/api`) resolved from the shared client, for
-   * `resolveCredentials`'s raw fetch (pre-S4 pull path). `headers` stays `{}`
-   * — the pull path authenticates via the execution token in its body, not
-   * headers (unchanged from the prior behavior).
-   */
-  private _serverUrl = "http://localhost:8080/api";
-  private readonly headers: Record<string, string> = {};
 
   constructor(getClient: () => Promise<ConductorClient>, pollIntervalMs = 100, concurrency = 1) {
     this.getClient = getClient;
@@ -281,8 +275,6 @@ export class WorkerManager {
     if (this.pendingWorkers.length === 0) return;
 
     const client = await this.getClient();
-    const baseUrl = (client.getConfig().baseUrl as string | undefined) ?? "http://localhost:8080";
-    this._serverUrl = `${baseUrl}/api`;
 
     const workers = this.pendingWorkers.map((pw) => this._wrapWorker(pw));
     this.taskManager = new TaskManager(client, workers, {
@@ -308,8 +300,7 @@ export class WorkerManager {
    * credential injection, state capture, error mapping.
    */
   private _wrapWorker(pw: PendingWorker): ConductorWorker {
-    const serverUrl = this._serverUrl;
-    const { headers, concurrency } = this;
+    const { concurrency } = this;
     const worker: ConductorWorker & { leaseExtendEnabled?: boolean } = {
       taskDefName: pw.taskName,
       pollInterval: this.pollIntervalMs,
@@ -336,33 +327,25 @@ export class WorkerManager {
         cleaned["__workflowInstanceId__"] = task.workflowInstanceId;
         if (toolContext) cleaned["__toolContext__"] = toolContext;
 
-        // Credential setup
-        const execToken = extractExecutionToken(inputData);
+        // Credential setup (spec R6, fail-closed): the server resolves secrets
+        // at poll time and delivers them wire-only on runtimeMetadata — never
+        // persisted, never fetched separately, ambient env never read.
+        const delivered = (task as TaskWithRuntimeMetadata).runtimeMetadata ?? {};
 
-        // Resolve credentials up-front (no env mutation yet). Injection happens
-        // inside runHandler() via injectSecretsForInvocation so the mutate-
-        // invoke-restore sequence is atomic under a process-wide lock.
-        // See docs/design/secret-injection-contract.md.
+        // Injection happens inside runHandler() via injectSecretsForInvocation
+        // so the mutate-invoke-restore sequence is atomic under a process-wide
+        // lock. See docs/design/secret-injection-contract.md.
         let resolvedCredentials: Record<string, string> = {};
         if (pw.credentials?.length) {
-          if (!execToken) {
+          const missing = pw.credentials.filter((name) => delivered[name] == null);
+          if (missing.length > 0) {
             throw new NonRetryableException(
-              `Required credentials not found: ${pw.credentials.join(", ")}. ` +
-                `No execution token available.`,
+              `Required credentials not found: ${missing.join(", ")}. Server must persist ` +
+                `TaskDef.runtimeMetadata and deliver Task.runtimeMetadata ` +
+                `(conductor-oss PR #1255 / agentspan server > 0.4.2).`,
             );
           }
-          try {
-            resolvedCredentials = await resolveCredentials(
-              serverUrl,
-              headers,
-              execToken,
-              pw.credentials,
-            );
-          } catch (err) {
-            throw new NonRetryableException(
-              `Credential resolution failed for ${pw.taskName}: ${err instanceof Error ? err.message : String(err)}`,
-            );
-          }
+          resolvedCredentials = Object.fromEntries(pw.credentials.map((name) => [name, delivered[name]]));
         }
 
         const runHandler = async (): Promise<
@@ -398,12 +381,10 @@ export class WorkerManager {
         };
 
         // Scope credential context per-async-call so concurrent workers do not
-        // share (and clobber) module-level state. Runs even without an exec
-        // token so handlers see a consistent context shape.
-        if (execToken) {
-          return runWithCredentialContext(serverUrl, headers, execToken, runHandler);
-        }
-        return runHandler();
+        // share (and clobber) module-level state — even for workers that
+        // declared no credentials, so handlers always see a consistent
+        // context shape.
+        return runWithCredentialContext(resolvedCredentials, runHandler);
       },
     };
     return worker;

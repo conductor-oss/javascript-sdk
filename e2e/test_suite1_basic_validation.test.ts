@@ -609,7 +609,9 @@ describe('Suite 1: Basic Validation', () => {
 
   it('credentialed tools compile into plan', async () => {
     // NOTE: TS SDK does not serialize credential names into the compiled plan
-    // (credentials are resolved via execution token, not plan config).
+    // (credential names ride the deploy/start payload's config.credentials,
+    // which the server stamps onto TaskDef.runtimeMetadata -- spec R6 --
+    // not the /agent/compile plan preview).
     // This test validates tools exist with correct types.
     const agent = new Agent({
       name: 'e2e_creds',

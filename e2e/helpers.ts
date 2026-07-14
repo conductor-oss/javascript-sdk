@@ -117,6 +117,81 @@ export async function credentialDelete(name: string): Promise<void> {
   }
 }
 
+// ── Secret-write capability probe ─────────────────────────────────────────
+// A standalone conductor-oss server's secret store can be env-backed and
+// read-only (`PUT /api/secrets/{name}` -> 500 "env-backed secrets are
+// read-only") -- credentials only exist if pre-seeded as env vars on the
+// server process before boot. Suites that add/update credentials mid-run
+// (e.g. the CLI-driven or PUT-driven lifecycle tests) need this probe to
+// skip those steps rather than fail on a capability the server doesn't have.
+// Session-scoped: probes once, caches the result for the life of the process.
+
+let _secretWriteCapable: boolean | null = null;
+
+export async function checkSecretWriteCapability(): Promise<boolean> {
+  if (_secretWriteCapable !== null) return _secretWriteCapable;
+
+  const name = '__ts_e2e_secret_write_probe__';
+  try {
+    const resp = await fetch(`${SERVER_URL}/secrets/${encodeURIComponent(name)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'text/plain' },
+      body: 'probe-value',
+      signal: AbortSignal.timeout(10_000),
+    });
+    _secretWriteCapable = resp.ok;
+  } catch {
+    _secretWriteCapable = false;
+  }
+  if (_secretWriteCapable) await credentialDelete(name);
+  return _secretWriteCapable;
+}
+
+// ── Credential-delivery capability probe (spec R6) ───────────────────────
+// Registers a scratch TaskDef with `runtimeMetadata` via the Metadata API and
+// reads it back. Servers that don't persist the field (agentspan <= 0.4.2,
+// conductor-oss without PR #1255) silently drop it on write or omit it on
+// read — callers use this to skip credential-delivery assertions on
+// incapable servers rather than fail outright. Session-scoped: probes once,
+// caches the result for the life of the test process.
+
+let _runtimeMetadataCapable: boolean | null = null;
+
+export async function checkRuntimeMetadataCapability(): Promise<boolean> {
+  if (_runtimeMetadataCapable !== null) return _runtimeMetadataCapable;
+
+  const taskDefName = '__ts_e2e_runtimemetadata_probe__';
+  try {
+    const registerResp = await fetch(`${SERVER_URL}/metadata/taskdefs`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify([{ name: taskDefName, runtimeMetadata: ['PROBE_NAME'] }]),
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!registerResp.ok) {
+      _runtimeMetadataCapable = false;
+      return false;
+    }
+
+    const readResp = await fetch(`${SERVER_URL}/metadata/taskdefs/${taskDefName}`, {
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!readResp.ok) {
+      _runtimeMetadataCapable = false;
+      return false;
+    }
+
+    const data = (await readResp.json()) as Record<string, unknown>;
+    _runtimeMetadataCapable =
+      Array.isArray(data.runtimeMetadata) && data.runtimeMetadata.includes('PROBE_NAME');
+  } catch {
+    _runtimeMetadataCapable = false;
+  } finally {
+    fetch(`${SERVER_URL}/metadata/taskdefs/${taskDefName}`, { method: 'DELETE' }).catch(() => {});
+  }
+  return _runtimeMetadataCapable;
+}
+
 // ── Server health check ─────────────────────────────────────────────────
 
 export async function checkServerHealth(): Promise<boolean> {

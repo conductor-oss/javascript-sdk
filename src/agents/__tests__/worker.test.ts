@@ -1,5 +1,4 @@
 import { describe, it, expect, beforeEach, jest, afterEach } from "@jest/globals";
-import { stubGlobal } from "./helpers/stub-global.js";
 import {
   coerceValue,
   extractToolContext,
@@ -533,60 +532,75 @@ describe("WorkerManager", () => {
     });
   });
 
-  // ── Credential context injection (fix #3) ─────────────
+  // ── Credential dispatch via Task.runtimeMetadata (spec R6) ────
   // These tests exercise the _wrapWorker execute() callback directly
   // by accessing it through the private API, without starting the
   // full conductor polling machinery.
 
   describe("credential context during execution", () => {
-    it("sets credential context when execution token is present", async () => {
+    it("delivers declared credentials from runtimeMetadata (no fetch)", async () => {
       const manager = new WorkerManager(unusedGetClient, 100);
 
-      let contextAvailable = false;
+      let seenValue: string | undefined;
 
-      manager.addWorker("cred_task", async (_input) => {
-        const { getCredential } = await import("../credentials.js");
-        try {
-          await getCredential("MY_CRED");
-          contextAvailable = true;
-        } catch (err: unknown) {
-          contextAvailable = !(
-            err instanceof Error && err.message.includes("No credential context")
-          );
-        }
-        return { ok: true };
-      });
-
-      // Mock fetch for credential resolution
-      stubGlobal(
-        "fetch",
-        jest.fn().mockImplementation(async (url: string) => {
-          if (typeof url === "string" && url.includes("/workers/secrets")) {
-            return {
-              ok: true,
-              status: 200,
-              json: async () => ({ MY_CRED: "secret-value" }),
-            };
-          }
-          return { ok: true, status: 200, text: async () => "" };
-        }),
+      manager.addWorker(
+        "cred_task",
+        async (_input) => {
+          const { getCredential } = await import("../credentials.js");
+          seenValue = await getCredential("MY_CRED");
+          return { ok: true };
+        },
+        ["MY_CRED"],
       );
 
-      // Get the wrapped ConductorWorker and call execute() directly
       const wrapped = (manager as any)._wrapWorker((manager as any).pendingWorkers[0]);
       await wrapped.execute({
         taskId: "task-1",
         workflowInstanceId: "wf-1",
-        inputData: {
-          arg1: "value",
-          __agentspan_ctx__: {
-            executionToken: "exec-tok-123",
-            executionId: "wf-1",
-          },
-        },
+        inputData: { arg1: "value" },
+        runtimeMetadata: { MY_CRED: "secret-value" },
       });
 
-      expect(contextAvailable).toBe(true);
+      expect(seenValue).toBe("secret-value");
+    });
+
+    it("fails closed (NonRetryableException) when a declared credential is missing from runtimeMetadata", async () => {
+      const manager = new WorkerManager(unusedGetClient, 100);
+      manager.addWorker("missing_cred_task", async () => ({ ok: true }), ["MY_CRED"]);
+
+      const wrapped = (manager as any)._wrapWorker((manager as any).pendingWorkers[0]);
+
+      await expect(
+        wrapped.execute({
+          taskId: "task-1",
+          workflowInstanceId: "wf-1",
+          inputData: {},
+          runtimeMetadata: {},
+        }),
+      ).rejects.toThrow(/Required credentials not found: MY_CRED/);
+    });
+
+    it("never falls back to ambient process.env when the server didn't deliver the value", async () => {
+      const manager = new WorkerManager(unusedGetClient, 100);
+      manager.addWorker("ambient_env_task", async () => ({ ok: true }), ["MY_CRED"]);
+
+      const wrapped = (manager as any)._wrapWorker((manager as any).pendingWorkers[0]);
+      const prev = process.env.MY_CRED;
+      process.env.MY_CRED = "should-never-be-used";
+      try {
+        await expect(
+          wrapped.execute({
+            taskId: "task-1",
+            workflowInstanceId: "wf-1",
+            inputData: {},
+            // Server omitted MY_CRED even though it's declared.
+            runtimeMetadata: {},
+          }),
+        ).rejects.toThrow(/Required credentials not found: MY_CRED/);
+      } finally {
+        if (prev === undefined) delete process.env.MY_CRED;
+        else process.env.MY_CRED = prev;
+      }
     });
 
     it("clears credential context after handler completes", async () => {
@@ -600,11 +614,8 @@ describe("WorkerManager", () => {
       await wrapped.execute({
         taskId: "task-1",
         workflowInstanceId: "wf-1",
-        inputData: {
-          __agentspan_ctx__: {
-            executionToken: "exec-tok-456",
-          },
-        },
+        inputData: {},
+        runtimeMetadata: {},
       });
 
       const { getCredential } = await import("../credentials.js");
@@ -625,11 +636,8 @@ describe("WorkerManager", () => {
         wrapped.execute({
           taskId: "task-1",
           workflowInstanceId: "wf-1",
-          inputData: {
-            __agentspan_ctx__: {
-              executionToken: "exec-tok-789",
-            },
-          },
+          inputData: {},
+          runtimeMetadata: {},
         }),
       ).rejects.toThrow("handler boom");
 
@@ -638,87 +646,64 @@ describe("WorkerManager", () => {
       await expect(getCredential("ANY")).rejects.toThrow("No credential context available");
     });
 
-    it("isolates credential context across concurrent worker executions (regression: race in test_suite2)", async () => {
+    it("isolates credential context across concurrently-submitted worker executions (regression: race in test_suite2)", async () => {
       // Reproduces the test_suite2_tool_calling flake deterministically:
-      // The LLM emits parallel tool calls, so multiple worker.execute()
-      // run concurrently. Pre-fix, all share a single module-level
-      // credential context. Worker B's `finally`-block clear races with
-      // worker A's getCredential() call, throwing
-      // "No credential context available".
+      // the LLM emits parallel tool calls, so multiple worker.execute() calls
+      // are in flight together. Pre-fix, all shared a single module-level
+      // credential context — one call's cleanup could race another's
+      // getCredential(), throwing "No credential context available", or
+      // worse, leaking one task's value into another's result.
       //
-      // We force the race by gating each handler on a barrier so all
-      // handlers are mid-flight at the same time, then have each call
-      // getCredential() and verify each got *its own* execution token's
-      // resolved value back.
+      // Declaring credentials routes each call through
+      // injectSecretsForInvocation's env-mutation mutex, which serializes
+      // the actual handler bodies — so this isn't true parallel execution,
+      // it's concurrently *submitted* execute() calls whose credential
+      // contexts must still never cross despite sharing that queue.
       const manager = new WorkerManager(unusedGetClient, 100);
-
-      const NUM = 5;
-      const barrier = new Promise<void>((resolve) => {
-        let arrived = 0;
-        manager.addWorker(
-          "race_task",
-          async () => {
-            arrived++;
-            // Wait until all handlers are running concurrently.
-            if (arrived === NUM) resolve();
-            await barrierGate;
-            const { getCredential } = await import("../credentials.js");
-            return { value: await getCredential("MY_CRED") };
-          },
-          undefined,
-        );
-        // Build the gate via a sentinel resolved after all arrive.
-        // The actual barrier the handlers await:
-      });
-      // Bridge: when `barrier` (all-arrived) resolves, open the gate.
-      let openGate!: () => void;
-      const barrierGate = new Promise<void>((res) => {
-        openGate = res;
-      });
-      void barrier.then(() => openGate());
-
-      // Echo the token back as the resolved value so we can detect crosstalk.
-      stubGlobal(
-        "fetch",
-        jest.fn().mockImplementation(async (url: string, init?: RequestInit) => {
-          if (typeof url === "string" && url.includes("/workers/secrets")) {
-            const body = JSON.parse(String(init?.body));
-            return {
-              ok: true,
-              status: 200,
-              json: async () => ({ MY_CRED: `${body.token}:resolved` }),
-            };
-          }
-          return { ok: true, status: 200, text: async () => "" };
-        }),
+      manager.addWorker(
+        "race_task",
+        async () => {
+          const { getCredential } = await import("../credentials.js");
+          return { value: await getCredential("MY_CRED") };
+        },
+        ["MY_CRED"],
       );
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const wrapped = (manager as any)._wrapWorker((manager as any).pendingWorkers[0]);
 
+      const NUM = 5;
       const tasks = Array.from({ length: NUM }, (_, i) => ({
         taskId: `task-${i}`,
         workflowInstanceId: "wf-1",
-        inputData: {
-          __agentspan_ctx__: { executionToken: `tok-${i}` },
-        },
+        inputData: {},
+        runtimeMetadata: { MY_CRED: `tok-${i}:resolved` },
       }));
 
       const results = await Promise.all(tasks.map((t) => wrapped.execute(t)));
 
-      // Each handler must see its own execution token, end to end —
-      // no nulls, no crosstalk between concurrent calls.
+      // Each call must see its own task's delivered value, end to end —
+      // no nulls, no crosstalk between concurrently-submitted calls.
       for (let i = 0; i < NUM; i++) {
         expect(results[i].outputData).toEqual({ value: `tok-${i}:resolved` });
       }
     });
 
-    it("does not set credential context when no execution token", async () => {
+    it("runs normally when the worker declares no credentials, regardless of runtimeMetadata", async () => {
       const manager = new WorkerManager(unusedGetClient, 100);
 
       let handlerCalled = false;
-      manager.addWorker("no_token_task", async () => {
+      let midExecutionError: unknown;
+      manager.addWorker("no_creds_task", async () => {
         handlerCalled = true;
+        // A credential context is always scoped (even if empty) — asking for
+        // a name that was never declared/delivered is a not-found, not "no
+        // context", even mid-execution.
+        try {
+          await (await import("../credentials.js")).getCredential("ANY");
+        } catch (err) {
+          midExecutionError = err;
+        }
         return { ok: true };
       });
 
@@ -732,6 +717,9 @@ describe("WorkerManager", () => {
       });
 
       expect(handlerCalled).toBe(true);
+      const { CredentialNotFoundError } = await import("../errors.js");
+      expect(midExecutionError).toBeInstanceOf(CredentialNotFoundError);
+
       const { getCredential } = await import("../credentials.js");
       await expect(getCredential("ANY")).rejects.toThrow("No credential context available");
     });

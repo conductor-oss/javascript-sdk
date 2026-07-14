@@ -10,6 +10,8 @@ import { Agent, AgentRuntime, mcpTool } from '@io-orkes/conductor-javascript/age
 import { execSync, spawn, type ChildProcess } from 'node:child_process';
 import {
   checkServerHealth,
+  checkRuntimeMetadataCapability,
+  checkSecretWriteCapability,
   MODEL,
   TIMEOUT,
   credentialSet,
@@ -39,10 +41,16 @@ const PROMPT = `Call exactly these three tools:
 Report each result.`;
 
 let runtime: AgentRuntime;
+let credentialDeliveryCapable = true;
 
 beforeAll(async () => {
   const healthy = await checkServerHealth();
   if (!healthy) throw new Error('Server not available');
+  // Phase 2 (authenticated) needs both a writable secret store and
+  // runtimeMetadata delivery — a standalone conductor-oss server can lack
+  // either (env-backed read-only secrets; pre-PR #1255 servers).
+  credentialDeliveryCapable =
+    (await checkRuntimeMetadataCapability()) && (await checkSecretWriteCapability());
   runtime = new AgentRuntime();
 });
 
@@ -184,6 +192,10 @@ describe('Suite 4: MCP Tools', () => {
       }
 
       // ── Phase 2: Authenticated ──────────────────────────────────
+      if (!credentialDeliveryCapable) {
+        console.warn('Skipping Phase 2 (authenticated): server lacks writable secrets and/or runtimeMetadata delivery');
+        return;
+      }
       stopMcpServer(serverProc);
       serverProc = null;
       execSync('sleep 1');

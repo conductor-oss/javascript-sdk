@@ -5,23 +5,27 @@
  *   - tool() with credentials: ["GITHUB_TOKEN"] (default isolated=true)
  *   - Credentials injected into a fresh subprocess -- parent env never touched
  *   - Tool reads credential from process.env inside the subprocess
- *   - Fallback to process.env when no server credential is set (non-strict mode)
  *
  * How it works:
- *   1. Agent starts -> server mints a short-lived execution token
- *   2. Before each tool call, the SDK fetches declared credentials from
- *      POST /api/workers/secrets using that token
- *   3. The tool function runs in a fresh subprocess with credentials
- *      injected as env vars. The parent process's process.env is unchanged.
+ *   1. The server resolves declared credentials at task-poll time and
+ *      delivers them wire-only on the polled Task's `runtimeMetadata` map --
+ *      never persisted, never a separate fetch.
+ *   2. Fail-closed: if a declared credential wasn't delivered, the task fails
+ *      before the tool function ever runs. The ambient process.env is never
+ *      read as a fallback.
+ *   3. The tool function runs in a fresh subprocess with the resolved
+ *      credentials injected as env vars. The parent process's process.env is
+ *      unchanged.
  *
  * Setup (one-time, via CLI):
  *   agentspan login                                     # authenticate
  *   agentspan credentials set GITHUB_TOKEN <your-github-token> # enter token when prompted
  *
  * Requirements:
- *   - Agentspan server running at AGENTSPAN_SERVER_URL
+ *   - Agentspan server running at AGENTSPAN_SERVER_URL (> 0.4.2, for
+ *     runtimeMetadata delivery) or conductor-oss (with PR #1255)
  *   - AGENTSPAN_LLM_MODEL set (or defaults to openai/gpt-4o-mini)
- *   - GITHUB_TOKEN stored via `agentspan credentials set` OR set in process.env
+ *   - GITHUB_TOKEN stored via `agentspan credentials set`
  */
 
 import { Agent, AgentRuntime, tool } from '@io-orkes/conductor-javascript/agents';

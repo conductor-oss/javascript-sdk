@@ -4,33 +4,32 @@
  * Demonstrates:
  *   - tool() with external: true, credentials: ["GITHUB_TOKEN"] declares
  *     credentials for an external worker
- *   - The external worker uses resolveCredentials() to fetch
- *     credential values from the server at runtime
+ *   - The server resolves declared credentials at task-poll time and
+ *     delivers them wire-only on the polled Task's `runtimeMetadata` map
+ *     (name -> value) -- the external worker reads them directly, no
+ *     separate resolve call needed
  *   - Works for workers running in separate processes, containers,
  *     or machines
  *
  * This example shows two sides:
  *   1. Agent definition (declares the external tool with credentials)
- *   2. External worker pattern (resolves credentials using the helper)
+ *   2. External worker pattern (reads runtimeMetadata from the polled task)
  *
- * The external worker typically runs in a separate process. Here we
- * demonstrate both patterns in one file.
+ * The external worker typically runs in a separate process, polling
+ * Conductor's task API directly. Here we demonstrate both patterns in one
+ * file.
  *
  * Setup (one-time):
  *   agentspan credentials set GITHUB_TOKEN <your-github-token>
  *
  * Requirements:
- *   - Agentspan server running at AGENTSPAN_SERVER_URL
+ *   - Agentspan server running at AGENTSPAN_SERVER_URL (> 0.4.2, for
+ *     runtimeMetadata delivery) or conductor-oss (with PR #1255)
  *   - AGENTSPAN_LLM_MODEL set (or defaults to openai/gpt-4o-mini)
  *   - GITHUB_TOKEN stored via `agentspan credentials set`
  */
 
-import {
-  Agent,
-  tool,
-  resolveCredentials,
-  extractExecutionToken,
-} from '@io-orkes/conductor-javascript/agents';
+import { Agent, tool } from '@io-orkes/conductor-javascript/agents';
 import { llmModel } from './settings';
 
 // -- Agent side: declare external tool with credentials -----------------------
@@ -62,34 +61,29 @@ export const agent = new Agent({
   instructions: 'You can look up GitHub users. Use the github_lookup tool.',
 });
 
-// -- External worker side: resolve credentials at runtime ---------------------
-// In production, this would run in a separate process.
+// -- External worker side: read runtimeMetadata from the polled task ---------
+// In production, this would run in a separate process polling Conductor's
+// task API directly (GET /tasks/poll/github_lookup); the polled Task object
+// carries `runtimeMetadata` as a sibling of `inputData`, already resolved.
 
-async function externalWorkerExample(taskInput: Record<string, unknown>) {
-  // extractExecutionToken reads __agentspan_ctx__ from task input
-  const executionToken = extractExecutionToken(taskInput);
-  if (!executionToken) {
-    console.log('  No execution token found in task input');
-    return;
+async function externalWorkerExample(task: {
+  inputData: Record<string, unknown>;
+  runtimeMetadata?: Record<string, string>;
+}) {
+  const token = task.runtimeMetadata?.GITHUB_TOKEN;
+  if (!token) {
+    // Fail closed: the server didn't deliver the declared credential.
+    // Never fall back to reading it from ambient process.env.
+    console.log('  GITHUB_TOKEN missing from runtimeMetadata -- failing the task');
+    return { error: 'GITHUB_TOKEN not found in runtimeMetadata' };
   }
 
-  const serverUrl = process.env.AGENTSPAN_SERVER_URL ?? 'http://localhost:8080/api';
-
-  // resolveCredentials calls the server to get credential values
-  const creds = await resolveCredentials(serverUrl, {}, executionToken, ['GITHUB_TOKEN']);
-  const token = creds.GITHUB_TOKEN ?? '';
-
-  console.log(`  Resolved GITHUB_TOKEN: ${token ? 'present' : 'missing'}`);
+  console.log('  Resolved GITHUB_TOKEN: present');
 
   // Use the credential to make API calls
-  const username = (taskInput.username as string) ?? 'octocat';
-  const headers: Record<string, string> = {};
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-
+  const username = (task.inputData.username as string) ?? 'octocat';
   const resp = await fetch(`https://api.github.com/users/${username}`, {
-    headers,
+    headers: { Authorization: `Bearer ${token}` },
     signal: AbortSignal.timeout(10_000),
   });
 
@@ -121,6 +115,5 @@ console.log(`  name: ${agent.name}`);
 console.log(`  tools: [${agent.tools.map((t) => (t as { name?: string }).name ?? 'unknown').join(', ')}]`);
 console.log();
 console.log('External worker pattern:');
-console.log("  const token = extractExecutionToken(taskInput);");
-console.log("  const creds = await resolveCredentials(serverUrl, {}, token, ['GITHUB_TOKEN']);");
-console.log("  const value = creds.GITHUB_TOKEN;");
+console.log('  const token = task.runtimeMetadata?.GITHUB_TOKEN;');
+console.log('  if (!token) { /* fail closed -- never read process.env as a fallback */ }');

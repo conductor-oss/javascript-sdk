@@ -1,259 +1,16 @@
-import { describe, it, expect, jest, beforeEach, afterEach } from "@jest/globals";
-import { stubGlobal } from "./helpers/stub-global.js";
+import { describe, it, expect, beforeEach, afterEach } from "@jest/globals";
 import {
-  extractExecutionToken,
-  resolveCredentials,
   getCredential,
   setCredentialContext,
   clearCredentialContext,
   runWithCredentialContext,
 } from "../credentials.js";
-import {
-  CredentialNotFoundError,
-  CredentialAuthError,
-  CredentialRateLimitError,
-  CredentialServiceError,
-} from "../errors.js";
+import { CredentialNotFoundError, CredentialAuthError } from "../errors.js";
 
-// ── extractExecutionToken ────────────────────────────────
-
-describe("extractExecutionToken", () => {
-  it("extracts token from primary path (camelCase)", () => {
-    const input = {
-      arg1: "value",
-      __agentspan_ctx__: {
-        executionToken: "tok-primary",
-        executionId: "wf-123",
-      },
-    };
-    expect(extractExecutionToken(input)).toBe("tok-primary");
-  });
-
-  it("extracts token from primary path (snake_case)", () => {
-    const input = {
-      __agentspan_ctx__: {
-        execution_token: "tok-snake",
-      },
-    };
-    expect(extractExecutionToken(input)).toBe("tok-snake");
-  });
-
-  it("falls back to workflowInput path (camelCase)", () => {
-    const input = {
-      arg1: "value",
-      workflowInput: {
-        __agentspan_ctx__: {
-          executionToken: "tok-fallback",
-        },
-      },
-    };
-    expect(extractExecutionToken(input)).toBe("tok-fallback");
-  });
-
-  it("falls back to workflowInput path (snake_case)", () => {
-    const input = {
-      workflowInput: {
-        __agentspan_ctx__: {
-          execution_token: "tok-fallback-snake",
-        },
-      },
-    };
-    expect(extractExecutionToken(input)).toBe("tok-fallback-snake");
-  });
-
-  it("prefers primary path over fallback", () => {
-    const input = {
-      __agentspan_ctx__: {
-        executionToken: "tok-primary",
-      },
-      workflowInput: {
-        __agentspan_ctx__: {
-          executionToken: "tok-fallback",
-        },
-      },
-    };
-    expect(extractExecutionToken(input)).toBe("tok-primary");
-  });
-
-  it("returns null when no context present", () => {
-    expect(extractExecutionToken({})).toBeNull();
-    expect(extractExecutionToken({ arg1: "value" })).toBeNull();
-  });
-
-  it("returns null when context has no token", () => {
-    const input = {
-      __agentspan_ctx__: {
-        executionId: "wf-123",
-      },
-    };
-    expect(extractExecutionToken(input)).toBeNull();
-  });
-
-  it("returns null for invalid context types", () => {
-    expect(extractExecutionToken({ __agentspan_ctx__: "not-object" })).toBeNull();
-    expect(extractExecutionToken({ __agentspan_ctx__: null })).toBeNull();
-    expect(extractExecutionToken({ __agentspan_ctx__: 42 })).toBeNull();
-  });
-});
-
-// ── resolveCredentials ───────────────────────────────────
-
-describe("resolveCredentials", () => {
-  const serverUrl = "https://api.agentspan.test";
-  const headers = { Authorization: "Bearer test-key" };
-  const token = "exec-tok-123";
-
-  beforeEach(() => {
-    jest.restoreAllMocks();
-  });
-
-  it("resolves credentials on success", async () => {
-    const mockResponse = { GITHUB_TOKEN: "ghp_secret", AWS_KEY: "aws-secret" };
-    stubGlobal(
-      "fetch",
-      jest.fn().mockResolvedValue({
-        ok: true,
-        json: async () => mockResponse,
-      }),
-    );
-
-    const result = await resolveCredentials(serverUrl, headers, token, ["GITHUB_TOKEN", "AWS_KEY"]);
-
-    expect(result).toEqual(mockResponse);
-    expect(fetch).toHaveBeenCalledWith(`${serverUrl}/workers/secrets`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...headers,
-      },
-      body: JSON.stringify({ token, names: ["GITHUB_TOKEN", "AWS_KEY"] }),
-    });
-  });
-
-  it("sends token field (not executionToken) matching server contract", async () => {
-    const mockResponse = { MY_CRED: "val" };
-    stubGlobal(
-      "fetch",
-      jest.fn().mockResolvedValue({
-        ok: true,
-        json: async () => mockResponse,
-      }),
-    );
-
-    await resolveCredentials(serverUrl, headers, token, ["MY_CRED"]);
-
-    const call = (fetch as ReturnType<typeof jest.fn>).mock.calls[0];
-    const body = JSON.parse(call[1].body);
-    // Server expects "token", not "executionToken"
-    expect(body).toHaveProperty("token");
-    expect(body).not.toHaveProperty("executionToken");
-    expect(body.token).toBe(token);
-  });
-
-  it("throws CredentialNotFoundError on 404", async () => {
-    stubGlobal(
-      "fetch",
-      jest.fn().mockResolvedValue({
-        ok: false,
-        status: 404,
-        text: async () => JSON.stringify({ credentialName: "MISSING_KEY" }),
-      }),
-    );
-
-    await expect(resolveCredentials(serverUrl, headers, token, ["MISSING_KEY"])).rejects.toThrow(
-      CredentialNotFoundError,
-    );
-  });
-
-  it("throws CredentialAuthError on 401", async () => {
-    stubGlobal(
-      "fetch",
-      jest.fn().mockResolvedValue({
-        ok: false,
-        status: 401,
-        text: async () => "Token expired",
-      }),
-    );
-
-    await expect(resolveCredentials(serverUrl, headers, token, ["MY_CRED"])).rejects.toThrow(
-      CredentialAuthError,
-    );
-  });
-
-  it("throws CredentialRateLimitError on 429", async () => {
-    stubGlobal(
-      "fetch",
-      jest.fn().mockResolvedValue({
-        ok: false,
-        status: 429,
-        text: async () => "Rate limit exceeded",
-      }),
-    );
-
-    await expect(resolveCredentials(serverUrl, headers, token, ["MY_CRED"])).rejects.toThrow(
-      CredentialRateLimitError,
-    );
-  });
-
-  it("throws CredentialServiceError on 500", async () => {
-    stubGlobal(
-      "fetch",
-      jest.fn().mockResolvedValue({
-        ok: false,
-        status: 500,
-        text: async () => "Internal server error",
-      }),
-    );
-
-    await expect(resolveCredentials(serverUrl, headers, token, ["MY_CRED"])).rejects.toThrow(
-      CredentialServiceError,
-    );
-  });
-
-  it("throws CredentialServiceError on 503", async () => {
-    stubGlobal(
-      "fetch",
-      jest.fn().mockResolvedValue({
-        ok: false,
-        status: 503,
-        text: async () => "Service unavailable",
-      }),
-    );
-
-    await expect(resolveCredentials(serverUrl, headers, token, ["MY_CRED"])).rejects.toThrow(
-      CredentialServiceError,
-    );
-  });
-
-  it("throws CredentialServiceError on network failure", async () => {
-    stubGlobal("fetch", jest.fn().mockRejectedValue(new Error("ECONNREFUSED")));
-
-    await expect(resolveCredentials(serverUrl, headers, token, ["MY_CRED"])).rejects.toThrow(
-      CredentialServiceError,
-    );
-  });
-
-  it("throws CredentialServiceError on unexpected status", async () => {
-    stubGlobal(
-      "fetch",
-      jest.fn().mockResolvedValue({
-        ok: false,
-        status: 403,
-        text: async () => "Forbidden",
-      }),
-    );
-
-    await expect(resolveCredentials(serverUrl, headers, token, ["MY_CRED"])).rejects.toThrow(
-      CredentialServiceError,
-    );
-  });
-});
-
-// ── getCredential ────────────────────────────────────────
+// ── getCredential (spec R6 — reads from delivered runtimeMetadata, no fetch) ──
 
 describe("getCredential", () => {
   beforeEach(() => {
-    jest.restoreAllMocks();
     clearCredentialContext();
   });
 
@@ -266,30 +23,14 @@ describe("getCredential", () => {
     await expect(getCredential("MY_CRED")).rejects.toThrow("No credential context available");
   });
 
-  it("resolves a single credential using context", async () => {
-    stubGlobal(
-      "fetch",
-      jest.fn().mockResolvedValue({
-        ok: true,
-        json: async () => ({ MY_CRED: "secret-value" }),
-      }),
-    );
-
-    setCredentialContext("https://api.test", { Authorization: "Bearer tok" }, "exec-tok");
+  it("resolves a credential already delivered on the context (no network call)", async () => {
+    setCredentialContext({ MY_CRED: "secret-value" });
     const value = await getCredential("MY_CRED");
     expect(value).toBe("secret-value");
   });
 
-  it("throws CredentialNotFoundError when credential missing in response", async () => {
-    stubGlobal(
-      "fetch",
-      jest.fn().mockResolvedValue({
-        ok: true,
-        json: async () => ({}), // Credential not in response
-      }),
-    );
-
-    setCredentialContext("https://api.test", {}, "exec-tok");
+  it("throws CredentialNotFoundError when the name isn't in the delivered context", async () => {
+    setCredentialContext({ OTHER_CRED: "value" });
     await expect(getCredential("MISSING")).rejects.toThrow(CredentialNotFoundError);
   });
 });
@@ -297,16 +38,20 @@ describe("getCredential", () => {
 // ── runWithCredentialContext ─────────────────────────────
 
 describe("runWithCredentialContext", () => {
-  const serverUrl = "https://api.test";
-  const headers = { Authorization: "Bearer key" };
-
   afterEach(() => {
     clearCredentialContext();
-    jest.restoreAllMocks();
+  });
+
+  it("scopes delivered credentials to the call and clears them afterward", async () => {
+    const value = await runWithCredentialContext({ MY_CRED: "scoped-value" }, () =>
+      getCredential("MY_CRED"),
+    );
+    expect(value).toBe("scoped-value");
+    await expect(getCredential("MY_CRED")).rejects.toThrow("No credential context available");
   });
 
   it.each([1, 2, 3])(
-    "isolates concurrent executions (run %i)",
+    "isolates concurrent executions (run %i) — each call sees only its own delivered values",
     async () => {
       // Reproduce the worker race that breaks test_suite2_tool_calling:
       //   1. Worker A enters context, starts handler.
@@ -314,19 +59,8 @@ describe("runWithCredentialContext", () => {
       //   3. Worker A's handler later calls getCredential — without per-async
       //      isolation, B's exit nulled A's context and getCredential throws.
       // Test re-runs (1-3) to surface scheduling-dependent regressions.
-      stubGlobal(
-        "fetch",
-        jest.fn().mockImplementation(async (_url, init: RequestInit) => {
-          const body = JSON.parse(String(init.body));
-          // Echo the token back in the resolved value so we can verify isolation.
-          const result: Record<string, string> = {};
-          for (const n of body.names) result[n] = `${body.token}:${n}`;
-          return { ok: true, json: async () => result };
-        }),
-      );
-
-      async function workerHandler(execToken: string, delayMs: number) {
-        return runWithCredentialContext(serverUrl, headers, execToken, async () => {
+      async function workerHandler(taskId: string, delayMs: number) {
+        return runWithCredentialContext({ MY_KEY: `${taskId}:resolved` }, async () => {
           await new Promise((r) => setTimeout(r, delayMs));
           return getCredential("MY_KEY");
         });
@@ -341,12 +75,22 @@ describe("runWithCredentialContext", () => {
       ]);
 
       expect(results).toEqual([
-        "tok-A:MY_KEY",
-        "tok-B:MY_KEY",
-        "tok-C:MY_KEY",
-        "tok-D:MY_KEY",
-        "tok-E:MY_KEY",
+        "tok-A:resolved",
+        "tok-B:resolved",
+        "tok-C:resolved",
+        "tok-D:resolved",
+        "tok-E:resolved",
       ]);
     },
   );
+});
+
+// ── R12 deletion (spec test T17 shape) ───────────────────
+
+describe("R12 deletions", () => {
+  it("no longer exports extractExecutionToken or resolveCredentials", async () => {
+    const mod = await import("../credentials.js");
+    expect((mod as Record<string, unknown>).extractExecutionToken).toBeUndefined();
+    expect((mod as Record<string, unknown>).resolveCredentials).toBeUndefined();
+  });
 });
