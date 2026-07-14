@@ -86,12 +86,12 @@ async function main() {
     result2.printResult();
 
     // Production pattern:
-    // 1. Deploy once during CI/CD:
+    // 1. Deploy once during CI/CD (optional -- serve() below also deploys):
     // await runtime.deploy(simpleCoder);
     // CLI alternative:
     // agentspan deploy --package sdk/typescript/examples --agents simple_coder
     //
-    // 2. In a separate long-lived worker process:
+    // 2. In a separate long-lived worker process (deploys + registers workers + starts polling):
     // await runtime.serve(simpleCoder);
   } finally {
     await runtime.shutdown();

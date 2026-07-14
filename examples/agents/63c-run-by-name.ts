@@ -2,8 +2,10 @@
  * 63c - Direct Run — kept alongside the Python "run by name" variant for parity.
  *
  * The current TypeScript runtime accepts agent objects here, so this example
- * uses the imported agent definition directly. Deploy/serve remains the
- * commented production pattern below.
+ * uses the imported agent definition directly. The commented production
+ * pattern below shows the standalone deploy() CI/CD step; serve() alone
+ * (see 63b-serve.ts) deploys and starts workers in one call and is
+ * sufficient without it.
  *
  * Requirements:
  *   - Conductor server running
@@ -20,12 +22,12 @@ try {
   result.printResult();
 
   // Production pattern:
-  // 1. Deploy once during CI/CD:
+  // 1. Deploy once during CI/CD (optional -- serve() below also deploys):
   // await runtime.deploy(docAssistant);
   // CLI alternative:
   // agentspan deploy --package sdk/typescript/examples --agents doc_assistant
   //
-  // 2. In a separate long-lived worker process:
+  // 2. In a separate long-lived worker process (deploys + registers workers + starts polling):
   // await runtime.serve(docAssistant);
 } finally {
   await runtime.shutdown();

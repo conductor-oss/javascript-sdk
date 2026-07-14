@@ -1,17 +1,18 @@
 /**
  * 63b - Serve — keep tool workers running as a persistent service.
  *
- * serve() registers the tool functions as Conductor workers and starts
- * polling for tasks. The workflow must already exist on the server
- * (from a prior deploy() or run() call).
+ * serve() deploys the agent(s) (registering the workflow definition on the
+ * server, same as deploy()), registers the tool functions as Conductor
+ * workers, and starts polling for tasks — one call, no separate deploy()
+ * step required. Pass `{ blocking: false }` to return once deploy +
+ * registration + polling have started instead of blocking forever.
  *
- * NOTE: serve() is blocking. This example defines the agents and
+ * NOTE: serve() is blocking by default. This example defines the agents and
  * prints a message about how to call serve(). In production, uncomment
  * the runtime.serve() call and run this as a long-lived process.
  *
  * Requirements:
  *   - Conductor server running
- *   - Agents already deployed (run 63-deploy.ts first)
  *   - AGENTSPAN_SERVER_URL=http://localhost:8080/api as environment variable
  *   - AGENTSPAN_LLM_MODEL=openai/gpt-4o-mini as environment variable
  */
@@ -79,13 +80,13 @@ try {
   result.printResult();
 
   // Production pattern:
-  // 1. Deploy once during CI/CD:
+  // 1. Deploy once during CI/CD (optional -- serve() below also deploys):
   // await runtime.deploy(docAssistant);
   // await runtime.deploy(opsBot);
   // CLI alternative:
   // agentspan deploy --package sdk/typescript/examples --agents doc_assistant
   //
-  // 2. In a separate long-lived worker process:
+  // 2. In a separate long-lived worker process (deploys + registers workers + starts polling):
   // await runtime.serve(docAssistant, opsBot);
 } finally {
   await runtime.shutdown();

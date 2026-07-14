@@ -88,6 +88,8 @@ const agent = new Agent({
 
 The tool function receives an optional second argument, the [`ToolContext`](api-reference.md#toolcontext) (`sessionId`, `executionId`, `agentName`, `metadata`, `dependencies`, and a mutable `state`). See [Stateful agents](#stateful-agents).
 
+**No per-run mutable capture.** A `tool()` handler is registered once and its Conductor worker is reused across concurrent runs and (for framework-spawned agents) concurrent process-local executors — never re-created per run. Don't close over per-run mutable state in the handler itself (a module-level counter, an array pushed to across calls, a captured `let` reassigned mid-run); two runs executing the same tool concurrently would corrupt each other's state. Everything a handler needs that varies per run belongs in `ToolContext` (`state` for durable per-execution data, `dependencies` for injected collaborators) or in the function's own arguments — never in a closure variable mutated across invocations. Tool and agent factories otherwise take plain data (JSON-serializable configs), so building one is always safe to repeat.
+
 ### Tool discovery — `@Tool` / `toolsFrom`
 
 Decorate methods on a class and extract them, bound to the instance:
@@ -457,6 +459,10 @@ const addItem = tool(
 
 const agent = new Agent({ name: 'list_agent', model, tools: [addItem], stateful: true });
 ```
+
+### Liveness monitoring
+
+For a stateful run (one with a domain-isolated worker), `runtime.start()`/`run()`/`stream()` also start a liveness monitor: it polls the execution's workflow every `livenessCheckIntervalSeconds` and, if a `SCHEDULED`/`IN_PROGRESS` task in that run's domain sits unpolled (`pollCount === 0`) for longer than `livenessStallSeconds`, a blocking `wait()` rejects with `WorkerStallError` instead of hanging forever — the signal that the local worker process for this run's domain died. The monitor stops on terminal status or handle disposal and never keeps the process alive on its own. Configure via `AgentConfig`/env: `livenessEnabled` (`AGENTSPAN_LIVENESS_ENABLED`, default `true`), `livenessStallSeconds` (`AGENTSPAN_LIVENESS_STALL_SECONDS`, default `30`), `livenessCheckIntervalSeconds` (`AGENTSPAN_LIVENESS_CHECK_INTERVAL_SECONDS`, default `10`). Framework-spawned agents (LangGraph/LangChain/Vercel AI wrappers) never route through a per-run domain, so liveness monitoring doesn't apply to them.
 
 ## Next
 

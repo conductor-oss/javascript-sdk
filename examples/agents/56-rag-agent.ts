@@ -193,12 +193,12 @@ async function main() {
     }
 
     // Production pattern:
-    // 1. Deploy once during CI/CD:
+    // 1. Deploy once during CI/CD (optional -- serve() below also deploys):
     // await runtime.deploy(ragAgent);
     // CLI alternative:
     // agentspan deploy --package sdk/typescript/examples --agents rag_assistant
     //
-    // 2. In a separate long-lived worker process:
+    // 2. In a separate long-lived worker process (deploys + registers workers + starts polling):
     // await runtime.serve(ragAgent);
   } finally {
     await runtime.shutdown();

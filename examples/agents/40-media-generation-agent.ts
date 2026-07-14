@@ -77,12 +77,12 @@ async function main() {
     result.printResult();
 
     // Production pattern:
-    // 1. Deploy once during CI/CD:
+    // 1. Deploy once during CI/CD (optional -- serve() below also deploys):
     // await runtime.deploy(mediaAgent);
     // CLI alternative:
     // agentspan deploy --package sdk/typescript/examples --agents media_generator
     //
-    // 2. In a separate long-lived worker process:
+    // 2. In a separate long-lived worker process (deploys + registers workers + starts polling):
     // await runtime.serve(mediaAgent);
   } finally {
     await runtime.shutdown();

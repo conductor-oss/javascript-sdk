@@ -54,12 +54,12 @@ async function main() {
     console.log('  Key Topics:', structured?.['keyTopics']);
 
     // Production pattern:
-    // 1. Deploy once during CI/CD:
+    // 1. Deploy once during CI/CD (optional -- serve() below also deploys):
     // await runtime.deploy(analyzerAgent);
     // CLI alternative:
     // agentspan deploy --package sdk/typescript/examples --agents article_analyzer
     //
-    // 2. In a separate long-lived worker process:
+    // 2. In a separate long-lived worker process (deploys + registers workers + starts polling):
     // await runtime.serve(analyzerAgent);
   } finally {
     await runtime.shutdown();

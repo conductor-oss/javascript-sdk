@@ -2,7 +2,10 @@
  * 63 - Deploy — register agents on the server (CI/CD step).
  *
  * deploy() sends agent configs to the server, which compiles them into
- * Conductor workflow definitions. No local workers are started.
+ * Conductor workflow definitions. No local workers are started. Use this
+ * as a standalone CI/CD registration step when you want it decoupled from
+ * worker start-up; serve() (see 63b-serve.ts) deploys and starts workers
+ * in one call, so a separate deploy() isn't required in production.
  *
  * Requirements:
  *   - Conductor server running
@@ -73,13 +76,13 @@ try {
   result.printResult();
 
   // Production pattern:
-  // 1. Deploy once during CI/CD:
+  // 1. Deploy once during CI/CD (optional -- serve() below also deploys):
   // await runtime.deploy(docAssistant);
   // await runtime.deploy(opsBot);
   // CLI alternative:
   // agentspan deploy --package sdk/typescript/examples --agents doc_assistant
   //
-  // 2. In a separate long-lived worker process:
+  // 2. In a separate long-lived worker process (deploys + registers workers + starts polling):
   // await runtime.serve(docAssistant, opsBot);
 } finally {
   await runtime.shutdown();

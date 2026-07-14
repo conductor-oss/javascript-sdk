@@ -49,12 +49,12 @@ try {
   result.printResult();
 
   // Production pattern:
-  // 1. Deploy once during CI/CD:
+  // 1. Deploy once during CI/CD (optional -- serve() below also deploys):
   // await runtime.deploy(monitoringAgent);
   // CLI alternative:
   // agentspan deploy --package sdk/typescript/examples --agents monitoring
   //
-  // 2. In a separate long-lived worker process:
+  // 2. In a separate long-lived worker process (deploys + registers workers + starts polling):
   // await runtime.serve(monitoringAgent);
 } finally {
   await runtime.shutdown();

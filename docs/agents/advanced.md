@@ -4,26 +4,33 @@ Runtime configuration, the control-plane and workflow clients, the deploy/serve/
 
 ## Runtime configuration
 
-`new AgentRuntime(options?)` takes `AgentConfigOptions`. Every field falls back to an env var, then a default. Options take precedence over env vars.
+`new AgentRuntime(configuration?, settings?)` takes two independent, optional arguments:
+
+- `configuration` — connection/auth, the same shape every other Conductor client takes (`OrkesApiConfig`, or a pre-built `ConductorClient` from `createConductorClient()`/`OrkesClients` to share one client — and one token mint — across control-plane and worker-plane calls). Falls back to `CONDUCTOR_SERVER_URL`/`CONDUCTOR_AUTH_KEY`/`CONDUCTOR_AUTH_SECRET`, then `AGENTSPAN_SERVER_URL`/`AGENTSPAN_AUTH_KEY`/`AGENTSPAN_AUTH_SECRET` (agent-layer fallback), then `http://localhost:8080`.
+- `settings` — `AgentConfigOptions`, purely behavioral (no connection fields — those live on `configuration` now). Every field falls back to an env var, then a default; explicit values take precedence.
 
 ```ts
 import { AgentRuntime } from '@io-orkes/conductor-javascript/agents';
 
-const runtime = new AgentRuntime({
-  serverUrl: 'http://localhost:8080/api',   // AGENTSPAN_SERVER_URL
-  authKey: '…',                             // AGENTSPAN_AUTH_KEY
-  authSecret: '…',                          // AGENTSPAN_AUTH_SECRET
-  apiKey: '…',                              // AGENTSPAN_API_KEY (pre-minted token)
-  workerPollIntervalMs: 100,                // AGENTSPAN_WORKER_POLL_INTERVAL
-  workerThreads: 1,                         // AGENTSPAN_WORKER_THREADS
-  logLevel: 'INFO',                         // AGENTSPAN_LOG_LEVEL
-  llmRetryCount: 3,                         // AGENTSPAN_LLM_RETRY_COUNT
-});
+const runtime = new AgentRuntime(
+  { serverUrl: 'http://localhost:8080/api', keyId: '…', keySecret: '…' }, // connection (OrkesApiConfig)
+  {
+    workerPollIntervalMs: 100,              // AGENTSPAN_WORKER_POLL_INTERVAL
+    workerThreadCount: 1,                   // AGENTSPAN_WORKER_THREADS
+    streamingEnabled: true,                 // AGENTSPAN_STREAMING_ENABLED
+    livenessEnabled: true,                  // AGENTSPAN_LIVENESS_ENABLED
+    livenessStallSeconds: 30,               // AGENTSPAN_LIVENESS_STALL_SECONDS
+    livenessCheckIntervalSeconds: 10,       // AGENTSPAN_LIVENESS_CHECK_INTERVAL_SECONDS
+  },
+);
+
+// Both args are optional -- this reads connection + behavior entirely from env:
+const defaultRuntime = new AgentRuntime();
 ```
 
-Full `AgentConfigOptions`: `serverUrl`, `apiKey`, `authKey`, `authSecret`, `workerPollIntervalMs`, `workerThreads`, `autoStartWorkers`, `autoStartServer`, `daemonWorkers`, `streamingEnabled`, `credentialStrictMode`, `logLevel`, `llmRetryCount`. The server URL is normalized to end with `/api`.
+Full `AgentConfigOptions`: `workerPollIntervalMs`, `workerThreadCount`, `autoStartWorkers`, `streamingEnabled`, `livenessEnabled`, `livenessStallSeconds`, `livenessCheckIntervalSeconds` (see [Liveness monitoring](writing-agents.md#liveness-monitoring)).
 
-There is also a module-level singleton API for convenience — `configure(options)`, `run`, `start`, `stream`, `deploy`, `plan`, `serve`, `shutdown` — that operate on a shared runtime:
+There is also a module-level singleton API for convenience — `configure(configuration?, settings?)`, `run`, `start`, `stream`, `deploy`, `plan`, `serve`, `shutdown` — that operate on a shared runtime:
 
 ```ts
 import { configure, run, shutdown } from '@io-orkes/conductor-javascript/agents';
@@ -40,17 +47,15 @@ await shutdown();
 | `runtime.start(agent, prompt, opts?)` | Same as `run` but returns an `AgentHandle` for async interaction (stream, approve, pause, ...). | Yes. |
 | `runtime.stream(agent, prompt, opts?)` | `start` + return its `AgentStream`. | Yes. |
 | `runtime.deploy(agent, { schedules? })` | Compile + register the workflow definition on the server. No execution, no workers. CI/CD step. Returns `DeploymentInfo`. | No. |
-| `runtime.serve(...agents)` | Register local tool workers and poll forever (blocks until SIGINT/SIGTERM). Run this in a long-lived worker process. | Yes (and keeps them alive). |
+| `runtime.deploy(...agents)` | Variadic form: compile + register multiple agents in one call, no schedules reconciliation. Returns `DeploymentInfo[]`. | No. |
+| `runtime.serve(...agents, { blocking? })` | Deploys the given agents (same registration as `deploy`), registers their local tool workers, and starts polling. Blocks until SIGINT/SIGTERM by default; pass a trailing `{ blocking: false }` to return once deploy + registration + polling have started. With no agents, just (re)starts polling for workers already registered. | Yes (and keeps them alive when blocking). |
 | `runtime.plan(agent)` | Compile to a workflow definition and return it, without executing. | No. |
 | `runtime.shutdown()` | Stop worker polling. | — |
 
-The typical production split: `deploy` once in CI/CD, run a `serve` process for the tool workers, and trigger executions via the control plane (`runtime.client.run(...)`) or schedules.
+`serve()` already deploys, so a standalone `deploy()` call beforehand is optional — only worth doing when you want registration decoupled from worker start-up (e.g. a dedicated CI/CD step). The typical production split: run a `serve` process for the tool workers (it registers on the server for you), and trigger executions via the control plane (`runtime.client.run(...)`) or schedules.
 
 ```ts
-// CI/CD
-await runtime.deploy(myAgent);
-
-// Long-lived worker process
+// Long-lived worker process -- deploys + registers workers + starts polling
 await runtime.serve(myAgent);   // blocks
 
 // Trigger (control plane, no local workers needed for LLM-only / remote-tool agents)
@@ -59,12 +64,12 @@ const result = await runtime.client.run(myAgent, 'do the thing');
 
 ## `AgentClient` — control plane
 
-`runtime.client` is an [`AgentClient`](api-reference.md#agentclient): the control-plane client for the `/agent/*` HTTP surface. It mints the auth JWT (from `authKey`/`authSecret`) and sends it as `X-Authorization`.
+`runtime.client` is an [`AgentClient`](api-reference.md#agentclient): the control-plane client for the `/agent/*` HTTP surface. `OrkesAgentClient` is the Conductor/Orkes implementation; obtain one directly via `OrkesClients.getAgentClient()`, or use `runtime.client`, which shares the same underlying Conductor client (and its single token mint) as the runtime's worker plane — no bespoke auth/transport lives behind this interface.
 
 **Control-plane only:** `AgentClient.run/start` compile + start an agent and poll, but do **not** register or poll local tool workers. Use it for LLM-only agents, agents whose tools are remote (HTTP/MCP), or pre-deployed workflows. For agents with local `tool()` functions, use `runtime.run()` instead.
 
 ```ts
-const client = runtime.client;   // or: new AgentClient(options)
+const client = runtime.client;   // or: orkesClients.getAgentClient()
 
 // Compile + start + poll to result
 const result = await client.run(agent, 'summarize this', { timeoutSeconds: 120 });
@@ -72,8 +77,9 @@ const result = await client.run(agent, 'summarize this', { timeoutSeconds: 120 }
 // Start and interact via a ClientHandle
 const handle = await client.start(agent, 'do work');
 const status = await handle.getStatus();
-const final  = await handle.wait();
+const final  = await handle.wait();       // deadline: timeoutSeconds + 30s, or 10 min default
 await handle.approve();          // / reject(reason) / send(message) / respond(body)
+await handle.stop();             // stop the execution
 
 // Compile + register one or more agents (no execution)
 const infos = await client.deploy(agentA, agentB);   // DeploymentInfo[]
@@ -128,7 +134,9 @@ console.log(structured.category, structured.sentiment);
 
 ## Credentials and secrets
 
-Pass credential names with `credentials: [...]` at the agent level and/or per tool. Secrets are resolved from the server's secret store at execution time and injected as environment variables for the tool call. For HTTP/MCP tools, reference them inline in headers with `${NAME}` substitution.
+Pass credential names with `credentials: [...]` at the agent level and/or per tool. The server resolves secrets when it polls each task and delivers them **wire-only**, on that task's `runtimeMetadata` — never persisted, never fetched by the worker separately. The SDK injects them into the worker's `process.env` for the duration of the call (mutate-invoke-restore, serialized so concurrent calls don't clobber each other's env). For HTTP/MCP tools, reference them inline in headers with `${NAME}` substitution.
+
+**Fail-closed, no fallback:** if a tool declares `credentials: [...]` and the server didn't deliver one of them on `runtimeMetadata` (e.g. an older server that predates `TaskDef.runtimeMetadata` support — conductor-oss PR #1255 / agentspan server > 0.4.2), the task fails with a non-retryable error naming the missing credential. There is no ambient-env fallback to silently read a locally-set variable instead.
 
 ```ts
 import { Agent, tool, httpTool, getCredential } from '@io-orkes/conductor-javascript/agents';
@@ -176,7 +184,28 @@ const agent = new Agent({
 });
 ```
 
-You can also pass `credentials` at call time: `runtime.run(agent, prompt, { credentials: ['X'] })`. Set `AGENTSPAN_CREDENTIAL_STRICT_MODE=true` (or `credentialStrictMode: true`) to disable env-var fallback so a missing secret is a hard error.
+You can also pass `credentials` at call time: `runtime.run(agent, prompt, { credentials: ['X'] })`.
+
+## RunSettings — per-run LLM overrides
+
+`RunOptions.runSettings` overrides the LLM call for a single `run`/`start`/`stream`, without touching the agent's own config. Only set fields override; unset fields keep the agent's own serialized values, and the override doesn't cascade to sub-agents (each keeps its own settings).
+
+```ts
+import type { RunSettings } from '@io-orkes/conductor-javascript/agents';
+
+const result = await runtime.run(agent, prompt, {
+  runSettings: {
+    model: 'anthropic/claude-sonnet-4-6', // overrides agent.model for this run
+    temperature: 0.2,
+    maxTokens: 4096,
+    reasoningEffort: 'high',
+    thinkingBudgetTokens: 8000,           // maps to the wire thinkingConfig shape
+  },
+});
+
+// RunOptions.model is sugar for runSettings.model -- an explicit runSettings.model wins:
+await runtime.run(agent, prompt, { model: 'openai/gpt-4o-mini' });
+```
 
 ## Plans / PLAN_EXECUTE
 

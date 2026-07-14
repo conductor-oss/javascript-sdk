@@ -7,55 +7,59 @@ The public surface of `@io-orkes/conductor-javascript/agents`. One section per t
 Core execution runtime. Manages agent lifecycle and local tool workers.
 
 ```ts
-new AgentRuntime(options?: AgentConfigOptions)
+new AgentRuntime(configuration?: OrkesApiConfig | ConductorClient, settings?: AgentConfigOptions)
 ```
+
+`configuration` is connection/auth (the same shape as every other Conductor client, or a pre-built `ConductorClient` to share one client and one token mint across control- and worker-plane calls); `settings` is behavior-only (see [AgentConfig / AgentConfigOptions](#agentconfig--agentconfigoptions)). Both are optional.
 
 | Member | Signature | Notes |
 |---|---|---|
-| `config` | `AgentConfig` | Resolved config (readonly). |
-| `client` | `AgentClient` | Control-plane client (`/agent/*`). |
+| `config` | `AgentConfig` | Resolved behavior config (readonly). |
+| `client` | `AgentClient` | Control-plane client (`/agent/*`) — shares the runtime's underlying Conductor client. |
 | `workflows` | `WorkflowClient` | Read-only workflow executions. |
 | `run` | `(agent, prompt, options?) => Promise<AgentResult>` | Compile + start + stream + return result. Registers local workers. |
 | `start` | `(agent, prompt, options?) => Promise<AgentHandle>` | Async interaction handle. |
 | `stream` | `(agent, prompt, options?) => Promise<AgentStream>` | Event stream. |
-| `deploy` | `(agent, { schedules? }?) => Promise<DeploymentInfo>` | Register workflow def + reconcile schedules. |
+| `deploy` | `(agent, { schedules? }?) => Promise<DeploymentInfo>` \| `(...agents) => Promise<DeploymentInfo[]>` | Register workflow def(s) (+ reconcile schedules in the single-agent form). No execution, no workers. |
 | `plan` | `(agent) => Promise<object>` | Compile to workflow def without executing. |
-| `serve` | `(...agents) => Promise<void>` | Register workers, poll forever (blocks). |
+| `serve` | `(...agents, options?: ServeOptions) => Promise<void>` | Deploys the given agents, registers workers, starts polling. Blocks until SIGINT/SIGTERM by default; `{ blocking: false }` returns once deploy + registration + polling have started. |
 | `getStatus` | `(executionId, signal?) => Promise<AgentStatus>` | Current execution status. |
 | `schedulesClient` | `() => SchedulerClient` | Schedule lifecycle client (the SDK scheduler client). |
 | `shutdown` | `() => Promise<void>` | Stop worker polling. |
 
-`agent` is an `Agent` or a detected framework object. Module-level helpers `configure`, `run`, `start`, `stream`, `deploy`, `plan`, `serve`, `shutdown` operate on a shared singleton runtime.
+`agent` is an `Agent` or a detected framework object. `options?: RunOptions` on `run`/`start`/`stream` includes `runSettings` (see [RunSettings](#runsettings)). Module-level helpers `configure(configuration?, settings?)`, `run`, `start`, `stream`, `deploy`, `plan`, `serve`, `shutdown` operate on a shared singleton runtime.
 
 ## AgentClient
 
-Control-plane client for the `/agent/*` HTTP surface. Mints the auth JWT and sends it as `X-Authorization`. **Does not run local tool workers.** Available as `runtime.client`.
+`AgentClient` is the interface for the `/agent/*` control-plane HTTP surface (11 ops + `close()`); `OrkesAgentClient` is the Conductor/Orkes implementation, which also carries the agent-level convenience methods below (`run`, `start`, `deploy`, `schedule`) and the `workflows`/`schedules` accessors. **Does not run local tool workers.** Every op rides the shared `ConductorClient`'s authenticated call path — no bespoke auth/transport logic lives behind this interface, so it never mints a token independently.
 
 ```ts
-new AgentClient(options?: AgentConfigOptions | AgentConfig)
+new OrkesAgentClient(configuration?: OrkesApiConfig | ConductorClient)
 ```
+
+Obtain one via `runtime.client` (shares the runtime's client) or `OrkesClients.getAgentClient()` (shares whatever `Client` the `OrkesClients` instance was built with).
 
 | Member | Signature | Notes |
 |---|---|---|
-| `config` | `AgentConfig` | Resolved config. |
 | `workflows` | `WorkflowClient` | Read-only workflow client. |
 | `schedules` | `SchedulerClient` | Cron lifecycle client (SDK scheduler client over the shared Conductor client). |
 | `run` | `(agent, prompt, opts?) => Promise<AgentResult>` | Compile + start + poll to result. |
 | `start` | `(agent, prompt, opts?) => Promise<ClientHandle>` | Compile + start; returns a handle. |
-| `deploy` | `(...agents) => Promise<DeploymentInfo[]>` | Compile + register agents. |
+| `deploy` | `(agent, { schedules? }?) => Promise<DeploymentInfo>` \| `(...agents) => Promise<DeploymentInfo[]>` | Compile + register agent(s) (+ reconcile schedules in the single-agent form). |
 | `schedule` | `(agent, schedules) => Promise<DeploymentInfo>` | Deploy + reconcile schedules. |
-| `startAgent` / `deployAgent` / `compile` | `(payload, signal?) => Promise<Record>` | Low-level POST endpoints. |
+| `startAgent` / `deployAgent` / `compile` | `(payload, signal?) => Promise<Record>` | Low-level POST endpoints (spec R1 surface). |
 | `status` | `(executionId, signal?) => Promise<AgentStatus>` | GET status. |
+| `getExecution` | `(executionId, signal?) => Promise<Record \| null>` | Full execution data (tasks, output, tokens). |
+| `listExecutions` | `(params?, signal?) => Promise<Record>` | List executions, optionally filtered. |
 | `respond` | `(executionId, body, signal?) => Promise<void>` | Complete a pending human task. |
-| `getExecution` | `(executionId, signal?) => Promise<Record \| null>` | Full execution data. |
-| `stream` | `(executionId, signal?) => Promise<AgentStream>` | SSE stream for an execution. |
-| `authHeaders` | `() => Promise<Record<string,string>>` | Current auth header map. |
-
-`decodeJwtExp(token: string): number` is also exported (epoch-seconds expiry, `0` if undecodable).
+| `stop` | `(executionId, signal?) => Promise<void>` | Stop a running execution. |
+| `signal` | `(executionId, message, signal?) => Promise<void>` | Inject persistent context into a running execution. |
+| `stream` | `(executionId, lastEventId?, signal?) => Promise<AgentStream>` | SSE stream for an execution. |
+| `close` | `() => Promise<void>` | Release this client's open `AgentStream`s. |
 
 ### ClientHandle
 
-Returned by `AgentClient.start`. `{ executionId, getStatus(), wait(pollIntervalMs?), respond(output), approve(output?), reject(reason?), send(message), stream() }`.
+Returned by `AgentClient.start`. `{ executionId, getStatus(), wait(pollIntervalMs?), respond(output), approve(output?), reject(reason?), send(message), stop(), stream() }`. `wait()` rejects once its deadline passes (`timeoutSeconds`-derived, or 10 min default) with an `AgentAPIError` naming the last known status.
 
 ## WorkflowClient
 
@@ -71,25 +75,21 @@ Read-only client for Conductor workflow executions. Available as `runtime.workfl
 
 ## AgentConfig / AgentConfigOptions
 
+Behavior-only — no connection/auth fields (those live on `OrkesApiConfig`, the `AgentRuntime`/`OrkesAgentClient` constructors' first argument).
+
 ```ts
 interface AgentConfigOptions {
-  serverUrl?: string;            // AGENTSPAN_SERVER_URL (default http://localhost:8080/api)
-  apiKey?: string;               // AGENTSPAN_API_KEY (pre-minted token)
-  authKey?: string;              // AGENTSPAN_AUTH_KEY
-  authSecret?: string;           // AGENTSPAN_AUTH_SECRET
-  workerPollIntervalMs?: number; // AGENTSPAN_WORKER_POLL_INTERVAL (100)
-  workerThreads?: number;        // AGENTSPAN_WORKER_THREADS (1)
-  autoStartWorkers?: boolean;    // (true)
-  autoStartServer?: boolean;     // (true)
-  daemonWorkers?: boolean;       // (true)
-  streamingEnabled?: boolean;    // (true)
-  credentialStrictMode?: boolean;// (false)
-  logLevel?: 'DEBUG' | 'INFO' | 'WARN' | 'ERROR'; // (INFO)
-  llmRetryCount?: number;        // (3)
+  workerPollIntervalMs?: number;         // AGENTSPAN_WORKER_POLL_INTERVAL (100)
+  workerThreadCount?: number;            // AGENTSPAN_WORKER_THREADS (1)
+  autoStartWorkers?: boolean;            // AGENTSPAN_AUTO_START_WORKERS (true)
+  streamingEnabled?: boolean;            // AGENTSPAN_STREAMING_ENABLED (true)
+  livenessEnabled?: boolean;             // AGENTSPAN_LIVENESS_ENABLED (true)
+  livenessStallSeconds?: number;         // AGENTSPAN_LIVENESS_STALL_SECONDS (30)
+  livenessCheckIntervalSeconds?: number; // AGENTSPAN_LIVENESS_CHECK_INTERVAL_SECONDS (10)
 }
 ```
 
-`normalizeServerUrl(url)` and `AgentConfig.fromEnv()` are exported helpers.
+`AgentConfig.fromEnv()` is an exported helper (equivalent to `new AgentConfig()`). See [Liveness monitoring](writing-agents.md#liveness-monitoring) for the liveness fields.
 
 ## Agent / agent()
 
@@ -281,11 +281,12 @@ interface AgentHandle {
   pause(): Promise<void>;
   resume(): Promise<void>;
   cancel(): Promise<void>;
+  stop(): Promise<void>;
   stream(): AgentStream;
 }
 ```
 
-`approve()` sends `{ approved: true, ...output }`; `reject(reason)` sends `{ approved: false, reason }`; `send(message)` sends `{ message }`. For a custom human-task response (shaped by `pendingTool.response_schema`), use `respond(body)`.
+`approve()` sends `{ approved: true, ...output }`; `reject(reason)` sends `{ approved: false, reason }`; `send(message)` sends `{ message }`. For a custom human-task response (shaped by `pendingTool.response_schema`), use `respond(body)`. `wait(pollIntervalMs?)` rejects once its deadline passes (`timeoutSeconds`-derived, or 10 min default) with an `AgentAPIError` naming the last known status — and, for a stateful (domain-routed) run with liveness enabled, rejects earlier with `WorkerStallError` if the local worker appears to have died (see [Liveness monitoring](writing-agents.md#liveness-monitoring)).
 
 ## AgentStream / AgentEvent
 
@@ -310,14 +311,29 @@ interface AgentEvent {
 
 ## Errors
 
-`AgentspanError` (base), `AgentAPIError`, `AgentNotFoundError`, `ConfigurationError`, `CredentialNotFoundError`, `CredentialAuthError`, `CredentialRateLimitError`, `CredentialServiceError`, `SSETimeoutError`, `TerminalToolError`, `GuardrailFailedError`.
+`AgentspanError` (base), `AgentAPIError`, `AgentNotFoundError`, `ConfigurationError`, `CredentialNotFoundError`, `CredentialAuthError`, `CredentialRateLimitError`, `CredentialServiceError`, `SSETimeoutError`, `TerminalToolError`, `WorkerStallError`, `GuardrailFailedError`.
+
+## RunSettings
+
+Per-run LLM overrides, passed as `RunOptions.runSettings` to `run`/`start`/`stream`. See [Advanced: RunSettings](advanced.md#runsettings--per-run-llm-overrides).
+
+```ts
+interface RunSettings {
+  model?: string;
+  temperature?: number;
+  maxTokens?: number;
+  reasoningEffort?: string;
+  thinkingBudgetTokens?: number;
+}
+```
 
 ## Other exports
 
 - **Memory:** `ConversationMemory`, `SemanticMemory`, `InMemoryStore`.
 - **Plans:** `Plan`, `Step`, `Op`, `Generate`, `Validation`, `Action`, `Ref`, `Context`, `coercePlan`.
 - **Skills:** `skill(path, options?)`, `loadSkills(dir, options?)`, `SkillLoadError`.
-- **Credentials:** `getCredential`, `resolveCredentials`, `runWithCredentialContext`, `setCredentialContext`, `clearCredentialContext`, `extractExecutionToken`.
+- **Credentials:** `getCredential`, `runWithCredentialContext`, `setCredentialContext`, `clearCredentialContext`. Values arrive wire-only on the polled task's `runtimeMetadata` (spec R6) — never fetched separately; see [Credentials and secrets](advanced.md#credentials-and-secrets).
+- **Liveness:** `LivenessMonitor`, `LivenessMonitorOptions` — see [Liveness monitoring](writing-agents.md#liveness-monitoring).
 - **Code execution:** `LocalCodeExecutor`, `DockerCodeExecutor`, `JupyterCodeExecutor`, `ServerlessCodeExecutor`, `CodeExecutor`, `CommandValidator`.
 - **Claude Code:** `ClaudeCode(modelName?, permissionMode?)`, `PermissionMode`, `resolveClaudeCodeModel`.
 - **Extended agents:** `GPTAssistantAgent({ name, assistantId, model?, instructions? })`.
