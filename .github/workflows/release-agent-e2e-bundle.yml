@@ -1,0 +1,71 @@
+name: Release Agent E2E Bundle
+
+# Packages the agent e2e suite (e2e/) into a version-stamped, self-contained
+# tarball and attaches it to the GitHub release, so downstream repos (e.g.
+# orkes-io/orkes-conductor) can pin the e2e suite to the exact javascript-sdk
+# release they run against. The bundle resolves
+# @io-orkes/conductor-javascript at the same version from npm.
+#
+# Runs on the same release events as release.yml (npm publish). Packaging is
+# purely static (no install), so it does not race the npm publish — the
+# bundle just references the package version.
+#
+# Mirrors conductor-oss/java-sdk's release-agent-e2e-bundle.yml.
+
+on:
+  release:
+    types: [released, prereleased]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version (e.g. 4.0.0-rc1) — a release vX.Y.Z must already exist to attach to"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  package-e2e-bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Determine version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ inputs.version }}"
+          else
+            TAG="${{ github.event.release.tag_name }}"
+            VERSION="${TAG#v}"
+          fi
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Packaging agent e2e bundle for version: ${VERSION}"
+
+      - name: Package bundle
+        run: |
+          ./scripts/package-e2e-bundle.sh --version "${{ steps.version.outputs.version }}"
+
+      - name: Validate bundle
+        run: |
+          ./scripts/test-package-e2e-bundle.sh
+
+      - name: Generate SHA256 checksums
+        working-directory: scripts/e2e-bundle-dist
+        run: |
+          for f in *.tar.gz; do
+            sha256sum "$f" | awk '{print $1}' > "${f}.sha256"
+            echo "  $(cat "${f}.sha256")  ${f}"
+          done
+
+      - name: Upload bundle to GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          gh release upload "v${VERSION}" \
+            scripts/e2e-bundle-dist/*.tar.gz \
+            scripts/e2e-bundle-dist/*.sha256 \
+            --repo "${{ github.repository }}" \
+            --clobber
