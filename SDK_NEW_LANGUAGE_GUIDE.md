@@ -1417,7 +1417,7 @@ const wf = new ConductorWorkflow(executor, "my_workflow")
 
 ### Phase 7: Examples
 
-**Goal:** 36 runnable example files demonstrating all SDK features.
+**Goal:** 31 runnable example files demonstrating all SDK features.
 
 #### 7.1 Core Examples (14 files)
 
@@ -1451,15 +1451,20 @@ const wf = new ConductorWorkflow(executor, "my_workflow")
 | `advanced/wait-for-webhook.ts` | Webhook wait pattern |
 | `advanced/human-tasks.ts` | Human-in-the-loop workflow |
 
-#### 7.3 Agentic / AI Examples (5 files)
+#### 7.3 Agentic / AI Examples
+
+Agentic examples (tool calling, multi-agent, human-in-the-loop, MCP) are
+provided by the durable agents layer under `examples/agents/` in the JS SDK
+(200+ examples) rather than as hand-built LLM-task workflows. If the new-language SDK includes
+an agents layer, mirror that catalog — e.g.:
 
 | File | Demonstrates |
 |------|-------------|
-| `agentic-workflows/function-calling.ts` | LLM tool/function calling |
-| `agentic-workflows/multiagent-chat.ts` | Multi-agent debate |
-| `agentic-workflows/llm-chat.ts` | LLM chat completion |
-| `agentic-workflows/llm-chat-human-in-loop.ts` | Human-in-the-loop AI |
-| `agentic-workflows/mcp-weather-agent.ts` | MCP tool integration |
+| `agents/01-basic-agent.ts` | Basic LLM agent |
+| `agents/02-tools.ts` | LLM tool/function calling |
+| `agents/03-multi-agent.ts` | Multi-agent orchestration |
+| `agents/09-human-in-the-loop.ts` | Human-in-the-loop AI |
+| `agents/04-mcp-weather.ts` | MCP tool integration |
 
 #### 7.4 API Journey Examples (9 files)
 
