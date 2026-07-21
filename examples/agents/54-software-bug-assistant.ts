@@ -277,6 +277,11 @@ async function main() {
     );
     result.printResult();
 
+    if (result.status !== 'COMPLETED') {
+      console.error(`\nFAIL: agent run ended ${result.status}: ${result.error ?? ''}`);
+      process.exitCode = 1;
+    }
+
     // Production pattern:
     // 1. Deploy once during CI/CD (optional -- serve() below also deploys):
     // await runtime.deploy(softwareAssistant);
@@ -290,4 +295,7 @@ async function main() {
   }
 }
 
-main().catch(console.error);
+main().catch((err) => {
+  console.error(err);
+  process.exitCode = 1;
+});

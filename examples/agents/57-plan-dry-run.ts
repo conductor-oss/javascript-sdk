@@ -64,28 +64,35 @@ export const agent = new Agent({
 
 // -- Plan: compile without executing -----------------------------------------
 
-const runtime = new AgentRuntime();
-try {
-  const workflowDef = (await runtime.plan(agent)) as Record<string, unknown>;
+async function main() {
+  const runtime = new AgentRuntime();
+  try {
+    const workflowDef = (await runtime.plan(agent)) as Record<string, unknown>;
 
-  console.log(`Workflow name: ${workflowDef.name}`);
-  const tasks: Record<string, unknown>[] = (workflowDef.tasks as Record<string, unknown>[]) ?? [];
-  console.log(`Total tasks:   ${tasks.length}`);
-  console.log();
+    console.log(`Workflow name: ${workflowDef.name}`);
+    const tasks: Record<string, unknown>[] = (workflowDef.tasks as Record<string, unknown>[]) ?? [];
+    console.log(`Total tasks:   ${tasks.length}`);
+    console.log();
 
-  // Walk the task tree
-  for (const task of tasks) {
-    console.log(`  [${task.type}] ${task.taskReferenceName}`);
-    if (task.type === 'DO_WHILE' && Array.isArray(task.loopOver)) {
-      for (const sub of task.loopOver as Record<string, unknown>[]) {
-        console.log(`    [${sub.type}] ${sub.taskReferenceName}`);
+    // Walk the task tree
+    for (const task of tasks) {
+      console.log(`  [${task.type}] ${task.taskReferenceName}`);
+      if (task.type === 'DO_WHILE' && Array.isArray(task.loopOver)) {
+        for (const sub of task.loopOver as Record<string, unknown>[]) {
+          console.log(`    [${sub.type}] ${sub.taskReferenceName}`);
+        }
       }
     }
-  }
 
-  // Full JSON for CI/CD validation or export
-  console.log('\n--- Full workflow JSON ---');
-  console.log(JSON.stringify(workflowDef, null, 2));
-} finally {
-  await runtime.shutdown();
+    // Full JSON for CI/CD validation or export
+    console.log('\n--- Full workflow JSON ---');
+    console.log(JSON.stringify(workflowDef, null, 2));
+  } finally {
+    await runtime.shutdown();
+  }
 }
+
+main().catch((err) => {
+  console.error(err);
+  process.exitCode = 1;
+});

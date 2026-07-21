@@ -34,12 +34,16 @@ async function main() {
   try {
     const result = await runtime.run(agent, prompt);
     result.printResult();
-    const output = String(result.output ?? '');
+    // result.output is an object ({ result, finishReason, ... }) — String()
+    // would collapse it to "[object Object]" and the check below would
+    // always fail.
+    const output =
+      typeof result.output === 'string' ? result.output : JSON.stringify(result.output ?? '');
 
     // Verify the agent saw the error output
     const saw = output.includes('No such file or directory') || output.includes('nonexistent');
     if (!saw) {
-      console.error(`\nFAIL: agent did not surface CLI error output. Got: ${String(output)}`);
+      console.error(`\nFAIL: agent did not surface CLI error output. Got: ${output}`);
       process.exit(1);
     }
     console.log('\nPASS: agent correctly reported CLI error output');
