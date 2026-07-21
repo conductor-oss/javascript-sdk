@@ -74,20 +74,27 @@ export const opsBot = new Agent({
 
 // -- Serve: register workers and block ---------------------------------------
 
-const runtime = new AgentRuntime();
-try {
-  const result = await runtime.run(opsBot, 'Check the status of the API gateway.');
-  result.printResult();
+async function main() {
+  const runtime = new AgentRuntime();
+  try {
+    const result = await runtime.run(opsBot, 'Check the status of the API gateway.');
+    result.printResult();
 
-  // Production pattern:
-  // 1. Deploy once during CI/CD (optional -- serve() below also deploys):
-  // await runtime.deploy(docAssistant);
-  // await runtime.deploy(opsBot);
-  // CLI alternative:
-  // agentspan deploy --package sdk/typescript/examples --agents doc_assistant
-  //
-  // 2. In a separate long-lived worker process (deploys + registers workers + starts polling):
-  // await runtime.serve(docAssistant, opsBot);
-} finally {
-  await runtime.shutdown();
+    // Production pattern:
+    // 1. Deploy once during CI/CD (optional -- serve() below also deploys):
+    // await runtime.deploy(docAssistant);
+    // await runtime.deploy(opsBot);
+    // CLI alternative:
+    // agentspan deploy --package sdk/typescript/examples --agents doc_assistant
+    //
+    // 2. In a separate long-lived worker process (deploys + registers workers + starts polling):
+    // await runtime.serve(docAssistant, opsBot);
+  } finally {
+    await runtime.shutdown();
+  }
 }
+
+main().catch((err) => {
+  console.error(err);
+  process.exitCode = 1;
+});

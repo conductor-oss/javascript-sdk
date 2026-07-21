@@ -170,11 +170,19 @@ async function main() {
     );
     result.printResult();
 
+    if (result.status !== 'COMPLETED') {
+      console.error(`\nFAIL: agent run ended ${result.status}: ${result.error ?? ''}`);
+      process.exitCode = 1;
+      return;
+    }
+
     // Verify the guardrail worked — no raw card number in the output
-    if (result.output && String(result.output).includes('4532-0150-1234-5678')) {
-    console.log('[WARN] PII leaked through the guardrail!');
+    // (stringify: result.output is an object, String() gives "[object Object]")
+    if (result.output && JSON.stringify(result.output).includes('4532-0150-1234-5678')) {
+      console.log('[WARN] PII leaked through the guardrail!');
+      process.exitCode = 1;
     } else {
-    console.log('[OK] PII was redacted from the final output.');
+      console.log('[OK] PII was redacted from the final output.');
     }
 
     // Production pattern:
@@ -190,4 +198,7 @@ async function main() {
   }
 }
 
-main().catch(console.error);
+main().catch((err) => {
+  console.error(err);
+  process.exitCode = 1;
+});
