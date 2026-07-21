@@ -37,9 +37,9 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             VERSION="${{ inputs.version }}"
           else
-            TAG="${{ github.event.release.tag_name }}"
-            VERSION="${TAG#v}"
+            VERSION="${{ github.event.release.tag_name }}"
           fi
+          VERSION="${VERSION#v}"
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
           echo "Packaging agent e2e bundle for version: ${VERSION}"
 
