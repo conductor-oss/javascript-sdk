@@ -116,12 +116,7 @@ const jsonResponse = (body: unknown, status = 200) =>
 
 describe("AgentRuntime", () => {
   const savedEnv: Record<string, string | undefined> = {};
-  const envKeys = [
-    "CONDUCTOR_SERVER_URL",
-    "AGENTSPAN_API_KEY",
-    "AGENTSPAN_AUTH_KEY",
-    "AGENTSPAN_AUTH_SECRET",
-  ];
+  const envKeys = ["CONDUCTOR_SERVER_URL"];
 
   function mockAgentServer(executionId = "wf-cred-test", fetchCalls?: string[]) {
     global.fetch = jest.fn().mockImplementation(async (url: string) => {
@@ -890,7 +885,7 @@ describe("AgentRuntime", () => {
 
 describe("Singleton functions", () => {
   const savedEnv: Record<string, string | undefined> = {};
-  const envKeys = ["CONDUCTOR_SERVER_URL", "AGENTSPAN_API_KEY"];
+  const envKeys = ["CONDUCTOR_SERVER_URL"];
 
   beforeEach(() => {
     for (const key of envKeys) {
