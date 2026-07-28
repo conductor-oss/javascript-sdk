@@ -459,7 +459,7 @@ See the [Examples Guide](examples/README.md) for the full catalog. Key examples:
 | [test-workflows.ts](examples/test-workflows.ts) | Unit testing with mock outputs (no workers) | `npx ts-node examples/test-workflows.ts` |
 | [metrics.ts](examples/metrics.ts) | Prometheus metrics + HTTP server on :9090 | `npx ts-node examples/metrics.ts` |
 | [express-worker-service.ts](examples/express-worker-service.ts) | Express.js + workers in one process | `npx ts-node examples/express-worker-service.ts` |
-| [function-calling.ts](examples/agentic-workflows/function-calling.ts) | LLM dynamically picks which worker to call | `npx ts-node examples/agentic-workflows/function-calling.ts` |
+| [02-tools.ts](examples/agents/02-tools.ts) | Durable agent: LLM dynamically picks which tool to call | `npx tsx examples/agents/02-tools.ts` |
 | [fork-join.ts](examples/advanced/fork-join.ts) | Parallel branches with join synchronization | `npx ts-node examples/advanced/fork-join.ts` |
 | [sub-workflows.ts](examples/advanced/sub-workflows.ts) | Workflow composition with sub-workflows | `npx ts-node examples/advanced/sub-workflows.ts` |
 | [human-tasks.ts](examples/advanced/human-tasks.ts) | Human-in-the-loop: claim, update, complete | `npx ts-node examples/advanced/human-tasks.ts` |
@@ -518,18 +518,20 @@ const run = await workflow.execute({ question: "What is Conductor?" });
 console.log(run.output?.answer);
 ```
 
-**Agentic Workflows**
+**Agentic Examples**
 
-Build AI agents where LLMs dynamically select and call TypeScript workers as tools.
-See [examples/agentic-workflows/](examples/agentic-workflows/) for all examples.
+To build AI agents where LLMs dynamically select and call tools, use the
+durable agents layer (see [Durable AI Agents](#durable-ai-agents) below).
+All agent examples live in [examples/agents/](examples/agents/); highlights:
 
 | Example | Description |
 |---------|-------------|
-| [llm-chat.ts](examples/agentic-workflows/llm-chat.ts) | Automated multi-turn conversation between two LLMs |
-| [llm-chat-human-in-loop.ts](examples/agentic-workflows/llm-chat-human-in-loop.ts) | Interactive chat with WAIT tasks for human input |
-| [function-calling.ts](examples/agentic-workflows/function-calling.ts) | LLM dynamically picks which worker function to call |
-| [mcp-weather-agent.ts](examples/agentic-workflows/mcp-weather-agent.ts) | MCP tool discovery and invocation for real-time data |
-| [multiagent-chat.ts](examples/agentic-workflows/multiagent-chat.ts) | Multi-agent debate: optimist vs skeptic with moderator |
+| [01-basic-agent.ts](examples/agents/01-basic-agent.ts) | Simplest possible agent: define, run, print result |
+| [02-tools.ts](examples/agents/02-tools.ts) | LLM dynamically picks which tool to call, incl. approval-required tools |
+| [03-multi-agent.ts](examples/agents/03-multi-agent.ts) | Multi-agent orchestration: sequential, parallel, handoffs |
+| [04-mcp-weather.ts](examples/agents/04-mcp-weather.ts) | MCP tool discovery and invocation for real-time data |
+| [09-human-in-the-loop.ts](examples/agents/09-human-in-the-loop.ts) | Agent pauses for human approval mid-run |
+| [15-agent-discussion.ts](examples/agents/15-agent-discussion.ts) | Multi-turn debate between agents with opposing viewpoints |
 
 **RAG and Vector DB Workflows**
 
@@ -572,9 +574,11 @@ testing toolkit (`/agents/testing`).
 
 - **Docs:** [docs/agents/](docs/agents/README.md) — start with
   [getting-started.md](docs/agents/getting-started.md)
-- **Examples:** [examples/agents/](examples/agents/) — 60+ runnable examples,
-  from a basic agent to the full [kitchen sink](examples/agents/kitchen-sink.ts);
-  run them with `npx tsx examples/agents/01-basic-agent.ts`
+- **Examples:** [examples/agents/](examples/agents/) — 200+ runnable examples
+  (core examples plus quickstart and framework ports for Google ADK, LangGraph,
+  OpenAI Agents SDK, and Vercel AI SDK), from a basic agent to the full
+  [kitchen sink](examples/agents/kitchen-sink.ts); run them with
+  `npx tsx examples/agents/01-basic-agent.ts`
 
 ## Documentation
 

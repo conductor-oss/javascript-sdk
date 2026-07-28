@@ -603,16 +603,16 @@ Read in `resolveOrkesConfig.ts`. Env vars take precedence over config object val
 
 ## Examples
 
-The `examples/` directory contains 32 runnable TypeScript files across 3 subdirectories, matching the Python SDK's examples structure. See [examples/README.md](examples/README.md) for the full catalog.
+The `examples/` directory contains 31 runnable TypeScript files for the workflow/worker layer, plus 200+ durable AI-agent examples under `examples/agents/`. See [examples/README.md](examples/README.md) for the full catalog.
 
 ### Structure
 
 ```
 examples/
-├── 13 core files          # Workers, workflows, metrics, testing
-├── agentic-workflows/     # 5 AI/LLM agent examples
-├── api-journeys/          # 7 complete API lifecycle demos
-└── advanced/              # 7 advanced workflow patterns
+├── 14 core files          # Workers, workflows, metrics, testing
+├── agents/                # 200+ durable AI agent examples (see examples/agents/README.md)
+├── api-journeys/          # 9 complete API lifecycle demos
+└── advanced/              # 8 advanced workflow patterns
 ```
 
 ### Conventions
@@ -620,7 +620,7 @@ examples/
 - **Self-contained**: Every file imports from `../src/sdk`, connects via `OrkesClients.from()`, and is runnable with `npx ts-node examples/<file>.ts`
 - **Cleanup**: Examples that create resources clean up after themselves in try/finally blocks
 - **Env vars**: All examples read `CONDUCTOR_SERVER_URL` (required) and optionally `CONDUCTOR_AUTH_KEY`/`CONDUCTOR_AUTH_SECRET`
-- **AI examples**: Use `LLM_PROVIDER` and `LLM_MODEL` env vars with defaults to `openai_integration` / `gpt-4o`
+- **Agent examples**: `examples/agents/` uses `AGENTSPAN_SERVER_URL`/`AGENTSPAN_LLM_MODEL` plus a provider API key — see [examples/agents/README.md](examples/agents/README.md)
 - **Naming**: Kebab-case file names matching Python SDK's snake_case pattern (e.g., `fork-join.ts` ↔ `fork_join_script.py`)
 - **Imports**: Use relative paths from the example file (e.g., `from "../../src/sdk"` for subdirectory examples)
 
@@ -665,8 +665,6 @@ examples/
 | `api-journeys/metadata.ts` | `metadata_journey.py` | All metadata APIs |
 | `api-journeys/prompts.ts` | `prompt_journey.py` | All prompt APIs |
 | `api-journeys/schedules.ts` | `schedule_journey.py` | All schedule APIs |
-| `agentic-workflows/function-calling.ts` | `agentic_workflows/function_calling_example.py` | LLM tool calling |
-| `agentic-workflows/multiagent-chat.ts` | `agentic_workflows/multiagent_chat.py` | Multi-agent debate |
 | `advanced/rag-workflow.ts` | `rag_workflow.py` | RAG pipeline |
 | `advanced/fork-join.ts` | `orkes/fork_join_script.py` | Parallel execution |
 

@@ -2,7 +2,7 @@
 
 Quick reference for example files demonstrating SDK features.
 
-> **Looking for the durable AI-agent examples?** They live in
+> **Looking for the durable AI-agent examples?** All 200+ of them live in
 > [`agents/`](agents/) and demonstrate the `@io-orkes/conductor-javascript/agents`
 > layer (`Agent`, `AgentRuntime`, tools, guardrails, handoffs) — run them with
 > `npx tsx examples/agents/01-basic-agent.ts`. The examples in this directory
@@ -44,17 +44,21 @@ npx ts-node examples/workers-e2e.ts
 | **[workflow-ops.ts](workflow-ops.ts)** | Lifecycle: start, pause, resume, terminate, restart, retry, search | `npx ts-node examples/workflow-ops.ts` |
 | **[test-workflows.ts](test-workflows.ts)** | Unit testing with mock task outputs (no workers needed) | `npx ts-node examples/test-workflows.ts` |
 
-### AI/LLM Workflows
+### AI Agents
 
-Require an LLM integration configured in Conductor. Set `LLM_PROVIDER` and `LLM_MODEL` env vars.
+Agentic examples live in [`agents/`](agents/) and use the durable agents layer
+(`@io-orkes/conductor-javascript/agents`). See [agents/README.md](agents/README.md)
+for the full catalog and environment setup (`AGENTSPAN_SERVER_URL`,
+`AGENTSPAN_LLM_MODEL`, provider API key). Highlights:
 
 | File | Description | Run |
 |------|-------------|-----|
-| **[agentic-workflows/llm-chat.ts](agentic-workflows/llm-chat.ts)** | Two LLMs in automated multi-turn conversation | `npx ts-node examples/agentic-workflows/llm-chat.ts` |
-| **[agentic-workflows/llm-chat-human-in-loop.ts](agentic-workflows/llm-chat-human-in-loop.ts)** | Interactive chat with WAIT tasks for human input | `npx ts-node examples/agentic-workflows/llm-chat-human-in-loop.ts` |
-| **[agentic-workflows/function-calling.ts](agentic-workflows/function-calling.ts)** | LLM dynamically picks which worker to call | `npx ts-node examples/agentic-workflows/function-calling.ts` |
-| **[agentic-workflows/mcp-weather-agent.ts](agentic-workflows/mcp-weather-agent.ts)** | MCP tool discovery + invocation for real-time data | `npx ts-node examples/agentic-workflows/mcp-weather-agent.ts` |
-| **[agentic-workflows/multiagent-chat.ts](agentic-workflows/multiagent-chat.ts)** | Multi-agent debate: optimist vs skeptic with moderator | `npx ts-node examples/agentic-workflows/multiagent-chat.ts` |
+| **[agents/01-basic-agent.ts](agents/01-basic-agent.ts)** | Simplest possible agent: define, run, print result | `npx tsx examples/agents/01-basic-agent.ts` |
+| **[agents/02-tools.ts](agents/02-tools.ts)** | LLM dynamically picks which tool to call | `npx tsx examples/agents/02-tools.ts` |
+| **[agents/03-multi-agent.ts](agents/03-multi-agent.ts)** | Multi-agent orchestration: sequential, parallel, handoffs | `npx tsx examples/agents/03-multi-agent.ts` |
+| **[agents/04-mcp-weather.ts](agents/04-mcp-weather.ts)** | MCP tool discovery + invocation for real-time data | `npx tsx examples/agents/04-mcp-weather.ts` |
+| **[agents/09-human-in-the-loop.ts](agents/09-human-in-the-loop.ts)** | Agent pauses for human approval mid-run | `npx tsx examples/agents/09-human-in-the-loop.ts` |
+| **[agents/15-agent-discussion.ts](agents/15-agent-discussion.ts)** | Multi-turn debate between agents with opposing viewpoints | `npx tsx examples/agents/15-agent-discussion.ts` |
 
 ### Monitoring
 
@@ -302,9 +306,9 @@ npx ts-node examples/advanced/sub-workflows.ts
 npx ts-node examples/api-journeys/metadata.ts
 npx ts-node examples/api-journeys/authorization.ts
 
-# 9. AI/LLM workflows (requires LLM integration)
-npx ts-node examples/agentic-workflows/function-calling.ts
-npx ts-node examples/agentic-workflows/multiagent-chat.ts
+# 9. Durable AI agents (requires an LLM API key — see agents/README.md)
+npx tsx examples/agents/01-basic-agent.ts
+npx tsx examples/agents/02-tools.ts
 ```
 
 ---
@@ -327,12 +331,7 @@ examples/
 ├── metrics.ts                       # Prometheus metrics + HTTP server
 ├── express-worker-service.ts        # Express.js + workers integration
 │
-├── agentic-workflows/               # AI/LLM agent examples
-│   ├── llm-chat.ts                  # Multi-turn automated AI conversation
-│   ├── llm-chat-human-in-loop.ts    # Interactive chat with WAIT pauses
-│   ├── function-calling.ts          # LLM-driven function routing
-│   ├── mcp-weather-agent.ts         # MCP tool discovery + invocation
-│   └── multiagent-chat.ts           # Multi-agent debate with moderator
+├── agents/                          # 200+ durable AI agent examples (see agents/README.md)
 │
 ├── api-journeys/                    # Complete API lifecycle demos
 │   ├── authorization.ts             # Users, groups, permissions (17 calls)
