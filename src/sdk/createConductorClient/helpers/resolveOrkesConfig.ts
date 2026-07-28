@@ -29,7 +29,7 @@ export const resolveOrkesConfig = (config?: Partial<OrkesApiConfig>) => {
   let serverUrl =
     process.env.CONDUCTOR_SERVER_URL ||
     config?.serverUrl ||
-    process.env.CONDUCTOR_SERVER_URL ||
+    process.env.AGENTSPAN_SERVER_URL ||
     "http://localhost:8080";
   if (serverUrl.endsWith("/")) serverUrl = serverUrl.slice(0, -1);
   if (serverUrl.endsWith("/api")) serverUrl = serverUrl.slice(0, -4);
