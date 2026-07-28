@@ -13,13 +13,13 @@ describe("AgentConfig", () => {
     "AGENTSPAN_LIVENESS_ENABLED",
     "AGENTSPAN_LIVENESS_STALL_SECONDS",
     "AGENTSPAN_LIVENESS_CHECK_INTERVAL_SECONDS",
-    "CONDUCTOR_WORKER_POLL_INTERVAL",
-    "CONDUCTOR_WORKER_THREADS",
-    "CONDUCTOR_AUTO_START_WORKERS",
-    "CONDUCTOR_STREAMING_ENABLED",
-    "CONDUCTOR_LIVENESS_ENABLED",
-    "CONDUCTOR_LIVENESS_STALL_SECONDS",
-    "CONDUCTOR_LIVENESS_CHECK_INTERVAL_SECONDS",
+    "CONDUCTOR_AGENT_WORKER_POLL_INTERVAL",
+    "CONDUCTOR_AGENT_WORKER_THREADS",
+    "CONDUCTOR_AGENT_AUTO_START_WORKERS",
+    "CONDUCTOR_AGENT_STREAMING_ENABLED",
+    "CONDUCTOR_AGENT_LIVENESS_ENABLED",
+    "CONDUCTOR_AGENT_LIVENESS_STALL_SECONDS",
+    "CONDUCTOR_AGENT_LIVENESS_CHECK_INTERVAL_SECONDS",
   ];
 
   beforeEach(() => {
@@ -76,70 +76,14 @@ describe("AgentConfig", () => {
   });
 
   describe("env var loading", () => {
-    it("reads all AGENTSPAN_ env vars", () => {
-      process.env.AGENTSPAN_WORKER_POLL_INTERVAL = "200";
-      process.env.AGENTSPAN_WORKER_THREADS = "2";
-      process.env.AGENTSPAN_AUTO_START_WORKERS = "false";
-      process.env.AGENTSPAN_STREAMING_ENABLED = "false";
-      process.env.AGENTSPAN_LIVENESS_ENABLED = "false";
-      process.env.AGENTSPAN_LIVENESS_STALL_SECONDS = "60.5";
-      process.env.AGENTSPAN_LIVENESS_CHECK_INTERVAL_SECONDS = "20.5";
-
-      const config = new AgentConfig();
-
-      expect(config.workerPollIntervalMs).toBe(200);
-      expect(config.workerThreadCount).toBe(2);
-      expect(config.autoStartWorkers).toBe(false);
-      expect(config.streamingEnabled).toBe(false);
-      expect(config.livenessEnabled).toBe(false);
-      expect(config.livenessStallSeconds).toBe(60.5);
-      expect(config.livenessCheckIntervalSeconds).toBe(20.5);
-    });
-
-    it("options override env vars", () => {
-      process.env.AGENTSPAN_WORKER_THREADS = "9";
-      const config = new AgentConfig({ workerThreadCount: 3 });
-      expect(config.workerThreadCount).toBe(3);
-    });
-
-    it("handles boolean env var variations", () => {
-      process.env.AGENTSPAN_AUTO_START_WORKERS = "1";
-      process.env.AGENTSPAN_STREAMING_ENABLED = "no";
-
-      const config = new AgentConfig();
-
-      expect(config.autoStartWorkers).toBe(true);
-      expect(config.streamingEnabled).toBe(false);
-    });
-
-    it("handles invalid numeric env vars gracefully", () => {
-      process.env.AGENTSPAN_WORKER_POLL_INTERVAL = "not-a-number";
-      process.env.AGENTSPAN_WORKER_THREADS = "";
-
-      const config = new AgentConfig();
-
-      expect(config.workerPollIntervalMs).toBe(100);
-      expect(config.workerThreadCount).toBe(1);
-    });
-
-    it("falls back to default when a liveness float env var is empty or invalid", () => {
-      process.env.AGENTSPAN_LIVENESS_STALL_SECONDS = "";
-      process.env.AGENTSPAN_LIVENESS_CHECK_INTERVAL_SECONDS = "not-a-float";
-
-      const config = new AgentConfig();
-
-      expect(config.livenessStallSeconds).toBe(30.0);
-      expect(config.livenessCheckIntervalSeconds).toBe(10.0);
-    });
-
-    it("reads all CONDUCTOR_ env var aliases", () => {
-      process.env.CONDUCTOR_WORKER_POLL_INTERVAL = "300";
-      process.env.CONDUCTOR_WORKER_THREADS = "3";
-      process.env.CONDUCTOR_AUTO_START_WORKERS = "false";
-      process.env.CONDUCTOR_STREAMING_ENABLED = "false";
-      process.env.CONDUCTOR_LIVENESS_ENABLED = "false";
-      process.env.CONDUCTOR_LIVENESS_STALL_SECONDS = "70.5";
-      process.env.CONDUCTOR_LIVENESS_CHECK_INTERVAL_SECONDS = "25.5";
+    it("reads all CONDUCTOR_AGENT_ env vars", () => {
+      process.env.CONDUCTOR_AGENT_WORKER_POLL_INTERVAL = "300";
+      process.env.CONDUCTOR_AGENT_WORKER_THREADS = "3";
+      process.env.CONDUCTOR_AGENT_AUTO_START_WORKERS = "false";
+      process.env.CONDUCTOR_AGENT_STREAMING_ENABLED = "false";
+      process.env.CONDUCTOR_AGENT_LIVENESS_ENABLED = "false";
+      process.env.CONDUCTOR_AGENT_LIVENESS_STALL_SECONDS = "70.5";
+      process.env.CONDUCTOR_AGENT_LIVENESS_CHECK_INTERVAL_SECONDS = "25.5";
 
       const config = new AgentConfig();
 
@@ -152,27 +96,66 @@ describe("AgentConfig", () => {
       expect(config.livenessCheckIntervalSeconds).toBe(25.5);
     });
 
-    it("prefers CONDUCTOR_ over AGENTSPAN_ when both are set", () => {
-      process.env.CONDUCTOR_WORKER_THREADS = "3";
-      process.env.AGENTSPAN_WORKER_THREADS = "9";
-
-      const config = new AgentConfig();
-
+    it("options override env vars", () => {
+      process.env.CONDUCTOR_AGENT_WORKER_THREADS = "9";
+      const config = new AgentConfig({ workerThreadCount: 3 });
       expect(config.workerThreadCount).toBe(3);
     });
 
-    it("still falls back to AGENTSPAN_ when CONDUCTOR_ is unset", () => {
-      process.env.AGENTSPAN_WORKER_THREADS = "9";
+    it("handles boolean env var variations", () => {
+      process.env.CONDUCTOR_AGENT_AUTO_START_WORKERS = "1";
+      process.env.CONDUCTOR_AGENT_STREAMING_ENABLED = "no";
 
       const config = new AgentConfig();
 
-      expect(config.workerThreadCount).toBe(9);
+      expect(config.autoStartWorkers).toBe(true);
+      expect(config.streamingEnabled).toBe(false);
+    });
+
+    it("handles invalid numeric env vars gracefully", () => {
+      process.env.CONDUCTOR_AGENT_WORKER_POLL_INTERVAL = "not-a-number";
+      process.env.CONDUCTOR_AGENT_WORKER_THREADS = "";
+
+      const config = new AgentConfig();
+
+      expect(config.workerPollIntervalMs).toBe(100);
+      expect(config.workerThreadCount).toBe(1);
+    });
+
+    it("falls back to default when a liveness float env var is empty or invalid", () => {
+      process.env.CONDUCTOR_AGENT_LIVENESS_STALL_SECONDS = "";
+      process.env.CONDUCTOR_AGENT_LIVENESS_CHECK_INTERVAL_SECONDS = "not-a-float";
+
+      const config = new AgentConfig();
+
+      expect(config.livenessStallSeconds).toBe(30.0);
+      expect(config.livenessCheckIntervalSeconds).toBe(10.0);
+    });
+
+    it("ignores legacy AGENTSPAN_ env vars entirely (clean break, no fallback -- matches java-sdk/python-sdk)", () => {
+      process.env.AGENTSPAN_WORKER_POLL_INTERVAL = "200";
+      process.env.AGENTSPAN_WORKER_THREADS = "2";
+      process.env.AGENTSPAN_AUTO_START_WORKERS = "false";
+      process.env.AGENTSPAN_STREAMING_ENABLED = "false";
+      process.env.AGENTSPAN_LIVENESS_ENABLED = "false";
+      process.env.AGENTSPAN_LIVENESS_STALL_SECONDS = "60.5";
+      process.env.AGENTSPAN_LIVENESS_CHECK_INTERVAL_SECONDS = "20.5";
+
+      const config = new AgentConfig();
+
+      expect(config.workerPollIntervalMs).toBe(100);
+      expect(config.workerThreadCount).toBe(1);
+      expect(config.autoStartWorkers).toBe(true);
+      expect(config.streamingEnabled).toBe(true);
+      expect(config.livenessEnabled).toBe(true);
+      expect(config.livenessStallSeconds).toBe(30.0);
+      expect(config.livenessCheckIntervalSeconds).toBe(10.0);
     });
   });
 
   describe("fromEnv", () => {
     it("creates config from env vars only", () => {
-      process.env.AGENTSPAN_WORKER_THREADS = "6";
+      process.env.CONDUCTOR_AGENT_WORKER_THREADS = "6";
       const config = AgentConfig.fromEnv();
       expect(config.workerThreadCount).toBe(6);
     });

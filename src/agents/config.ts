@@ -60,42 +60,33 @@ export class AgentConfig {
   constructor(options?: AgentConfigOptions) {
     const env = process.env;
 
-    // CONDUCTOR_* env -> AGENTSPAN_* env (agent-layer fallback), same shape
-    // as resolveOrkesConfig.ts's connection-config precedence.
+    // Only CONDUCTOR_AGENT_* env vars are read -- matches java-sdk/python-sdk
+    // exactly (no AGENTSPAN_* fallback; neither reference SDK has one).
     this.workerPollIntervalMs =
       options?.workerPollIntervalMs ??
-      parseIntEnv(env.CONDUCTOR_WORKER_POLL_INTERVAL || env.AGENTSPAN_WORKER_POLL_INTERVAL, 100);
+      parseIntEnv(env.CONDUCTOR_AGENT_WORKER_POLL_INTERVAL, 100);
 
     this.workerThreadCount =
-      options?.workerThreadCount ??
-      parseIntEnv(env.CONDUCTOR_WORKER_THREADS || env.AGENTSPAN_WORKER_THREADS, 1);
+      options?.workerThreadCount ?? parseIntEnv(env.CONDUCTOR_AGENT_WORKER_THREADS, 1);
 
     this.autoStartWorkers =
       options?.autoStartWorkers ??
-      parseBoolEnv(env.CONDUCTOR_AUTO_START_WORKERS || env.AGENTSPAN_AUTO_START_WORKERS, true);
+      parseBoolEnv(env.CONDUCTOR_AGENT_AUTO_START_WORKERS, true);
 
     this.streamingEnabled =
       options?.streamingEnabled ??
-      parseBoolEnv(env.CONDUCTOR_STREAMING_ENABLED || env.AGENTSPAN_STREAMING_ENABLED, true);
+      parseBoolEnv(env.CONDUCTOR_AGENT_STREAMING_ENABLED, true);
 
     this.livenessEnabled =
-      options?.livenessEnabled ??
-      parseBoolEnv(env.CONDUCTOR_LIVENESS_ENABLED || env.AGENTSPAN_LIVENESS_ENABLED, true);
+      options?.livenessEnabled ?? parseBoolEnv(env.CONDUCTOR_AGENT_LIVENESS_ENABLED, true);
 
     this.livenessStallSeconds =
       options?.livenessStallSeconds ??
-      parseFloatEnv(
-        env.CONDUCTOR_LIVENESS_STALL_SECONDS || env.AGENTSPAN_LIVENESS_STALL_SECONDS,
-        30.0,
-      );
+      parseFloatEnv(env.CONDUCTOR_AGENT_LIVENESS_STALL_SECONDS, 30.0);
 
     this.livenessCheckIntervalSeconds =
       options?.livenessCheckIntervalSeconds ??
-      parseFloatEnv(
-        env.CONDUCTOR_LIVENESS_CHECK_INTERVAL_SECONDS ||
-          env.AGENTSPAN_LIVENESS_CHECK_INTERVAL_SECONDS,
-        10.0,
-      );
+      parseFloatEnv(env.CONDUCTOR_AGENT_LIVENESS_CHECK_INTERVAL_SECONDS, 10.0);
   }
 
   /**
