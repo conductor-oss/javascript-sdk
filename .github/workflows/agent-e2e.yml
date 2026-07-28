@@ -4,9 +4,7 @@ name: Agent E2E
 # (Maven Central — it has no GitHub release assets), which ships the
 # /agent/* control plane + TaskDef.runtimeMetadata persistence (conductor-oss
 # PR #1255) and the agent runtime on by default from 3.32.0-rc.8 onward.
-# The Agentspan server JAR is no longer used as a server flavor here; the
-# Agentspan CLI binary is still downloaded (its own separate pin) since the
-# CLI/skill e2e suites still drive it against this same server.
+# The Agentspan server JAR is no longer used as a server flavor here.
 # Port of the Python SDK's proven agent-e2e workflow; JS deltas only
 # (Node toolchain, jest runner; Python kept solely for mcp-testkit).
 #
@@ -21,7 +19,6 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  AGENTSPAN_CLI_VERSION: "0.4.4"        # pinned CLI release — independent of the server
   CONDUCTOR_OSS_VERSION: "3.32.0-rc.8"  # pinned conductor-oss release — bump deliberately
 
 jobs:
@@ -67,16 +64,6 @@ jobs:
         run: |
           curl -sfL "https://repo1.maven.org/maven2/org/conductoross/conductor-server/${CONDUCTOR_OSS_VERSION}/conductor-server-${CONDUCTOR_OSS_VERSION}-boot.jar" \
             --output conductor-server-boot.jar
-
-      # Agentspan CLI (CLI/skill suites) — kept on its own separate pin,
-      # independent of which server JAR is under test.
-      - name: Download CLI binary from release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release download "v${AGENTSPAN_CLI_VERSION}" --repo agentspan-ai/agentspan \
-            --pattern "agentspan_linux_amd64" --output agentspan
-          chmod +x agentspan
 
       - name: Install SDK deps and build
         run: |
