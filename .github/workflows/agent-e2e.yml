@@ -32,7 +32,6 @@ jobs:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       CONDUCTOR_SERVER_URL: http://localhost:8080/api
-      AGENTSPAN_CLI_PATH: ${{ github.workspace }}/agentspan
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
