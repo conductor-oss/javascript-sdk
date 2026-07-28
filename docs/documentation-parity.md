@@ -28,7 +28,13 @@ Java/Python:
 
 - `docs/api-reference/*.md` (11 files) — one reference page per client
   (`application-client.md`, `task-client.md`, `workflow-executor.md`, ...);
-  JS's own reference-doc convention, predates this alignment effort
+  JS's own reference-doc convention, predates this alignment effort. Five
+  clients that exist in source (`AuthorizationClient`, `IntegrationClient`,
+  `PromptClient`, `SchemaClient`, `SecretClient`) have no reference page yet —
+  the root `README.md` table used to link to these five as if they did
+  (broken links, found via the new link-check CI guard, fixed by removing
+  the dead links). Authoring the five missing pages is content work, tracked
+  separately from this alignment pass.
 - `docs/design/api_client.md` — internal design rationale for the generated
   API client layer
 - `docs/superpowers/**` — maintainer-facing plans/specs, not user docs

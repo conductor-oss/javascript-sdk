@@ -12,6 +12,36 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate documentation links
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: --offline --no-progress --include-fragments README.md docs
+
+      - name: Reject legacy product branding
+        run: |
+          # Scoped to README.md, AGENTS.md, docs/, and cli-bin/ -- the areas the
+          # legacy-branding sweep actually covers. Unlike java-sdk's
+          # tree-wide guard, this does NOT scan examples/, e2e/, or src/:
+          # those still carry the (intentionally kept) AGENTSPAN_* env var
+          # family and are out of scope for this guard.
+          #
+          # Excluded inline: AGENTSPAN_* env var identifiers (real config
+          # surface, kept for back-compat), the `_agentspan` internal
+          # serializer markers, the `AgentspanError` exported class, the
+          # external `agentspan` CLI binary name, and the historical
+          # "agentspan server > 0.4.2" version reference.
+          if grep -rIn -iE 'agent[s]pan' README.md AGENTS.md docs/ cli-bin/ \
+               | grep -viE 'AGENTSPAN_[A-Z_*]+|_agentspan|AgentspanError|agentspan CLI helper scripts|agentspan server > 0\.4\.2'; then
+            echo "Legacy product branding found — use Conductor terminology."
+            exit 1
+          fi
+
   linter:
     runs-on: ubuntu-latest
     steps:
