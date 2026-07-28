@@ -14,7 +14,7 @@
  *   Part 1 (standalone): none -- no server, no LLM, no workers.
  *   Part 2 (as workers): Conductor server
  *   - CONDUCTOR_SERVER_URL=http://localhost:8080/api as environment variable
- *   - AGENTSPAN_LLM_MODEL=openai/gpt-4o-mini as environment variable
+ *   - CONDUCTOR_AGENT_LLM_MODEL=openai/gpt-4o-mini as environment variable
  */
 
 import { guardrail } from '@io-orkes/conductor-javascript/agents';

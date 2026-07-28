@@ -39,7 +39,7 @@ export function expectMsg(actual: unknown, message?: string): ReturnType<typeof 
 
 const SERVER_URL = process.env.CONDUCTOR_SERVER_URL ?? 'http://localhost:8080/api';
 const BASE_URL = SERVER_URL.replace(/\/api$/, '');
-export const MODEL = process.env.AGENTSPAN_LLM_MODEL ?? 'openai/gpt-4o-mini';
+export const MODEL = process.env.CONDUCTOR_AGENT_LLM_MODEL ?? 'openai/gpt-4o-mini';
 export const MCP_TESTKIT_URL = process.env.MCP_TESTKIT_URL ?? 'http://localhost:3001';
 export const TIMEOUT = 300_000; // 5 min per run — CI runners are slower
 

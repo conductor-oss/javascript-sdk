@@ -11,7 +11,7 @@ import {
   LocalCodeExecutor,
 } from '@io-orkes/conductor-javascript/agents';
 
-const MODEL = process.env.AGENTSPAN_LLM_MODEL ?? 'openai/gpt-4o';
+const MODEL = process.env.CONDUCTOR_AGENT_LLM_MODEL ?? 'openai/gpt-4o';
 
 // -- Create a local code executor --
 const executor = new LocalCodeExecutor({ timeout: 10 });

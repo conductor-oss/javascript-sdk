@@ -17,7 +17,7 @@
  *
  * Requirements:
  *   - CONDUCTOR_SERVER_URL=http://localhost:8080/api
- *   - AGENTSPAN_LLM_MODEL (default: openai/gpt-4o-mini)
+ *   - CONDUCTOR_AGENT_LLM_MODEL (default: openai/gpt-4o-mini)
  */
 
 import * as readline from 'node:readline/promises';

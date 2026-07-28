@@ -20,13 +20,13 @@
  * Requirements:
  *   - Conductor server with AgentTool + MCP support
  *   - CONDUCTOR_SERVER_URL=http://localhost:8080/api in env or .env
- *   - AGENTSPAN_LLM_MODEL=google_gemini/gemini-2.0-flash in env or .env
+ *   - CONDUCTOR_AGENT_LLM_MODEL=google_gemini/gemini-2.0-flash in env or .env
  *   - GH_TOKEN in env or .env
  */
 
 import { Agent, AgentRuntime, agentTool, tool, mcpTool } from '@io-orkes/conductor-javascript/agents';
 
-const model = process.env.AGENTSPAN_LLM_MODEL ?? 'openai/gpt-4o-mini';
+const model = process.env.CONDUCTOR_AGENT_LLM_MODEL ?? 'openai/gpt-4o-mini';
 
 // ── In-memory ticket store (mirrors real conductor-oss/conductor issues) ──
 

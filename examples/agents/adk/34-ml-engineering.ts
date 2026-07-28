@@ -31,7 +31,7 @@
 import { LlmAgent, SequentialAgent, ParallelAgent, LoopAgent } from '@google/adk';
 import { AgentRuntime } from '@io-orkes/conductor-javascript/agents';
 
-const model = process.env.AGENTSPAN_LLM_MODEL ?? 'gemini-2.5-flash';
+const model = process.env.CONDUCTOR_AGENT_LLM_MODEL ?? 'gemini-2.5-flash';
 
 // ── Phase 1: Data Analysis ───────────────────────────────────────────
 

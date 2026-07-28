@@ -28,7 +28,7 @@ jobs:
           # Scoped to README.md, AGENTS.md, docs/, and cli-bin/ -- the areas the
           # legacy-branding sweep actually covers. Unlike java-sdk's
           # tree-wide guard, this does NOT scan examples/, e2e/, or src/:
-          # those still carry the (intentionally kept) AGENTSPAN_LLM_MODEL
+          # those still carry the (intentionally kept) CONDUCTOR_AGENT_LLM_MODEL
           # example convention and resolveOrkesConfig.ts/logger.ts's
           # AGENTSPAN_* connection/log-level fallback, out of scope for this
           # guard.

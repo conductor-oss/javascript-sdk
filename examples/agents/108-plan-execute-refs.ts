@@ -21,7 +21,7 @@
  * Requirements:
  *   - Agentspan server running on http://localhost:8080 (or
  *     CONDUCTOR_SERVER_URL)
- *   - AGENTSPAN_LLM_MODEL set (default: openai/gpt-4o-mini)
+ *   - CONDUCTOR_AGENT_LLM_MODEL set (default: openai/gpt-4o-mini)
  *
  * Run: npx tsx examples/108-plan-execute-refs.ts
  */
@@ -36,7 +36,7 @@ import {
   tool,
 } from "../../src/agents/index.js";
 
-const MODEL = process.env.AGENTSPAN_LLM_MODEL ?? "openai/gpt-4o-mini";
+const MODEL = process.env.CONDUCTOR_AGENT_LLM_MODEL ?? "openai/gpt-4o-mini";
 
 const produce = tool(
   async ({ record_id }: { record_id: string }) => ({

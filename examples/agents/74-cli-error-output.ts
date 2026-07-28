@@ -8,7 +8,7 @@
  * Requirements:
  *   - Conductor server with LLM support
  *   - CONDUCTOR_SERVER_URL  (e.g. http://localhost:8080/api)
- *   - AGENTSPAN_LLM_MODEL   (e.g. openai/gpt-4o-mini)
+ *   - CONDUCTOR_AGENT_LLM_MODEL   (e.g. openai/gpt-4o-mini)
  */
 
 import { Agent, AgentRuntime } from '@io-orkes/conductor-javascript/agents';

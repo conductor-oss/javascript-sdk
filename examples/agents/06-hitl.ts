@@ -13,7 +13,7 @@ import {
   tool,
 } from '@io-orkes/conductor-javascript/agents';
 
-const MODEL = process.env.AGENTSPAN_LLM_MODEL ?? 'openai/gpt-4o';
+const MODEL = process.env.CONDUCTOR_AGENT_LLM_MODEL ?? 'openai/gpt-4o';
 
 // -- Tool that requires human approval --
 const publishArticle = tool(

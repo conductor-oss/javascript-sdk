@@ -24,7 +24,7 @@
  * Requirements:
  *   - Agentspan server running at CONDUCTOR_SERVER_URL (> 0.4.2, for
  *     runtimeMetadata delivery) or conductor-oss (with PR #1255)
- *   - AGENTSPAN_LLM_MODEL set (or defaults to openai/gpt-4o-mini)
+ *   - CONDUCTOR_AGENT_LLM_MODEL set (or defaults to openai/gpt-4o-mini)
  *   - GITHUB_TOKEN stored via `agentspan credentials set`
  */
 

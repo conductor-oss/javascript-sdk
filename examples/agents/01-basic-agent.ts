@@ -7,7 +7,7 @@
  * Requirements:
  *   - Agentspan server with LLM support
  *   - CONDUCTOR_SERVER_URL=http://localhost:8080/api as environment variable
- *   - AGENTSPAN_LLM_MODEL set as environment variable (optional)
+ *   - CONDUCTOR_AGENT_LLM_MODEL set as environment variable (optional)
  */
 
 import { Agent, AgentRuntime } from '@io-orkes/conductor-javascript/agents';

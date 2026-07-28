@@ -10,7 +10,7 @@
  * Requirements:
  *   - Conductor server with LLM support
  *   - CONDUCTOR_SERVER_URL=http://localhost:8080/api as environment variable
- *   - AGENTSPAN_LLM_MODEL=openai/gpt-4o-mini as environment variable
+ *   - CONDUCTOR_AGENT_LLM_MODEL=openai/gpt-4o-mini as environment variable
  */
 
 import {

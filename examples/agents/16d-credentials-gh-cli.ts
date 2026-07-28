@@ -12,7 +12,7 @@
  *
  * Requirements:
  *   - Agentspan server running at CONDUCTOR_SERVER_URL
- *   - AGENTSPAN_LLM_MODEL set (or defaults to openai/gpt-4o-mini)
+ *   - CONDUCTOR_AGENT_LLM_MODEL set (or defaults to openai/gpt-4o-mini)
  *   - `gh` CLI installed (https://cli.github.com)
  *   - GH_TOKEN stored via `agentspan credentials set`
  */

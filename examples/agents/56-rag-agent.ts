@@ -9,7 +9,7 @@
  *   - Conductor server with RAG system tasks enabled
  *   - A configured vector database (e.g., pgvector)
  *   - CONDUCTOR_SERVER_URL=http://localhost:8080/api as environment variable
- *   - AGENTSPAN_LLM_MODEL=openai/gpt-4o-mini as environment variable
+ *   - CONDUCTOR_AGENT_LLM_MODEL=openai/gpt-4o-mini as environment variable
  */
 
 import { Agent, AgentRuntime, searchTool, indexTool } from '@io-orkes/conductor-javascript/agents';

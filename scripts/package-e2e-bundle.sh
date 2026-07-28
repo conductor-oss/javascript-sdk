@@ -113,7 +113,7 @@ set -euo pipefail
 #   - Conductor server → CONDUCTOR_SERVER_URL (default http://localhost:8080/api)
 #   - mcp-testkit      → MCP_TESTKIT_URL      (default http://localhost:3001)
 # Optional:
-#   - AGENTSPAN_LLM_MODEL (default openai/gpt-4o-mini); the provider API key
+#   - CONDUCTOR_AGENT_LLM_MODEL (default openai/gpt-4o-mini); the provider API key
 #     must be configured on the SERVER — the suites never read it.
 #
 # Requires node >= 20. Usage: ./run.sh [extra jest args]
@@ -143,7 +143,7 @@ released from agentspan-ai/agentspan.
 |-----------------------------------|------------------------|-----------------------------|
 | node >= 20                        | —                      | —                           |
 | Conductor server w/ agent runtime | `CONDUCTOR_SERVER_URL` | `http://localhost:8080/api` |
-| LLM model                         | `AGENTSPAN_LLM_MODEL`  | `openai/gpt-4o-mini`        |
+| LLM model                         | `CONDUCTOR_AGENT_LLM_MODEL`  | `openai/gpt-4o-mini`        |
 | mcp-testkit (MCP suites)          | `MCP_TESTKIT_URL`      | `http://localhost:3001`     |
 
 The server needs the agent runtime: conductor-oss `>= 3.32.0-rc.8`, or
