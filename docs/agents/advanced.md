@@ -6,7 +6,7 @@ Runtime configuration, the control-plane and workflow clients, the deploy/serve/
 
 `new AgentRuntime(configuration?, settings?)` takes two independent, optional arguments:
 
-- `configuration` — connection/auth, the same shape every other Conductor client takes (`OrkesApiConfig`, or a pre-built `ConductorClient` from `createConductorClient()`/`OrkesClients` to share one client — and one token mint — across control-plane and worker-plane calls). Falls back to `CONDUCTOR_SERVER_URL`/`CONDUCTOR_AUTH_KEY`/`CONDUCTOR_AUTH_SECRET`, then `CONDUCTOR_SERVER_URL`/`AGENTSPAN_AUTH_KEY`/`AGENTSPAN_AUTH_SECRET` (agent-layer fallback), then `http://localhost:8080`.
+- `configuration` — connection/auth, the same shape every other Conductor client takes (`OrkesApiConfig`, or a pre-built `ConductorClient` from `createConductorClient()`/`OrkesClients` to share one client — and one token mint — across control-plane and worker-plane calls). Falls back to `CONDUCTOR_SERVER_URL`/`CONDUCTOR_AUTH_KEY`/`CONDUCTOR_AUTH_SECRET`, then `http://localhost:8080`.
 - `settings` — `AgentConfigOptions`, purely behavioral (no connection fields — those live on `configuration` now). Every field falls back to an env var, then a default; explicit values take precedence.
 
 ```ts
@@ -15,12 +15,12 @@ import { AgentRuntime } from '@io-orkes/conductor-javascript/agents';
 const runtime = new AgentRuntime(
   { serverUrl: 'http://localhost:8080/api', keyId: '…', keySecret: '…' }, // connection (OrkesApiConfig)
   {
-    workerPollIntervalMs: 100,              // CONDUCTOR_WORKER_POLL_INTERVAL / AGENTSPAN_WORKER_POLL_INTERVAL
-    workerThreadCount: 1,                   // CONDUCTOR_WORKER_THREADS / AGENTSPAN_WORKER_THREADS
-    streamingEnabled: true,                 // CONDUCTOR_STREAMING_ENABLED / AGENTSPAN_STREAMING_ENABLED
-    livenessEnabled: true,                  // CONDUCTOR_LIVENESS_ENABLED / AGENTSPAN_LIVENESS_ENABLED
-    livenessStallSeconds: 30,               // CONDUCTOR_LIVENESS_STALL_SECONDS / AGENTSPAN_LIVENESS_STALL_SECONDS
-    livenessCheckIntervalSeconds: 10,       // CONDUCTOR_LIVENESS_CHECK_INTERVAL_SECONDS / AGENTSPAN_LIVENESS_CHECK_INTERVAL_SECONDS
+    workerPollIntervalMs: 100,              // CONDUCTOR_AGENT_WORKER_POLL_INTERVAL
+    workerThreadCount: 1,                   // CONDUCTOR_AGENT_WORKER_THREADS
+    streamingEnabled: true,                 // CONDUCTOR_AGENT_STREAMING_ENABLED
+    livenessEnabled: true,                  // CONDUCTOR_AGENT_LIVENESS_ENABLED
+    livenessStallSeconds: 30,               // CONDUCTOR_AGENT_LIVENESS_STALL_SECONDS
+    livenessCheckIntervalSeconds: 10,       // CONDUCTOR_AGENT_LIVENESS_CHECK_INTERVAL_SECONDS
   },
 );
 

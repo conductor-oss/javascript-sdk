@@ -76,10 +76,12 @@ docs/agents/                     # Agent layer documentation
   Framework subdirs (adk/, langgraph/, openai/, vercel-ai/) install their own
   deps (`scripts/install-example-deps.sh`); `examples/agents` is excluded from
   the root tsconfig.
-- The agent layer's config surface (`CONDUCTOR_SERVER_URL`, default
-  `http://localhost:8080/api`, plus the worker/streaming/liveness knobs in
-  `src/agents/config.ts`) reads `CONDUCTOR_*` env vars first, falling back to
-  the legacy `AGENTSPAN_*` names for back-compat.
+- The agent layer's connection config (`CONDUCTOR_SERVER_URL`, default
+  `http://localhost:8080/api`; `CONDUCTOR_AUTH_KEY`/`CONDUCTOR_AUTH_SECRET`)
+  reads the same env vars every other Conductor client does
+  (`resolveOrkesConfig.ts`). The worker/streaming/liveness knobs in
+  `src/agents/config.ts` read `CONDUCTOR_AGENT_*` only, matching
+  java-sdk/python-sdk exactly.
 
 ## Commands
 

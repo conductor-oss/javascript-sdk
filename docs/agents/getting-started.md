@@ -23,22 +23,20 @@ You need a running Conductor server. The defaults assume a local one at `http://
 | Variable | Default | Description |
 |---|---|---|
 | `CONDUCTOR_SERVER_URL` | `http://localhost:8080/api` | Conductor server URL. |
-| `AGENTSPAN_AUTH_KEY` | — | Auth key. Unset = no-auth mode (local / OSS). |
-| `AGENTSPAN_AUTH_SECRET` | — | Auth secret. Set together with the key for Orkes Cloud. |
-| `AGENTSPAN_API_KEY` | — | Pre-minted bearer token (alternative to key/secret). |
+| `CONDUCTOR_AUTH_KEY` | — | Auth key. Unset = no-auth mode (local / OSS). |
+| `CONDUCTOR_AUTH_SECRET` | — | Auth secret. Set together with the key for Orkes Cloud. |
 
 ```bash
 export CONDUCTOR_SERVER_URL=http://localhost:8080/api
 export OPENAI_API_KEY=<YOUR-KEY>
-export AGENTSPAN_LLM_MODEL=openai/gpt-4o-mini
 # Orkes Cloud only:
-# export AGENTSPAN_AUTH_KEY=...
-# export AGENTSPAN_AUTH_SECRET=...
+# export CONDUCTOR_AUTH_KEY=...
+# export CONDUCTOR_AUTH_SECRET=...
 ```
 
-`AGENTSPAN_AUTH_KEY` / `AGENTSPAN_AUTH_SECRET` are minted into a short-lived JWT and sent as the `X-Authorization` header on every server call. The SDK handles that for you — you only set the env vars. The SDK loads a `.env` file automatically (via `dotenv`).
+`CONDUCTOR_AUTH_KEY` / `CONDUCTOR_AUTH_SECRET` are minted into a short-lived JWT and sent as the `X-Authorization` header on every server call. The SDK handles that for you — you only set the env vars. The SDK loads a `.env` file automatically (via `dotenv`).
 
-A handful of other env vars tune workers and logging (`AGENTSPAN_WORKER_POLL_INTERVAL`, `AGENTSPAN_WORKER_THREADS`, `AGENTSPAN_LOG_LEVEL`, ...); see [advanced.md](advanced.md#runtime-configuration).
+A handful of other env vars tune workers and logging (`CONDUCTOR_AGENT_WORKER_POLL_INTERVAL`, `CONDUCTOR_AGENT_WORKER_THREADS`, `CONDUCTOR_LOG_LEVEL`, ...); see [advanced.md](advanced.md#runtime-configuration).
 
 ## 3. Run an agent
 
