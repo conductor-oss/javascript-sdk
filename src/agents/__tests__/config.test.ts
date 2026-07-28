@@ -13,6 +13,13 @@ describe("AgentConfig", () => {
     "AGENTSPAN_LIVENESS_ENABLED",
     "AGENTSPAN_LIVENESS_STALL_SECONDS",
     "AGENTSPAN_LIVENESS_CHECK_INTERVAL_SECONDS",
+    "CONDUCTOR_WORKER_POLL_INTERVAL",
+    "CONDUCTOR_WORKER_THREADS",
+    "CONDUCTOR_AUTO_START_WORKERS",
+    "CONDUCTOR_STREAMING_ENABLED",
+    "CONDUCTOR_LIVENESS_ENABLED",
+    "CONDUCTOR_LIVENESS_STALL_SECONDS",
+    "CONDUCTOR_LIVENESS_CHECK_INTERVAL_SECONDS",
   ];
 
   beforeEach(() => {
@@ -123,6 +130,43 @@ describe("AgentConfig", () => {
 
       expect(config.livenessStallSeconds).toBe(30.0);
       expect(config.livenessCheckIntervalSeconds).toBe(10.0);
+    });
+
+    it("reads all CONDUCTOR_ env var aliases", () => {
+      process.env.CONDUCTOR_WORKER_POLL_INTERVAL = "300";
+      process.env.CONDUCTOR_WORKER_THREADS = "3";
+      process.env.CONDUCTOR_AUTO_START_WORKERS = "false";
+      process.env.CONDUCTOR_STREAMING_ENABLED = "false";
+      process.env.CONDUCTOR_LIVENESS_ENABLED = "false";
+      process.env.CONDUCTOR_LIVENESS_STALL_SECONDS = "70.5";
+      process.env.CONDUCTOR_LIVENESS_CHECK_INTERVAL_SECONDS = "25.5";
+
+      const config = new AgentConfig();
+
+      expect(config.workerPollIntervalMs).toBe(300);
+      expect(config.workerThreadCount).toBe(3);
+      expect(config.autoStartWorkers).toBe(false);
+      expect(config.streamingEnabled).toBe(false);
+      expect(config.livenessEnabled).toBe(false);
+      expect(config.livenessStallSeconds).toBe(70.5);
+      expect(config.livenessCheckIntervalSeconds).toBe(25.5);
+    });
+
+    it("prefers CONDUCTOR_ over AGENTSPAN_ when both are set", () => {
+      process.env.CONDUCTOR_WORKER_THREADS = "3";
+      process.env.AGENTSPAN_WORKER_THREADS = "9";
+
+      const config = new AgentConfig();
+
+      expect(config.workerThreadCount).toBe(3);
+    });
+
+    it("still falls back to AGENTSPAN_ when CONDUCTOR_ is unset", () => {
+      process.env.AGENTSPAN_WORKER_THREADS = "9";
+
+      const config = new AgentConfig();
+
+      expect(config.workerThreadCount).toBe(9);
     });
   });
 

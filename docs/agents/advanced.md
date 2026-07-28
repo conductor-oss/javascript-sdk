@@ -15,12 +15,12 @@ import { AgentRuntime } from '@io-orkes/conductor-javascript/agents';
 const runtime = new AgentRuntime(
   { serverUrl: 'http://localhost:8080/api', keyId: '…', keySecret: '…' }, // connection (OrkesApiConfig)
   {
-    workerPollIntervalMs: 100,              // AGENTSPAN_WORKER_POLL_INTERVAL
-    workerThreadCount: 1,                   // AGENTSPAN_WORKER_THREADS
-    streamingEnabled: true,                 // AGENTSPAN_STREAMING_ENABLED
-    livenessEnabled: true,                  // AGENTSPAN_LIVENESS_ENABLED
-    livenessStallSeconds: 30,               // AGENTSPAN_LIVENESS_STALL_SECONDS
-    livenessCheckIntervalSeconds: 10,       // AGENTSPAN_LIVENESS_CHECK_INTERVAL_SECONDS
+    workerPollIntervalMs: 100,              // CONDUCTOR_WORKER_POLL_INTERVAL / AGENTSPAN_WORKER_POLL_INTERVAL
+    workerThreadCount: 1,                   // CONDUCTOR_WORKER_THREADS / AGENTSPAN_WORKER_THREADS
+    streamingEnabled: true,                 // CONDUCTOR_STREAMING_ENABLED / AGENTSPAN_STREAMING_ENABLED
+    livenessEnabled: true,                  // CONDUCTOR_LIVENESS_ENABLED / AGENTSPAN_LIVENESS_ENABLED
+    livenessStallSeconds: 30,               // CONDUCTOR_LIVENESS_STALL_SECONDS / AGENTSPAN_LIVENESS_STALL_SECONDS
+    livenessCheckIntervalSeconds: 10,       // CONDUCTOR_LIVENESS_CHECK_INTERVAL_SECONDS / AGENTSPAN_LIVENESS_CHECK_INTERVAL_SECONDS
   },
 );
 

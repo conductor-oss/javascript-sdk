@@ -79,15 +79,17 @@ Behavior-only — no connection/auth fields (those live on `OrkesApiConfig`, the
 
 ```ts
 interface AgentConfigOptions {
-  workerPollIntervalMs?: number;         // AGENTSPAN_WORKER_POLL_INTERVAL (100)
-  workerThreadCount?: number;            // AGENTSPAN_WORKER_THREADS (1)
-  autoStartWorkers?: boolean;            // AGENTSPAN_AUTO_START_WORKERS (true)
-  streamingEnabled?: boolean;            // AGENTSPAN_STREAMING_ENABLED (true)
-  livenessEnabled?: boolean;             // AGENTSPAN_LIVENESS_ENABLED (true)
-  livenessStallSeconds?: number;         // AGENTSPAN_LIVENESS_STALL_SECONDS (30)
-  livenessCheckIntervalSeconds?: number; // AGENTSPAN_LIVENESS_CHECK_INTERVAL_SECONDS (10)
+  workerPollIntervalMs?: number;         // CONDUCTOR_WORKER_POLL_INTERVAL / AGENTSPAN_WORKER_POLL_INTERVAL (100)
+  workerThreadCount?: number;            // CONDUCTOR_WORKER_THREADS / AGENTSPAN_WORKER_THREADS (1)
+  autoStartWorkers?: boolean;            // CONDUCTOR_AUTO_START_WORKERS / AGENTSPAN_AUTO_START_WORKERS (true)
+  streamingEnabled?: boolean;            // CONDUCTOR_STREAMING_ENABLED / AGENTSPAN_STREAMING_ENABLED (true)
+  livenessEnabled?: boolean;             // CONDUCTOR_LIVENESS_ENABLED / AGENTSPAN_LIVENESS_ENABLED (true)
+  livenessStallSeconds?: number;         // CONDUCTOR_LIVENESS_STALL_SECONDS / AGENTSPAN_LIVENESS_STALL_SECONDS (30)
+  livenessCheckIntervalSeconds?: number; // CONDUCTOR_LIVENESS_CHECK_INTERVAL_SECONDS / AGENTSPAN_LIVENESS_CHECK_INTERVAL_SECONDS (10)
 }
 ```
+
+Each falls back `CONDUCTOR_*` env -> `AGENTSPAN_*` env (agent-layer fallback) -> default.
 
 `AgentConfig.fromEnv()` is an exported helper (equivalent to `new AgentConfig()`). See [Liveness monitoring](writing-agents.md#liveness-monitoring) for the liveness fields.
 

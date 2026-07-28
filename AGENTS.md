@@ -76,9 +76,10 @@ docs/agents/                     # Agent layer documentation
   Framework subdirs (adk/, langgraph/, openai/, vercel-ai/) install their own
   deps (`scripts/install-example-deps.sh`); `examples/agents` is excluded from
   the root tsconfig.
-- `AGENTSPAN_*` env vars (`CONDUCTOR_SERVER_URL`, default
-  `http://localhost:8080/api`) are the agent layer's config surface — kept
-  working as-is; `CONDUCTOR_*` aliases are a possible follow-up.
+- The agent layer's config surface (`CONDUCTOR_SERVER_URL`, default
+  `http://localhost:8080/api`, plus the worker/streaming/liveness knobs in
+  `src/agents/config.ts`) reads `CONDUCTOR_*` env vars first, falling back to
+  the legacy `AGENTSPAN_*` names for back-compat.
 
 ## Commands
 
