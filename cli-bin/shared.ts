@@ -39,7 +39,7 @@ function collectFiles(dir: string): string[] {
 
 /**
  * Scan a directory recursively for .ts/.js files and discover all agent-like exports,
- * including native AgentSpan agents and framework agents (OpenAI, ADK,
+ * including native Conductor agents and framework agents (OpenAI, ADK,
  * LangChain, LangGraph).
  */
 export async function discoverAllAgents(scanPath: string): Promise<DiscoveredAgent[]> {

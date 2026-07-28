@@ -40,13 +40,13 @@ src/open-api/                    # OpenAPI layer
   types.ts                       # Extended types - add custom fields here
 src/integration-tests/           # E2E tests against real Conductor server
   utils/                         # waitForWorkflowStatus, executeWorkflowWithRetry, etc.
-src/agents/                      # Durable agent layer (merged Agentspan TS SDK)
+src/agents/                      # Durable agent layer (merged from the standalone agent SDK)
   index.ts                       # Agent, AgentRuntime, tool, guardrails, handoffs, ...
   frameworks/                    # LangGraph/LangChain/generic serializers + detection
   testing/                       # Agent testing toolkit (/agents/testing subpath)
   wrappers/                      # Vercel AI / LangGraph / LangChain drop-in wrappers
   __tests__/                     # Colocated jest unit tests (picked up by test:unit)
-e2e/                             # Agent e2e suites vs live agentspan server (jest.e2e.config.mjs)
+e2e/                             # Agent e2e suites vs a live Conductor server (jest.e2e.config.mjs)
 cli-bin/                         # agentspan CLI helper scripts (Go CLI walk-up probe target)
 examples/agents/                 # Agent examples (own tsconfig; run via npx tsx)
 docs/agents/                     # Agent layer documentation
@@ -94,7 +94,7 @@ CONDUCTOR_AUTH_KEY=key CONDUCTOR_AUTH_SECRET=secret \
 ORKES_BACKEND_VERSION=5 \
 npm run test:integration:orkes-v5
 
-# Agent e2e (requires a running agentspan server + LLM keys; CI does this
+# Agent e2e (requires a running Conductor server + LLM keys; CI does this
 # against the pinned release JAR — see .github/workflows/agent-e2e.yml)
 CONDUCTOR_SERVER_URL=http://localhost:8080/api npm run test:agent-e2e
 ```
