@@ -1,7 +1,7 @@
 /**
  * Vercel AI SDK Tools + Native Agent -- Guardrails (Middleware equivalent)
  *
- * Demonstrates agentspan's guardrail system as the native equivalent of
+ * Demonstrates Conductor's guardrail system as the native equivalent of
  * Vercel AI SDK middleware. Guardrails validate input/output and can block,
  * retry, or fix content -- applied declaratively on the Agent.
  *
@@ -73,7 +73,7 @@ export const agent = new Agent({
   guardrails: [piiGuardrail, outputLogGuardrail],
 });
 
-// ── Run on agentspan ─────────────────────────────────────
+// ── Run on Conductor ─────────────────────────────────────
 async function main() {
   const runtime = new AgentRuntime();
   try {

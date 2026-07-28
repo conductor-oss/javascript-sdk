@@ -1,15 +1,12 @@
-// Copyright (c) 2025 Agentspan
-// Licensed under the MIT License. See LICENSE file in the project root for details.
-
 /**
  * Basic OpenAI Agent -- simplest possible agent with no tools.
  *
  * Demonstrates:
  *   - Defining an agent using the real @openai/agents SDK
- *   - Running it via Agentspan passthrough (AgentRuntime)
+ *   - Running it via Conductor passthrough (AgentRuntime)
  *
  * Requirements:
- *   - AGENTSPAN_SERVER_URL for the Agentspan path
+ *   - CONDUCTOR_AGENT_SERVER_URL for the Conductor path
  */
 
 import { Agent, setTracingDisabled } from '@openai/agents';
@@ -26,7 +23,7 @@ export const agent = new Agent({
 
 const prompt = 'Say hello and tell me a fun fact about the TypeScript programming language.';
 
-// ── Run on agentspan ──────────────────────────────────────────────
+// ── Run on Conductor ──────────────────────────────────────────────
 async function main() {
   const runtime = new AgentRuntime();
   try {

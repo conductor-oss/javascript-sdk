@@ -66,7 +66,7 @@ const graph = createReactAgent({
   name: "react_tools_agent",
 });
 
-// Add agentspan metadata for extraction
+// Add Conductor metadata for extraction
 (graph as any)._agentspan = {
   model: 'anthropic/claude-sonnet-4-6',
   tools: [calculateTool, countWordsTool, getTodayTool],
@@ -77,7 +77,7 @@ const PROMPT =
   "What is the square root of 256? Also, how many words are in 'the quick brown fox'? And what is today's date?";
 
 // ---------------------------------------------------------------------------
-// Run on agentspan
+// Run on Conductor
 // ---------------------------------------------------------------------------
 async function main() {
   const runtime = new AgentRuntime();

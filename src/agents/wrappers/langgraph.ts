@@ -32,13 +32,13 @@ function _loadLangGraph(): Record<string, unknown> {
   }
 }
 
-// ── Agentspan metadata interface ────────────────────────
+// ── Conductor metadata interface ────────────────────────
 
 /**
  * Metadata stored on the graph object by the wrapper.
  * Used by the LangGraph serializer for fast extraction.
  */
-export interface AgentspanMetadata {
+export interface ConductorAgentMetadata {
   model: string;
   tools: unknown[];
   instructions?: string;
@@ -137,7 +137,7 @@ export function createReactAgent(options: Record<string, unknown>): unknown {
   const modelStr = extractModelFromLLM(llm);
 
   // Store metadata on the graph for later extraction
-  const metadata: AgentspanMetadata = {
+  const metadata: ConductorAgentMetadata = {
     model: modelStr,
     tools,
     instructions: typeof prompt === "string" ? prompt : undefined,
@@ -158,3 +158,11 @@ export function createReactAgent(options: Record<string, unknown>): unknown {
 export function getLangGraphModule(): Record<string, unknown> {
   return _loadLangGraph();
 }
+
+/**
+ * Previous name for {@link ConductorAgentMetadata}.
+ *
+ * @deprecated Renamed when Agentspan became Conductor. Will be removed in a
+ * future release.
+ */
+export type AgentspanMetadata = ConductorAgentMetadata;

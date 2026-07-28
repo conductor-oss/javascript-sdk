@@ -18,14 +18,14 @@
  *   # Or start with auth (requires storing the secret as a credential):
  *   mcp-testkit --transport http --auth <secret>
  *
- *   # Store credentials via CLI or Agentspan UI:
+ *   # Store credentials via CLI or Conductor UI:
  *   agentspan credentials set MCP_TEST_API_KEY <secret>
  *
  * Requirements:
  *   - Conductor server with LLM support
  *   - mcp-testkit running on http://localhost:3001 (see setup above)
- *   - AGENTSPAN_SERVER_URL=http://localhost:8080/api as environment variable
- *   - AGENTSPAN_LLM_MODEL=openai/gpt-4o-mini as environment variable
+ *   - CONDUCTOR_AGENT_SERVER_URL=http://localhost:8080/api as environment variable
+ *   - CONDUCTOR_AGENT_LLM_MODEL=openai/gpt-4o-mini as environment variable
  */
 
 import { Agent, AgentRuntime, mcpTool } from '@io-orkes/conductor-javascript/agents';

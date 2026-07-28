@@ -7,7 +7,7 @@
  *
  * Example:
  *
- *   import { Agent } from 'agentspan';
+ *   import { Agent } from '@io-orkes/conductor-javascript/agents';
  *
  *   // Simple — just flip the flag
  *   const agent = new Agent({
@@ -18,7 +18,7 @@
  *   });
  *
  *   // Full control
- *   import { CliConfigOptions } from 'agentspan';
+ *   import { CliConfigOptions } from '@io-orkes/conductor-javascript/agents';
  *
  *   const agent = new Agent({
  *     name: 'ops',

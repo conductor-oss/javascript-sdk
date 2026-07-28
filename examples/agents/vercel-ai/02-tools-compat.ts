@@ -1,7 +1,7 @@
 /**
  * Vercel AI SDK Tools + Native Agent -- Tool Compatibility
  *
- * Demonstrates mixing Vercel AI SDK tool() with agentspan native tool()
+ * Demonstrates mixing Vercel AI SDK tool() with Conductor native tool()
  * in the same native Agent. The superset tool system normalizes both formats
  * to ToolDef automatically -- they work side by side without any conversion.
  */
@@ -11,18 +11,18 @@ import { z } from 'zod';
 import {
   Agent,
   AgentRuntime,
-  tool as agentspanTool,
+  tool as conductorAgentTool,
   getToolDef,
 } from '@io-orkes/conductor-javascript/agents';
 
-// ── Agentspan native tool ────────────────────────────────
-export const nativeSearchTool = agentspanTool(
+// ── Conductor native tool ────────────────────────────────
+export const nativeSearchTool = conductorAgentTool(
   async (args: { query: string }) => ({
     results: [`Result for: ${args.query}`],
   }),
   {
     name: 'native_search',
-    description: 'Search using agentspan native tool format.',
+    description: 'Search using Conductor native tool format.',
     inputSchema: z.object({
       query: z.string().describe('Search query'),
     }),
@@ -55,7 +55,7 @@ export const agent = new Agent({
 
 const prompt = 'Search for quantum computing and also calculate 2 + 2.';
 
-// ── Run on agentspan ─────────────────────────────────────
+// ── Run on Conductor ─────────────────────────────────────
 async function main() {
   const runtime = new AgentRuntime();
   try {

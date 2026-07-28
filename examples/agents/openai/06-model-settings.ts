@@ -1,6 +1,3 @@
-// Copyright (c) 2025 Agentspan
-// Licensed under the MIT License. See LICENSE file in the project root for details.
-
 /**
  * OpenAI Agent with Model Settings -- temperature, max tokens, and more.
  *
@@ -10,7 +7,7 @@
  *   - High temperature for creative responses
  *
  * Requirements:
- *   - AGENTSPAN_SERVER_URL for the Agentspan path
+ *   - CONDUCTOR_AGENT_SERVER_URL for the Conductor path
  */
 
 import { Agent, setTracingDisabled } from '@openai/agents';
@@ -46,7 +43,7 @@ export const preciseAgent = new Agent({
   },
 });
 
-// ── Run on agentspan ──────────────────────────────────────────────
+// ── Run on Conductor ──────────────────────────────────────────────
 async function main() {
   const runtime = new AgentRuntime();
   try {

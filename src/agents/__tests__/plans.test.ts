@@ -1,6 +1,3 @@
-// Copyright (c) 2025 Agentspan
-// Licensed under the MIT License.
-
 import { describe, it, expect } from "@jest/globals";
 import { Generate, Op, Plan, Ref, Step } from "../plans";
 

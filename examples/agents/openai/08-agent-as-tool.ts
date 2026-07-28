@@ -1,6 +1,3 @@
-// Copyright (c) 2025 Agentspan
-// Licensed under the MIT License. See LICENSE file in the project root for details.
-
 /**
  * OpenAI Agent -- Manager Pattern with agents-as-tools.
  *
@@ -10,7 +7,7 @@
  *   - Differs from handoffs: manager retains control and synthesizes results
  *
  * Requirements:
- *   - AGENTSPAN_SERVER_URL for the Agentspan path
+ *   - CONDUCTOR_AGENT_SERVER_URL for the Conductor path
  */
 
 import { Agent, tool, setTracingDisabled } from '@openai/agents';
@@ -107,7 +104,7 @@ const prompt =
   "and the battery life is wonderful. However, the keyboard feels terrible " +
   "and the trackpad is the worst I've used.'";
 
-// ── Run on agentspan ──────────────────────────────────────────────
+// ── Run on Conductor ──────────────────────────────────────────────
 async function main() {
   const runtime = new AgentRuntime();
   try {

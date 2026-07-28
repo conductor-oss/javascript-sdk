@@ -3,8 +3,8 @@
  *
  * Demonstrates:
  *   - Using createReactAgent from @langchain/langgraph/prebuilt directly with AgentRuntime
- *   - No Agentspan wrapper needed -- pass the graph straight to runtime.run()
- *   - Agentspan detects the ReAct structure and runs LLM + tools on Conductor
+ *   - No Conductor wrapper needed -- pass the graph straight to runtime.run()
+ *   - Conductor detects the ReAct structure and runs LLM + tools on Conductor
  */
 
 import { createReactAgent } from '@langchain/langgraph/prebuilt';
@@ -78,10 +78,10 @@ const graph = createReactAgent({ llm, tools, name: "math_and_text_agent" });
 const PROMPT =
   'What is sqrt(256) + 2**10? ' +
   "Also count the words in 'the quick brown fox jumps over the lazy dog'. " +
-  "And what is 'Agentspan' reversed?";
+  "And what is 'Conductor' reversed?";
 
 // ---------------------------------------------------------------------------
-// Run on agentspan
+// Run on Conductor
 // ---------------------------------------------------------------------------
 async function main() {
   const runtime = new AgentRuntime();

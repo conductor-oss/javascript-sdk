@@ -1,9 +1,9 @@
 /**
  * Vercel AI SDK Tools + Native Agent -- Basic Agent
  *
- * Demonstrates using Vercel AI SDK tool() objects with a native agentspan Agent.
+ * Demonstrates using Vercel AI SDK tool() objects with a native Conductor Agent.
  * The superset tool system auto-detects AI SDK tool format (Zod parameters + execute)
- * and converts them to agentspan ToolDefs transparently.
+ * and converts them to Conductor ToolDefs transparently.
  *
  * No duck-typed wrappers or passthrough needed -- just native Agent with AI SDK tools.
  */
@@ -23,7 +23,7 @@ const weatherTool = aiTool({
   }),
 });
 
-// ── Native agentspan Agent with AI SDK tool ─────────────
+// ── Native Conductor Agent with AI SDK tool ─────────────
 export const agent = new Agent({
   name: 'weather_agent',
   model: 'anthropic/claude-sonnet-4-6',
@@ -33,7 +33,7 @@ export const agent = new Agent({
 
 const prompt = 'What is the weather in San Francisco?';
 
-// ── Run on agentspan ─────────────────────────────────────
+// ── Run on Conductor ─────────────────────────────────────
 async function main() {
   const runtime = new AgentRuntime();
   try {

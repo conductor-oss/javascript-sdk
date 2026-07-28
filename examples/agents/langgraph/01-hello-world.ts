@@ -3,7 +3,7 @@
  *
  * Demonstrates:
  *   - Using createReactAgent from @langchain/langgraph/prebuilt
- *   - Running a graph via Agentspan runtime.run() passthrough
+ *   - Running a graph via Conductor runtime.run() passthrough
  */
 
 import { createReactAgent } from '@langchain/langgraph/prebuilt';
@@ -16,7 +16,7 @@ import { AgentRuntime } from '@io-orkes/conductor-javascript/agents';
 const llm = new ChatOpenAI({ model: 'gpt-4o-mini', temperature: 0 });
 const graph = createReactAgent({ llm, tools: [], name: "hello_world_agent" });
 
-// Add agentspan metadata for extraction
+// Add Conductor metadata for extraction
 (graph as any)._agentspan = {
   model: 'anthropic/claude-sonnet-4-6',
   tools: [],
@@ -26,7 +26,7 @@ const graph = createReactAgent({ llm, tools: [], name: "hello_world_agent" });
 const PROMPT = 'Say hello and tell me a fun fact about Python programming.';
 
 // ---------------------------------------------------------------------------
-// Run on agentspan
+// Run on Conductor
 // ---------------------------------------------------------------------------
 async function main() {
   const runtime = new AgentRuntime();

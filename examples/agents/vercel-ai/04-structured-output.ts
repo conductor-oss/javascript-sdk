@@ -2,7 +2,7 @@
  * Vercel AI SDK Tools + Native Agent -- Structured Output
  *
  * Demonstrates typed structured output using a Zod schema as the Agent's outputType.
- * The agentspan runtime sends the schema to the server, which constrains the LLM
+ * The Conductor runtime sends the schema to the server, which constrains the LLM
  * to produce valid JSON matching the schema.
  */
 
@@ -29,7 +29,7 @@ export const agent = new Agent({
 
 const prompt = 'Generate a profile for a fictional ML engineer from Japan.';
 
-// ── Run on agentspan ─────────────────────────────────────
+// ── Run on Conductor ─────────────────────────────────────
 async function main() {
   const runtime = new AgentRuntime();
   try {

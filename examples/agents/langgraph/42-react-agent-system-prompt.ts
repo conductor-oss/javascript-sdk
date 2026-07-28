@@ -3,7 +3,7 @@
  *
  * Demonstrates:
  *   - Passing a system prompt via the prompt parameter
- *   - Agentspan extracts the system prompt and forwards it to the server
+ *   - Conductor extracts the system prompt and forwards it to the server
  *   - Custom persona carried through the full Conductor execution
  */
 
@@ -97,7 +97,7 @@ const PROMPT =
   'How many yen will I get? The flight is 9,540 km — how far is that in miles?';
 
 // ---------------------------------------------------------------------------
-// Run on agentspan
+// Run on Conductor
 // ---------------------------------------------------------------------------
 async function main() {
   const runtime = new AgentRuntime();

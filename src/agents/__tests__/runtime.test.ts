@@ -117,10 +117,10 @@ const jsonResponse = (body: unknown, status = 200) =>
 describe("AgentRuntime", () => {
   const savedEnv: Record<string, string | undefined> = {};
   const envKeys = [
-    "AGENTSPAN_SERVER_URL",
-    "AGENTSPAN_API_KEY",
-    "AGENTSPAN_AUTH_KEY",
-    "AGENTSPAN_AUTH_SECRET",
+    "CONDUCTOR_AGENT_SERVER_URL",
+    "CONDUCTOR_AGENT_API_KEY",
+    "CONDUCTOR_AGENT_AUTH_KEY",
+    "CONDUCTOR_AGENT_AUTH_SECRET",
   ];
 
   function mockAgentServer(executionId = "wf-cred-test", fetchCalls?: string[]) {
@@ -890,7 +890,7 @@ describe("AgentRuntime", () => {
 
 describe("Singleton functions", () => {
   const savedEnv: Record<string, string | undefined> = {};
-  const envKeys = ["AGENTSPAN_SERVER_URL", "AGENTSPAN_API_KEY"];
+  const envKeys = ["CONDUCTOR_AGENT_SERVER_URL", "CONDUCTOR_AGENT_API_KEY"];
 
   beforeEach(() => {
     for (const key of envKeys) {

@@ -1,13 +1,13 @@
 /**
  * Vercel AI SDK Tools + Native Agent -- Human-in-the-Loop (HITL)
  *
- * Demonstrates approval_required on tools with a native agentspan Agent.
+ * Demonstrates approval_required on tools with a native Conductor Agent.
  * When a tool has approvalRequired: true, the agent pauses for human approval
  * before executing the tool. Uses interactive streaming with schema-driven
  * console prompts to handle the HITL pause.
  *
  * This example mixes Vercel AI SDK tool() (for risk assessment, auto-execute)
- * and agentspan native tool() (for action execution, requires approval).
+ * and Conductor native tool() (for action execution, requires approval).
  */
 
 import * as readline from 'node:readline/promises';
@@ -17,7 +17,7 @@ import { z } from 'zod';
 import {
   Agent,
   AgentRuntime,
-  tool as agentspanTool,
+  tool as conductorAgentTool,
 } from '@io-orkes/conductor-javascript/agents';
 
 // ── Risk assessment tool (AI SDK, auto-execute) ──────────
@@ -41,8 +41,8 @@ const assessRisk = aiTool({
   },
 });
 
-// ── Execution tool (agentspan native, requires approval) ─
-const executeAction = agentspanTool(
+// ── Execution tool (Conductor native, requires approval) ─
+const executeAction = conductorAgentTool(
   async (args: { action: string }) => ({
     status: 'completed',
     message: `Action "${args.action}" executed successfully.`,
@@ -92,7 +92,7 @@ async function promptHuman(
   return response;
 }
 
-// ── Run on agentspan ─────────────────────────────────────
+// ── Run on Conductor ─────────────────────────────────────
 
 const rl = readline.createInterface({ input: stdin, output: stdout });
 const runtime = new AgentRuntime();

@@ -94,14 +94,14 @@ const graph = new StateGraph(SentimentState)
   .addEdge('neutral', END)
   .compile({ name: "sentiment_router" });
 
-// Add agentspan metadata for extraction (no LLM in this pipeline example)
+// Add Conductor metadata for extraction (no LLM in this pipeline example)
 (graph as any)._agentspan = {
   model: 'anthropic/claude-sonnet-4-6',
   framework: 'langgraph',
 };
 
 // ---------------------------------------------------------------------------
-// Run on agentspan
+// Run on Conductor
 // ---------------------------------------------------------------------------
 async function main() {
   const runtime = new AgentRuntime();

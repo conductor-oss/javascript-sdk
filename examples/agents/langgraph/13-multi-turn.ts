@@ -29,7 +29,7 @@ const graph = createReactAgent({
   name: "interview_coach",
 });
 
-// Add agentspan metadata for extraction
+// Add Conductor metadata for extraction
 (graph as any)._agentspan = {
   model: 'anthropic/claude-sonnet-4-6',
   tools: [],
@@ -37,7 +37,7 @@ const graph = createReactAgent({
 };
 
 // ---------------------------------------------------------------------------
-// Run on agentspan
+// Run on Conductor
 // ---------------------------------------------------------------------------
 async function main() {
   const SESSION_A = 'candidate-alice';

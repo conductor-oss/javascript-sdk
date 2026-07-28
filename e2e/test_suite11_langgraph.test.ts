@@ -1,7 +1,7 @@
 /**
  * Suite 11: LangGraph Cross-SDK Parity Tests — serialization and compilation.
  *
- * Tests that LangGraph graphs serialize correctly into Agentspan workflows:
+ * Tests that LangGraph graphs serialize correctly into Conductor workflows:
  *   - Full extraction: createReactAgent → model + tools in rawConfig
  *   - Graph-structure: StateGraph → nodes + edges in rawConfig._graph
  *   - Tool extraction: tools have correct names, descriptions, schemas
@@ -40,7 +40,7 @@ let z: any;
 let serializeLangGraph: any;
 let detectFramework: any;
 
-const SERVER_URL = process.env.AGENTSPAN_SERVER_URL ?? 'http://localhost:8080/api';
+const SERVER_URL = process.env.CONDUCTOR_AGENT_SERVER_URL ?? 'http://localhost:8080/api';
 const BASE_URL = SERVER_URL.replace(/\/api$/, '');
 
 try {

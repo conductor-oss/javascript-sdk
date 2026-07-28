@@ -1,6 +1,6 @@
 import type { AgentEvent, AgentResult, AgentStatus } from "./types.js";
 import { stripInternalEventKeys } from "./types.js";
-import { SSETimeoutError, SSEUnavailableError, AgentspanError } from "./errors.js";
+import { SSETimeoutError, SSEUnavailableError, ConductorAgentError } from "./errors.js";
 import { makeAgentResult } from "./result.js";
 
 // ── Constants ───────────────────────────────────────────
@@ -137,7 +137,7 @@ export class AgentStream implements AsyncIterable<AgentEvent> {
     }
 
     if (!response.body) {
-      throw new AgentspanError("SSE response has no body");
+      throw new ConductorAgentError("SSE response has no body");
     }
 
     const reader = response.body.getReader();

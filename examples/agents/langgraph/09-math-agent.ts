@@ -106,7 +106,7 @@ const graph = createReactAgent({
   name: "math_agent",
 });
 
-// Add agentspan metadata for extraction
+// Add Conductor metadata for extraction
 (graph as any)._agentspan = {
   model: 'anthropic/claude-sonnet-4-6',
   tools: [addTool, subtractTool, multiplyTool, divideTool, powerTool, sqrtTool, factorialTool],
@@ -117,7 +117,7 @@ const PROMPT =
   'Calculate: (2^10 + sqrt(144)) / 4, then compute 5! and tell me the final answers.';
 
 // ---------------------------------------------------------------------------
-// Run on agentspan
+// Run on Conductor
 // ---------------------------------------------------------------------------
 async function main() {
   const runtime = new AgentRuntime();

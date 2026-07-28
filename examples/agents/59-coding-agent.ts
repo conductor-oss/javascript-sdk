@@ -9,7 +9,7 @@
  *
  * Requirements:
  *   - Conductor server running
- *   - AGENTSPAN_SERVER_URL=http://localhost:8080/api as environment variable
+ *   - CONDUCTOR_AGENT_SERVER_URL=http://localhost:8080/api as environment variable
  */
 
 import { Agent, AgentRuntime } from '@io-orkes/conductor-javascript/agents';

@@ -16,11 +16,11 @@
  *   8. Redeploy with an empty list to purge all schedules (cleanup).
  *
  * Requirements:
- *   - Conductor server at AGENTSPAN_SERVER_URL (default: http://localhost:8080/api)
+ *   - Conductor server at CONDUCTOR_AGENT_SERVER_URL (default: http://localhost:8080/api)
  *   - Scheduler module enabled (on by default)
  *
  * Run:
- *   AGENTSPAN_SERVER_URL=http://localhost:8080/api \
+ *   CONDUCTOR_AGENT_SERVER_URL=http://localhost:8080/api \
  *   npx ts-node examples/17-scheduled-agent.ts
  */
 

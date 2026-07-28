@@ -3,7 +3,7 @@
  *
  * Example:
  *
- *   import { Agent, ClaudeCode, PermissionMode } from 'agentspan';
+ *   import { Agent, ClaudeCode, PermissionMode } from '@io-orkes/conductor-javascript/agents';
  *
  *   const reviewer = new Agent({
  *     name: 'reviewer',

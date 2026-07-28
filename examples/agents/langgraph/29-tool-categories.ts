@@ -166,7 +166,7 @@ const allTools = [
 
 const graph = createReactAgent({ llm, tools: allTools, name: "tool_categories_agent" });
 
-// Add agentspan metadata for extraction
+// Add Conductor metadata for extraction
 (graph as any)._agentspan = {
   model: 'anthropic/claude-sonnet-4-6',
   tools: allTools,
@@ -176,7 +176,7 @@ const graph = createReactAgent({ llm, tools: allTools, name: "tool_categories_ag
 const PROMPT = 'What is the square root of 144?';
 
 // ---------------------------------------------------------------------------
-// Run on agentspan
+// Run on Conductor
 // ---------------------------------------------------------------------------
 async function main() {
   const runtime = new AgentRuntime();

@@ -107,7 +107,7 @@ const graph = createReactAgent({
   name: "research_agent",
 });
 
-// Add agentspan metadata for extraction
+// Add Conductor metadata for extraction
 (graph as any)._agentspan = {
   model: 'anthropic/claude-sonnet-4-6',
   tools: [searchTool, summarizeTool, citeSourceTool],
@@ -118,7 +118,7 @@ const PROMPT =
   'What are the latest developments in climate change research? Please search, summarize, and include citations.';
 
 // ---------------------------------------------------------------------------
-// Run on agentspan
+// Run on Conductor
 // ---------------------------------------------------------------------------
 async function main() {
   const runtime = new AgentRuntime();

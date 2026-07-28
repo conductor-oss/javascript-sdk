@@ -1,8 +1,8 @@
 /**
  * Vercel AI SDK Tools + Native Agent -- Credentials
  *
- * Demonstrates agentspan's credential system with AI SDK tools on a native Agent.
- * Credentials are declared on the Agent and resolved by the agentspan server
+ * Demonstrates Conductor's credential system with AI SDK tools on a native Agent.
+ * Credentials are declared on the Agent and resolved by the Conductor server
  * before tool execution -- the tool receives credentials via environment injection.
  */
 
@@ -17,7 +17,7 @@ const fetchReport = aiTool({
     reportId: z.string().describe('Report ID to fetch'),
   }),
   execute: async ({ reportId }) => {
-    // In production, the agentspan server injects ANALYTICS_API_KEY
+    // In production, the Conductor server injects ANALYTICS_API_KEY
     // into the environment before this tool executes.
     const apiKey = process.env.ANALYTICS_API_KEY ?? 'demo-key';
     return {
@@ -37,7 +37,7 @@ export const agent = new Agent({
     'Use the fetchReport tool to retrieve data when asked.',
   tools: [fetchReport],
   credentials: [
-    // Credential references resolved by the agentspan server.
+    // Credential references resolved by the Conductor server.
     // In production, these are stored in the credential vault.
     'ANALYTICS_API_KEY',
   ],
@@ -45,7 +45,7 @@ export const agent = new Agent({
 
 const prompt = 'Fetch the analytics report with ID RPT-2024-Q4.';
 
-// ── Run on agentspan ─────────────────────────────────────
+// ── Run on Conductor ─────────────────────────────────────
 async function main() {
   const runtime = new AgentRuntime();
   try {

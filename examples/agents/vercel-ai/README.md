@@ -1,4 +1,4 @@
-# Vercel AI SDK + Agentspan
+# Vercel AI SDK + Conductor
 
 Two ways to integrate — pick what fits your stage.
 
@@ -7,7 +7,7 @@ Two ways to integrate — pick what fits your stage.
 Swap one import. Your `generateText()` code stays identical.
 
 <table>
-<tr><th>Before (vanilla Vercel AI)</th><th>After (Agentspan)</th></tr>
+<tr><th>Before (vanilla Vercel AI)</th><th>After (Conductor)</th></tr>
 <tr><td>
 
 ```typescript
@@ -65,14 +65,14 @@ console.log(result.text);
 </td></tr>
 </table>
 
-Everything else — tools, model, prompt, result shape — is unchanged. Under the hood, `generateText` builds a Agentspan `Agent`, runs it on the platform, and maps the result back to the AI SDK format.
+Everything else — tools, model, prompt, result shape — is unchanged. Under the hood, `generateText` builds a Conductor `Agent`, runs it on the platform, and maps the result back to the AI SDK format.
 
 ## Production: Agent API
 
 When you need features that `generateText()` can't express — termination conditions, guardrails, multi-agent handoff, human-in-the-loop — use the Agent API directly.
 
 <table>
-<tr><th>Before (vanilla Vercel AI)</th><th>After (Agentspan Agent API)</th></tr>
+<tr><th>Before (vanilla Vercel AI)</th><th>After (Conductor Agent API)</th></tr>
 <tr><td>
 
 ```typescript
@@ -110,7 +110,7 @@ import { tool as aiTool } from 'ai';
 import { z } from 'zod';
 import { Agent, AgentRuntime } from '@io-orkes/conductor-javascript/agents';
 //      ^^^^^  ^^^^^^^^^^^^
-//      agentspan Agent + Runtime
+//      Conductor Agent + Runtime
 
 const weatherTool = aiTool({
   description: 'Get weather for a city',
@@ -155,7 +155,7 @@ await runtime.shutdown();
 | File | Description |
 |------|-------------|
 | `01-basic-agent.ts` | Simple agent with one AI SDK tool |
-| `02-tools-compat.ts` | Mix of Agentspan native and AI SDK tools |
+| `02-tools-compat.ts` | Mix of Conductor native and AI SDK tools |
 | `03-streaming.ts` | Default `runtime.run()` flow with a commented `runtime.stream()` alternative |
 | `04-structured-output.ts` | Zod schema for typed output |
 | `05-multi-step.ts` | Multiple tools, multi-turn conversation |
@@ -168,7 +168,7 @@ await runtime.shutdown();
 ## Running
 
 ```bash
-export AGENTSPAN_SERVER_URL=...
+export CONDUCTOR_AGENT_SERVER_URL=...
 export OPENAI_API_KEY=...
 # from the repository root
 npx tsx examples/agents/vercel-ai/01-basic-agent.ts

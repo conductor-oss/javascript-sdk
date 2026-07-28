@@ -75,7 +75,7 @@ const builder = new StateGraph(MessagesAnnotation)
 
 const graph = builder.compile({ name: "weather_timezone_agent" });
 
-// Add agentspan metadata for extraction
+// Add Conductor metadata for extraction
 (graph as any)._agentspan = {
   model: 'anthropic/claude-sonnet-4-6',
   tools,
@@ -86,7 +86,7 @@ const PROMPT =
   "What's the weather like in Tokyo and London? Also what timezone are they in?";
 
 // ---------------------------------------------------------------------------
-// Run on agentspan
+// Run on Conductor
 // ---------------------------------------------------------------------------
 async function main() {
   const runtime = new AgentRuntime();

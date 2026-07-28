@@ -108,7 +108,7 @@ const checkSyntaxTool = new DynamicStructuredTool({
 const tools = [evaluateExpressionTool, explainCodeTool, checkSyntaxTool];
 const graph = createReactAgent({ llm, tools, name: "code_interpreter_agent" });
 
-// Add agentspan metadata for extraction
+// Add Conductor metadata for extraction
 (graph as any)._agentspan = {
   model: 'anthropic/claude-sonnet-4-6',
   tools,
@@ -118,7 +118,7 @@ const graph = createReactAgent({ llm, tools, name: "code_interpreter_agent" });
 const PROMPT = 'Calculate (2**10 - 1) * 3 + 7';
 
 // ---------------------------------------------------------------------------
-// Run on agentspan
+// Run on Conductor
 // ---------------------------------------------------------------------------
 async function main() {
   const runtime = new AgentRuntime();

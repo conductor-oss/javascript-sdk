@@ -3,7 +3,7 @@
  *
  * Detection order (priority):
  * 0. agent._framework === 'skill' → 'skill' (checked before instanceof)
- * 1. agent instanceof Agent → null (native agentspan)
+ * 1. agent instanceof Agent → null (native Conductor)
  * 2. .invoke() + (.getGraph() OR .nodes Map) → 'langgraph'
  * 3. .invoke() + .lc_namespace → 'langchain'
  * 4. .name + .instructions + .model + .tools + .handoffs → 'openai'
@@ -90,7 +90,7 @@ function hasADKMarkers(obj: any): boolean {
 
 /**
  * Detect which framework (if any) the given agent object belongs to.
- * Returns null for native agentspan Agent instances or unknown objects.
+ * Returns null for native Conductor Agent instances or unknown objects.
  */
 export function detectFramework(agent: unknown): FrameworkId | null {
   // 0. Skill framework — must be checked before native Agent check
@@ -103,7 +103,7 @@ export function detectFramework(agent: unknown): FrameworkId | null {
     return "skill";
   }
 
-  // 1. Native agentspan Agent — not a framework
+  // 1. Native Conductor Agent — not a framework
   if (agent instanceof Agent) return null;
 
   // 2. LangGraph.js: CompiledStateGraph has .invoke() + .getGraph() or .nodes

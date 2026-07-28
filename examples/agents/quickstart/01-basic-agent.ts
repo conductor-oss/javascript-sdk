@@ -1,5 +1,5 @@
 /**
- * Basic agent — the simplest possible agentspan example.
+ * Basic agent — the simplest possible Conductor example.
  */
 
 import { Agent, AgentRuntime } from '@io-orkes/conductor-javascript/agents';

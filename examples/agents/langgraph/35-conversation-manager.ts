@@ -122,7 +122,7 @@ const graph = new StateGraph(ConversationState)
 };
 
 // ---------------------------------------------------------------------------
-// Run on agentspan
+// Run on Conductor
 // ---------------------------------------------------------------------------
 async function main() {
   const turns = [

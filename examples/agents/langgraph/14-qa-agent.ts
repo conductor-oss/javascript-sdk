@@ -100,7 +100,7 @@ const graph = new StateGraph(QAState)
   .addEdge('generate', END)
   .compile({ name: "qa_agent" });
 
-// Add agentspan metadata for extraction
+// Add Conductor metadata for extraction
 (graph as any)._agentspan = {
   model: 'anthropic/claude-sonnet-4-6',
   framework: 'langgraph',
@@ -109,7 +109,7 @@ const graph = new StateGraph(QAState)
 const PROMPT = 'What is Python and how many packages does it have?';
 
 // ---------------------------------------------------------------------------
-// Run on agentspan
+// Run on Conductor
 // ---------------------------------------------------------------------------
 async function main() {
   const runtime = new AgentRuntime();

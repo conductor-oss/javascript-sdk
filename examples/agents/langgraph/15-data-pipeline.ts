@@ -122,7 +122,7 @@ const graph = new StateGraph(PipelineState)
   .addEdge('report_node', END)
   .compile({ name: "data_pipeline" });
 
-// Add agentspan metadata for extraction
+// Add Conductor metadata for extraction
 (graph as any)._agentspan = {
   model: 'anthropic/claude-sonnet-4-6',
   framework: 'langgraph',
@@ -131,7 +131,7 @@ const graph = new StateGraph(PipelineState)
 const PROMPT = 'sales';
 
 // ---------------------------------------------------------------------------
-// Run on agentspan
+// Run on Conductor
 // ---------------------------------------------------------------------------
 async function main() {
   const runtime = new AgentRuntime();

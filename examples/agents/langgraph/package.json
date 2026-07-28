@@ -1,5 +1,5 @@
 {
-  "name": "agentspan-examples-langgraph",
+  "name": "conductor-examples-langgraph",
   "private": true,
   "type": "module",
   "dependencies": {

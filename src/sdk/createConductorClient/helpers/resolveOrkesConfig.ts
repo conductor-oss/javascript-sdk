@@ -4,7 +4,7 @@ import {
   REFRESH_TOKEN_IN_MILLISECONDS,
 } from "../constants";
 import type { OrkesApiConfig } from "../../types";
-import { DefaultLogger } from "../../helpers/logger";
+import { DefaultLogger, type ConductorLogger } from "../../helpers/logger";
 
 /**
  * Parse an env var as a number, returning undefined if absent or NaN.
@@ -21,15 +21,47 @@ const parseEnvBoolean = (value: string | undefined): boolean | undefined => {
   return value.toLowerCase() === "true" || value === "1";
 };
 
+const legacyEnvWarned = new Set<string>();
+
+/**
+ * Read a `CONDUCTOR_AGENT_*` var, falling back to its deprecated `AGENTSPAN_*`
+ * spelling and warning once per legacy name.
+ *
+ * Duplicated rather than shared with `src/agents/legacy-env.ts` because the
+ * agent layer must not import from `src/sdk` outside `agent-client.ts` and
+ * `worker.ts` (see AGENTS.md).
+ */
+const agentEnv = (suffix: string, logger: ConductorLogger): string | undefined => {
+  const canonical = `CONDUCTOR_AGENT_${suffix}`;
+  const legacy = `AGENTSPAN_${suffix}`;
+
+  const current = process.env[canonical];
+  if (current !== undefined && current !== "") return current;
+
+  const legacyValue = process.env[legacy];
+  if (legacyValue === undefined || legacyValue === "") return undefined;
+
+  if (!legacyEnvWarned.has(legacy)) {
+    legacyEnvWarned.add(legacy);
+    // ConductorLogger.warn is optional; fall back to info so the deprecation
+    // is never silently dropped by a custom logger.
+    const emit = logger.warn?.bind(logger) ?? logger.info.bind(logger);
+    emit(
+      `${legacy} is deprecated and will be removed in a future release. Use ${canonical} instead.`,
+    );
+  }
+  return legacyValue;
+};
+
 export const resolveOrkesConfig = (config?: Partial<OrkesApiConfig>) => {
   const logger = config?.logger ?? new DefaultLogger();
 
-  // R3: CONDUCTOR_* env -> explicit config -> AGENTSPAN_* env (agent-layer
-  // fallback) -> localhost:8080 default.
+  // R3: CONDUCTOR_* env -> explicit config -> CONDUCTOR_AGENT_* env (agent-layer
+  // fallback, with deprecated AGENTSPAN_* spelling) -> localhost:8080 default.
   let serverUrl =
     process.env.CONDUCTOR_SERVER_URL ||
     config?.serverUrl ||
-    process.env.AGENTSPAN_SERVER_URL ||
+    agentEnv("SERVER_URL", logger) ||
     "http://localhost:8080";
   if (serverUrl.endsWith("/")) serverUrl = serverUrl.slice(0, -1);
   if (serverUrl.endsWith("/api")) serverUrl = serverUrl.slice(0, -4);
@@ -38,13 +70,13 @@ export const resolveOrkesConfig = (config?: Partial<OrkesApiConfig>) => {
   const keyId = (
     process.env.CONDUCTOR_AUTH_KEY ||
     config?.keyId ||
-    process.env.AGENTSPAN_AUTH_KEY ||
+    agentEnv("AUTH_KEY", logger) ||
     ""
   ).trim();
   const keySecret = (
     process.env.CONDUCTOR_AUTH_SECRET ||
     config?.keySecret ||
-    process.env.AGENTSPAN_AUTH_SECRET ||
+    agentEnv("AUTH_SECRET", logger) ||
     ""
   ).trim();
 

@@ -112,7 +112,7 @@ const graph = new StateGraph(ReflectionState)
   .addEdge('finalize', END)
   .compile({ name: "reflection_agent" });
 
-// Add agentspan metadata for extraction
+// Add Conductor metadata for extraction
 (graph as any)._agentspan = {
   model: 'anthropic/claude-sonnet-4-6',
   framework: 'langgraph',
@@ -121,7 +121,7 @@ const graph = new StateGraph(ReflectionState)
 const PROMPT = 'the importance of open-source software in modern technology';
 
 // ---------------------------------------------------------------------------
-// Run on agentspan
+// Run on Conductor
 // ---------------------------------------------------------------------------
 async function main() {
   const runtime = new AgentRuntime();

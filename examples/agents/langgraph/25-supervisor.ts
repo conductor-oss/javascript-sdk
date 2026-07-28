@@ -118,7 +118,7 @@ const graph = new StateGraph(SupervisorState)
   .addEdge('editor', 'supervisor')
   .compile({ name: "supervisor_multiagent" });
 
-// Add agentspan metadata for extraction
+// Add Conductor metadata for extraction
 (graph as any)._agentspan = {
   model: 'anthropic/claude-sonnet-4-6',
   framework: 'langgraph',
@@ -127,7 +127,7 @@ const graph = new StateGraph(SupervisorState)
 const PROMPT = 'The impact of large language models on software development';
 
 // ---------------------------------------------------------------------------
-// Run on agentspan
+// Run on Conductor
 // ---------------------------------------------------------------------------
 async function main() {
   const runtime = new AgentRuntime();

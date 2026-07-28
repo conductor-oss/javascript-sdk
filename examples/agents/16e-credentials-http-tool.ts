@@ -14,8 +14,8 @@
  *   agentspan credentials set GITHUB_TOKEN <your-github-token>
  *
  * Requirements:
- *   - Agentspan server running at AGENTSPAN_SERVER_URL
- *   - AGENTSPAN_LLM_MODEL set (or defaults to openai/gpt-4o-mini)
+ *   - Conductor server running at CONDUCTOR_AGENT_SERVER_URL
+ *   - CONDUCTOR_AGENT_LLM_MODEL set (or defaults to openai/gpt-4o-mini)
  *   - GITHUB_TOKEN stored via `agentspan credentials set`
  */
 
@@ -48,7 +48,7 @@ export const agent = new Agent({
 async function main() {
   const runtime = new AgentRuntime();
   try {
-    const result = await runtime.run(agent, 'List the repos for agentspan');
+    const result = await runtime.run(agent, 'List the repos for Conductor');
     result.printResult();
 
     // Production pattern:

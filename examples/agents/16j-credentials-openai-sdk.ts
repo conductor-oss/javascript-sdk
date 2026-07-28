@@ -6,8 +6,8 @@
  *   - Agent tools can read credentials from process.env
  *
  * NOTE: This example demonstrates the credential injection pattern for
- * OpenAI Agent SDK agents running through Agentspan. Since the OpenAI
- * Agent SDK is an optional dependency, the example uses native Agentspan
+ * OpenAI Agent SDK agents running through Conductor. Since the OpenAI
+ * Agent SDK is an optional dependency, the example uses native Conductor
  * Agent with credential-aware tools that mirror what an OpenAI agent tool
  * would do.
  *
@@ -19,8 +19,8 @@
  *   agentspan credentials set GITHUB_TOKEN <your-github-token>
  *
  * Requirements:
- *   - Agentspan server running at AGENTSPAN_SERVER_URL
- *   - AGENTSPAN_LLM_MODEL set (or defaults to openai/gpt-4o-mini)
+ *   - Conductor server running at CONDUCTOR_AGENT_SERVER_URL
+ *   - CONDUCTOR_AGENT_LLM_MODEL set (or defaults to openai/gpt-4o-mini)
  *   - GITHUB_TOKEN stored via `agentspan credentials set`
  */
 

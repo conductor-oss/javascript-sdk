@@ -1,6 +1,3 @@
-// Copyright (c) 2025 Agentspan
-// Licensed under the MIT License.
-
 // TypeScript SDK mirror of sdk/python/tests/unit/test_planner_context.py.
 // Pins Agent's plannerContext normalisation + AgentConfigSerializer's wire
 // emission. Same shape, same wire format — guarantees the four SDKs stay

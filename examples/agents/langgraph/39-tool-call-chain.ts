@@ -133,7 +133,7 @@ const graph = builder.compile({ name: "tool_call_chain_agent" });
 };
 
 // ---------------------------------------------------------------------------
-// Run on agentspan
+// Run on Conductor
 // ---------------------------------------------------------------------------
 async function main() {
   const runtime = new AgentRuntime();

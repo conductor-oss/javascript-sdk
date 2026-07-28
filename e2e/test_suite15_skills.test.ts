@@ -42,7 +42,7 @@ beforeAll(async () => {
   runtime = new AgentRuntime();
 
   // Create a temp skill directory
-  skillDir = fs.mkdtempSync(path.join(os.tmpdir(), 'agentspan-skill-test-'));
+  skillDir = fs.mkdtempSync(path.join(os.tmpdir(), 'conductor-skill-test-'));
 
   fs.writeFileSync(
     path.join(skillDir, 'SKILL.md'),

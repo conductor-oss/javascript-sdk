@@ -99,7 +99,7 @@ const graph = new StateGraph(ParallelState)
   .addEdge('merge', END)
   .compile({ name: "parallel_analysis" });
 
-// Add agentspan metadata for extraction
+// Add Conductor metadata for extraction
 (graph as any)._agentspan = {
   model: 'anthropic/claude-sonnet-4-6',
   framework: 'langgraph',
@@ -108,7 +108,7 @@ const graph = new StateGraph(ParallelState)
 const PROMPT = 'remote work for software engineers';
 
 // ---------------------------------------------------------------------------
-// Run on agentspan
+// Run on Conductor
 // ---------------------------------------------------------------------------
 async function main() {
   const runtime = new AgentRuntime();

@@ -3,7 +3,7 @@
  *
  * Demonstrates:
  *   - Attaching a MemorySaver checkpointer to createReactAgent
- *   - Running via Agentspan passthrough (single turn)
+ *   - Running via Conductor passthrough (single turn)
  *   - How the agent remembers context from earlier messages
  */
 
@@ -19,7 +19,7 @@ const llm = new ChatOpenAI({ model: 'gpt-4o-mini', temperature: 0 });
 const checkpointer = new MemorySaver();
 const graph = createReactAgent({ llm, tools: [], checkpointer, name: "memory_agent" });
 
-// Add agentspan metadata for extraction
+// Add Conductor metadata for extraction
 (graph as any)._agentspan = {
   model: 'anthropic/claude-sonnet-4-6',
   tools: [],
@@ -27,7 +27,7 @@ const graph = createReactAgent({ llm, tools: [], checkpointer, name: "memory_age
 };
 
 // ---------------------------------------------------------------------------
-// Run on agentspan
+// Run on Conductor
 // ---------------------------------------------------------------------------
 async function main() {
   const runtime = new AgentRuntime();
@@ -35,7 +35,7 @@ async function main() {
     const result = await runtime.run(
     graph,
     'My name is Bob. Tell me something interesting about my name.',
-    { sessionId: 'agentspan-session-001' },
+    { sessionId: 'conductor-session-001' },
     );
     console.log('Status:', result.status);
     result.printResult();

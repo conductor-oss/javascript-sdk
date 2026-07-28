@@ -7,7 +7,7 @@
  *   3. Create pull request (CLI tool: gh)
  *
  * Requirements:
- *   - Agentspan server running
+ *   - Conductor server running
  *   - GITHUB_TOKEN stored: agentspan credentials set GITHUB_TOKEN <your-github-token>
  *   - gh CLI installed
  */

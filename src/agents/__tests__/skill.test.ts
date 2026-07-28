@@ -194,7 +194,7 @@ describe("skill", () => {
   });
 
   it("resolves nested cross-skill references", () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentspan-ts-cross-skill-"));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "conductor-ts-cross-skill-"));
     try {
       const parent = path.join(root, "parent-skill");
       const child = path.join(root, "child-skill");

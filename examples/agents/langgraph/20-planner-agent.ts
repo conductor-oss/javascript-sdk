@@ -122,7 +122,7 @@ const graph = new StateGraph(PlannerState)
   .addEdge('review_node', END)
   .compile({ name: "planner_agent" });
 
-// Add agentspan metadata for extraction
+// Add Conductor metadata for extraction
 (graph as any)._agentspan = {
   model: 'anthropic/claude-sonnet-4-6',
   framework: 'langgraph',
@@ -132,7 +132,7 @@ const PROMPT =
   'Launch a new open-source Python library for data validation.';
 
 // ---------------------------------------------------------------------------
-// Run on agentspan
+// Run on Conductor
 // ---------------------------------------------------------------------------
 async function main() {
   const runtime = new AgentRuntime();

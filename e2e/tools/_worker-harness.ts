@@ -24,9 +24,9 @@ if (!examplePath) {
 
 let captured: [Record<string, unknown>, any[]] | null = null;
 
-// Duck-type check: is this an Agentspan native Agent?
+// Duck-type check: is this an Conductor native Agent?
 // Check for properties unique to Agent class (name + tools array + agents array + maxTurns number)
-function isAgentspanAgent(obj: any): boolean {
+function isConductorAgent(obj: any): boolean {
   return (
     obj != null &&
     typeof obj === "object" &&
@@ -37,7 +37,7 @@ function isAgentspanAgent(obj: any): boolean {
   );
 }
 
-// Helper: serialize a native Agentspan Agent into [rawConfig, workers]
+// Helper: serialize a native Conductor Agent into [rawConfig, workers]
 function serializeNativeAgent(agent: any): [Record<string, unknown>, any[]] {
   const serializer = new AgentConfigSerializer();
   const rawConfig = serializer.serializeAgent(agent);
@@ -77,7 +77,7 @@ function tryCaptureAgent(agent: any) {
     } catch {
       /* ignore serialization failure */
     }
-  } else if (isAgentspanAgent(agent)) {
+  } else if (isConductorAgent(agent)) {
     try {
       captured = serializeNativeAgent(agent);
     } catch {
@@ -154,7 +154,7 @@ console.log = () => {};
 console.warn = () => {};
 
 // Set env vars so AgentRuntime constructor doesn't fail
-process.env.AGENTSPAN_SERVER_URL ??= "http://localhost:8080/api";
+process.env.CONDUCTOR_AGENT_SERVER_URL ??= "http://localhost:8080/api";
 process.env.OPENAI_API_KEY ??= "sk-fake";
 process.env.ANTHROPIC_API_KEY ??= "sk-fake";
 process.env.GOOGLE_API_KEY ??= "fake";

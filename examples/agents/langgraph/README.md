@@ -1,11 +1,11 @@
-# LangGraph + Agentspan
+# LangGraph + Conductor
 
-Keep your existing LangGraph code. Add agentspan metadata and run with `runtime.run()`.
+Keep your existing LangGraph code. Add Conductor metadata and run with `runtime.run()`.
 
 ## createReactAgent
 
 <table>
-<tr><th>Before (vanilla LangGraph)</th><th>After (Agentspan)</th></tr>
+<tr><th>Before (vanilla LangGraph)</th><th>After (Conductor)</th></tr>
 <tr><td>
 
 ```typescript
@@ -82,7 +82,7 @@ const graph = createReactAgent({
   tools: [calculate],
 });
 
-// Add agentspan metadata
+// Add Conductor metadata
 (graph as any)._agentspan = {
   model: 'anthropic/claude-sonnet-4-6',
   tools: [calculate],
@@ -106,7 +106,7 @@ await runtime.shutdown();
 Same pattern — build the graph normally, attach metadata, run with `runtime.run()`.
 
 <table>
-<tr><th>Before (vanilla LangGraph)</th><th>After (Agentspan)</th></tr>
+<tr><th>Before (vanilla LangGraph)</th><th>After (Conductor)</th></tr>
 <tr><td>
 
 ```typescript
@@ -159,7 +159,7 @@ const graph = new StateGraph(State)
   .addEdge('process', END)
   .compile();
 
-// Add agentspan metadata
+// Add Conductor metadata
 (graph as any)._agentspan = {
   model: 'anthropic/claude-sonnet-4-6',
   tools: [],
@@ -205,7 +205,7 @@ await runtime.shutdown();
 ## Running
 
 ```bash
-export AGENTSPAN_SERVER_URL=...
+export CONDUCTOR_AGENT_SERVER_URL=...
 export OPENAI_API_KEY=...
 # from the repository root
 npx tsx examples/agents/langgraph/01-hello-world.ts

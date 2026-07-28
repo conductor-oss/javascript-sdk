@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Agentspan
+// Copyright (c) 2026 Conductor
 // Licensed under the MIT License. See LICENSE file in the project root for details.
 
 /**
@@ -98,7 +98,7 @@ export class OrkesAgentClient implements AgentClient {
   /**
    * Lazily create (once) and return the shared {@link ConductorClient}.
    * `createConductorClient` is async, so we memoize the promise. Env-resolved
-   * (`AGENTSPAN_SERVER_URL`/`AGENTSPAN_AUTH_KEY`/`AGENTSPAN_AUTH_SECRET`
+   * (`CONDUCTOR_AGENT_SERVER_URL`/`CONDUCTOR_AGENT_AUTH_KEY`/`CONDUCTOR_AGENT_AUTH_SECRET`
    * fallbacks, `localhost:8080` default) via `resolveOrkesConfig` (R3) when
    * no explicit connection config was given.
    */

@@ -1,16 +1,13 @@
-// Copyright (c) 2025 Agentspan
-// Licensed under the MIT License. See LICENSE file in the project root for details.
-
 /**
  * OpenAI Agent Handoffs -- multi-agent orchestration with handoffs.
  *
  * Demonstrates:
  *   - Defining specialist agents with tools
  *   - A triage agent that routes to the correct specialist via handoffs
- *   - Running via Agentspan passthrough
+ *   - Running via Conductor passthrough
  *
  * Requirements:
- *   - AGENTSPAN_SERVER_URL for the Agentspan path
+ *   - CONDUCTOR_AGENT_SERVER_URL for the Conductor path
  */
 
 import { Agent, tool, setTracingDisabled } from '@openai/agents';
@@ -107,7 +104,7 @@ export const triageAgent = new Agent({
 
 const prompt = "I'd like a refund for order ORD-002, the product arrived damaged.";
 
-// ── Run on agentspan ──────────────────────────────────────────────
+// ── Run on Conductor ──────────────────────────────────────────────
 async function main() {
   const runtime = new AgentRuntime();
   try {

@@ -32,13 +32,13 @@ function _loadLangChainCore(): Record<string, unknown> {
   }
 }
 
-// ── Agentspan metadata interface ────────────────────────
+// ── Conductor metadata interface ────────────────────────
 
 /**
  * Metadata stored on the executor/runnable by the wrapper.
  * Used by the LangChain serializer for fast extraction.
  */
-export interface AgentspanMetadata {
+export interface ConductorAgentMetadata {
   model: string;
   tools: unknown[];
   instructions?: string;
@@ -104,7 +104,7 @@ function _inferProviderFromModel(modelName: string): string {
 // ── createAgentExecutor wrapper ─────────────────────────
 
 /**
- * Create a LangChain AgentExecutor-like object that stores agentspan metadata.
+ * Create a LangChain AgentExecutor-like object that stores Conductor metadata.
  *
  * This wraps the common pattern of creating an agent with tools and an LLM.
  * It captures the LLM and tools at construction time.
@@ -159,8 +159,8 @@ export function createAgentExecutor(options: {
     };
   }
 
-  // Store metadata for agentspan extraction
-  const metadata: AgentspanMetadata = {
+  // Store metadata for Conductor extraction
+  const metadata: ConductorAgentMetadata = {
     model: modelStr,
     tools: options.tools,
     instructions: undefined,
@@ -175,7 +175,7 @@ export function createAgentExecutor(options: {
 // ── RunnableLambda wrapper ──────────────────────────────
 
 /**
- * Create a LangChain RunnableLambda that stores agentspan metadata.
+ * Create a LangChain RunnableLambda that stores Conductor metadata.
  *
  * This wraps the common pattern of creating a custom runnable with
  * an LLM and tools in the closure.
@@ -198,7 +198,7 @@ export function createRunnableWithMetadata(options: {
       tools: options.tools ?? [],
       instructions: options.instructions,
       framework: "langchain",
-    } as AgentspanMetadata,
+    } as ConductorAgentMetadata,
   };
 
   return runnable;
@@ -213,3 +213,11 @@ export function createRunnableWithMetadata(options: {
 export function getLangChainModule(): Record<string, unknown> {
   return _loadLangChainCore();
 }
+
+/**
+ * Previous name for {@link ConductorAgentMetadata}.
+ *
+ * @deprecated Renamed when Agentspan became Conductor. Will be removed in a
+ * future release.
+ */
+export type AgentspanMetadata = ConductorAgentMetadata;

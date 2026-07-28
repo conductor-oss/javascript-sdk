@@ -71,7 +71,7 @@ const graph = new StateGraph(MemoryState)
   .addEdge('chat', END)
   .compile({ checkpointer, name: "persistent_memory_chatbot" });
 
-// Add agentspan metadata for graph-structure extraction.
+// Add Conductor metadata for graph-structure extraction.
 // Do NOT set tools on StateGraphs — only model + framework.
 (graph as any)._agentspan = {
   model: 'anthropic/claude-sonnet-4-6',
@@ -79,7 +79,7 @@ const graph = new StateGraph(MemoryState)
 };
 
 // ---------------------------------------------------------------------------
-// Run on agentspan
+// Run on Conductor
 // ---------------------------------------------------------------------------
 async function main() {
   const runtime = new AgentRuntime();

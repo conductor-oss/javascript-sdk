@@ -930,8 +930,8 @@ describe("serializeAgent() — allowedTransitions", () => {
 // ── Mixed tool formats ─────────────────────────────────────
 
 describe("serializer handles mixed tool formats", () => {
-  it("serializes agentspan + Vercel AI SDK + raw tools in same array", () => {
-    // agentspan native
+  it("serializes Conductor + Vercel AI SDK + raw tools in same array", () => {
+    // Conductor native
     const t1 = tool(async () => "ok", {
       name: "native_tool",
       description: "Native",

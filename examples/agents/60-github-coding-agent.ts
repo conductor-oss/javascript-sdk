@@ -9,7 +9,7 @@
  *
  * Requirements:
  *   - Conductor server running
- *   - AGENTSPAN_SERVER_URL=http://localhost:8080/api as environment variable
+ *   - CONDUCTOR_AGENT_SERVER_URL=http://localhost:8080/api as environment variable
  *   - gh CLI authenticated
  *   - Git configured with push access to the repo
  */

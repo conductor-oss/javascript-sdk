@@ -1,6 +1,3 @@
-// Copyright (c) 2025 Agentspan
-// Licensed under the MIT License.
-
 /**
  * 108 — Plan-Execute with cross-step output piping via `Ref`.
  *
@@ -19,9 +16,9 @@
  * required — because we pass `plan` directly to `runtime.run`.
  *
  * Requirements:
- *   - Agentspan server running on http://localhost:8080 (or
- *     AGENTSPAN_SERVER_URL)
- *   - AGENTSPAN_LLM_MODEL set (default: openai/gpt-4o-mini)
+ *   - Conductor server running on http://localhost:8080 (or
+ *     CONDUCTOR_AGENT_SERVER_URL)
+ *   - CONDUCTOR_AGENT_LLM_MODEL set (default: openai/gpt-4o-mini)
  *
  * Run: npx tsx examples/108-plan-execute-refs.ts
  */
@@ -36,7 +33,7 @@ import {
   tool,
 } from "../../src/agents/index.js";
 
-const MODEL = process.env.AGENTSPAN_LLM_MODEL ?? "openai/gpt-4o-mini";
+const MODEL = process.env.CONDUCTOR_AGENT_LLM_MODEL ?? "openai/gpt-4o-mini";
 
 const produce = tool(
   async ({ record_id }: { record_id: string }) => ({
@@ -151,7 +148,7 @@ async function main() {
 }
 
 async function showPipelineOutputs(executionId: string) {
-  const base = (process.env.AGENTSPAN_SERVER_URL ?? "http://localhost:8080/api")
+  const base = (process.env.CONDUCTOR_AGENT_SERVER_URL ?? "http://localhost:8080/api")
     .replace(/\/api$/, "")
     .replace(/\/$/, "");
   const parent = (await (await fetch(`${base}/api/workflow/${executionId}?includeTasks=true`)).json()) as {

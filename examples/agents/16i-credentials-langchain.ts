@@ -6,8 +6,8 @@
  *     and injected into process.env before the executor runs
  *
  * NOTE: This example demonstrates the credential injection pattern for
- * LangChain agents running through Agentspan. Since LangChain is an
- * optional dependency, the example uses native Agentspan Agent with
+ * LangChain agents running through Conductor. Since LangChain is an
+ * optional dependency, the example uses native Conductor Agent with
  * credential-aware tools that mirror what a LangChain agent would do.
  *
  * In a full LangChain integration, you would:
@@ -18,8 +18,8 @@
  *   agentspan credentials set GITHUB_TOKEN <your-github-token>
  *
  * Requirements:
- *   - Agentspan server running at AGENTSPAN_SERVER_URL
- *   - AGENTSPAN_LLM_MODEL set (or defaults to openai/gpt-4o-mini)
+ *   - Conductor server running at CONDUCTOR_AGENT_SERVER_URL
+ *   - CONDUCTOR_AGENT_LLM_MODEL set (or defaults to openai/gpt-4o-mini)
  *   - GITHUB_TOKEN stored via `agentspan credentials set`
  */
 

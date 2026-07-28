@@ -1,7 +1,7 @@
 import baseConfig from "./jest.config.mjs";
 
 /**
- * Agent e2e suites (repo-root e2e/) against a live agentspan server.
+ * Agent e2e suites (repo-root e2e/) against a live Conductor server.
  * Run with: npm run test:agent-e2e
  * Not matched by test/test:unit/test:integration globs — per-PR unit CI cost
  * is unchanged; the agent-e2e workflow runs these against the release JAR.

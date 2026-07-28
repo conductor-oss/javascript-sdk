@@ -383,11 +383,11 @@ const graph = orchBuilder.compile({ name: "research_orchestrator" });
 };
 
 // ---------------------------------------------------------------------------
-// Run on agentspan
+// Run on Conductor
 // ---------------------------------------------------------------------------
 async function main() {
   console.log('Starting context condensation stress test (LangGraph / TypeScript).');
-  console.log("Watch the Agentspan server logs for 'Condensed conversation' entries.");
+  console.log("Watch the Conductor server logs for 'Condensed conversation' entries.");
   console.log();
 
   const runtime = new AgentRuntime();

@@ -20,7 +20,7 @@
  *   resume logic, no execution_id needed.
  *
  * Why this matters:
- *   LangGraph graphs running through Agentspan are compiled into durable
+ *   LangGraph graphs running through Conductor are compiled into durable
  *   Conductor workflows. If your process crashes (OOM, deploy, exception),
  *   no work is lost — the server holds the workflow state. You just need
  *   to restart serve() and the workers pick up from where they left off.
@@ -36,7 +36,7 @@
  *   await runtime.start(graph, "prompt");  // or via server API / UI
  *
  * Requirements:
- *   - AGENTSPAN_SERVER_URL=http://localhost:8080/api
+ *   - CONDUCTOR_AGENT_SERVER_URL=http://localhost:8080/api
  *   - OPENAI_API_KEY for ChatOpenAI
  */
 
@@ -48,8 +48,8 @@ import { AgentRuntime } from '@io-orkes/conductor-javascript/agents';
 import * as fs from 'node:fs';
 import * as readline from 'node:readline';
 
-const SESSION_FILE = '/tmp/agentspan_langgraph_resume.session';
-const SERVER_URL = process.env.AGENTSPAN_SERVER_URL ?? 'http://localhost:8080/api';
+const SESSION_FILE = '/tmp/conductor_langgraph_resume.session';
+const SERVER_URL = process.env.CONDUCTOR_AGENT_SERVER_URL ?? 'http://localhost:8080/api';
 const UI_BASE = SERVER_URL.replace('/api', '');
 
 function sleep(ms: number): Promise<void> {
@@ -176,7 +176,7 @@ async function main() {
 
   const uiLink = `${UI_BASE}/execution/${savedExecutionId}`;
   console.log('-'.repeat(60));
-  console.log('Open the Agentspan UI to see the execution in RUNNING state:');
+  console.log('Open the Conductor UI to see the execution in RUNNING state:');
   console.log(`  ${uiLink}`);
   console.log();
   console.log('The workflow is alive on the server but stalled — no workers are');

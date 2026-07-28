@@ -1,7 +1,16 @@
 import { config as dotenvConfig } from "dotenv";
+import { readRenamedEnv } from "./legacy-env.js";
 
 // Load .env file on import (no-op if file doesn't exist)
 dotenvConfig();
+
+/**
+ * Read a `CONDUCTOR_AGENT_*` knob, falling back to its deprecated
+ * `AGENTSPAN_*` spelling. See {@link readRenamedEnv}.
+ */
+function agentEnv(suffix: string): string | undefined {
+  return readRenamedEnv(`CONDUCTOR_AGENT_${suffix}`, `AGENTSPAN_${suffix}`);
+}
 
 /**
  * Parse a boolean from an environment variable string.
@@ -58,29 +67,27 @@ export class AgentConfig {
   readonly livenessCheckIntervalSeconds: number;
 
   constructor(options?: AgentConfigOptions) {
-    const env = process.env;
-
     this.workerPollIntervalMs =
-      options?.workerPollIntervalMs ?? parseIntEnv(env.AGENTSPAN_WORKER_POLL_INTERVAL, 100);
+      options?.workerPollIntervalMs ?? parseIntEnv(agentEnv("WORKER_POLL_INTERVAL"), 100);
 
     this.workerThreadCount =
-      options?.workerThreadCount ?? parseIntEnv(env.AGENTSPAN_WORKER_THREADS, 1);
+      options?.workerThreadCount ?? parseIntEnv(agentEnv("WORKER_THREADS"), 1);
 
     this.autoStartWorkers =
-      options?.autoStartWorkers ?? parseBoolEnv(env.AGENTSPAN_AUTO_START_WORKERS, true);
+      options?.autoStartWorkers ?? parseBoolEnv(agentEnv("AUTO_START_WORKERS"), true);
 
     this.streamingEnabled =
-      options?.streamingEnabled ?? parseBoolEnv(env.AGENTSPAN_STREAMING_ENABLED, true);
+      options?.streamingEnabled ?? parseBoolEnv(agentEnv("STREAMING_ENABLED"), true);
 
     this.livenessEnabled =
-      options?.livenessEnabled ?? parseBoolEnv(env.AGENTSPAN_LIVENESS_ENABLED, true);
+      options?.livenessEnabled ?? parseBoolEnv(agentEnv("LIVENESS_ENABLED"), true);
 
     this.livenessStallSeconds =
-      options?.livenessStallSeconds ?? parseFloatEnv(env.AGENTSPAN_LIVENESS_STALL_SECONDS, 30.0);
+      options?.livenessStallSeconds ?? parseFloatEnv(agentEnv("LIVENESS_STALL_SECONDS"), 30.0);
 
     this.livenessCheckIntervalSeconds =
       options?.livenessCheckIntervalSeconds ??
-      parseFloatEnv(env.AGENTSPAN_LIVENESS_CHECK_INTERVAL_SECONDS, 10.0);
+      parseFloatEnv(agentEnv("LIVENESS_CHECK_INTERVAL_SECONDS"), 10.0);
   }
 
   /**

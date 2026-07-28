@@ -1,7 +1,7 @@
 /**
  * Vercel AI SDK Tools + Native Agent -- Multi-Step
  *
- * Demonstrates a native agentspan Agent with multiple AI SDK tools and maxTurns.
+ * Demonstrates a native Conductor Agent with multiple AI SDK tools and maxTurns.
  * The agent calls tools iteratively until it has enough information to produce
  * a final answer. maxTurns controls the maximum number of LLM turns.
  */
@@ -56,7 +56,7 @@ export const agent = new Agent({
 
 const prompt = 'What is the current weather and time in San Francisco and Tokyo?';
 
-// ── Run on agentspan ─────────────────────────────────────
+// ── Run on Conductor ─────────────────────────────────────
 async function main() {
   const runtime = new AgentRuntime();
   try {

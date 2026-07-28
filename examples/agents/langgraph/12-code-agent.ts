@@ -152,7 +152,7 @@ const graph = createReactAgent({
   name: "code_agent",
 });
 
-// Add agentspan metadata for extraction
+// Add Conductor metadata for extraction
 (graph as any)._agentspan = {
   model: 'anthropic/claude-sonnet-4-6',
   tools,
@@ -163,7 +163,7 @@ const PROMPT =
   'Write a binary search function in Python and explain how it works.';
 
 // ---------------------------------------------------------------------------
-// Run on agentspan
+// Run on Conductor
 // ---------------------------------------------------------------------------
 async function main() {
   const runtime = new AgentRuntime();

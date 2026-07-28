@@ -37,10 +37,41 @@ export function expectMsg(actual: unknown, message?: string): ReturnType<typeof 
   }) as ReturnType<typeof expect>;
 }
 
-const SERVER_URL = process.env.AGENTSPAN_SERVER_URL ?? 'http://localhost:8080/api';
+/**
+ * Read a `CONDUCTOR_AGENT_*` var, falling back to its deprecated `AGENTSPAN_*`
+ * spelling and warning once.
+ *
+ * This suite ships as a standalone release bundle consumed by downstream repos
+ * (see scripts/package-e2e-bundle.sh), so the harness needs its own fallback:
+ * the SDK-level alias in resolveOrkesConfig only covers vars the SDK reads, not
+ * the ones this file reads directly. Without it, every downstream consumer
+ * already exporting AGENTSPAN_SERVER_URL would silently fall through to
+ * localhost.
+ */
+const warnedLegacyEnv = new Set<string>();
+function agentEnv(suffix: string): string | undefined {
+  const canonical = `CONDUCTOR_AGENT_${suffix}`;
+  const legacy = `AGENTSPAN_${suffix}`;
+
+  const current = process.env[canonical];
+  if (current !== undefined && current !== '') return current;
+
+  const legacyValue = process.env[legacy];
+  if (legacyValue === undefined || legacyValue === '') return undefined;
+
+  if (!warnedLegacyEnv.has(legacy)) {
+    warnedLegacyEnv.add(legacy);
+    console.warn(
+      `[conductor] ${legacy} is deprecated and will be removed in a future release. Use ${canonical} instead.`,
+    );
+  }
+  return legacyValue;
+}
+
+const SERVER_URL = agentEnv('SERVER_URL') ?? 'http://localhost:8080/api';
 const BASE_URL = SERVER_URL.replace(/\/api$/, '');
-export const MODEL = process.env.AGENTSPAN_LLM_MODEL ?? 'openai/gpt-4o-mini';
-export const CLI_PATH = process.env.AGENTSPAN_CLI_PATH ?? 'agentspan';
+export const MODEL = agentEnv('LLM_MODEL') ?? 'openai/gpt-4o-mini';
+export const CLI_PATH = agentEnv('CLI_PATH') ?? 'agentspan';
 export const MCP_TESTKIT_URL = process.env.MCP_TESTKIT_URL ?? 'http://localhost:3001';
 export const TIMEOUT = 300_000; // 5 min per run — CI runners are slower
 
@@ -92,7 +123,7 @@ export function runDiagnostic(result: Record<string, unknown>): string {
 
 // ── Credential helper ────────────────────────────────────────────────────
 // Writes directly to the server's secret store (PUT/DELETE /api/secrets/{name}) —
-// the same store the agentspan CLI targets, and what tools resolve at runtime.
+// the same store the Conductor CLI targets, and what tools resolve at runtime.
 // Using the API keeps these tests deterministic regardless of the local CLI's
 // ambient config (~/.agentspan/config.json may point at a different/managed server).
 

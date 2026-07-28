@@ -128,7 +128,7 @@ const graph = orchBuilder.compile({ name: "orchestrator_with_subagents" });
 };
 
 // ---------------------------------------------------------------------------
-// Run on agentspan
+// Run on Conductor
 // ---------------------------------------------------------------------------
 async function main() {
   const queries = [

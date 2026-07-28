@@ -1,5 +1,5 @@
 {
-  "name": "agentspan-examples-openai",
+  "name": "conductor-examples-openai",
   "private": true,
   "type": "module",
   "dependencies": {

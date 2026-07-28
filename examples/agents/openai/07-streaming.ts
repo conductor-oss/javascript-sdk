@@ -1,15 +1,12 @@
-// Copyright (c) 2025 Agentspan
-// Licensed under the MIT License. See LICENSE file in the project root for details.
-
 /**
  * OpenAI Agent with Streaming -- real-time event streaming.
  *
  * Demonstrates:
  *   - An OpenAI agent with tools
- *   - Running via Agentspan passthrough
+ *   - Running via Conductor passthrough
  *
  * Requirements:
- *   - AGENTSPAN_SERVER_URL for the Agentspan path
+ *   - CONDUCTOR_AGENT_SERVER_URL for the Conductor path
  */
 
 import {
@@ -58,7 +55,7 @@ export const agent = new Agent({
 
 const prompt = "What's your return policy for electronics?";
 
-// ── Run on agentspan ──────────────────────────────────────────────
+// ── Run on Conductor ──────────────────────────────────────────────
 async function main() {
   const runtime = new AgentRuntime();
   try {

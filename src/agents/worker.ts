@@ -233,7 +233,7 @@ interface PendingWorker {
  * mirroring the Python SDK's ``WorkerManager`` pattern.  Workers are
  * collected via {@link addWorker} and started/stopped as a group.
  *
- * All agentspan-specific middleware (ToolContext extraction, credential
+ * All Conductor-specific middleware (ToolContext extraction, credential
  * injection, state capture, circuit breaker, error mapping) runs inside
  * each worker's ``execute()`` callback.
  */
@@ -294,7 +294,7 @@ export class WorkerManager {
   }
 
   /**
-   * Wrap an agentspan handler into a {@link ConductorWorker}.
+   * Wrap an Conductor handler into a {@link ConductorWorker}.
    *
    * Runs the full middleware chain: circuit breaker, ToolContext extraction,
    * credential injection, state capture, error mapping.

@@ -1,11 +1,11 @@
-# Google ADK + Agentspan
+# Google ADK + Conductor
 
 The `LlmAgent` and `FunctionTool` formats are natively recognized. Replace the ADK runner with `runtime.run()` — agent and tools stay identical.
 
 ## Before / After
 
 <table>
-<tr><th>Before (vanilla Google ADK)</th><th>After (Agentspan)</th></tr>
+<tr><th>Before (vanilla Google ADK)</th><th>After (Conductor)</th></tr>
 <tr><td>
 
 ```typescript
@@ -117,11 +117,11 @@ await runtime.shutdown();
 ## Running
 
 ```bash
-export AGENTSPAN_SERVER_URL=...
+export CONDUCTOR_AGENT_SERVER_URL=...
 # For Gemini models:
 export GOOGLE_API_KEY=...
 # Or override with OpenAI:
-export AGENTSPAN_LLM_MODEL=openai/gpt-4o-mini
+export CONDUCTOR_AGENT_LLM_MODEL=openai/gpt-4o-mini
 export OPENAI_API_KEY=...
 
 # from the repository root

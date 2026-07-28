@@ -111,7 +111,7 @@ const graph = new StateGraph(HandoffState)
   .addEdge('general', END)
   .compile({ name: "agent_handoff" });
 
-// Add agentspan metadata for extraction
+// Add Conductor metadata for extraction
 (graph as any)._agentspan = {
   model: 'anthropic/claude-sonnet-4-6',
   framework: 'langgraph',
@@ -120,7 +120,7 @@ const graph = new StateGraph(HandoffState)
 const PROMPT = 'I was charged twice for my subscription this month.';
 
 // ---------------------------------------------------------------------------
-// Run on agentspan
+// Run on Conductor
 // ---------------------------------------------------------------------------
 async function main() {
   const runtime = new AgentRuntime();

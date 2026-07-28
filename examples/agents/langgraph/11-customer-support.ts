@@ -123,7 +123,7 @@ const graph = new StateGraph(SupportState)
   .addEdge('general', END)
   .compile({ name: "customer_support" });
 
-// Add agentspan metadata for extraction
+// Add Conductor metadata for extraction
 (graph as any)._agentspan = {
   model: 'anthropic/claude-sonnet-4-6',
   framework: 'langgraph',
@@ -133,7 +133,7 @@ const PROMPT =
   'I was charged twice for my subscription this month and need a refund.';
 
 // ---------------------------------------------------------------------------
-// Run on agentspan
+// Run on Conductor
 // ---------------------------------------------------------------------------
 async function main() {
   const runtime = new AgentRuntime();

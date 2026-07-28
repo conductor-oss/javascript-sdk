@@ -42,7 +42,7 @@ const tests: TestCase[] = [
 
 // ── Helpers ─────────────────────────────────────────────
 
-const serverUrl = process.env.AGENTSPAN_SERVER_URL ?? 'http://localhost:8080/api';
+const serverUrl = process.env.CONDUCTOR_AGENT_SERVER_URL ?? 'http://localhost:8080/api';
 
 async function fetchExecutionTasks(executionId: string): Promise<any> {
   const url = `${serverUrl}/agent/executions/${executionId}/full`;
@@ -51,7 +51,7 @@ async function fetchExecutionTasks(executionId: string): Promise<any> {
   return res.json();
 }
 
-// System task types managed by Conductor/AgentSpan — everything else is a tool worker task
+// System task types managed by Conductor — everything else is a tool worker task
 const SYSTEM_TASK_TYPES = new Set([
   'LLM_CHAT_COMPLETE', 'SET_VARIABLE', 'DO_WHILE', 'SWITCH', 'FORK', 'JOIN',
   'INLINE', 'SUB_WORKFLOW', 'HUMAN', 'TERMINATE', 'WAIT', 'EVENT',

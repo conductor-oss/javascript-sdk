@@ -39,7 +39,7 @@ const graph = createReactAgent({
   name: "socratic_tutor",
 });
 
-// Add agentspan metadata for extraction
+// Add Conductor metadata for extraction
 (graph as any)._agentspan = {
   model: 'anthropic/claude-sonnet-4-6',
   tools: [],
@@ -50,7 +50,7 @@ const graph = createReactAgent({
 const PROMPT = 'I want to understand why 1 + 1 = 2. Can you just tell me?';
 
 // ---------------------------------------------------------------------------
-// Run on agentspan
+// Run on Conductor
 // ---------------------------------------------------------------------------
 async function main() {
   const runtime = new AgentRuntime();

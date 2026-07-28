@@ -30,7 +30,7 @@ export const agent = new Agent({
 
 const prompt = 'Explain quantum computing in one paragraph, then tell me the weather in San Francisco.';
 
-// ── Stream on agentspan ──────────────────────────────────
+// ── Stream on Conductor ──────────────────────────────────
 async function main() {
   const runtime = new AgentRuntime();
   try {

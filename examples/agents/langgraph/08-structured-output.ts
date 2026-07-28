@@ -35,7 +35,7 @@ const graph = createReactAgent({
   name: "movie_review_agent",
 });
 
-// Add agentspan metadata for extraction
+// Add Conductor metadata for extraction
 (graph as any)._agentspan = {
   model: 'anthropic/claude-sonnet-4-6',
   tools: [],
@@ -45,7 +45,7 @@ const graph = createReactAgent({
 const PROMPT = 'Write a review for the movie Inception (2010).';
 
 // ---------------------------------------------------------------------------
-// Run on agentspan
+// Run on Conductor
 // ---------------------------------------------------------------------------
 async function main() {
   const runtime = new AgentRuntime();

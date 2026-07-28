@@ -8,8 +8,8 @@
  *
  * Requirements:
  *   - Conductor server running
- *   - AGENTSPAN_SERVER_URL=http://localhost:8080/api as environment variable
- *   - AGENTSPAN_SECONDARY_LLM_MODEL=openai/gpt-4o as environment variable
+ *   - CONDUCTOR_AGENT_SERVER_URL=http://localhost:8080/api as environment variable
+ *   - CONDUCTOR_AGENT_SECONDARY_LLM_MODEL=openai/gpt-4o as environment variable
  */
 
 import { Agent, AgentRuntime, scatterGather, tool } from '@io-orkes/conductor-javascript/agents';

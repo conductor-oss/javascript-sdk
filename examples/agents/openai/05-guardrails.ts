@@ -1,16 +1,13 @@
-// Copyright (c) 2025 Agentspan
-// Licensed under the MIT License. See LICENSE file in the project root for details.
-
 /**
  * OpenAI Agent with Guardrails -- input and output validation.
  *
  * Demonstrates:
  *   - Input guardrails that validate user messages before processing
  *   - Output guardrails that validate agent responses
- *   - Running via Agentspan passthrough
+ *   - Running via Conductor passthrough
  *
  * Requirements:
- *   - AGENTSPAN_SERVER_URL for the Agentspan path
+ *   - CONDUCTOR_AGENT_SERVER_URL for the Conductor path
  */
 
 import {
@@ -126,7 +123,7 @@ export const agent = new Agent({
   outputGuardrails: [checkOutputSafety],
 });
 
-// ── Run on agentspan ──────────────────────────────────────────────
+// ── Run on Conductor ──────────────────────────────────────────────
 async function main() {
   const runtime = new AgentRuntime();
   try {

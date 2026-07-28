@@ -8,14 +8,14 @@
  *
  * Requirements:
  *   - npm install @google/adk zod
- *   - AGENTSPAN_SERVER_URL for agentspan path
+ *   - CONDUCTOR_AGENT_SERVER_URL for Conductor path
  */
 
 import { LlmAgent, FunctionTool } from '@google/adk';
 import { z } from 'zod';
 import { AgentRuntime } from '@io-orkes/conductor-javascript/agents';
 
-const model = process.env.AGENTSPAN_LLM_MODEL ?? 'gemini-2.5-flash';
+const model = process.env.CONDUCTOR_AGENT_LLM_MODEL ?? 'gemini-2.5-flash';
 
 // ── Domain tools ──────────────────────────────────────────────────
 
@@ -126,7 +126,7 @@ export const agent = new LlmAgent({
   tools: [getAccountDetails, getBillingHistory, submitSupportTicket, updateAccountPlan],
 });
 
-// ── Run on agentspan ───────────────────────────────────────────────
+// ── Run on Conductor ───────────────────────────────────────────────
 
 async function main() {
   const runtime = new AgentRuntime();

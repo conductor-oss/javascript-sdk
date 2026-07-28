@@ -4,7 +4,7 @@
  * Demonstrates:
  *   - Defining a typed state schema with Annotation
  *   - Building a StateGraph with multiple sequential nodes
- *   - LLM calls inside node functions (detected by Agentspan for interception)
+ *   - LLM calls inside node functions (detected by Conductor for interception)
  *   - Connecting nodes with addEdge
  *   - Compiling and naming the graph
  *
@@ -12,7 +12,7 @@
  * Same graph structure: validate → refine → answer (3 nodes, 2 with LLM calls)
  *
  * Requirements:
- *   - AGENTSPAN_SERVER_URL=http://localhost:8080/api
+ *   - CONDUCTOR_AGENT_SERVER_URL=http://localhost:8080/api
  *   - OPENAI_API_KEY for ChatOpenAI
  */
 
@@ -86,7 +86,7 @@ const graph = new StateGraph(QueryState)
   .addEdge('answer', END)
   .compile({ name: "query_pipeline" });
 
-// Add agentspan metadata for graph-structure extraction.
+// Add Conductor metadata for graph-structure extraction.
 // Do NOT set tools on StateGraphs — only model + framework.
 (graph as any)._agentspan = {
   model: 'anthropic/claude-sonnet-4-6',
@@ -94,7 +94,7 @@ const graph = new StateGraph(QueryState)
 };
 
 // ---------------------------------------------------------------------------
-// Run on agentspan
+// Run on Conductor
 // ---------------------------------------------------------------------------
 async function main() {
   const runtime = new AgentRuntime();

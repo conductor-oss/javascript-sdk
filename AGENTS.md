@@ -40,14 +40,14 @@ src/open-api/                    # OpenAPI layer
   types.ts                       # Extended types - add custom fields here
 src/integration-tests/           # E2E tests against real Conductor server
   utils/                         # waitForWorkflowStatus, executeWorkflowWithRetry, etc.
-src/agents/                      # Durable agent layer (merged Agentspan TS SDK)
+src/agents/                      # Durable agent layer (merged Conductor TS SDK)
   index.ts                       # Agent, AgentRuntime, tool, guardrails, handoffs, ...
   frameworks/                    # LangGraph/LangChain/generic serializers + detection
   testing/                       # Agent testing toolkit (/agents/testing subpath)
   wrappers/                      # Vercel AI / LangGraph / LangChain drop-in wrappers
   __tests__/                     # Colocated jest unit tests (picked up by test:unit)
-e2e/                             # Agent e2e suites vs live agentspan server (jest.e2e.config.mjs)
-cli-bin/                         # agentspan CLI helper scripts (Go CLI walk-up probe target)
+e2e/                             # Agent e2e suites vs live Conductor server (jest.e2e.config.mjs)
+cli-bin/                         # Conductor CLI helper scripts (Go CLI walk-up probe target)
 examples/agents/                 # Agent examples (own tsconfig; run via npx tsx)
 docs/agents/                     # Agent layer documentation
 ```
@@ -76,9 +76,28 @@ docs/agents/                     # Agent layer documentation
   Framework subdirs (adk/, langgraph/, openai/, vercel-ai/) install their own
   deps (`scripts/install-example-deps.sh`); `examples/agents` is excluded from
   the root tsconfig.
-- `AGENTSPAN_*` env vars (`AGENTSPAN_SERVER_URL`, default
-  `http://localhost:8080/api`) are the agent layer's config surface — kept
-  working as-is; `CONDUCTOR_*` aliases are a possible follow-up.
+- `CONDUCTOR_AGENT_*` env vars (`CONDUCTOR_AGENT_SERVER_URL`, default
+  `http://localhost:8080/api`) are the agent layer's config surface. The
+  previous `AGENTSPAN_*` spelling still resolves as a deprecated fallback and
+  warns once per name per process — see `src/agents/legacy-env.ts`, the
+  duplicated helper in `resolveOrkesConfig.ts`, and `e2e/helpers.ts`.
+
+### Names that are NOT ours to rename
+
+The Agentspan → Conductor rebrand deliberately left these alone. They are
+externally owned, and renaming them points users at things that don't exist or
+breaks interop. Do not "clean these up":
+
+| Name | Owner |
+|---|---|
+| `__agentspan_ctx__`, `__agentspan_sdk__.cjs`, `_agentspan.llm`/`.model`/`.framework`/`.tools`, `_agentspan_human_task`, `_agentspan_human_prompt` | cross-SDK wire keys / Go CLI probe target — same server compile path as the Python SDK |
+| `agentspan.embedded`, `agentspan.default-context-window` | orkes-conductor server boot properties |
+| `agentspan-ai/agentspan`, `agentspan/codingexamples`, `agentspan-server` | external GitHub repos and container image |
+| `agentspan_linux_amd64`, the `agentspan` CLI binary, `agentspan deploy`/`credentials`/`login`/`import` | the external CLI's release asset and command surface |
+| `agentspan <= 0.4.2`, `agentspan server > 0.4.2` | version-qualified references to the upstream product — renaming makes them factually false |
+
+Every cross-SDK wire key is underscore-prefixed; that invariant is the quickest
+way to tell a wire contract from our own prose.
 
 ## Commands
 
@@ -94,9 +113,9 @@ CONDUCTOR_AUTH_KEY=key CONDUCTOR_AUTH_SECRET=secret \
 ORKES_BACKEND_VERSION=5 \
 npm run test:integration:orkes-v5
 
-# Agent e2e (requires a running agentspan server + LLM keys; CI does this
+# Agent e2e (requires a running Conductor server + LLM keys; CI does this
 # against the pinned release JAR — see .github/workflows/agent-e2e.yml)
-AGENTSPAN_SERVER_URL=http://localhost:8080/api npm run test:agent-e2e
+CONDUCTOR_AGENT_SERVER_URL=http://localhost:8080/api npm run test:agent-e2e
 ```
 
 ## Post-Change Verification (Required)

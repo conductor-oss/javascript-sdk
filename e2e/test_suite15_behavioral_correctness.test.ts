@@ -573,7 +573,7 @@ describe('Suite 15: Behavioral Correctness', () => {
     // Same shape as test_three_analysts_all_contribute: the real subject
     // is the router strategy + tool dispatch; the LLM drives the route +
     // tool call. gpt-4o-mini sometimes routes elsewhere on first try.
-    // Retries cope with upstream provider variability, not Agentspan bugs.
+    // Retries cope with upstream provider variability, not Conductor bugs.
     it('test_order_routed_and_looked_up', async () => {
       const desk = makeServiceDesk();
       const result = await runtime.run(

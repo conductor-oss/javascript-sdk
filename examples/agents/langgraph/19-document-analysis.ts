@@ -198,7 +198,7 @@ const graph = createReactAgent({
   name: "document_analysis_agent",
 });
 
-// Add agentspan metadata for extraction
+// Add Conductor metadata for extraction
 (graph as any)._agentspan = {
   model: 'anthropic/claude-sonnet-4-6',
   tools,
@@ -209,7 +209,7 @@ const PROMPT =
   "Please provide a full analysis of the 'quarterly_report' document.";
 
 // ---------------------------------------------------------------------------
-// Run on agentspan
+// Run on Conductor
 // ---------------------------------------------------------------------------
 async function main() {
   const runtime = new AgentRuntime();

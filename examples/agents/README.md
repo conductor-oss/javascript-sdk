@@ -1,6 +1,6 @@
 # Examples
 
-Runnable examples demonstrating every feature of the Agentspan TypeScript SDK.
+Runnable examples demonstrating every feature of the Conductor TypeScript SDK.
 
 **200+ runnable examples in total**: the core examples cataloged below, plus
 the [quickstart/](quickstart/) guides and framework ports for Google ADK,
@@ -23,7 +23,7 @@ In production, the three concerns are separated:
 ```
 ┌──────────────────────────────────────────────────────────────┐
 │  1. DEPLOY (once, during CI/CD)                              │
-│     Registers the agent definition with the Agentspan server │
+│     Registers the agent definition with the Conductor server │
 │                                                              │
 │     await runtime.deploy(agent);                             │
 │     // or CLI: agentspan deploy --package my-agents          │
@@ -37,7 +37,7 @@ In production, the three concerns are separated:
 │  3. RUN (on-demand, from anywhere)                           │
 │     Triggers an agent execution                              │
 │                                                              │
-│     agentspan run <agent-name> "prompt"                      │
+│     Conductor run <agent-name> "prompt"                      │
 │     // or SDK: await runtime.run("agent_name", "prompt");    │
 │     // or REST API                                           │
 └──────────────────────────────────────────────────────────────┘
@@ -114,15 +114,15 @@ cd vercel-ai && npm install
 Export environment variables:
 
 ```bash
-export AGENTSPAN_LLM_MODEL=openai/gpt-4o-mini
-export AGENTSPAN_SERVER_URL=http://localhost:8080/api
-# export AGENTSPAN_AUTH_KEY=<key>     # if authentication is enabled
-# export AGENTSPAN_AUTH_SECRET=<secret>
+export CONDUCTOR_AGENT_LLM_MODEL=openai/gpt-4o-mini
+export CONDUCTOR_AGENT_SERVER_URL=http://localhost:8080/api
+# export CONDUCTOR_AGENT_AUTH_KEY=<key>     # if authentication is enabled
+# export CONDUCTOR_AGENT_AUTH_SECRET=<secret>
 ```
 
 #### 2.1. Choose a model
 
-The `AGENTSPAN_LLM_MODEL` variable uses the `provider/model-name` format. Examples:
+The `CONDUCTOR_AGENT_LLM_MODEL` variable uses the `provider/model-name` format. Examples:
 
 | Provider | Model string | API key env var |
 |----------|-------------|-----------------|
@@ -341,4 +341,4 @@ cd examples/agents/openai && npx tsx 01-basic-agent.ts
 | [langgraph/](langgraph/) | LangGraph | State graphs, react agents, memory, RAG |
 | [openai/](openai/) | OpenAI Agents SDK | Agents, tools, handoffs, guardrails |
 | [vercel-ai/](vercel-ai/) | Vercel AI SDK | Agents, tools, streaming, HITL |
-| [quickstart/](quickstart/) | Agentspan Quickstart | Minimal getting-started guides |
+| [quickstart/](quickstart/) | Conductor Quickstart | Minimal getting-started guides |

@@ -1,6 +1,3 @@
-// Copyright (c) 2025 Agentspan
-// Licensed under the MIT License. See LICENSE file in the project root for details.
-
 /**
  * OpenAI Agent with Structured Output -- enforced JSON schema response.
  *
@@ -10,7 +7,7 @@
  *   - Model settings (temperature) for deterministic output
  *
  * Requirements:
- *   - AGENTSPAN_SERVER_URL for the Agentspan path
+ *   - CONDUCTOR_AGENT_SERVER_URL for the Conductor path
  */
 
 import { Agent, setTracingDisabled } from '@openai/agents';
@@ -51,7 +48,7 @@ export const agent = new Agent({
 
 const prompt = 'Recommend 3 sci-fi movies that explore the concept of artificial intelligence.';
 
-// ── Run on agentspan ──────────────────────────────────────────────
+// ── Run on Conductor ──────────────────────────────────────────────
 async function main() {
   const runtime = new AgentRuntime();
   try {

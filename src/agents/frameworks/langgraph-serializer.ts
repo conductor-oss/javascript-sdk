@@ -1150,7 +1150,7 @@ function _isLLMEndpoint(url: string): boolean {
  */
 function _fakeLLMResponse(content: string): Response {
   const body = JSON.stringify({
-    id: "agentspan-capture",
+    id: "conductor-capture",
     object: "chat.completion",
     choices: [
       {

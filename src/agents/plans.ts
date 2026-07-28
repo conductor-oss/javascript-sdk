@@ -1,6 +1,3 @@
-// Copyright (c) 2025 Agentspan
-// Licensed under the MIT License.
-
 /**
  * Typed plan builders for `Strategy.PLAN_EXECUTE`.
  *
@@ -8,7 +5,7 @@
  * task) consumes. Use them to construct plans in TypeScript with IDE
  * autocomplete and tsc type-checking, instead of inlining JSON literals.
  *
- * The wire format is identical to the Python SDK's `agentspan.agents.plans`
+ * The wire format is identical to the Python SDK's `conductor.ai.agents.plans`
  * dataclasses: same JSON shape, same field names, same Ref marker
  * (`{"$ref": "step_id"}`). The server compiler is the same path for both
  * SDKs.

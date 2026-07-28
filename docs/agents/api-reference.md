@@ -79,13 +79,13 @@ Behavior-only — no connection/auth fields (those live on `OrkesApiConfig`, the
 
 ```ts
 interface AgentConfigOptions {
-  workerPollIntervalMs?: number;         // AGENTSPAN_WORKER_POLL_INTERVAL (100)
-  workerThreadCount?: number;            // AGENTSPAN_WORKER_THREADS (1)
-  autoStartWorkers?: boolean;            // AGENTSPAN_AUTO_START_WORKERS (true)
-  streamingEnabled?: boolean;            // AGENTSPAN_STREAMING_ENABLED (true)
-  livenessEnabled?: boolean;             // AGENTSPAN_LIVENESS_ENABLED (true)
-  livenessStallSeconds?: number;         // AGENTSPAN_LIVENESS_STALL_SECONDS (30)
-  livenessCheckIntervalSeconds?: number; // AGENTSPAN_LIVENESS_CHECK_INTERVAL_SECONDS (10)
+  workerPollIntervalMs?: number;         // CONDUCTOR_AGENT_WORKER_POLL_INTERVAL (100)
+  workerThreadCount?: number;            // CONDUCTOR_AGENT_WORKER_THREADS (1)
+  autoStartWorkers?: boolean;            // CONDUCTOR_AGENT_AUTO_START_WORKERS (true)
+  streamingEnabled?: boolean;            // CONDUCTOR_AGENT_STREAMING_ENABLED (true)
+  livenessEnabled?: boolean;             // CONDUCTOR_AGENT_LIVENESS_ENABLED (true)
+  livenessStallSeconds?: number;         // CONDUCTOR_AGENT_LIVENESS_STALL_SECONDS (30)
+  livenessCheckIntervalSeconds?: number; // CONDUCTOR_AGENT_LIVENESS_CHECK_INTERVAL_SECONDS (10)
 }
 ```
 
@@ -311,7 +311,7 @@ interface AgentEvent {
 
 ## Errors
 
-`AgentspanError` (base), `AgentAPIError`, `AgentNotFoundError`, `ConfigurationError`, `CredentialNotFoundError`, `CredentialAuthError`, `CredentialRateLimitError`, `CredentialServiceError`, `SSETimeoutError`, `TerminalToolError`, `WorkerStallError`, `GuardrailFailedError`.
+`ConductorAgentError` (base), `AgentAPIError`, `AgentNotFoundError`, `ConfigurationError`, `CredentialNotFoundError`, `CredentialAuthError`, `CredentialRateLimitError`, `CredentialServiceError`, `SSETimeoutError`, `TerminalToolError`, `WorkerStallError`, `GuardrailFailedError`.
 
 ## RunSettings
 

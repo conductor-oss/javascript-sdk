@@ -179,7 +179,7 @@ describe("tool() options", () => {
 // ── getToolDef() with all 3 formats ────────────────────────
 
 describe("getToolDef()", () => {
-  it("extracts from agentspan tool() wrapper", () => {
+  it("extracts from Conductor tool() wrapper", () => {
     const t = tool(async () => "ok", {
       name: "test",
       description: "test desc",
@@ -225,7 +225,7 @@ describe("getToolDef()", () => {
 // ── normalizeToolInput() ───────────────────────────────────
 
 describe("normalizeToolInput()", () => {
-  it("normalizes agentspan tool", () => {
+  it("normalizes Conductor tool", () => {
     const t = tool(async () => "ok", {
       name: "test",
       description: "desc",

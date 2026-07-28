@@ -200,7 +200,7 @@ async function runOrchestrationAgent(prompt: string): Promise<string> {
   return 'Agent reached maximum iterations.';
 }
 
-// ── Wrap for Agentspan ───────────────────────────────────
+// ── Wrap for Conductor ───────────────────────────────────
 
 const agentRunnable = new RunnableLambda({
   func: async (input: { input: string }) => {

@@ -1,16 +1,13 @@
-// Copyright (c) 2025 Agentspan
-// Licensed under the MIT License. See LICENSE file in the project root for details.
-
 /**
  * OpenAI Agent with Function Tools -- tool calling via the `tool()` helper.
  *
  * Demonstrates:
  *   - Defining function tools with zod schemas
  *   - Multiple tools with typed parameters
- *   - Running via Agentspan passthrough
+ *   - Running via Conductor passthrough
  *
  * Requirements:
- *   - AGENTSPAN_SERVER_URL for the Agentspan path
+ *   - CONDUCTOR_AGENT_SERVER_URL for the Conductor path
  */
 
 import { Agent, tool, setTracingDisabled } from '@openai/agents';
@@ -82,7 +79,7 @@ const prompt =
   "What's the weather in San Francisco? Also, what's the population there " +
   "and what's the square root of that number (just the digits)?";
 
-// ── Run on agentspan ──────────────────────────────────────────────
+// ── Run on Conductor ──────────────────────────────────────────────
 async function main() {
   const runtime = new AgentRuntime();
   try {

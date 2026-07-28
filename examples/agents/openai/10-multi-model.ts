@@ -1,6 +1,3 @@
-// Copyright (c) 2025 Agentspan
-// Licensed under the MIT License. See LICENSE file in the project root for details.
-
 /**
  * OpenAI Agent -- Multi-Model Handoff with different LLMs.
  *
@@ -10,7 +7,7 @@
  *   - Model override for cost/performance optimization
  *
  * Requirements:
- *   - AGENTSPAN_SERVER_URL for the Agentspan path
+ *   - CONDUCTOR_AGENT_SERVER_URL for the Conductor path
  */
 
 import { Agent, tool, setTracingDisabled } from '@openai/agents';
@@ -110,7 +107,7 @@ triage.handoffs = [docSpecialist, codeSpecialist];
 
 const prompt = 'I need a Python code example for authenticating with the API.';
 
-// ── Run on agentspan ──────────────────────────────────────────────
+// ── Run on Conductor ──────────────────────────────────────────────
 async function main() {
   const runtime = new AgentRuntime();
   try {

@@ -44,10 +44,10 @@ const DOCUMENTS: Document[] = [
   },
   {
     pageContent:
-      'Agentspan provides a runtime for deploying LangGraph and LangChain agents at scale. ' +
+      'Conductor provides a runtime for deploying LangGraph and LangChain agents at scale. ' +
       'It uses Conductor as an orchestration engine and exposes agents as Conductor tasks. ' +
       'The AgentRuntime class handles worker registration and lifecycle management.',
-    metadata: { source: 'agentspan_docs', topic: 'agentspan' },
+    metadata: { source: 'conductor_docs', topic: 'Conductor' },
   },
   {
     pageContent:
@@ -186,7 +186,7 @@ const graph = new StateGraph(RAGState)
   .addEdge('generate', END)
   .compile({ name: "rag_pipeline" });
 
-// Add agentspan metadata for extraction
+// Add Conductor metadata for extraction
 (graph as any)._agentspan = {
   model: 'anthropic/claude-sonnet-4-6',
   framework: 'langgraph',
@@ -195,7 +195,7 @@ const graph = new StateGraph(RAGState)
 const PROMPT = 'What is LangGraph and how does it differ from LangChain?';
 
 // ---------------------------------------------------------------------------
-// Run on agentspan
+// Run on Conductor
 // ---------------------------------------------------------------------------
 async function main() {
   const runtime = new AgentRuntime();

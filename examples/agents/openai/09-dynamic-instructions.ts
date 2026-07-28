@@ -1,6 +1,3 @@
-// Copyright (c) 2025 Agentspan
-// Licensed under the MIT License. See LICENSE file in the project root for details.
-
 /**
  * OpenAI Agent with Dynamic Instructions -- callable instruction function.
  *
@@ -10,7 +7,7 @@
  *   - Function tools alongside dynamic instructions
  *
  * Requirements:
- *   - AGENTSPAN_SERVER_URL for the Agentspan path
+ *   - CONDUCTOR_AGENT_SERVER_URL for the Conductor path
  */
 
 import { Agent, tool, setTracingDisabled } from '@openai/agents';
@@ -91,7 +88,7 @@ export const agent = new Agent({
 
 const prompt = "Show me my todo list and add 'Prepare demo for Friday' as high priority.";
 
-// ── Run on agentspan ──────────────────────────────────────────────
+// ── Run on Conductor ──────────────────────────────────────────────
 async function main() {
   const runtime = new AgentRuntime();
   try {

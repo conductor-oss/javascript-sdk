@@ -4,7 +4,7 @@
  * Demonstrates:
  *   - createReactAgent with a different model (still using ChatOpenAI for TS examples)
  *   - Date-related tools for practical utility
- *   - Same code pattern, swappable model -- no Agentspan-specific changes needed
+ *   - Same code pattern, swappable model -- no Conductor-specific changes needed
  *
  * Note: The Python version uses ChatAnthropic. This TypeScript port uses ChatOpenAI
  * with gpt-4o-mini since @langchain/anthropic may not be installed. The pattern
@@ -85,7 +85,7 @@ const PROMPT =
   'What day of the week will that be?';
 
 // ---------------------------------------------------------------------------
-// Run on agentspan
+// Run on Conductor
 // ---------------------------------------------------------------------------
 async function main() {
   const runtime = new AgentRuntime();

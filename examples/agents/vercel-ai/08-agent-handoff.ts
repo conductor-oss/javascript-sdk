@@ -73,7 +73,7 @@ const queries = [
   'What is the weather like today?',
 ];
 
-// ── Run on agentspan ─────────────────────────────────────
+// ── Run on Conductor ─────────────────────────────────────
 async function main() {
   const runtime = new AgentRuntime();
   try {

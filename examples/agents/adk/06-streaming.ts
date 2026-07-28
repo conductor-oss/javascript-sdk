@@ -3,18 +3,18 @@
  *
  * Demonstrates:
  *   - Streaming events from a Google ADK agent
- *   - Agentspan path: runtime.stream() with event types
+ *   - Conductor path: runtime.stream() with event types
  *
  * Requirements:
  *   - npm install @google/adk zod
- *   - AGENTSPAN_SERVER_URL for agentspan path
+ *   - CONDUCTOR_AGENT_SERVER_URL for Conductor path
  */
 
 import { LlmAgent, FunctionTool } from '@google/adk';
 import { z } from 'zod';
 import { AgentRuntime } from '@io-orkes/conductor-javascript/agents';
 
-const model = process.env.AGENTSPAN_LLM_MODEL ?? 'gemini-2.5-flash';
+const model = process.env.CONDUCTOR_AGENT_LLM_MODEL ?? 'gemini-2.5-flash';
 
 // ── Tool ─────────────────────────────────────────────────────────────
 
@@ -59,7 +59,7 @@ export const agent = new LlmAgent({
   tools: [searchDocumentation],
 });
 
-// ── Run on agentspan (streaming) ───────────────────────────────────
+// ── Run on Conductor (streaming) ───────────────────────────────────
 
 async function main() {
   const runtime = new AgentRuntime();

@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Agentspan
+// Copyright (c) 2026 Conductor
 // Licensed under the MIT License. See LICENSE file in the project root for details.
 
 /**
@@ -39,7 +39,7 @@ export interface WorkflowTokenUsage {
 export class WorkflowClient {
   /**
    * @param getClient resolver for the shared Conductor client.
-   * @param fetchAgentExecution optional fallback that reads an Agentspan agent
+   * @param fetchAgentExecution optional fallback that reads an Conductor agent
    *   execution (`GET /agent/execution/{id}`). Agent executions are not stored
    *   in Conductor's workflow index, so `getExecutionStatus` 404s for them;
    *   when this fallback is provided, {@link getWorkflow} uses it.
@@ -55,7 +55,7 @@ export class WorkflowClient {
    * Fetch a workflow execution by id (with tasks).
    *
    * Tries Conductor's `getExecutionStatus` first; for agent executions (which
-   * Conductor's workflow index doesn't hold) falls back to the Agentspan
+   * Conductor's workflow index doesn't hold) falls back to the Conductor
    * agent-execution endpoint when available.
    *
    * @param executionId Conductor workflow id or agent execution id.

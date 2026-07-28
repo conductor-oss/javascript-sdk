@@ -1,7 +1,7 @@
 /**
  * Kitchen Sink — Content Publishing Platform
  *
- * A single mega-workflow that exercises every Agentspan SDK feature (89 features).
+ * A single mega-workflow that exercises every Conductor SDK feature (89 features).
  * See design/sdk-design/kitchen-sink.md for the full scenario specification.
  *
  * Demonstrates:
@@ -26,13 +26,13 @@
  *   # Or start with auth (requires storing the secret as a credential):
  *   mcp-testkit --transport http --auth <secret>
  *
- *   # Store credentials via CLI or Agentspan UI:
+ *   # Store credentials via CLI or Conductor UI:
  *   agentspan credentials set MCP_AUTH_TOKEN <secret>
  *   agentspan credentials set SEARCH_API_KEY <key>
  *
  * Requirements:
  *   - Conductor server with LLM support
- *   - AGENTSPAN_SERVER_URL, AGENTSPAN_LLM_MODEL env vars
+ *   - CONDUCTOR_AGENT_SERVER_URL, CONDUCTOR_AGENT_LLM_MODEL env vars
  *   - mcp-testkit running on http://localhost:3001 (for MCP/HTTP tools)
  *   - For full execution: Docker, credential store configured
  */
@@ -133,7 +133,7 @@ import type {
 
 // ── Settings ─────────────────────────────────────────────
 
-const LLM_MODEL = process.env.AGENTSPAN_LLM_MODEL ?? 'openai/gpt-4o';
+const LLM_MODEL = process.env.CONDUCTOR_AGENT_LLM_MODEL ?? 'openai/gpt-4o';
 
 // ── Mock data (equivalent to Python kitchen_sink_helpers) ─
 

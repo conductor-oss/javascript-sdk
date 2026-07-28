@@ -2,7 +2,7 @@
  * Suite 21: Agent scheduling (TypeScript SDK).
  *
  * Mirrors `sdk/python/e2e/test_suite21_scheduling.py` end-to-end against a
- * live agentspan-runtime with the scheduler module enabled. Skipped if the
+ * live Conductor-runtime with the scheduler module enabled. Skipped if the
  * `/scheduler/schedules` endpoint isn't reachable.
  */
 
@@ -17,7 +17,7 @@ import {
 } from '@io-orkes/conductor-javascript/agents';
 
 import { expectMsg } from './helpers';
-const SERVER_URL = process.env.AGENTSPAN_SERVER_URL ?? 'http://localhost:8080/api';
+const SERVER_URL = process.env.CONDUCTOR_AGENT_SERVER_URL ?? 'http://localhost:8080/api';
 
 async function schedulerAvailable(): Promise<boolean> {
   try {
@@ -51,7 +51,7 @@ describe('Suite 21: scheduling', () => {
       name: agentName,
       version: 1,
       description: 'TS scheduling e2e no-op',
-      ownerEmail: 'e2e@agentspan.test',
+      ownerEmail: 'e2e@conductor.test',
       schemaVersion: 2,
       timeoutSeconds: 60,
       timeoutPolicy: 'TIME_OUT_WF',

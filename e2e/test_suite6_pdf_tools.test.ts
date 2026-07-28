@@ -32,7 +32,7 @@ afterAll(() => runtime.shutdown());
 
 // ── Sample markdown ─────────────────────────────────────────────────────
 
-const SAMPLE_MARKDOWN = `# Agentspan E2E Test Report
+const SAMPLE_MARKDOWN = `# Conductor E2E Test Report
 
 ## Overview
 

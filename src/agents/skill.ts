@@ -424,7 +424,7 @@ function listFilesRecursive(dir: string): string[] {
 // ── Main skill() function ───────────────────────────────────
 
 /**
- * Load an Agent Skills directory as an Agentspan Agent.
+ * Load an Agent Skills directory as an Conductor Agent.
  *
  * @param skillPath - Path to skill directory containing SKILL.md.
  * @param options - Model, agent model overrides, search path, and runtime params.

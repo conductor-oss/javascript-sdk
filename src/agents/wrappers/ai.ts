@@ -3,7 +3,7 @@
  *
  * Re-exports everything from 'ai', but wraps `generateText` and `streamText`
  * to intercept the options object, extract model/tools/system, compile to
- * AgentConfig, and run on agentspan.
+ * AgentConfig, and run on Conductor.
  *
  * Usage:
  *   // BEFORE: import { generateText } from 'ai';
@@ -105,7 +105,7 @@ function _inferProviderFromModelName(modelName: string): string {
 // ── Tool extraction ─────────────────────────────────────
 
 /**
- * Extract agentspan-compatible tools from AI SDK tools Record.
+ * Extract Conductor-compatible tools from AI SDK tools Record.
  *
  * AI SDK tools are Record<string, CoreTool> where each CoreTool has:
  * - .parameters: Zod schema
@@ -140,10 +140,10 @@ export function mapFinishReason(reason: string | undefined): string {
 import { Agent, AgentRuntime } from "../index.js";
 
 /**
- * Wrapped generateText that runs on agentspan.
+ * Wrapped generateText that runs on Conductor.
  *
  * Intercepts the options object, extracts model/tools/system/prompt,
- * compiles to an Agent, runs on agentspan, returns the same result type.
+ * compiles to an Agent, runs on Conductor, returns the same result type.
  */
 export async function generateText(
   options: Record<string, unknown>,
@@ -170,13 +170,13 @@ export async function generateText(
     maxTurns: maxSteps ?? 25,
   });
 
-  // Run on agentspan
+  // Run on Conductor
   const runtime = new AgentRuntime();
   try {
     const promptStr = prompt ?? (messages ? JSON.stringify(messages) : "");
     const result = await runtime.run(agent, promptStr);
 
-    // Map agentspan result back to Vercel AI SDK result format
+    // Map Conductor result back to Vercel AI SDK result format
     return {
       text:
         typeof result.output?.result === "string"
@@ -206,7 +206,7 @@ export async function generateText(
 // ── streamText wrapper ──────────────────────────────────
 
 /**
- * Wrapped streamText that runs on agentspan.
+ * Wrapped streamText that runs on Conductor.
  *
  * For now, this delegates to generateText and wraps the result
  * in a stream-compatible interface. Full streaming will be added later.
@@ -227,12 +227,12 @@ export async function streamText(
     })(),
     toAIStream: () => {
       throw new Error(
-        "toAIStream() is not supported in the agentspan wrapper. Use textStream instead.",
+        "toAIStream() is not supported in the Conductor wrapper. Use textStream instead.",
       );
     },
     toTextStreamResponse: () => {
       throw new Error(
-        "toTextStreamResponse() is not supported in the agentspan wrapper. Use textStream instead.",
+        "toTextStreamResponse() is not supported in the Conductor wrapper. Use textStream instead.",
       );
     },
   };

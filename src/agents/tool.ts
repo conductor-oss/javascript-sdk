@@ -175,7 +175,7 @@ function isVercelAITool(obj: unknown): boolean {
 }
 
 /**
- * Check if an object has the TOOL_DEF symbol (agentspan tool wrapper).
+ * Check if an object has the TOOL_DEF symbol (Conductor tool wrapper).
  * Tool wrappers are functions, so we check both object and function types.
  */
 function hasToolDef(obj: unknown): boolean {
@@ -223,14 +223,14 @@ function wrapVercelAITool(aiTool: Record<string, unknown>): ToolDef {
 
 /**
  * Extract ToolDef from any supported tool format:
- * 1. agentspan tool() wrapper (via Symbol)
+ * 1. Conductor tool() wrapper (via Symbol)
  * 2. Vercel AI SDK tool (has parameters as Zod + execute)
  * 3. Raw ToolDef object
  *
  * Throws ConfigurationError if format is unrecognized.
  */
 export function getToolDef(obj: unknown): ToolDef {
-  // 1. agentspan tool() wrapper
+  // 1. Conductor tool() wrapper
   if (hasToolDef(obj)) {
     return (obj as Record<symbol, ToolDef>)[TOOL_DEF];
   }
@@ -278,7 +278,7 @@ export function getToolDef(obj: unknown): ToolDef {
 
 /**
  * Auto-detect format and return ToolDef.
- * Handles agentspan tool(), Vercel AI SDK tool, and raw ToolDef objects.
+ * Handles Conductor tool(), Vercel AI SDK tool, and raw ToolDef objects.
  */
 export function normalizeToolInput(input: unknown): ToolDef {
   return getToolDef(input);

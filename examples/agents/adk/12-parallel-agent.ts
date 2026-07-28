@@ -8,13 +8,13 @@
  *
  * Requirements:
  *   - npm install @google/adk zod
- *   - AGENTSPAN_SERVER_URL for agentspan path
+ *   - CONDUCTOR_AGENT_SERVER_URL for Conductor path
  */
 
 import { LlmAgent, ParallelAgent } from '@google/adk';
 import { AgentRuntime } from '@io-orkes/conductor-javascript/agents';
 
-const model = process.env.AGENTSPAN_LLM_MODEL ?? 'gemini-2.5-flash';
+const model = process.env.CONDUCTOR_AGENT_LLM_MODEL ?? 'gemini-2.5-flash';
 
 // Three analysts run in parallel
 export const marketAnalyst = new LlmAgent({
@@ -50,7 +50,7 @@ export const parallelAnalysis = new ParallelAgent({
   subAgents: [marketAnalyst, techAnalyst, riskAnalyst],
 });
 
-// ── Run on agentspan ───────────────────────────────────────────────
+// ── Run on Conductor ───────────────────────────────────────────────
 
 async function main() {
   const runtime = new AgentRuntime();

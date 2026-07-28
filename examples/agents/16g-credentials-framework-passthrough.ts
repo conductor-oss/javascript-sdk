@@ -7,7 +7,7 @@
  *   - Works the same for LangChain, OpenAI Agent SDK, and Google ADK
  *
  * This pattern is used when you run a foreign framework agent (LangGraph,
- * LangChain, OpenAI, ADK) through Agentspan and need tools inside the
+ * LangChain, OpenAI, ADK) through Conductor and need tools inside the
  * graph to access credentials from the credential store.
  *
  * NOTE: Since the TypeScript SDK's RunOptions does not yet support a
@@ -19,8 +19,8 @@
  *   agentspan credentials set GITHUB_TOKEN <your-github-token>
  *
  * Requirements:
- *   - Agentspan server running at AGENTSPAN_SERVER_URL
- *   - AGENTSPAN_LLM_MODEL set (or defaults to openai/gpt-4o-mini)
+ *   - Conductor server running at CONDUCTOR_AGENT_SERVER_URL
+ *   - CONDUCTOR_AGENT_LLM_MODEL set (or defaults to openai/gpt-4o-mini)
  *   - GITHUB_TOKEN stored via `agentspan credentials set`
  */
 

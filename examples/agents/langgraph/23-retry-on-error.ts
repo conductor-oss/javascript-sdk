@@ -110,7 +110,7 @@ const graph = new StateGraph(RetryState)
   .addEdge('format', END)
   .compile({ name: "retry_agent" });
 
-// Add agentspan metadata for extraction
+// Add Conductor metadata for extraction
 (graph as any)._agentspan = {
   model: 'anthropic/claude-sonnet-4-6',
   framework: 'langgraph',
@@ -119,7 +119,7 @@ const graph = new StateGraph(RetryState)
 const PROMPT = 'What is the speed of light in meters per second?';
 
 // ---------------------------------------------------------------------------
-// Run on agentspan
+// Run on Conductor
 // ---------------------------------------------------------------------------
 async function main() {
   const runtime = new AgentRuntime();

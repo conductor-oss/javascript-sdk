@@ -14,17 +14,17 @@
  *
  * Requirements:
  *   - npm install @google/adk zod
- *   - AGENTSPAN_SERVER_URL for agentspan path
+ *   - CONDUCTOR_AGENT_SERVER_URL for Conductor path
  */
 
 import { LlmAgent, FunctionTool } from '@google/adk';
 import { z } from 'zod';
 import { AgentRuntime } from '@io-orkes/conductor-javascript/agents';
 
-const model = process.env.AGENTSPAN_LLM_MODEL ?? 'gemini-2.5-flash';
+const model = process.env.CONDUCTOR_AGENT_LLM_MODEL ?? 'gemini-2.5-flash';
 
 // ── In-memory state (simulating ADK ToolContext shared state) ────────
-// In the real ADK, this would be context.state. For the agentspan
+// In the real ADK, this would be context.state. For the Conductor
 // passthrough, we simulate with module-level state.
 
 const sharedState: { shopping_list: string[] } = { shopping_list: [] };
@@ -73,7 +73,7 @@ export const agent = new LlmAgent({
   tools: [addItem, getList, clearList],
 });
 
-// ── Run on agentspan ───────────────────────────────────────────────
+// ── Run on Conductor ───────────────────────────────────────────────
 
 async function main() {
   const runtime = new AgentRuntime();

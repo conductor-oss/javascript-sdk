@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Agentspan
+// Copyright (c) 2026 Conductor
 // Licensed under the MIT License. See LICENSE file in the project root for details.
 
 /**

@@ -1,5 +1,5 @@
 {
-  "name": "agentspan-examples-adk",
+  "name": "conductor-examples-adk",
   "private": true,
   "type": "module",
   "dependencies": {

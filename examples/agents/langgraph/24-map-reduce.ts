@@ -121,7 +121,7 @@ const graph = new StateGraph(OverallState)
   .addEdge('reduce', END)
   .compile({ name: "map_reduce_agent" });
 
-// Add agentspan metadata for extraction
+// Add Conductor metadata for extraction
 (graph as any)._agentspan = {
   model: 'anthropic/claude-sonnet-4-6',
   framework: 'langgraph',
@@ -130,7 +130,7 @@ const graph = new StateGraph(OverallState)
 const PROMPT = 'renewable energy breakthroughs in 2024';
 
 // ---------------------------------------------------------------------------
-// Run on agentspan
+// Run on Conductor
 // ---------------------------------------------------------------------------
 async function main() {
   const runtime = new AgentRuntime();

@@ -9,7 +9,7 @@
  *
  * Note: In the TypeScript SDK the human_task decorator is not yet available.
  * This example simulates the human review step with a mock function that
- * auto-approves. In production, this would integrate with the AgentSpan UI
+ * auto-approves. In production, this would integrate with the Conductor UI
  * or API for real human-in-the-loop review.
  */
 
@@ -67,7 +67,7 @@ function reviewEmail(state: State): Partial<State> {
    * Simulated human review step.
    *
    * In production this would be a Conductor HUMAN task that pauses execution
-   * and waits for a human to approve or reject the draft via the AgentSpan
+   * and waits for a human to approve or reject the draft via the Conductor
    * UI or API. For this example we auto-approve.
    */
   return {
@@ -120,7 +120,7 @@ const graph = new StateGraph(EmailState)
   .addEdge('revise', END)
   .compile({ name: "email_hitl_agent" });
 
-// Add agentspan metadata for extraction
+// Add Conductor metadata for extraction
 (graph as any)._agentspan = {
   model: 'anthropic/claude-sonnet-4-6',
   framework: 'langgraph',
@@ -130,7 +130,7 @@ const PROMPT =
   'Schedule a team meeting for next Monday at 10am to discuss Q3 plans.';
 
 // ---------------------------------------------------------------------------
-// Run on agentspan
+// Run on Conductor
 // ---------------------------------------------------------------------------
 async function main() {
   const runtime = new AgentRuntime();

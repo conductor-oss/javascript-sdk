@@ -81,7 +81,7 @@ const builder = new StateGraph(MessagesAnnotation)
 
 const graph = builder.compile({ name: "tool_node_agent" });
 
-// Add agentspan metadata for extraction
+// Add Conductor metadata for extraction
 (graph as any)._agentspan = {
   model: 'anthropic/claude-sonnet-4-6',
   tools,
@@ -91,7 +91,7 @@ const graph = builder.compile({ name: "tool_node_agent" });
 const PROMPT = 'What is the capital and population of Japan and Brazil?';
 
 // ---------------------------------------------------------------------------
-// Run on agentspan
+// Run on Conductor
 // ---------------------------------------------------------------------------
 async function main() {
   const runtime = new AgentRuntime();

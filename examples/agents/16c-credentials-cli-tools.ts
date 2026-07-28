@@ -14,8 +14,8 @@
  *   agentspan credentials set AWS_SECRET_ACCESS_KEY <your-aws-secret-access-key>
  *
  * Requirements:
- *   - Agentspan server running at AGENTSPAN_SERVER_URL
- *   - AGENTSPAN_LLM_MODEL set (or defaults to openai/gpt-4o-mini)
+ *   - Conductor server running at CONDUCTOR_AGENT_SERVER_URL
+ *   - CONDUCTOR_AGENT_LLM_MODEL set (or defaults to openai/gpt-4o-mini)
  *   - gh and aws CLIs installed
  */
 

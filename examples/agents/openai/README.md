@@ -1,11 +1,11 @@
-# OpenAI Agents SDK + Agentspan
+# OpenAI Agents SDK + Conductor
 
 The OpenAI Agent format is natively recognized. Swap `run()` for `runtime.run()` — agent and tools stay identical.
 
 ## Before / After
 
 <table>
-<tr><th>Before (vanilla OpenAI Agents)</th><th>After (Agentspan)</th></tr>
+<tr><th>Before (vanilla OpenAI Agents)</th><th>After (Conductor)</th></tr>
 <tr><td>
 
 ```typescript
@@ -110,7 +110,7 @@ await runtime.shutdown();
 ## Running
 
 ```bash
-export AGENTSPAN_SERVER_URL=...
+export CONDUCTOR_AGENT_SERVER_URL=...
 export OPENAI_API_KEY=...
 # from the repository root
 npx tsx examples/agents/openai/01-basic-agent.ts

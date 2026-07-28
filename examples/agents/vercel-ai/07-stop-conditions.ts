@@ -1,7 +1,7 @@
 /**
  * Vercel AI SDK Tools + Native Agent -- Termination Conditions
  *
- * Demonstrates agentspan's termination condition system on a native Agent
+ * Demonstrates Conductor's termination condition system on a native Agent
  * with AI SDK tools. Termination conditions control when the agent stops:
  * - MaxMessage: stop after N messages
  * - TextMention: stop when output contains specific text
@@ -66,7 +66,7 @@ export const agent = new Agent({
 const prompt =
   'Analyze market trends for AI infrastructure companies. Look at revenue growth, adoption rates, and competitive landscape, then summarize.';
 
-// ── Run on agentspan ─────────────────────────────────────
+// ── Run on Conductor ─────────────────────────────────────
 async function main() {
   analysisStepCount = 0;
   const runtime = new AgentRuntime();
