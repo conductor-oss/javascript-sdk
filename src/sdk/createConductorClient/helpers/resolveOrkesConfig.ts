@@ -25,7 +25,7 @@ export const resolveOrkesConfig = (config?: Partial<OrkesApiConfig>) => {
   const logger = config?.logger ?? new DefaultLogger();
 
   // CONDUCTOR_* env -> explicit config -> localhost:8080 default. No
-  // AGENTSPAN_* fallback -- matches java-sdk/python-sdk exactly.
+  // other env var names are read.
   let serverUrl =
     process.env.CONDUCTOR_SERVER_URL || config?.serverUrl || "http://localhost:8080";
   if (serverUrl.endsWith("/")) serverUrl = serverUrl.slice(0, -1);

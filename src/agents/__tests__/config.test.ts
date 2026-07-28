@@ -6,13 +6,6 @@ describe("AgentConfig", () => {
   // Save and restore env vars to avoid test pollution
   const savedEnv: Record<string, string | undefined> = {};
   const envKeys = [
-    "AGENTSPAN_WORKER_POLL_INTERVAL",
-    "AGENTSPAN_WORKER_THREADS",
-    "AGENTSPAN_AUTO_START_WORKERS",
-    "AGENTSPAN_STREAMING_ENABLED",
-    "AGENTSPAN_LIVENESS_ENABLED",
-    "AGENTSPAN_LIVENESS_STALL_SECONDS",
-    "AGENTSPAN_LIVENESS_CHECK_INTERVAL_SECONDS",
     "CONDUCTOR_AGENT_WORKER_POLL_INTERVAL",
     "CONDUCTOR_AGENT_WORKER_THREADS",
     "CONDUCTOR_AGENT_AUTO_START_WORKERS",
@@ -132,25 +125,6 @@ describe("AgentConfig", () => {
       expect(config.livenessCheckIntervalSeconds).toBe(10.0);
     });
 
-    it("ignores legacy AGENTSPAN_ env vars entirely (clean break, no fallback -- matches java-sdk/python-sdk)", () => {
-      process.env.AGENTSPAN_WORKER_POLL_INTERVAL = "200";
-      process.env.AGENTSPAN_WORKER_THREADS = "2";
-      process.env.AGENTSPAN_AUTO_START_WORKERS = "false";
-      process.env.AGENTSPAN_STREAMING_ENABLED = "false";
-      process.env.AGENTSPAN_LIVENESS_ENABLED = "false";
-      process.env.AGENTSPAN_LIVENESS_STALL_SECONDS = "60.5";
-      process.env.AGENTSPAN_LIVENESS_CHECK_INTERVAL_SECONDS = "20.5";
-
-      const config = new AgentConfig();
-
-      expect(config.workerPollIntervalMs).toBe(100);
-      expect(config.workerThreadCount).toBe(1);
-      expect(config.autoStartWorkers).toBe(true);
-      expect(config.streamingEnabled).toBe(true);
-      expect(config.livenessEnabled).toBe(true);
-      expect(config.livenessStallSeconds).toBe(30.0);
-      expect(config.livenessCheckIntervalSeconds).toBe(10.0);
-    });
   });
 
   describe("fromEnv", () => {

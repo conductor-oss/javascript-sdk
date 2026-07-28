@@ -60,8 +60,7 @@ export class AgentConfig {
   constructor(options?: AgentConfigOptions) {
     const env = process.env;
 
-    // Only CONDUCTOR_AGENT_* env vars are read -- matches java-sdk/python-sdk
-    // exactly (no AGENTSPAN_* fallback; neither reference SDK has one).
+    // Only CONDUCTOR_AGENT_* env vars are read -- no other fallback.
     this.workerPollIntervalMs =
       options?.workerPollIntervalMs ??
       parseIntEnv(env.CONDUCTOR_AGENT_WORKER_POLL_INTERVAL, 100);

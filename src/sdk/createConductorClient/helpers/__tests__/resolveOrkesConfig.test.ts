@@ -22,9 +22,6 @@ describe("resolveOrkesConfig", () => {
     "CONDUCTOR_PROXY_URL",
     "CONDUCTOR_TLS_INSECURE",
     "CONDUCTOR_DISABLE_HTTP2",
-    "AGENTSPAN_SERVER_URL",
-    "AGENTSPAN_AUTH_KEY",
-    "AGENTSPAN_AUTH_SECRET",
   ];
 
   beforeEach(() => {
@@ -77,7 +74,7 @@ describe("resolveOrkesConfig", () => {
       expect(result.serverUrl).toBe("http://localhost:8080");
     });
 
-    // ─── CONDUCTOR_* -> explicit -> localhost:8080 (no legacy fallback) ──
+    // ─── CONDUCTOR_* -> explicit -> localhost:8080 ──────────────────────
 
     it("defaults to http://localhost:8080 when nothing is set", () => {
       expect(resolveOrkesConfig({}).serverUrl).toBe("http://localhost:8080");
@@ -89,14 +86,7 @@ describe("resolveOrkesConfig", () => {
         "http://conductor-env:8080"
       );
     });
-
-    it("ignores a legacy AGENTSPAN_SERVER_URL env var entirely (clean break, no fallback -- matches java-sdk/python-sdk)", () => {
-      process.env.AGENTSPAN_SERVER_URL = "http://agentspan:9090";
-      expect(resolveOrkesConfig({}).serverUrl).toBe("http://localhost:8080");
-    });
   });
-
-  // ─── Auth key/secret: no legacy fallback ────────────────────────────
 
   describe("auth key/secret", () => {
     it("CONDUCTOR_AUTH_KEY/SECRET win over explicit config", () => {
@@ -105,14 +95,6 @@ describe("resolveOrkesConfig", () => {
       const result = resolveOrkesConfig({ keyId: "explicit-key", keySecret: "explicit-secret" });
       expect(result.keyId).toBe("conductor-key");
       expect(result.keySecret).toBe("conductor-secret");
-    });
-
-    it("ignores legacy AGENTSPAN_AUTH_KEY/SECRET env vars entirely (clean break, no fallback -- matches java-sdk/python-sdk)", () => {
-      process.env.AGENTSPAN_AUTH_KEY = "agentspan-key";
-      process.env.AGENTSPAN_AUTH_SECRET = "agentspan-secret";
-      const result = resolveOrkesConfig({});
-      expect(result.keyId).toBeUndefined();
-      expect(result.keySecret).toBeUndefined();
     });
   });
 

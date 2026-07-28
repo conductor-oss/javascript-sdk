@@ -23,25 +23,18 @@ jobs:
         with:
           args: --offline --no-progress --include-fragments README.md docs
 
-      - name: Reject legacy product branding
+      - name: Reject outdated product branding
         run: |
-          # Scoped to README.md, AGENTS.md, docs/, and cli-bin/ -- the areas the
-          # legacy-branding sweep actually covers. Unlike java-sdk's
-          # tree-wide guard, this does NOT scan examples/, e2e/, or src/.
-          #
-          # No AGENTSPAN_* env var identifier or `AgentspanError` mention
-          # survives anywhere in this package any more (env vars renamed to
-          # CONDUCTOR_AGENT_*/CONDUCTOR_*, the class to `ConductorAgentError`,
-          # matching java-sdk/python-sdk -- no legacy fallback kept, not even
-          # in resolveOrkesConfig.ts/logger.ts's former connection/log-level
-          # fallback).
+          # Scoped to README.md, AGENTS.md, docs/, and cli-bin/ -- the areas
+          # this sweep actually covers. This does NOT scan examples/, e2e/,
+          # or src/.
           #
           # Excluded inline: the `_agentspan` internal serializer markers,
           # the external `agentspan` CLI binary name, and the historical
           # "agentspan server > 0.4.2" version reference.
           if grep -rIn -iE 'agent[s]pan' README.md AGENTS.md docs/ cli-bin/ \
                | grep -viE '_agentspan|agentspan CLI helper scripts|agentspan server > 0\.4\.2'; then
-            echo "Legacy product branding found — use Conductor terminology."
+            echo "Outdated product branding found — use Conductor terminology."
             exit 1
           fi
 

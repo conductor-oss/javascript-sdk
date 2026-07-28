@@ -80,8 +80,8 @@ docs/agents/                     # Agent layer documentation
   `http://localhost:8080/api`; `CONDUCTOR_AUTH_KEY`/`CONDUCTOR_AUTH_SECRET`)
   reads the same env vars every other Conductor client does
   (`resolveOrkesConfig.ts`). The worker/streaming/liveness knobs in
-  `src/agents/config.ts` read `CONDUCTOR_AGENT_*` only, matching
-  java-sdk/python-sdk exactly.
+  `src/agents/config.ts` read `CONDUCTOR_AGENT_*` only, with no other
+  fallback.
 
 ## Commands
 
