@@ -25,7 +25,7 @@
  *
  * Requirements:
  *   - npm install @google/adk zod
- *   - AGENTSPAN_SERVER_URL for agentspan path
+ *   - CONDUCTOR_SERVER_URL for agentspan path
  */
 
 import { LlmAgent, SequentialAgent, ParallelAgent, LoopAgent } from '@google/adk';

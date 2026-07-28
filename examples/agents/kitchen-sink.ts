@@ -32,7 +32,7 @@
  *
  * Requirements:
  *   - Conductor server with LLM support
- *   - AGENTSPAN_SERVER_URL, AGENTSPAN_LLM_MODEL env vars
+ *   - CONDUCTOR_SERVER_URL, AGENTSPAN_LLM_MODEL env vars
  *   - mcp-testkit running on http://localhost:3001 (for MCP/HTTP tools)
  *   - For full execution: Docker, credential store configured
  */

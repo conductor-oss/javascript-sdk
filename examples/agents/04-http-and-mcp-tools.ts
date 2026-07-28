@@ -24,7 +24,7 @@
  * Requirements:
  *   - Conductor server with LLM support
  *   - mcp-testkit running on http://localhost:3001 (see setup above)
- *   - AGENTSPAN_SERVER_URL=http://localhost:8080/api as environment variable
+ *   - CONDUCTOR_SERVER_URL=http://localhost:8080/api as environment variable
  *   - AGENTSPAN_LLM_MODEL=openai/gpt-4o-mini as environment variable
  */
 

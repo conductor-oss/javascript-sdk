@@ -9,7 +9,7 @@
  *
  * Requirements:
  *   - Conductor server with LLM support
- *   - AGENTSPAN_SERVER_URL=http://localhost:8080/api
+ *   - CONDUCTOR_SERVER_URL=http://localhost:8080/api
  *   - conductor-skills installed (https://github.com/conductor-oss/conductor-skills)
  */
 

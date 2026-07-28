@@ -76,7 +76,7 @@ docs/agents/                     # Agent layer documentation
   Framework subdirs (adk/, langgraph/, openai/, vercel-ai/) install their own
   deps (`scripts/install-example-deps.sh`); `examples/agents` is excluded from
   the root tsconfig.
-- `AGENTSPAN_*` env vars (`AGENTSPAN_SERVER_URL`, default
+- `AGENTSPAN_*` env vars (`CONDUCTOR_SERVER_URL`, default
   `http://localhost:8080/api`) are the agent layer's config surface — kept
   working as-is; `CONDUCTOR_*` aliases are a possible follow-up.
 
@@ -96,7 +96,7 @@ npm run test:integration:orkes-v5
 
 # Agent e2e (requires a running agentspan server + LLM keys; CI does this
 # against the pinned release JAR — see .github/workflows/agent-e2e.yml)
-AGENTSPAN_SERVER_URL=http://localhost:8080/api npm run test:agent-e2e
+CONDUCTOR_SERVER_URL=http://localhost:8080/api npm run test:agent-e2e
 ```
 
 ## Post-Change Verification (Required)

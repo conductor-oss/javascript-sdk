@@ -26,7 +26,7 @@
  *
  * Requirements:
  *   - Agentspan server running on http://localhost:8080 (or
- *     AGENTSPAN_SERVER_URL)
+ *     CONDUCTOR_SERVER_URL)
  *   - AGENTSPAN_LLM_MODEL set (default: openai/gpt-4o-mini)
  *
  * Run: npx tsx examples/115-plan-execute-planner-context.ts
@@ -215,7 +215,7 @@ async function main(): Promise<void> {
 
 async function showExecutedSteps(executionId: string): Promise<void> {
   const baseUrl = (
-    process.env.AGENTSPAN_SERVER_URL ?? "http://localhost:8080/api"
+    process.env.CONDUCTOR_SERVER_URL ?? "http://localhost:8080/api"
   )
     .replace(/\/$/, "")
     .replace(/\/api$/, "");

@@ -20,7 +20,7 @@
  *
  * Requirements:
  *   - Agentspan server running on http://localhost:8080 (or
- *     AGENTSPAN_SERVER_URL)
+ *     CONDUCTOR_SERVER_URL)
  *   - AGENTSPAN_LLM_MODEL set (default: openai/gpt-4o-mini)
  *
  * Run: npx tsx examples/108-plan-execute-refs.ts
@@ -151,7 +151,7 @@ async function main() {
 }
 
 async function showPipelineOutputs(executionId: string) {
-  const base = (process.env.AGENTSPAN_SERVER_URL ?? "http://localhost:8080/api")
+  const base = (process.env.CONDUCTOR_SERVER_URL ?? "http://localhost:8080/api")
     .replace(/\/api$/, "")
     .replace(/\/$/, "");
   const parent = (await (await fetch(`${base}/api/workflow/${executionId}?includeTasks=true`)).json()) as {

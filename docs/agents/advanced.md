@@ -6,7 +6,7 @@ Runtime configuration, the control-plane and workflow clients, the deploy/serve/
 
 `new AgentRuntime(configuration?, settings?)` takes two independent, optional arguments:
 
-- `configuration` — connection/auth, the same shape every other Conductor client takes (`OrkesApiConfig`, or a pre-built `ConductorClient` from `createConductorClient()`/`OrkesClients` to share one client — and one token mint — across control-plane and worker-plane calls). Falls back to `CONDUCTOR_SERVER_URL`/`CONDUCTOR_AUTH_KEY`/`CONDUCTOR_AUTH_SECRET`, then `AGENTSPAN_SERVER_URL`/`AGENTSPAN_AUTH_KEY`/`AGENTSPAN_AUTH_SECRET` (agent-layer fallback), then `http://localhost:8080`.
+- `configuration` — connection/auth, the same shape every other Conductor client takes (`OrkesApiConfig`, or a pre-built `ConductorClient` from `createConductorClient()`/`OrkesClients` to share one client — and one token mint — across control-plane and worker-plane calls). Falls back to `CONDUCTOR_SERVER_URL`/`CONDUCTOR_AUTH_KEY`/`CONDUCTOR_AUTH_SECRET`, then `CONDUCTOR_SERVER_URL`/`AGENTSPAN_AUTH_KEY`/`AGENTSPAN_AUTH_SECRET` (agent-layer fallback), then `http://localhost:8080`.
 - `settings` — `AgentConfigOptions`, purely behavioral (no connection fields — those live on `configuration` now). Every field falls back to an env var, then a default; explicit values take precedence.
 
 ```ts

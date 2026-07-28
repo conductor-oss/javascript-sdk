@@ -115,7 +115,7 @@ Export environment variables:
 
 ```bash
 export AGENTSPAN_LLM_MODEL=openai/gpt-4o-mini
-export AGENTSPAN_SERVER_URL=http://localhost:8080/api
+export CONDUCTOR_SERVER_URL=http://localhost:8080/api
 # export AGENTSPAN_AUTH_KEY=<key>     # if authentication is enabled
 # export AGENTSPAN_AUTH_SECRET=<secret>
 ```

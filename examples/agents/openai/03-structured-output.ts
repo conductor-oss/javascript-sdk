@@ -10,7 +10,7 @@
  *   - Model settings (temperature) for deterministic output
  *
  * Requirements:
- *   - AGENTSPAN_SERVER_URL for the Agentspan path
+ *   - CONDUCTOR_SERVER_URL for the Agentspan path
  */
 
 import { Agent, setTracingDisabled } from '@openai/agents';

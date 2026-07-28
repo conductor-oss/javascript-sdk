@@ -117,7 +117,7 @@ const jsonResponse = (body: unknown, status = 200) =>
 describe("AgentRuntime", () => {
   const savedEnv: Record<string, string | undefined> = {};
   const envKeys = [
-    "AGENTSPAN_SERVER_URL",
+    "CONDUCTOR_SERVER_URL",
     "AGENTSPAN_API_KEY",
     "AGENTSPAN_AUTH_KEY",
     "AGENTSPAN_AUTH_SECRET",
@@ -890,7 +890,7 @@ describe("AgentRuntime", () => {
 
 describe("Singleton functions", () => {
   const savedEnv: Record<string, string | undefined> = {};
-  const envKeys = ["AGENTSPAN_SERVER_URL", "AGENTSPAN_API_KEY"];
+  const envKeys = ["CONDUCTOR_SERVER_URL", "AGENTSPAN_API_KEY"];
 
   beforeEach(() => {
     for (const key of envKeys) {

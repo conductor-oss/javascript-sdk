@@ -6,7 +6,7 @@
  *
  * Requirements:
  *   - Agentspan server with LLM support
- *   - AGENTSPAN_SERVER_URL=http://localhost:8080/api as environment variable
+ *   - CONDUCTOR_SERVER_URL=http://localhost:8080/api as environment variable
  *   - AGENTSPAN_LLM_MODEL set as environment variable (optional)
  */
 

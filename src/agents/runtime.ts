@@ -139,7 +139,7 @@ export class AgentRuntime {
    * @param configuration a connection config to build the shared client from,
    *   or an already-built {@link ConductorClient} to reuse (the
    *   `OrkesClients` injection pattern). Env-resolved when omitted
-   *   (`AGENTSPAN_SERVER_URL`/`AGENTSPAN_AUTH_KEY`/`AGENTSPAN_AUTH_SECRET`
+   *   (`CONDUCTOR_SERVER_URL`/`AGENTSPAN_AUTH_KEY`/`AGENTSPAN_AUTH_SECRET`
    *   fallbacks, `localhost:8080` default — spec R3).
    * @param settings behavior knobs only (spec R4) — no connection/auth here.
    */

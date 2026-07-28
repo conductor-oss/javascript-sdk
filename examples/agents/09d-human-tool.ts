@@ -16,7 +16,7 @@
  *   - The LLM using human input to make decisions
  *
  * Requirements:
- *   - AGENTSPAN_SERVER_URL=http://localhost:8080/api
+ *   - CONDUCTOR_SERVER_URL=http://localhost:8080/api
  *   - AGENTSPAN_LLM_MODEL (default: openai/gpt-4o-mini)
  */
 

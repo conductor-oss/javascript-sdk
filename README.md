@@ -556,7 +556,7 @@ const agent = new Agent({
   instructions: "You are a friendly assistant. Keep responses brief.",
 });
 
-const runtime = new AgentRuntime(); // AGENTSPAN_SERVER_URL, default http://localhost:8080/api
+const runtime = new AgentRuntime(); // CONDUCTOR_SERVER_URL, default http://localhost:8080/api
 try {
   const result = await runtime.run(agent, "Hello! What can you do?");
   result.printResult();

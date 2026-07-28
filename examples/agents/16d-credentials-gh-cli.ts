@@ -11,7 +11,7 @@
  *   agentspan credentials set GH_TOKEN <your-gh-token>
  *
  * Requirements:
- *   - Agentspan server running at AGENTSPAN_SERVER_URL
+ *   - Agentspan server running at CONDUCTOR_SERVER_URL
  *   - AGENTSPAN_LLM_MODEL set (or defaults to openai/gpt-4o-mini)
  *   - `gh` CLI installed (https://cli.github.com)
  *   - GH_TOKEN stored via `agentspan credentials set`

@@ -22,7 +22,7 @@ describe("resolveOrkesConfig", () => {
     "CONDUCTOR_PROXY_URL",
     "CONDUCTOR_TLS_INSECURE",
     "CONDUCTOR_DISABLE_HTTP2",
-    "AGENTSPAN_SERVER_URL",
+    "CONDUCTOR_SERVER_URL",
     "AGENTSPAN_AUTH_KEY",
     "AGENTSPAN_AUTH_SECRET",
   ];
@@ -83,21 +83,21 @@ describe("resolveOrkesConfig", () => {
       expect(resolveOrkesConfig({}).serverUrl).toBe("http://localhost:8080");
     });
 
-    it("falls back to AGENTSPAN_SERVER_URL when no CONDUCTOR_SERVER_URL/explicit config (spec R3)", () => {
-      process.env.AGENTSPAN_SERVER_URL = "http://agentspan:9090";
+    it("falls back to CONDUCTOR_SERVER_URL when no CONDUCTOR_SERVER_URL/explicit config (spec R3)", () => {
+      process.env.CONDUCTOR_SERVER_URL = "http://agentspan:9090";
       expect(resolveOrkesConfig({}).serverUrl).toBe("http://agentspan:9090");
     });
 
-    it("explicit config wins over AGENTSPAN_SERVER_URL", () => {
-      process.env.AGENTSPAN_SERVER_URL = "http://agentspan:9090";
+    it("explicit config wins over CONDUCTOR_SERVER_URL", () => {
+      process.env.CONDUCTOR_SERVER_URL = "http://agentspan:9090";
       expect(resolveOrkesConfig({ serverUrl: "http://explicit:1234" }).serverUrl).toBe(
         "http://explicit:1234"
       );
     });
 
-    it("CONDUCTOR_SERVER_URL wins over both explicit config and AGENTSPAN_SERVER_URL", () => {
+    it("CONDUCTOR_SERVER_URL wins over both explicit config and CONDUCTOR_SERVER_URL", () => {
       process.env.CONDUCTOR_SERVER_URL = "http://conductor-env:8080";
-      process.env.AGENTSPAN_SERVER_URL = "http://agentspan:9090";
+      process.env.CONDUCTOR_SERVER_URL = "http://agentspan:9090";
       expect(resolveOrkesConfig({ serverUrl: "http://explicit:1234" }).serverUrl).toBe(
         "http://conductor-env:8080"
       );

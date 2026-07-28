@@ -10,7 +10,7 @@
  *   - Differs from handoffs: manager retains control and synthesizes results
  *
  * Requirements:
- *   - AGENTSPAN_SERVER_URL for the Agentspan path
+ *   - CONDUCTOR_SERVER_URL for the Agentspan path
  */
 
 import { Agent, tool, setTracingDisabled } from '@openai/agents';

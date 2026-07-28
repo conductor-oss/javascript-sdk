@@ -10,7 +10,7 @@
  *   - Running via Agentspan passthrough
  *
  * Requirements:
- *   - AGENTSPAN_SERVER_URL for the Agentspan path
+ *   - CONDUCTOR_SERVER_URL for the Agentspan path
  */
 
 import { Agent, tool, setTracingDisabled } from '@openai/agents';
