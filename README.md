@@ -584,6 +584,7 @@ testing toolkit (`/agents/testing`).
 
 | Document | Description |
 |----------|-------------|
+| [Documentation hub](docs/README.md) | Where to start — agent docs, API reference, and Java/Python parity notes |
 | [SDK Development Guide](SDK_DEVELOPMENT.md) | Architecture, patterns, pitfalls, testing |
 | [Durable AI Agents](docs/agents/README.md) | Agent authoring layer: tools, guardrails, multi-agent, HITL, framework wrappers |
 | [Metrics Reference](METRICS.md) | Legacy and canonical Prometheus metrics with migration guide |
