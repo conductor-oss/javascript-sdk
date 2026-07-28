@@ -8,7 +8,7 @@ import type {
   GuardrailDef,
   FrameworkId,
 } from "./types.js";
-import { AgentspanError, AgentAPIError, WorkerStallError } from "./errors.js";
+import { ConductorAgentError, AgentAPIError, WorkerStallError } from "./errors.js";
 import { LivenessMonitor } from "./liveness.js";
 import { AgentConfig } from "./config.js";
 import type { AgentConfigOptions } from "./config.js";
@@ -1515,7 +1515,7 @@ export class AgentRuntime {
       case "skill":
         return this._serializeSkill(agent as Agent);
       default:
-        throw new AgentspanError(`Unsupported framework: ${frameworkId}`);
+        throw new ConductorAgentError(`Unsupported framework: ${frameworkId}`);
     }
   }
 
