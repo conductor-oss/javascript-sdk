@@ -70,20 +70,31 @@ export const opsBot = new Agent({
 
 // -- Deploy: compile + register on server ------------------------------------
 
-const runtime = new AgentRuntime();
-try {
-  const result = await runtime.run(docAssistant, 'How do I reset my password?');
-  result.printResult();
+async function main() {
+  const runtime = new AgentRuntime();
+  try {
+    const result = await runtime.run(docAssistant, 'How do I reset my password?');
+    result.printResult();
 
-  // Production pattern:
-  // 1. Deploy once during CI/CD (optional -- serve() below also deploys):
-  // await runtime.deploy(docAssistant);
-  // await runtime.deploy(opsBot);
-  // CLI alternative:
-  // agentspan deploy --package sdk/typescript/examples --agents doc_assistant
-  //
-  // 2. In a separate long-lived worker process (deploys + registers workers + starts polling):
-  // await runtime.serve(docAssistant, opsBot);
-} finally {
-  await runtime.shutdown();
+    // Production pattern:
+    // 1. Deploy once during CI/CD (optional -- serve() below also deploys):
+    // await runtime.deploy(docAssistant);
+    // await runtime.deploy(opsBot);
+    // CLI alternative:
+    // agentspan deploy --package sdk/typescript/examples --agents doc_assistant
+    //
+    // 2. In a separate long-lived worker process (deploys + registers workers + starts polling):
+    // await runtime.serve(docAssistant, opsBot);
+  } finally {
+    await runtime.shutdown();
+  }
+}
+
+// Guard: 63c-run-by-name.ts imports docAssistant from this file — only run
+// when executed directly, not on import.
+if (require.main === module) {
+  main().catch((err) => {
+    console.error(err);
+    process.exitCode = 1;
+  });
 }
