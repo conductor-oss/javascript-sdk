@@ -620,7 +620,7 @@ examples/
 - **Self-contained**: Every file imports from `../src/sdk`, connects via `OrkesClients.from()`, and is runnable with `npx ts-node examples/<file>.ts`
 - **Cleanup**: Examples that create resources clean up after themselves in try/finally blocks
 - **Env vars**: All examples read `CONDUCTOR_SERVER_URL` (required) and optionally `CONDUCTOR_AUTH_KEY`/`CONDUCTOR_AUTH_SECRET`
-- **Agent examples**: `examples/agents/` uses `AGENTSPAN_SERVER_URL`/`AGENTSPAN_LLM_MODEL` plus a provider API key — see [examples/agents/README.md](examples/agents/README.md)
+- **Agent examples**: `examples/agents/` uses `CONDUCTOR_AGENT_SERVER_URL`/`CONDUCTOR_AGENT_LLM_MODEL` plus a provider API key — see [examples/agents/README.md](examples/agents/README.md)
 - **Naming**: Kebab-case file names matching Python SDK's snake_case pattern (e.g., `fork-join.ts` ↔ `fork_join_script.py`)
 - **Imports**: Use relative paths from the example file (e.g., `from "../../src/sdk"` for subdirectory examples)
 
