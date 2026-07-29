@@ -12,6 +12,58 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Documentation validation. Deliberately one fast job rather than folded into
+  # the unit-test matrix, where every check would run three times identically.
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate documentation links
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: --offline --no-progress README.md docs
+          fail: true
+
+      - name: Reject retired documentation references
+        run: |
+          # Retired paths and constructs that must not come back.
+          #
+          # Deliberately does NOT reject docs/agents/api-reference.md or
+          # docs/agents/index.md: java-sdk retires those, but we keep
+          # api-reference.md as a redirect stub (as python-sdk does) so inbound
+          # links keep resolving. See docs/documentation-parity.md.
+          if grep -REn 'docs/agents/agent-(runtime-api|client-api|structure|schema)\.md|docs/agents/generated|docs/testing_framework\.md|conductor\.netflix\.com' README.md docs; then
+            echo "Documentation references a retired path or renderer-specific construct."
+            exit 1
+          fi
+
+      - name: Reject pre-rebrand configuration names outside the migration guide
+        run: |
+          # AGENTSPAN_* must not be presented as the way to configure the SDK.
+          # docs/upgrading.md and docs/compatibility.md document the deprecation
+          # itself, and the reference pages name the deprecated export aliases,
+          # so those are allowed to mention them.
+          if grep -REn 'AGENTSPAN_[A-Z]' README.md docs \
+               --exclude=upgrading.md --exclude=compatibility.md; then
+            echo "AGENTSPAN_* appears outside the migration guide."
+            echo "Use CONDUCTOR_AGENT_* — see docs/upgrading.md."
+            exit 1
+          fi
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Verify agent configuration schema
+        run: npm run verify:agent-schema
+
   linter:
     runs-on: ubuntu-latest
     steps:
