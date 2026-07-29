@@ -92,6 +92,7 @@ import {
 } from "../runtime.js";
 import { AgentConfig } from "../config.js";
 import { LivenessMonitor } from "../liveness.js";
+import type { GuardrailDef } from "../types.js";
 import { TokenResource } from "../../open-api/generated";
 
 const mockedGenerateToken = TokenResource.generateToken as jest.MockedFunction<
@@ -882,6 +883,70 @@ describe("AgentRuntime", () => {
       } finally {
         jest.useRealTimers();
       }
+    });
+  });
+
+  describe("_registerGuardrailWorker (custom guardrail on_fail contract)", () => {
+    const baseGDef: GuardrailDef = {
+      name: "fact_checker",
+      position: "output",
+      onFail: "retry",
+      guardrailType: "custom",
+      taskName: "fact_checker",
+      func: undefined,
+    };
+
+    async function registerAndInvoke(
+      gDef: GuardrailDef,
+      inputData: Record<string, unknown>,
+    ): Promise<Record<string, unknown>> {
+      const runtime = new AgentRuntime();
+      let handler: ((inputData: unknown) => Promise<Record<string, unknown>>) | undefined;
+      jest
+        .spyOn((runtime as any).workerManager, "addWorker")
+        .mockImplementation((_taskName: unknown, fn: unknown) => {
+          handler = fn as typeof handler;
+        });
+
+      await (runtime as any)._registerGuardrailWorker(gDef);
+      return handler!(inputData);
+    }
+
+    it("reports on_fail as 'pass' when the guardrail passes, even though onFail is 'retry'", async () => {
+      const result = await registerAndInvoke(
+        { ...baseGDef, func: () => ({ passed: true }) },
+        { content: "clean content" },
+      );
+
+      expect(result).toMatchObject({ passed: true, on_fail: "pass", should_continue: true });
+    });
+
+    it("reports on_fail as the configured value when the guardrail fails", async () => {
+      const result = await registerAndInvoke(
+        { ...baseGDef, func: () => ({ passed: false, message: "Unverifiable claims: always" }) },
+        { content: "This always works." },
+      );
+
+      expect(result).toMatchObject({
+        passed: false,
+        on_fail: "retry",
+        should_continue: false,
+        message: "Unverifiable claims: always",
+      });
+    });
+
+    it("reports on_fail as the configured value when the guardrail function throws", async () => {
+      const result = await registerAndInvoke(
+        {
+          ...baseGDef,
+          func: () => {
+            throw new Error("boom");
+          },
+        },
+        { content: "anything" },
+      );
+
+      expect(result).toMatchObject({ passed: false, on_fail: "retry", should_continue: false });
     });
   });
 });

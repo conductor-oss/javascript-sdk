@@ -56,7 +56,7 @@ const factChecker = guardrail(
   {
     name: 'fact_checker',
     position: 'output',
-    onFail: 'human',
+    onFail: 'retry',
   },
 );
 
