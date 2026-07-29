@@ -87,7 +87,11 @@ jobs:
       - name: Install mcp-testkit
         run: |
           python -m pip install --upgrade pip
-          pip install mcp-testkit
+          # mcp-testkit's own mcp[cli]>=1.0.0 bound is unbounded upward, and
+          # this Python setup is mcp-testkit-only (nothing else here caps mcp
+          # the way google-adk/openai-agents do for python-sdk's e2e install)
+          # -- so pin below mcp 2.0.0's FastMCP -> MCPServer rewrite ourselves.
+          pip install mcp-testkit "mcp<2.0.0"
 
       - name: Start mcp-testkit
         run: |
