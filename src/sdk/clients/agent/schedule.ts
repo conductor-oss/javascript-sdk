@@ -1,6 +1,3 @@
-// Copyright (c) 2026 Conductor
-// Licensed under the MIT License. See LICENSE file in the project root for details.
-
 /**
  * Cron-based scheduling for deployed agents — models, wire-name mapping and
  * typed errors shared by `SchedulerClient`'s agent-lifecycle methods.

@@ -1,6 +1,3 @@
-// Copyright (c) 2026 Conductor
-// Licensed under the MIT License. See LICENSE file in the project root for details.
-
 /**
  * Watches a stateful (domain-routed) agent run for tasks nobody is polling.
  *

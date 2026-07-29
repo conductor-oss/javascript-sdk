@@ -1,6 +1,3 @@
-// Copyright (c) 2026 Conductor
-// Licensed under the MIT License. See LICENSE file in the project root for details.
-
 import { describe, it, expect, jest } from "@jest/globals";
 import * as schedules from "../schedules-api.js";
 import type { AgentRuntime } from "../runtime.js";

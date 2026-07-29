@@ -1,6 +1,3 @@
-// Copyright (c) 2026 Conductor
-// Licensed under the MIT License. See LICENSE file in the project root for details.
-
 /**
  * Thin wrapper over the conductor client's `workflowResource` for workflow
  * reads. Mirrors the Java/C#/Python SDK split where workflow-execution reads
@@ -39,7 +36,7 @@ export interface WorkflowTokenUsage {
 export class WorkflowClient {
   /**
    * @param getClient resolver for the shared Conductor client.
-   * @param fetchAgentExecution optional fallback that reads an Conductor agent
+   * @param fetchAgentExecution optional fallback that reads a Conductor agent
    *   execution (`GET /agent/execution/{id}`). Agent executions are not stored
    *   in Conductor's workflow index, so `getExecutionStatus` 404s for them;
    *   when this fallback is provided, {@link getWorkflow} uses it.

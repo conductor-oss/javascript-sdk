@@ -294,7 +294,7 @@ export class WorkerManager {
   }
 
   /**
-   * Wrap an Conductor handler into a {@link ConductorWorker}.
+   * Wrap a Conductor handler into a {@link ConductorWorker}.
    *
    * Runs the full middleware chain: circuit breaker, ToolContext extraction,
    * credential injection, state capture, error mapping.

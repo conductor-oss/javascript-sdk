@@ -24,7 +24,7 @@ if (!examplePath) {
 
 let captured: [Record<string, unknown>, any[]] | null = null;
 
-// Duck-type check: is this an Conductor native Agent?
+// Duck-type check: is this a Conductor native Agent?
 // Check for properties unique to Agent class (name + tools array + agents array + maxTurns number)
 function isConductorAgent(obj: any): boolean {
   return (

@@ -624,7 +624,7 @@ Yes. Conductor OSS is the continuation of the original [Netflix Conductor](https
 
 Yes. [Orkes](https://orkes.io) is the primary maintainer and offers an enterprise SaaS platform for Conductor across all major cloud providers.
 
-**Can Conductor scale to handle my workload?**
+**Ca Conductor scale to handle my workload?**
 
 Conductor was built at Netflix to handle massive scale and has been battle-tested in production environments processing millions of workflows. It scales horizontally to meet virtually any demand.
 
