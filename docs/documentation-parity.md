@@ -7,19 +7,29 @@ reliability, security, deployment, observability, debugging), and an agent
 doc tree split into `agents/concepts/*`, `agents/reference/*`, and
 `agents/frameworks/*`.
 
-The JS SDK has the same agent-layer *content* — `Agent`, `AgentRuntime`,
-tools, guardrails, handoffs, memory, schedules, streaming, HITL are all
-present and documented — but not yet the same *structure*. This page records
-that gap honestly rather than implying parity that doesn't exist yet.
+The JS SDK's agent doc tree now follows the same structure and, per a
+topic-by-topic content check against Python's `concepts/`/`reference/` files,
+the same content (four small doc-only gaps found and closed: memory usage
+guidance, the agent-schema wire-contract reference, naming the crash-recovery
+pattern, and documenting the automatic SSE-fallback behavior). The
+core/operations guide split (below) remains unplanned structural work — a
+separate, larger content-authoring effort.
 
 | Java documentation capability | Python counterpart | JS current counterpart | Status |
 |---|---|---|---|
 | Server, connection, quickstart, workflows, workers, lifecycle, testing | [Core guides](https://github.com/conductor-oss/python-sdk/blob/main/docs/README.md#build) | Covered informally across root `README.md`, `AGENTS.md`, `SDK_DEVELOPMENT.md` — no dedicated core-guide files | Gap — not yet split into core guides; unplanned structural work |
 | Schema client, schedules/events, reliability, security, deployment, observability, debugging | Operations guides | No equivalent standalone guides; partial coverage in `METRICS.md` (observability) and `LEASE_EXTENSION.md` (reliability) | Gap — same unplanned scope |
-| Agent concepts, runtime, API/client, definition contract | `docs/agents/{README,concepts/*,reference/*}` | `docs/agents/{README,getting-started,advanced,api-reference,writing-agents}.md` — same content, flat structure | Content parity, structural gap |
-| Framework bridges: Google ADK, LangChain4j, LangGraph4j (Java) / Google ADK, LangChain, LangGraph, OpenAI Agents, Claude Agent SDK (Python) | `agents/frameworks/*.md`, one file per bridge | LangChain, LangGraph, and **Vercel AI** (JS/Node-ecosystem-specific — no Java/Python counterpart), documented together in one combined `docs/agents/framework-agents.md` | JS supports a different, smaller framework set (no Google ADK, OpenAI Agents, or Claude Agent SDK bridge) plus one JS-only bridge. For the bridges that do exist: still flat, not per-framework files |
+| Agent concepts, runtime, API/client, definition contract | `docs/agents/{README,concepts/*,reference/*}` | `docs/agents/{README,getting-started,concepts/*,reference/*}` — same structure, content-checked topic by topic | Matches Java/Python. Old flat `advanced.md`/`api-reference.md`/`framework-agents.md`/`writing-agents.md` kept as redirect stubs (same pattern Python itself uses for its own superseded pages) |
+| Framework bridges: Google ADK, LangChain4j, LangGraph4j (Java) / Google ADK, LangChain, LangGraph, OpenAI Agents, Claude Agent SDK (Python) | `agents/frameworks/*.md`, one file per bridge | `docs/agents/frameworks/{google-adk,langchain,langgraph,openai,vercel-ai}.md` | JS supports Google ADK, OpenAI Agents SDK, LangChain, and LangGraph — the same set Python has via detection — plus **Vercel AI** (JS/Node-ecosystem-specific, no Java/Python counterpart). The one real gap: no bridge for a native `@anthropic-ai/claude-agent-sdk` object (Python's `claude-agent-sdk.md`); JS instead has a differently-shaped `ClaudeCode(modelName?, permissionMode?)` model-string passthrough (see [API map](agents/reference/api.md#other-exports)), not an object-detection bridge, so it isn't a like-for-like substitute |
 | Workflow-scoped `FileClient` | Not currently exposed as a public Python client | Also not currently exposed | Matches Python; not a JS-specific gap |
 | Spring / Spring Boot integration | Not applicable (Java-specific) | Not applicable (Node ecosystem) | Matches Python; not applicable |
+
+> **Correction (this pass):** an earlier version of this map claimed JS
+> lacked Google ADK and OpenAI Agents SDK bridges entirely. That was wrong —
+> both are supported via the same duck-typing `detectFramework()` mechanism
+> Python uses its own detection for; `docs/agents/frameworks/google-adk.md`
+> and `openai.md` document them. Verified directly against
+> `src/agents/frameworks/detect.ts`, not just prior doc text.
 
 ## JS-only-by-design pages
 

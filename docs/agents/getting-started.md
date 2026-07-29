@@ -36,7 +36,7 @@ export OPENAI_API_KEY=<YOUR-KEY>
 
 `CONDUCTOR_AUTH_KEY` / `CONDUCTOR_AUTH_SECRET` are minted into a short-lived JWT and sent as the `X-Authorization` header on every server call. The SDK handles that for you — you only set the env vars. The SDK loads a `.env` file automatically (via `dotenv`).
 
-A handful of other env vars tune workers and logging (`CONDUCTOR_AGENT_WORKER_POLL_INTERVAL`, `CONDUCTOR_AGENT_WORKER_THREADS`, `CONDUCTOR_LOG_LEVEL`, ...); see [advanced.md](advanced.md#runtime-configuration).
+A handful of other env vars tune workers and logging (`CONDUCTOR_AGENT_WORKER_POLL_INTERVAL`, `CONDUCTOR_AGENT_WORKER_THREADS`, `CONDUCTOR_LOG_LEVEL`, ...); see the [runtime reference](reference/runtime.md).
 
 ## 3. Run an agent
 
@@ -68,7 +68,7 @@ That is the whole loop: define an `Agent`, create an `AgentRuntime`, `await runt
 
 ## Reading the result
 
-`run()` returns an [`AgentResult`](api-reference.md#agentresult). Common members:
+`run()` returns an [`AgentResult`](reference/api.md#agentresult). Common members:
 
 ```ts
 result.printResult();                  // formatted summary to stdout
@@ -79,10 +79,10 @@ const finish   = result.finishReason;  // 'stop' | 'length' | 'guardrail' | 'rej
 const execId   = result.executionId;   // durable execution id on the server
 ```
 
-`output` is always a `Record`. A plain text answer arrives as `{ result: "..." }`; structured output (see [advanced.md](advanced.md#structured-output)) arrives under `output.result` as an object.
+`output` is always a `Record`. A plain text answer arrives as `{ result: "..." }`; structured output (see [structured output](concepts/structured-output.md)) arrives under `output.result` as an object.
 
 ## Next
 
-- [writing-agents.md](writing-agents.md) — tools, multi-agent orchestration, guardrails, streaming, HITL, schedules.
-- [framework-agents.md](framework-agents.md) — run OpenAI / ADK / LangChain / LangGraph / Vercel AI agents as-is.
-- [advanced.md](advanced.md) — deploy/serve, the control-plane `AgentClient`, structured output, credentials.
+- [Agents](concepts/agents.md), [tools](concepts/tools.md), [multi-agent](concepts/multi-agent.md) — orchestration, guardrails, streaming, HITL, schedules.
+- [Framework bridges](README.md#framework-bridges) — run OpenAI / ADK / LangChain / LangGraph / Vercel AI agents as-is.
+- [Deploy/serve/run/plan](concepts/deploy-serve-run.md) — the control-plane `AgentClient`, structured output, credentials.
