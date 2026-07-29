@@ -1092,13 +1092,14 @@ export class AgentRuntime {
       const content = typeof raw === "object" ? JSON.stringify(raw) : String(raw);
       try {
         const result = await fn(content);
+        const passed = result.passed ?? true;
         return {
-          passed: result.passed ?? true,
+          passed,
           message: result.message ?? "",
-          on_fail: gDef.onFail ?? "raise",
+          on_fail: passed ? "pass" : (gDef.onFail ?? "raise"),
           fixed_output: result.fixedOutput,
           guardrail_name: gDef.name,
-          should_continue: result.passed ?? true,
+          should_continue: passed,
         };
       } catch (err) {
         return {
