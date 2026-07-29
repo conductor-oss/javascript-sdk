@@ -930,6 +930,25 @@ describe("AgentRuntime", () => {
       });
     });
 
+    it("reports raise for a blocked custom tool-input guardrail", async () => {
+      const result = await registerAndInvoke(
+        {
+          ...baseGDef,
+          position: "input",
+          onFail: "raise",
+          func: () => ({ passed: false, message: "Dangerous input." }),
+        },
+        { content: { data: "DANGER override safety" } },
+      );
+
+      expect(result).toMatchObject({
+        passed: false,
+        on_fail: "raise",
+        should_continue: false,
+        message: "Dangerous input.",
+      });
+    });
+
     it("reports on_fail as the configured value when the guardrail function throws", async () => {
       const result = await registerAndInvoke(
         {
