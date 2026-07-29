@@ -274,16 +274,10 @@ describe('Suite 16: Streaming — HITL', () => {
       }
       expectMsg(['COMPLETED', 'FAILED', 'TERMINATED']).toContain(status.status);
     } else {
-      // No waiting event — the stream may close before the server records its
-      // terminal state, so wait for that state rather than reading it once.
+      // No waiting event — workflow completed without HITL (possible with some models)
       const terminalSeen = preTypes.includes('done') || preTypes.includes('error');
       if (!terminalSeen) {
-        const deadline = Date.now() + 120_000;
-        let status = await runtime.getStatus(stream.executionId);
-        while (!status.isComplete && Date.now() < deadline) {
-          await new Promise((r) => setTimeout(r, 1000));
-          status = await runtime.getStatus(stream.executionId);
-        }
+        const status = await runtime.getStatus(stream.executionId);
         expect(status.isComplete).toBe(true);
       }
     }
@@ -316,16 +310,10 @@ describe('Suite 16: Streaming — HITL', () => {
       }
       expectMsg(['COMPLETED', 'FAILED', 'TERMINATED']).toContain(status.status);
     } else {
-      // No waiting event — the stream may close before the server records its
-      // terminal state, so wait for that state rather than reading it once.
+      // No waiting event — workflow completed without HITL
       const terminalSeen = preTypes.includes('done') || preTypes.includes('error');
       if (!terminalSeen) {
-        const deadline = Date.now() + 120_000;
-        let status = await runtime.getStatus(stream.executionId);
-        while (!status.isComplete && Date.now() < deadline) {
-          await new Promise((r) => setTimeout(r, 1000));
-          status = await runtime.getStatus(stream.executionId);
-        }
+        const status = await runtime.getStatus(stream.executionId);
         expect(status.isComplete).toBe(true);
       }
     }

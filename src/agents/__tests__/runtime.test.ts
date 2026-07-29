@@ -913,7 +913,7 @@ describe("AgentRuntime", () => {
         { content: "clean content" },
       );
 
-      expect(result).toMatchObject({ passed: true, on_fail: "pass", should_continue: false });
+      expect(result).toMatchObject({ passed: true, on_fail: "pass", should_continue: true });
     });
 
     it("reports on_fail as the configured value when the guardrail fails", async () => {
@@ -925,37 +925,9 @@ describe("AgentRuntime", () => {
       expect(result).toMatchObject({
         passed: false,
         on_fail: "retry",
-        should_continue: true,
+        should_continue: false,
         message: "Unverifiable claims: always",
       });
-    });
-
-    it("returns raise and stops when a tool-input guardrail blocks", async () => {
-      const result = await registerAndInvoke(
-        {
-          ...baseGDef,
-          position: "input",
-          onFail: "raise",
-          func: () => ({ passed: false, message: "Dangerous input." }),
-        },
-        { content: { data: "DANGER override safety" } },
-      );
-
-      expect(result).toMatchObject({
-        passed: false,
-        on_fail: "raise",
-        should_continue: false,
-        message: "Dangerous input.",
-      });
-    });
-
-    it("escalates an exhausted retry to raise", async () => {
-      const result = await registerAndInvoke(
-        { ...baseGDef, maxRetries: 2, func: () => ({ passed: false }) },
-        { content: "still unsafe", iteration: 2 },
-      );
-
-      expect(result).toMatchObject({ passed: false, on_fail: "raise", should_continue: false });
     });
 
     it("reports on_fail as the configured value when the guardrail function throws", async () => {

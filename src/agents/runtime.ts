@@ -1093,39 +1093,21 @@ export class AgentRuntime {
       try {
         const result = await fn(content);
         const passed = result.passed ?? true;
-        let onFail = gDef.onFail ?? "raise";
-        if (!passed) {
-          const iteration = Number(inputData["iteration"] ?? 0);
-          if (onFail === "retry" && iteration >= (gDef.maxRetries ?? 3)) {
-            onFail = "raise";
-          }
-          if (onFail === "fix" && result.fixedOutput == null) {
-            onFail = "raise";
-          }
-        }
         return {
           passed,
           message: result.message ?? "",
-          on_fail: passed ? "pass" : onFail,
+          on_fail: passed ? "pass" : (gDef.onFail ?? "raise"),
           fixed_output: result.fixedOutput,
           guardrail_name: gDef.name,
-          // The guardrail workflow uses this to decide whether to make another
-          // attempt. A passing check continues the enclosing workflow, but is
-          // not itself a retry; only a failed check resolved to retry is.
-          should_continue: !passed && onFail === "retry",
+          should_continue: passed,
         };
       } catch (err) {
-        let onFail = gDef.onFail ?? "raise";
-        const iteration = Number(inputData["iteration"] ?? 0);
-        if (onFail === "retry" && iteration >= (gDef.maxRetries ?? 3)) {
-          onFail = "raise";
-        }
         return {
           passed: false,
           message: err instanceof Error ? err.message : String(err),
-          on_fail: onFail,
+          on_fail: gDef.onFail ?? "raise",
           guardrail_name: gDef.name,
-          should_continue: onFail === "retry",
+          should_continue: false,
         };
       }
     }, undefined, domain);
