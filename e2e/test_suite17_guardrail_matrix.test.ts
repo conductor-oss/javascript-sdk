@@ -103,9 +103,11 @@ function customAoutFix(content: string): GuardrailResult {
   return { passed: true };
 }
 
-// Tool input: block DANGER
+// Tool input: block the unsafe tool argument emitted by the deterministic test model.
+// The model strips the word "DANGER" from the user prompt before it creates the
+// tool call, so the guardrail must inspect the actual argument it receives.
 function customTinBlock(content: string): GuardrailResult {
-  if (content.toUpperCase().includes("DANGER")) {
+  if (/\bDANGER\b|\boverride safety\b/i.test(content)) {
     return { passed: false, message: "Dangerous input." };
   }
   return { passed: true };
