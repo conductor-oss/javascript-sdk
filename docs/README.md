@@ -1,23 +1,40 @@
-# JS SDK documentation
+# JS/TS SDK documentation
 
-This is a minimal hub, not a full doc index — the JS SDK doesn't yet have the
-core/operations guide split Java and Python have. See
-[documentation-parity.md](documentation-parity.md) for exactly what exists
-today vs. what's tracked as a gap.
+Build durable workflow workers and Conductor agents with JavaScript/
+TypeScript. These guides cover OSS and Orkes; pages call out capabilities
+that require Orkes.
 
-## Agent layer
+## Start here
 
-[docs/agents/README.md](agents/README.md) — `Agent`, `AgentRuntime`, tools,
-guardrails, handoffs, memory, schedules, streaming, and HITL.
+| Goal | Guide | Expected result |
+|---|---|---|
+| Connect to a server | [Server setup](server-setup.md) and [connection/authentication](connection-authentication.md) | The SDK can reach an OSS or Orkes API endpoint. |
+| Build a workflow and worker | [Core quickstart](core-quickstart.md) | The hello-world workflow prints its result. |
+| Build a Conductor agent | [Agent quickstart](agents/getting-started.md) | An LLM-backed agent completes through Conductor. |
 
-## Workers
+## Build
 
-[LEASE_EXTENSION.md](../LEASE_EXTENSION.md) — lease extension (heartbeat) for
-long-running workers.
+- [Workflows](workflows.md), [workflow lifecycle](workflow-lifecycle.md), and [workers](workers.md)
+- [Workflow testing](workflow-testing.md), [schemas](schema-client.md), [schedules/events](schedules-events.md), and the [workflow message queue](workflow-message-queue.md)
+- [Conductor agents](agents/README.md), [tools](agents/concepts/tools.md), and [framework bridges](agents/README.md#framework-bridges)
+- [Recommended examples](examples.md); [examples/README.md](../examples/README.md) is the full catalog.
 
-## Reference and parity
+## Operate
 
-- [docs/api-reference/](api-reference/) — one reference page per client
-  (`application-client.md`, `task-client.md`, `workflow-executor.md`, ...)
-- [JS/Java/Python documentation parity](documentation-parity.md) — intentional
-  JS-only pages and tracked structural gaps against Java/Python
+- [Reliability](reliability.md), [security](security.md), and [deployment/scaling](deployment-scaling.md)
+- [Metrics and logging](observability.md) and [debugging](debugging.md)
+
+## Reference and upgrades
+
+- [Core API map](api-map.md), [compatibility](compatibility.md), and [upgrading](upgrading.md)
+- One reference page per client in [docs/api-reference/](api-reference/) (`application-client.md`, `task-client.md`, `workflow-executor.md`, ...)
+- [Agent runtime](agents/reference/runtime.md), [control plane](agents/reference/client.md), and [agent definition](agents/reference/agent-definition.md)
+- [Lease extension / heartbeat](../LEASE_EXTENSION.md) for long-running workers
+- [Java/Python documentation parity](documentation-parity.md) — intentional JS mappings, JS-only pages, and unsupported Java/Python-only surfaces
+
+## Documentation conventions
+
+Primary guides follow the [documentation standard](documentation-standard.md).
+Provider credentials belong on the Conductor server or its secret provider,
+not in workflow input, example source, or a client-side `.env` committed to
+Git.

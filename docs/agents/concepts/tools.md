@@ -114,7 +114,9 @@ const agent = new Agent({
 `waitForMessageTool` lets a running agent dequeue messages pushed into its
 workflow message queue (Conductor `PULL_WORKFLOW_MESSAGES`). No worker is
 needed — the server handles it. In blocking mode (default) the task stays in
-progress until a message arrives.
+progress until a message arrives. For plain (non-agent) workflows, use the
+`pullWorkflowMessages` task builder instead — see
+[workflow-message-queue.md](../../workflow-message-queue.md).
 
 ```ts
 import { waitForMessageTool } from '@io-orkes/conductor-javascript/agents';

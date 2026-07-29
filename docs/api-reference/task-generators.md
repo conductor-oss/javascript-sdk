@@ -295,6 +295,23 @@ const task = newLoopTask("loop_ref", 5, [
 ]);
 ```
 
+## Pull Workflow Messages Task
+
+_System Task_ - Dequeues messages from the workflow's message queue (WMQ).
+Stays `IN_PROGRESS` while the queue is empty; see
+[workflow-message-queue.md](../workflow-message-queue.md) for the server
+requirement and an agent-facing alternative.
+
+```typescript
+import { pullWorkflowMessages } from "@io-orkes/conductor-javascript";
+
+const task = pullWorkflowMessages(
+  "pull_ref", // taskReferenceName (required)
+  5, // batchSize (optional): max messages per execution, default 1
+  false // optional (optional): if true, workflow continues on failure
+);
+```
+
 ## Workflow Generator
 
 Helper function to create workflow definitions.
