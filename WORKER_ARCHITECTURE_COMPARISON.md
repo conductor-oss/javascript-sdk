@@ -545,7 +545,7 @@ handler = TaskHandler(
 
 ### JavaScript: Built-in MetricsCollector
 
-The JavaScript SDK provides `createMetricsCollector()` which returns a legacy or canonical collector based on `WORKER_CANONICAL_METRICS`. See [METRICS.md](METRICS.md) for the full catalog.
+The JavaScript SDK provides `createMetricsCollector()` which returns a legacy or canonical collector based on `WORKER_CANONICAL_METRICS`. See [docs/observability.md](docs/observability.md) for the full catalog.
 
 ```typescript
 import { createMetricsCollector, MetricsServer, TaskHandler } from "@io-orkes/conductor-javascript";

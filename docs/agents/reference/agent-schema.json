@@ -1,0 +1,208 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/conductor-oss/javascript-sdk/docs/agents/reference/agent-schema.json",
+  "title": "Conductor agent configuration",
+  "description": "The serialized agent configuration the JavaScript SDK sends to the Conductor server. Produced by AgentConfigSerializer from an Agent (or a detected framework agent), and consumed by the server's agent compiler. The wire shape is shared with the Python and Java SDKs.",
+  "type": "object",
+  "required": ["name"],
+  "additionalProperties": true,
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "^[a-zA-Z][a-zA-Z0-9_-]*$",
+      "description": "Agent name. Becomes the workflow definition name on the server."
+    },
+    "model": {
+      "type": "string",
+      "description": "Provider-qualified model, e.g. 'openai/gpt-4o-mini'."
+    },
+    "baseUrl": {
+      "type": "string",
+      "description": "Override for the LLM provider base URL."
+    },
+    "instructions": {
+      "description": "System prompt. A callable is evaluated to a string at serialization time; a PromptTemplate serializes to a server-managed reference.",
+      "oneOf": [
+        { "type": "string" },
+        {
+          "type": "object",
+          "required": ["name"],
+          "properties": {
+            "name": { "type": "string" },
+            "variables": { "type": "object" },
+            "version": { "type": "integer" }
+          }
+        }
+      ]
+    },
+    "introduction": { "type": "string" },
+    "temperature": { "type": "number" },
+    "maxTokens": { "type": "integer", "minimum": 1 },
+    "maxTurns": { "type": "integer", "minimum": 1, "description": "Default 25." },
+    "timeoutSeconds": { "type": "integer", "minimum": 0, "description": "0 means the server default." },
+    "stateful": {
+      "type": "boolean",
+      "description": "Isolate tool workers per execution via a domain UUID and share mutable state across tool calls."
+    },
+    "credentials": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Secret names the server resolves at poll time and delivers wire-only on the task's runtimeMetadata."
+    },
+    "outputType": {
+      "type": "object",
+      "description": "JSON Schema for structured output. A Zod schema is converted before serialization."
+    },
+    "strategy": {
+      "type": "string",
+      "enum": [
+        "sequential",
+        "parallel",
+        "handoff",
+        "router",
+        "round_robin",
+        "random",
+        "swarm",
+        "manual",
+        "plan_execute"
+      ]
+    },
+    "agents": {
+      "type": "array",
+      "items": { "$ref": "#" },
+      "description": "Sub-agents. Each runs as its own sub-workflow."
+    },
+    "router": {
+      "description": "Required when strategy is 'router'. An agent config, or the name of one.",
+      "oneOf": [{ "type": "string" }, { "$ref": "#" }]
+    },
+    "planner": {
+      "$ref": "#",
+      "description": "Required when strategy is 'plan_execute'."
+    },
+    "fallback": {
+      "$ref": "#",
+      "description": "Optional agentic fallback when a plan cannot compile or run."
+    },
+    "plannerContext": {
+      "type": "array",
+      "description": "Reference material for the planner. Strings, or Context objects whose URLs are fetched at runtime."
+    },
+    "enablePlanning": { "type": "boolean" },
+    "allowedTransitions": {
+      "type": "object",
+      "additionalProperties": { "type": "array", "items": { "type": "string" } }
+    },
+    "tools": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/tool" }
+    },
+    "guardrails": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/guardrail" }
+    },
+    "handoffs": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/handoff" }
+    },
+    "termination": {
+      "type": "object",
+      "description": "Termination condition tree. Composites carry nested conditions.",
+      "additionalProperties": true
+    },
+    "gate": { "type": "object", "additionalProperties": true },
+    "callbacks": {
+      "type": "array",
+      "description": "Registered callback worker references, one per implemented hook.",
+      "items": { "type": ["object", "string"] }
+    },
+    "memory": { "type": "object", "additionalProperties": true },
+    "metadata": { "type": "object", "additionalProperties": true },
+    "prefillTools": { "type": "array" },
+    "cliCommands": { "type": "array", "items": { "type": "string" } },
+    "cliAllowedCommands": { "type": "array", "items": { "type": "string" } },
+    "cliConfig": { "type": "object", "additionalProperties": true },
+    "codeExecutionConfig": { "type": "object", "additionalProperties": true },
+    "_framework": {
+      "type": "string",
+      "description": "Set when the agent was serialized from a detected framework object rather than a native Agent.",
+      "enum": ["openai", "google_adk", "langchain", "langgraph", "vercel-ai", "skill"]
+    }
+  },
+  "definitions": {
+    "tool": {
+      "type": "object",
+      "required": ["name", "toolType"],
+      "additionalProperties": true,
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "toolType": {
+          "type": "string",
+          "enum": [
+            "worker",
+            "http",
+            "mcp",
+            "api",
+            "agent_tool",
+            "human",
+            "generate_image",
+            "generate_audio",
+            "generate_video",
+            "generate_pdf",
+            "pull_workflow_messages",
+            "rag_search",
+            "rag_index"
+          ]
+        },
+        "inputSchema": { "type": "object" },
+        "outputSchema": { "type": "object" },
+        "approvalRequired": {
+          "type": "boolean",
+          "description": "Gate the tool behind a HUMAN task. One verdict covers the whole pending batch."
+        },
+        "timeoutSeconds": { "type": "integer", "minimum": 0 },
+        "external": { "type": "boolean" },
+        "credentials": { "type": "array", "items": { "type": "string" } },
+        "guardrails": { "type": "array", "items": { "$ref": "#/definitions/guardrail" } },
+        "maxCalls": { "type": "integer", "minimum": 1 },
+        "retryCount": { "type": "integer", "minimum": 0 },
+        "retryDelaySeconds": { "type": "integer", "minimum": 0 },
+        "retryPolicy": { "type": "string" },
+        "config": {
+          "type": "object",
+          "description": "Tool-type-specific settings, e.g. url and headers for an http tool.",
+          "additionalProperties": true
+        }
+      }
+    },
+    "guardrail": {
+      "type": "object",
+      "required": ["name"],
+      "additionalProperties": true,
+      "properties": {
+        "name": { "type": "string" },
+        "position": { "type": "string", "enum": ["input", "output"] },
+        "onFail": { "type": "string", "enum": ["raise", "retry", "fix", "human"] },
+        "maxRetries": { "type": "integer", "minimum": 0 },
+        "message": { "type": "string" },
+        "patterns": { "type": "array", "items": { "type": "string" } },
+        "mode": { "type": "string", "enum": ["block", "allow"] },
+        "model": { "type": "string" },
+        "policy": { "type": "string" }
+      }
+    },
+    "handoff": {
+      "type": "object",
+      "required": ["target"],
+      "additionalProperties": true,
+      "properties": {
+        "target": { "type": "string", "description": "Name of the sub-agent to hand off to." },
+        "text": { "type": "string" },
+        "caseSensitive": { "type": "boolean" },
+        "toolName": { "type": "string" },
+        "resultContains": { "type": "string" }
+      }
+    }
+  }
+}

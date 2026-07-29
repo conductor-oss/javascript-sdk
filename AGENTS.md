@@ -270,13 +270,22 @@ public async someMethod(args): Promise<T> {
 
 ## Documentation Maintenance
 
-### Metrics Documentation (METRICS.md)
+### Metrics Documentation (docs/observability.md)
 
 When adding, removing, or renaming metrics in `src/sdk/worker/metrics/`:
 1. Update both `LegacyMetricsCollector.ts` and `CanonicalMetricsCollector.ts` (or add a no-op stub in the collector that does not emit the metric)
 2. Ensure `toPrometheusText()` and the corresponding `PrometheusRegistry` / `CanonicalPrometheusRegistry` are updated in sync — missing a metric in either causes silent data loss
-3. Update `METRICS.md` to reflect the change in both the legacy and canonical catalog tables
+3. Update `docs/observability.md` to reflect the change in both the legacy and canonical catalog tables (the "Metric reference" section). Root `METRICS.md` is now a redirect stub — don't add content there.
 4. Add or update the corresponding direct recording method documentation if applicable
+
+### Documentation structure
+
+Docs follow the canonical layout shared with the Java and Python SDKs:
+`docs/*.md` plus `docs/agents/{concepts,frameworks,reference}/`. See
+`docs/documentation-standard.md` for the page shape and terminology, and
+`docs/documentation-parity.md` for the cross-SDK mapping and CI checks.
+`docs/agents/*.md` and `docs/api-reference/*.md` are redirect stubs kept for
+inbound links — don't add content to them, and don't delete them.
 
 ### SDK_NEW_LANGUAGE_GUIDE.md
 

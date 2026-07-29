@@ -847,7 +847,7 @@ Implements `TaskRunnerEventsListener`. Records 18 metric types.
 
 **File output:** When writing metrics to a file periodically, perform an immediate first write on initialization (before the first interval fires), then use a periodic timer for subsequent writes. This avoids a startup delay where the metrics file is empty.
 
-**Documentation:** Each SDK should maintain a `METRICS.md` file documenting all metrics with their Prometheus names, types, labels, and descriptions. See the TypeScript SDK's [METRICS.md](./METRICS.md) for the reference format.
+**Documentation:** Each SDK should maintain a `METRICS.md` file documenting all metrics with their Prometheus names, types, labels, and descriptions. See the TypeScript SDK's [docs/observability.md](./docs/observability.md) for the reference format.
 
 #### 5.7 Worker Configuration via Environment Variables
 
@@ -1604,7 +1604,7 @@ afterAll:
 | Document | Purpose |
 |----------|---------|
 | `README.md` | Quick start, installation, basic usage examples |
-| `METRICS.md` | All Prometheus metrics with names, types, labels, and descriptions |
+| `docs/observability.md` | All Prometheus metrics with names, types, labels, and descriptions |
 | `CHANGELOG.md` | Version history with breaking changes highlighted |
 | API reference | Auto-generated from source (TypeDoc, Sphinx, Javadoc, etc.) |
 

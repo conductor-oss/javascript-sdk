@@ -274,7 +274,7 @@ Returns `undefined` outside task execution. All 16 methods: `getTaskId()`, `getW
 
 ### 7. Metrics
 
-`createMetricsCollector()` reads `WORKER_CANONICAL_METRICS` and returns a legacy or canonical collector. See [METRICS.md](METRICS.md) for the full catalog and migration guide.
+`createMetricsCollector()` reads `WORKER_CANONICAL_METRICS` and returns a legacy or canonical collector. See [docs/observability.md](docs/observability.md) for the full catalog and migration guide.
 
 ```typescript
 const metrics = createMetricsCollector();
@@ -688,7 +688,7 @@ Node 18+ required. Dual ESM/CJS via `tsup` with `exports` field in `package.json
 | Workflow DSL | `ConductorWorkflow` | `ConductorWorkflow` | Fluent builder |
 | Worker decorator | `@worker_task` | `@worker` | TS decorator syntax |
 | Task context | `get_task_context()` | `getTaskContext()` | AsyncLocalStorage vs contextvars |
-| Metrics | `MetricsCollector` | `createMetricsCollector()` | Legacy + canonical modes, see [METRICS.md](METRICS.md) |
+| Metrics | `MetricsCollector` | `createMetricsCollector()` | Legacy + canonical modes, see [docs/observability.md](docs/observability.md) |
 | Metrics server | HTTP endpoint | `MetricsServer` | `/metrics` + `/health` |
 | Non-retryable | `NonRetryableError` | `NonRetryableException` | `FAILED_WITH_TERMINAL_ERROR` |
 | LLM builders | 13 builders | 13 builders | Full parity |

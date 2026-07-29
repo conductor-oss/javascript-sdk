@@ -406,7 +406,7 @@ await handler.startWorkers();
 // GET http://localhost:9090/health  — {"status":"UP"}
 ```
 
-The SDK has two metric surfaces: **legacy** (default, prefixed `conductor_worker_` names, Summary type) and **canonical** (opt-in via `WORKER_CANONICAL_METRICS=true`, unprefixed names, Histogram type). See [METRICS.md](METRICS.md) for the full reference.
+The SDK has two metric surfaces: **legacy** (default, prefixed `conductor_worker_` names, Summary type) and **canonical** (opt-in via `WORKER_CANONICAL_METRICS=true`, unprefixed names, Histogram type). See [docs/observability.md](docs/observability.md) for the full reference.
 
 ## Managing Workflow Executions
 
@@ -584,23 +584,28 @@ testing toolkit (`/agents/testing`).
 
 | Document | Description |
 |----------|-------------|
-| [SDK Development Guide](SDK_DEVELOPMENT.md) | Architecture, patterns, pitfalls, testing |
+**Start at [docs/README.md](docs/README.md)** — the full documentation index.
+
+| Document | Description |
+|----------|-------------|
+| [Documentation index](docs/README.md) | Everything below, organized by goal |
+| [Core quickstart](docs/core-quickstart.md) | First workflow, first worker, first execution |
+| [Connection & authentication](docs/connection-authentication.md) | Env vars, key/secret auth, TLS, proxies, precedence |
+| [Workflows](docs/workflows.md) | `ConductorWorkflow` DSL, task builders, control flow |
+| [Workflow lifecycle](docs/workflow-lifecycle.md) | Start, pause, resume, terminate, retry, search, signal |
+| [Workers](docs/workers.md) | `@worker`, `TaskHandler`, concurrency, failure semantics |
+| [Reliability](docs/reliability.md) | Lease extension, retries, idempotency |
+| [Observability](docs/observability.md) | Legacy and canonical Prometheus metrics with migration guide |
+| [Schedules & events](docs/schedules-events.md) | CRON schedules, event handlers |
+| [Schemas](docs/schema-client.md) | JSON schema registration and enforcement |
+| [Security](docs/security.md) | Credentials, secrets, untrusted input, code execution |
+| [Debugging](docs/debugging.md) | Stuck workflows, failed tasks, silent workers |
+| [Deployment & scaling](docs/deployment-scaling.md) | Concurrency, domains, containers |
+| [API map](docs/api-map.md) | Which of the 16 clients owns which operation |
 | [Durable AI Agents](docs/agents/README.md) | Agent authoring layer: tools, guardrails, multi-agent, HITL, framework wrappers |
-| [Metrics Reference](METRICS.md) | Legacy and canonical Prometheus metrics with migration guide |
-| [Breaking Changes](BREAKING_CHANGES.md) | v3.x migration guide |
-| [Workflow Management](docs/api-reference/workflow-executor.md) | Start, pause, resume, terminate, retry, search, signal |
-| [Task Management](docs/api-reference/task-client.md) | Task operations, logs, queue management |
-| [Metadata](docs/api-reference/metadata-client.md) | Task & workflow definitions, tags, rate limits |
-| [Scheduling](docs/api-reference/scheduler-client.md) | Workflow scheduling with CRON expressions |
-| [Authorization](docs/api-reference/authorization-client.md) | Users, groups, permissions |
-| [Applications](docs/api-reference/application-client.md) | Application management, access keys, roles |
-| [Events](docs/api-reference/event-client.md) | Event handlers, event-driven workflows |
-| [Human Tasks](docs/api-reference/human-executor.md) | Human-in-the-loop workflows, form templates |
-| [Service Registry](docs/api-reference/service-registry-client.md) | Service discovery, circuit breakers |
-| [Secrets](docs/api-reference/secret-client.md) | Secret storage and management |
-| [Prompts](docs/api-reference/prompt-client.md) | AI/LLM prompt templates |
-| [Integrations](docs/api-reference/integration-client.md) | AI/LLM provider integrations |
-| [Schemas](docs/api-reference/schema-client.md) | JSON/Avro/Protobuf schema management |
+| [SDK Development Guide](SDK_DEVELOPMENT.md) | Architecture, patterns, pitfalls, testing |
+| [Upgrading](docs/upgrading.md) | Migration guide, including the Agentspan → Conductor rename |
+| [Breaking Changes](BREAKING_CHANGES.md) | Per-change impact tables |
 
 ## Support
 

@@ -580,7 +580,7 @@ Features:
 
 #### Metrics / Observability
 
-Both SDKs support legacy and canonical metric surfaces via `WORKER_CANONICAL_METRICS`. See [METRICS.md](METRICS.md) for the JavaScript SDK catalog.
+Both SDKs support legacy and canonical metric surfaces via `WORKER_CANONICAL_METRICS`. See [docs/observability.md](docs/observability.md) for the JavaScript SDK catalog.
 
 | # | Feature | Python | JavaScript | Status |
 |---|---------|--------|-----------|--------|
