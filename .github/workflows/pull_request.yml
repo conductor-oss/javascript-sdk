@@ -38,6 +38,21 @@ jobs:
             exit 1
           fi
 
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm ci
+
+      # docs/agents/reference/agent-schema.json documents the wire shape the
+      # server's agent compiler consumes, and is shared with the Python and Java
+      # SDKs. Without this, it can drift from AgentConfigSerializer silently.
+      - name: Verify agent configuration schema
+        run: npm run verify:agent-schema
+
   linter:
     runs-on: ubuntu-latest
     steps:
