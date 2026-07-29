@@ -30,8 +30,14 @@ export class DefaultLogger implements ConductorLogger {
   constructor(config: DefaultLoggerConfig = {}) {
     const {level, tags = []} = config
     this.tags = tags
+    // AGENTSPAN_LOG_LEVEL is the deprecated spelling of CONDUCTOR_LOG_LEVEL.
+    // Unlike the other renamed vars this one falls back silently: warning here
+    // would mean logging through the very logger whose level is still being
+    // resolved.
     const resolvedLevel =
-      level ?? (process.env.CONDUCTOR_LOG_LEVEL as ConductorLogLevel | undefined)
+      level ??
+      (process.env.CONDUCTOR_LOG_LEVEL as ConductorLogLevel | undefined) ??
+      (process.env.AGENTSPAN_LOG_LEVEL as ConductorLogLevel | undefined)
     if (resolvedLevel && resolvedLevel in LOG_LEVELS) {
       this.level = LOG_LEVELS[resolvedLevel]
     } else {

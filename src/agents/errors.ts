@@ -10,6 +10,28 @@ export class ConductorAgentError extends Error {
 }
 
 /**
+ * Previous name for {@link ConductorAgentError}.
+ *
+ * A direct alias rather than a subclass, so `instanceof` keeps working in both
+ * directions for code written against either name.
+ *
+ * @deprecated Renamed to `ConductorAgentError` when Agentspan became
+ * Conductor. Will be removed in a future release.
+ */
+export const AgentspanError = ConductorAgentError;
+
+/**
+ * Previous name for {@link ConductorAgentError}, as a type.
+ *
+ * Declared alongside the value alias so both `instanceof AgentspanError` and
+ * `const e: AgentspanError` keep compiling.
+ *
+ * @deprecated Renamed to `ConductorAgentError` when Agentspan became
+ * Conductor. Will be removed in a future release.
+ */
+export type AgentspanError = ConductorAgentError;
+
+/**
  * HTTP API error with status code and response body.
  *
  * The message includes a snippet of the response body so test failures

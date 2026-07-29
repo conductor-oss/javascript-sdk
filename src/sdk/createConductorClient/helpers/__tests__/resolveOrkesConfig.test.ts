@@ -22,6 +22,9 @@ describe("resolveOrkesConfig", () => {
     "CONDUCTOR_PROXY_URL",
     "CONDUCTOR_TLS_INSECURE",
     "CONDUCTOR_DISABLE_HTTP2",
+    "AGENTSPAN_SERVER_URL",
+    "AGENTSPAN_AUTH_KEY",
+    "AGENTSPAN_AUTH_SECRET",
   ];
 
   beforeEach(() => {
@@ -319,5 +322,39 @@ describe("resolveOrkesConfig", () => {
       expect(resolveOrkesConfig({ disableHttp2: false }).disableHttp2).toBe(true);
     });
   });
+
+  describe("deprecated AGENTSPAN_* connection variables", () => {
+    it("falls back to AGENTSPAN_SERVER_URL when nothing else is set", () => {
+      process.env.AGENTSPAN_SERVER_URL = "http://legacy-host:9090";
+      expect(resolveOrkesConfig({}).serverUrl).toBe("http://legacy-host:9090");
+    });
+
+    it("CONDUCTOR_SERVER_URL wins over the deprecated name", () => {
+      process.env.CONDUCTOR_SERVER_URL = "http://canonical:8080";
+      process.env.AGENTSPAN_SERVER_URL = "http://legacy-host:9090";
+      expect(resolveOrkesConfig({}).serverUrl).toBe("http://canonical:8080");
+    });
+
+    it("explicit config wins over the deprecated name", () => {
+      process.env.AGENTSPAN_SERVER_URL = "http://legacy-host:9090";
+      expect(resolveOrkesConfig({ serverUrl: "http://explicit:1234" }).serverUrl).toBe(
+        "http://explicit:1234"
+      );
+    });
+
+    it("falls back to AGENTSPAN_AUTH_KEY/SECRET", () => {
+      process.env.AGENTSPAN_AUTH_KEY = "legacy-key";
+      process.env.AGENTSPAN_AUTH_SECRET = "legacy-secret";
+      const result = resolveOrkesConfig({});
+      expect(result.keyId).toBe("legacy-key");
+      expect(result.keySecret).toBe("legacy-secret");
+    });
+
+    it("treats an empty deprecated value as unset", () => {
+      process.env.AGENTSPAN_SERVER_URL = "";
+      expect(resolveOrkesConfig({}).serverUrl).toBe("http://localhost:8080");
+    });
+  });
+
 });
 

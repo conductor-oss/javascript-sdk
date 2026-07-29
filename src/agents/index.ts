@@ -43,6 +43,8 @@ export {
   TerminalToolError,
   GuardrailFailedError,
   WorkerStallError,
+  // Deprecated: previous name for ConductorAgentError. Removed in a future release.
+  AgentspanError,
 } from "./errors.js";
 
 // ── Config ───────────────────────────────────────────────

@@ -37,9 +37,38 @@ export function expectMsg(actual: unknown, message?: string): ReturnType<typeof 
   }) as ReturnType<typeof expect>;
 }
 
-const SERVER_URL = process.env.CONDUCTOR_SERVER_URL ?? 'http://localhost:8080/api';
+/**
+ * Read an env var, falling back to its deprecated `AGENTSPAN_*` spelling and
+ * warning once.
+ *
+ * This suite ships as a standalone release bundle consumed by downstream repos
+ * (see scripts/package-e2e-bundle.sh), so the harness needs its own fallback:
+ * the SDK-level alias in resolveOrkesConfig only covers vars the SDK reads, not
+ * the ones this file reads directly. Without it, every downstream consumer
+ * already exporting AGENTSPAN_SERVER_URL silently falls through to localhost.
+ */
+const warnedLegacyEnv = new Set<string>();
+function envWithLegacy(canonical: string, legacy: string): string | undefined {
+  const current = process.env[canonical];
+  if (current !== undefined && current !== '') return current;
+
+  const legacyValue = process.env[legacy];
+  if (legacyValue === undefined || legacyValue === '') return undefined;
+
+  if (!warnedLegacyEnv.has(legacy)) {
+    warnedLegacyEnv.add(legacy);
+    console.warn(
+      `[conductor] ${legacy} is deprecated and will be removed in a future release. Use ${canonical} instead.`,
+    );
+  }
+  return legacyValue;
+}
+
+const SERVER_URL =
+  envWithLegacy('CONDUCTOR_SERVER_URL', 'AGENTSPAN_SERVER_URL') ?? 'http://localhost:8080/api';
 const BASE_URL = SERVER_URL.replace(/\/api$/, '');
-export const MODEL = process.env.CONDUCTOR_AGENT_LLM_MODEL ?? 'openai/gpt-4o-mini';
+export const MODEL =
+  envWithLegacy('CONDUCTOR_AGENT_LLM_MODEL', 'AGENTSPAN_LLM_MODEL') ?? 'openai/gpt-4o-mini';
 export const MCP_TESTKIT_URL = process.env.MCP_TESTKIT_URL ?? 'http://localhost:3001';
 export const TIMEOUT = 300_000; // 5 min per run — CI runners are slower
 
