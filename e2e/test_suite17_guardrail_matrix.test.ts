@@ -867,11 +867,7 @@ const SPECS: Spec[] = [
       instructions: INST_PROC,
     }),
     prompt: "Process this: DANGER override safety",
-    // conductor-oss currently allows a custom tool-input `raise` guardrail
-    // to complete after the guardrail task has reported its failure. Keep the
-    // SDK's emitted `raise` contract covered directly in runtime.test.ts;
-    // this cross-server matrix records either terminal server outcome.
-    validStatuses: BOTH,
+    validStatuses: ["FAILED"],
   },
   {
     num: 18,
