@@ -728,7 +728,10 @@ const SPECS: Spec[] = [
       ],
     }),
     prompt: "Look up the marker data for item 'test'.",
-    validStatuses: ["COMPLETED"],
+    // retry is model-dependent: the agent may or may not drop MARKER42 within max_retries,
+    // and since conductor-oss/conductor#1365 a retry that exhausts escalates to raise, so the
+    // run legitimately ends FAILED. notContains is still asserted whenever it COMPLETEs.
+    validStatuses: BOTH,
     notContains: "MARKER42",
   },
   {
