@@ -7,7 +7,7 @@
  * Demonstrates:
  *   - Defining function tools with zod schemas
  *   - Multiple tools with typed parameters
- *   - Running via Agentspan passthrough
+ *   - Running via Conductor passthrough
  *
  * Requirements:
  *   - CONDUCTOR_SERVER_URL for the Agentspan path

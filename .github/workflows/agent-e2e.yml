@@ -4,7 +4,7 @@ name: Agent E2E
 # (Maven Central — it has no GitHub release assets), which ships the
 # /agent/* control plane + TaskDef.runtimeMetadata persistence (conductor-oss
 # PR #1255) and the agent runtime on by default from 3.32.0-rc.8 onward.
-# The Agentspan server JAR is no longer used as a server flavor here.
+# The Conductor server JAR is no longer used as a server flavor here.
 # Port of the Python SDK's proven agent-e2e workflow; JS deltas only
 # (Node toolchain, jest runner; Python kept solely for mcp-testkit).
 #

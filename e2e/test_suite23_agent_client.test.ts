@@ -26,7 +26,7 @@ describe('Suite 23: AgentClient / WorkflowClient', () => {
   // hard when the server is down (the CI workflow health-gates before tests).
   beforeAll(async () => {
     if (!(await checkServerHealth())) {
-      throw new Error('agentspan server is not healthy — these e2e suites need a running server');
+      throw new Error('conductor server is not healthy — these e2e suites need a running server');
     }
   });
   const client = new OrkesAgentClient();

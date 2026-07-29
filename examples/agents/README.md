@@ -23,7 +23,7 @@ In production, the three concerns are separated:
 ```
 ┌──────────────────────────────────────────────────────────────┐
 │  1. DEPLOY (once, during CI/CD)                              │
-│     Registers the agent definition with the Agentspan server │
+│     Registers the agent definition with the Conductor server │
 │                                                              │
 │     await runtime.deploy(agent);                             │
 │     // or CLI: agentspan deploy --package my-agents          │

@@ -19,7 +19,7 @@
  * required — because we pass `plan` directly to `runtime.run`.
  *
  * Requirements:
- *   - Agentspan server running on http://localhost:8080 (or
+ *   - Conductor server running on http://localhost:8080 (or
  *     CONDUCTOR_SERVER_URL)
  *   - CONDUCTOR_AGENT_LLM_MODEL set (default: openai/gpt-4o-mini)
  *

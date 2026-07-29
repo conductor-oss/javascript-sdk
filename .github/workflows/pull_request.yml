@@ -31,9 +31,9 @@ jobs:
           #
           # Excluded inline: the `_agentspan` internal serializer markers,
           # the external `agentspan` CLI binary name, and the historical
-          # "agentspan server > 0.4.2" version reference.
+          # "conductor server > 0.4.2" version reference.
           if grep -rIn -iE 'agent[s]pan' README.md AGENTS.md docs/ cli-bin/ \
-               | grep -viE '_agentspan|agentspan CLI helper scripts|agentspan server > 0\.4\.2'; then
+               | grep -viE '_agentspan|agentspan CLI helper scripts|conductor server > 0\.4\.2'; then
             echo "Outdated product branding found — use Conductor terminology."
             exit 1
           fi

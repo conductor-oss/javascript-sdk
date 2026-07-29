@@ -3,7 +3,7 @@
  *
  * Demonstrates:
  *   - Defining an agent using Google's Agent Development Kit (ADK)
- *   - Running via Agentspan passthrough
+ *   - Running via Conductor passthrough
  *   - The runtime serializes the ADK agent and the server normalizes it
  *
  * Requirements:

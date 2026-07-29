@@ -7,7 +7,7 @@
  * Demonstrates:
  *   - Input guardrails that validate user messages before processing
  *   - Output guardrails that validate agent responses
- *   - Running via Agentspan passthrough
+ *   - Running via Conductor passthrough
  *
  * Requirements:
  *   - CONDUCTOR_SERVER_URL for the Agentspan path

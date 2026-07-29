@@ -6,7 +6,7 @@
  *
  * Demonstrates:
  *   - Defining an agent using the real @openai/agents SDK
- *   - Running it via Agentspan passthrough (AgentRuntime)
+ *   - Running it via Conductor passthrough (AgentRuntime)
  *
  * Requirements:
  *   - CONDUCTOR_SERVER_URL for the Agentspan path

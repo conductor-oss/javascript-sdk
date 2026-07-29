@@ -6,7 +6,7 @@
  *
  * Demonstrates:
  *   - An OpenAI agent with tools
- *   - Running via Agentspan passthrough
+ *   - Running via Conductor passthrough
  *
  * Requirements:
  *   - CONDUCTOR_SERVER_URL for the Agentspan path
