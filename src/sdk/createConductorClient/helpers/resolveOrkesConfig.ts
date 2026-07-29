@@ -24,29 +24,16 @@ const parseEnvBoolean = (value: string | undefined): boolean | undefined => {
 export const resolveOrkesConfig = (config?: Partial<OrkesApiConfig>) => {
   const logger = config?.logger ?? new DefaultLogger();
 
-  // R3: CONDUCTOR_* env -> explicit config -> AGENTSPAN_* env (agent-layer
-  // fallback) -> localhost:8080 default.
+  // CONDUCTOR_* env -> explicit config -> localhost:8080 default. No
+  // other env var names are read.
   let serverUrl =
-    process.env.CONDUCTOR_SERVER_URL ||
-    config?.serverUrl ||
-    process.env.AGENTSPAN_SERVER_URL ||
-    "http://localhost:8080";
+    process.env.CONDUCTOR_SERVER_URL || config?.serverUrl || "http://localhost:8080";
   if (serverUrl.endsWith("/")) serverUrl = serverUrl.slice(0, -1);
   if (serverUrl.endsWith("/api")) serverUrl = serverUrl.slice(0, -4);
 
   // Trim to avoid "Invalid Access Key" from trailing newlines when pasting into GitHub Secrets or .env
-  const keyId = (
-    process.env.CONDUCTOR_AUTH_KEY ||
-    config?.keyId ||
-    process.env.AGENTSPAN_AUTH_KEY ||
-    ""
-  ).trim();
-  const keySecret = (
-    process.env.CONDUCTOR_AUTH_SECRET ||
-    config?.keySecret ||
-    process.env.AGENTSPAN_AUTH_SECRET ||
-    ""
-  ).trim();
+  const keyId = (process.env.CONDUCTOR_AUTH_KEY || config?.keyId || "").trim();
+  const keySecret = (process.env.CONDUCTOR_AUTH_SECRET || config?.keySecret || "").trim();
 
   if (!process.env.CONDUCTOR_AUTH_KEY) {
     logger.debug("CONDUCTOR_AUTH_KEY is not set");

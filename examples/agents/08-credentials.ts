@@ -15,7 +15,7 @@ import {
 } from '@io-orkes/conductor-javascript/agents';
 import type { ToolContext } from '@io-orkes/conductor-javascript/agents';
 
-const MODEL = process.env.AGENTSPAN_LLM_MODEL ?? 'openai/gpt-4o';
+const MODEL = process.env.CONDUCTOR_AGENT_LLM_MODEL ?? 'openai/gpt-4o';
 
 // -- Tool that declares a credential and reads it at runtime --
 const dbLookup = tool(

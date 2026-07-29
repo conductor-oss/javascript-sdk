@@ -18,27 +18,25 @@ npm install zod
 
 ## 2. Point at a server
 
-You need a running Agentspan server. The defaults assume a local one at `http://localhost:8080/api` (the SDK auto-appends `/api` if you omit it).
+You need a running Conductor server. The defaults assume a local one at `http://localhost:8080/api` (the SDK auto-appends `/api` if you omit it).
 
 | Variable | Default | Description |
 |---|---|---|
-| `AGENTSPAN_SERVER_URL` | `http://localhost:8080/api` | Agentspan server URL. |
-| `AGENTSPAN_AUTH_KEY` | — | Auth key. Unset = no-auth mode (local / OSS). |
-| `AGENTSPAN_AUTH_SECRET` | — | Auth secret. Set together with the key for Orkes Cloud. |
-| `AGENTSPAN_API_KEY` | — | Pre-minted bearer token (alternative to key/secret). |
+| `CONDUCTOR_SERVER_URL` | `http://localhost:8080/api` | Conductor server URL. |
+| `CONDUCTOR_AUTH_KEY` | — | Auth key. Unset = no-auth mode (local / OSS). |
+| `CONDUCTOR_AUTH_SECRET` | — | Auth secret. Set together with the key for Orkes Cloud. |
 
 ```bash
-export AGENTSPAN_SERVER_URL=http://localhost:8080/api
+export CONDUCTOR_SERVER_URL=http://localhost:8080/api
 export OPENAI_API_KEY=<YOUR-KEY>
-export AGENTSPAN_LLM_MODEL=openai/gpt-4o-mini
 # Orkes Cloud only:
-# export AGENTSPAN_AUTH_KEY=...
-# export AGENTSPAN_AUTH_SECRET=...
+# export CONDUCTOR_AUTH_KEY=...
+# export CONDUCTOR_AUTH_SECRET=...
 ```
 
-`AGENTSPAN_AUTH_KEY` / `AGENTSPAN_AUTH_SECRET` are minted into a short-lived JWT and sent as the `X-Authorization` header on every server call. The SDK handles that for you — you only set the env vars. The SDK loads a `.env` file automatically (via `dotenv`).
+`CONDUCTOR_AUTH_KEY` / `CONDUCTOR_AUTH_SECRET` are minted into a short-lived JWT and sent as the `X-Authorization` header on every server call. The SDK handles that for you — you only set the env vars. The SDK loads a `.env` file automatically (via `dotenv`).
 
-A handful of other env vars tune workers and logging (`AGENTSPAN_WORKER_POLL_INTERVAL`, `AGENTSPAN_WORKER_THREADS`, `AGENTSPAN_LOG_LEVEL`, ...); see [advanced.md](advanced.md#runtime-configuration).
+A handful of other env vars tune workers and logging (`CONDUCTOR_AGENT_WORKER_POLL_INTERVAL`, `CONDUCTOR_AGENT_WORKER_THREADS`, `CONDUCTOR_LOG_LEVEL`, ...); see the [runtime reference](reference/runtime.md).
 
 ## 3. Run an agent
 
@@ -70,7 +68,7 @@ That is the whole loop: define an `Agent`, create an `AgentRuntime`, `await runt
 
 ## Reading the result
 
-`run()` returns an [`AgentResult`](api-reference.md#agentresult). Common members:
+`run()` returns an [`AgentResult`](reference/api.md#agentresult). Common members:
 
 ```ts
 result.printResult();                  // formatted summary to stdout
@@ -81,10 +79,10 @@ const finish   = result.finishReason;  // 'stop' | 'length' | 'guardrail' | 'rej
 const execId   = result.executionId;   // durable execution id on the server
 ```
 
-`output` is always a `Record`. A plain text answer arrives as `{ result: "..." }`; structured output (see [advanced.md](advanced.md#structured-output)) arrives under `output.result` as an object.
+`output` is always a `Record`. A plain text answer arrives as `{ result: "..." }`; structured output (see [structured output](concepts/structured-output.md)) arrives under `output.result` as an object.
 
 ## Next
 
-- [writing-agents.md](writing-agents.md) — tools, multi-agent orchestration, guardrails, streaming, HITL, schedules.
-- [framework-agents.md](framework-agents.md) — run OpenAI / ADK / LangChain / LangGraph / Vercel AI agents as-is.
-- [advanced.md](advanced.md) — deploy/serve, the control-plane `AgentClient`, structured output, credentials.
+- [Agents](concepts/agents.md), [tools](concepts/tools.md), [multi-agent](concepts/multi-agent.md) — orchestration, guardrails, streaming, HITL, schedules.
+- [Framework bridges](README.md#framework-bridges) — run OpenAI / ADK / LangChain / LangGraph / Vercel AI agents as-is.
+- [Deploy/serve/run/plan](concepts/deploy-serve-run.md) — the control-plane `AgentClient`, structured output, credentials.

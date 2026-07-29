@@ -342,7 +342,7 @@ export class WorkerManager {
             throw new NonRetryableException(
               `Required credentials not found: ${missing.join(", ")}. Server must persist ` +
                 `TaskDef.runtimeMetadata and deliver Task.runtimeMetadata ` +
-                `(conductor-oss PR #1255 / agentspan server > 0.4.2).`,
+                `(conductor-oss PR #1255 / conductor server > 0.4.2).`,
             );
           }
           resolvedCredentials = Object.fromEntries(pw.credentials.map((name) => [name, delivered[name]]));

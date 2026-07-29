@@ -31,7 +31,7 @@ export { createAgentResult, normalizeOutput, stripInternalEventKeys } from "./ty
 
 // ── Errors ───────────────────────────────────────────────
 export {
-  AgentspanError,
+  ConductorAgentError,
   AgentAPIError,
   AgentNotFoundError,
   ConfigurationError,

@@ -3,7 +3,7 @@
  *
  * Demonstrates:
  *   - Attaching a MemorySaver checkpointer to createReactAgent
- *   - Running via Agentspan passthrough (single turn)
+ *   - Running via Conductor passthrough (single turn)
  *   - How the agent remembers context from earlier messages
  */
 

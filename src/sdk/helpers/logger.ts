@@ -31,9 +31,7 @@ export class DefaultLogger implements ConductorLogger {
     const {level, tags = []} = config
     this.tags = tags
     const resolvedLevel =
-      level ??
-      (process.env.CONDUCTOR_LOG_LEVEL as ConductorLogLevel | undefined) ??
-      (process.env.AGENTSPAN_LOG_LEVEL as ConductorLogLevel | undefined)
+      level ?? (process.env.CONDUCTOR_LOG_LEVEL as ConductorLogLevel | undefined)
     if (resolvedLevel && resolvedLevel in LOG_LEVELS) {
       this.level = LOG_LEVELS[resolvedLevel]
     } else {

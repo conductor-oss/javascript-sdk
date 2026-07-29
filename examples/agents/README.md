@@ -23,7 +23,7 @@ In production, the three concerns are separated:
 ```
 ┌──────────────────────────────────────────────────────────────┐
 │  1. DEPLOY (once, during CI/CD)                              │
-│     Registers the agent definition with the Agentspan server │
+│     Registers the agent definition with the Conductor server │
 │                                                              │
 │     await runtime.deploy(agent);                             │
 │     // or CLI: agentspan deploy --package my-agents          │
@@ -114,15 +114,15 @@ cd vercel-ai && npm install
 Export environment variables:
 
 ```bash
-export AGENTSPAN_LLM_MODEL=openai/gpt-4o-mini
-export AGENTSPAN_SERVER_URL=http://localhost:8080/api
-# export AGENTSPAN_AUTH_KEY=<key>     # if authentication is enabled
-# export AGENTSPAN_AUTH_SECRET=<secret>
+export CONDUCTOR_AGENT_LLM_MODEL=openai/gpt-4o-mini
+export CONDUCTOR_SERVER_URL=http://localhost:8080/api
+# export CONDUCTOR_AUTH_KEY=<key>     # if authentication is enabled
+# export CONDUCTOR_AUTH_SECRET=<secret>
 ```
 
 #### 2.1. Choose a model
 
-The `AGENTSPAN_LLM_MODEL` variable uses the `provider/model-name` format. Examples:
+The `CONDUCTOR_AGENT_LLM_MODEL` variable uses the `provider/model-name` format. Examples:
 
 | Provider | Model string | API key env var |
 |----------|-------------|-----------------|

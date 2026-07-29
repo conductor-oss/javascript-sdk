@@ -1,0 +1,130 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/conductor-oss/javascript-sdk/blob/main/docs/agents/reference/agent-schema.json",
+  "title": "Conductor JavaScript AgentConfig",
+  "description": "The public wire shape emitted by AgentConfigSerializer.serializeAgent() under agentConfig.",
+  "$ref": "#/$defs/agentConfig",
+  "$defs": {
+    "taskReference": {
+      "type": "object",
+      "required": ["taskName"],
+      "properties": { "taskName": { "type": "string", "minLength": 1 } },
+      "additionalProperties": false
+    },
+    "tool": {
+      "type": "object",
+      "required": ["name", "toolType"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "description": { "type": "string" },
+        "toolType": { "type": "string" },
+        "inputSchema": { "type": "object" },
+        "outputSchema": { "type": "object" },
+        "approvalRequired": { "type": "boolean" },
+        "timeoutSeconds": { "type": "integer", "minimum": 0 },
+        "stateful": { "type": "boolean" },
+        "maxCalls": { "type": "integer", "minimum": 0 },
+        "retryCount": { "type": "integer", "minimum": 0 },
+        "retryDelaySeconds": { "type": "integer", "minimum": 0 },
+        "retryPolicy": { "type": "string" },
+        "guardrails": { "type": "array", "items": { "type": "object" } },
+        "config": {
+          "type": "object",
+          "description": "toolType-specific config (e.g. agent_tool's nested agentConfig, http/mcp/api's URL+headers, and merged-in credentials).",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "agentConfig": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string", "pattern": "^[a-zA-Z][a-zA-Z0-9_-]*$" },
+        "model": { "type": ["string", "null"] },
+        "baseUrl": { "type": "string" },
+        "instructions": {
+          "anyOf": [
+            { "type": "string" },
+            { "type": "object", "description": "PromptTemplate wire form: { type: 'prompt_template', name, variables?, version? }" }
+          ]
+        },
+        "tools": { "type": "array", "items": { "$ref": "#/$defs/tool" } },
+        "agents": { "type": "array", "items": { "$ref": "#/$defs/agentConfig" } },
+        "strategy": { "type": "string" },
+        "router": { "anyOf": [{ "$ref": "#/$defs/taskReference" }, { "$ref": "#/$defs/agentConfig" }] },
+        "outputType": {
+          "type": "object",
+          "properties": {
+            "schema": { "type": "object" },
+            "className": { "type": "string" }
+          },
+          "required": ["schema", "className"]
+        },
+        "guardrails": { "type": "array", "items": { "type": "object" } },
+        "memory": {
+          "type": "object",
+          "properties": {
+            "messages": { "type": "array" },
+            "maxMessages": { "type": "integer", "minimum": 0 }
+          },
+          "required": ["messages"]
+        },
+        "maxTurns": { "type": "integer", "minimum": 0 },
+        "maxTokens": { "type": "integer", "minimum": 0 },
+        "contextWindowBudget": { "type": "integer", "minimum": 0 },
+        "temperature": { "type": "number" },
+        "reasoningEffort": { "type": "string" },
+        "timeoutSeconds": { "type": "integer", "minimum": 0 },
+        "external": { "type": "boolean" },
+        "stateful": { "type": "boolean" },
+        "stopWhen": { "$ref": "#/$defs/taskReference" },
+        "termination": { "type": "object" },
+        "handoffs": { "type": "array", "items": { "type": "object" } },
+        "allowedTransitions": {
+          "type": "object",
+          "additionalProperties": { "type": "array", "items": { "type": "string" } }
+        },
+        "introduction": { "type": "string" },
+        "metadata": { "type": "object" },
+        "enablePlanning": { "type": "boolean" },
+        "planner": { "$ref": "#/$defs/agentConfig" },
+        "fallback": { "$ref": "#/$defs/agentConfig" },
+        "fallbackMaxTurns": { "type": "integer", "minimum": 0 },
+        "planSource": { "type": "string" },
+        "plannerContext": { "type": "array", "items": { "type": "object" } },
+        "callbacks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["position", "taskName"],
+            "properties": {
+              "position": { "type": "string" },
+              "taskName": { "type": "string" }
+            }
+          }
+        },
+        "includeContents": { "type": "boolean" },
+        "thinkingConfig": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "budgetTokens": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "requiredTools": { "type": "array", "items": { "type": "string" } },
+        "prefillTools": { "type": "array", "items": { "type": "object" } },
+        "gate": { "type": "object" },
+        "codeExecution": { "type": "object" },
+        "cliConfig": { "type": "object" },
+        "maskedFields": { "type": "array", "items": { "type": "string" } },
+        "credentials": { "type": "array", "items": { "type": "string" } },
+        "_framework": {
+          "type": "string",
+          "description": "Present only on framework-passthrough shapes (e.g. 'skill'); absent on native agents."
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

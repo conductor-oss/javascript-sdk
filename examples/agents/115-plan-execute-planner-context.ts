@@ -25,9 +25,9 @@
  * Mirrors sdk/python/examples/115_plan_execute_planner_context.py.
  *
  * Requirements:
- *   - Agentspan server running on http://localhost:8080 (or
- *     AGENTSPAN_SERVER_URL)
- *   - AGENTSPAN_LLM_MODEL set (default: openai/gpt-4o-mini)
+ *   - Conductor server running on http://localhost:8080 (or
+ *     CONDUCTOR_SERVER_URL)
+ *   - CONDUCTOR_AGENT_LLM_MODEL set (default: openai/gpt-4o-mini)
  *
  * Run: npx tsx examples/115-plan-execute-planner-context.ts
  */
@@ -39,7 +39,7 @@ import {
   tool,
 } from "../../src/agents/index.js";
 
-const MODEL = process.env.AGENTSPAN_LLM_MODEL ?? "openai/gpt-4o-mini";
+const MODEL = process.env.CONDUCTOR_AGENT_LLM_MODEL ?? "openai/gpt-4o-mini";
 
 // ── Onboarding tools (deterministic, no external calls) ──────────────
 
@@ -215,7 +215,7 @@ async function main(): Promise<void> {
 
 async function showExecutedSteps(executionId: string): Promise<void> {
   const baseUrl = (
-    process.env.AGENTSPAN_SERVER_URL ?? "http://localhost:8080/api"
+    process.env.CONDUCTOR_SERVER_URL ?? "http://localhost:8080/api"
   )
     .replace(/\/$/, "")
     .replace(/\/api$/, "");

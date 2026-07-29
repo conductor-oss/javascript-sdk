@@ -830,8 +830,8 @@ export interface WaitForMessageToolOptions {
  * is empty and completes once messages arrive. In **non-blocking** mode, the
  * task returns immediately with whatever messages are in the queue.
  *
- * Use {@link AgentRuntime.sendMessage} from outside the workflow to push a
- * message into the queue.
+ * Pushing a message into the queue from outside the workflow is not yet
+ * exposed by this SDK's client.
  */
 export function waitForMessageTool(opts: WaitForMessageToolOptions): ToolDef {
   const batchSize = opts.batchSize ?? 1;

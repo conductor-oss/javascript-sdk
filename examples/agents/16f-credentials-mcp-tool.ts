@@ -16,8 +16,8 @@
  *   agentspan credentials set MCP_API_KEY <secret>
  *
  * Requirements:
- *   - Agentspan server running at AGENTSPAN_SERVER_URL
- *   - AGENTSPAN_LLM_MODEL set (or defaults to openai/gpt-4o-mini)
+ *   - Conductor server running at CONDUCTOR_SERVER_URL
+ *   - CONDUCTOR_AGENT_LLM_MODEL set (or defaults to openai/gpt-4o-mini)
  *   - mcp-testkit running on http://localhost:3001 (see setup above)
  *   - MCP_API_KEY stored via CLI or Agentspan UI
  */

@@ -60,27 +60,32 @@ export class AgentConfig {
   constructor(options?: AgentConfigOptions) {
     const env = process.env;
 
+    // Only CONDUCTOR_AGENT_* env vars are read -- no other fallback.
     this.workerPollIntervalMs =
-      options?.workerPollIntervalMs ?? parseIntEnv(env.AGENTSPAN_WORKER_POLL_INTERVAL, 100);
+      options?.workerPollIntervalMs ??
+      parseIntEnv(env.CONDUCTOR_AGENT_WORKER_POLL_INTERVAL, 100);
 
     this.workerThreadCount =
-      options?.workerThreadCount ?? parseIntEnv(env.AGENTSPAN_WORKER_THREADS, 1);
+      options?.workerThreadCount ?? parseIntEnv(env.CONDUCTOR_AGENT_WORKER_THREADS, 1);
 
     this.autoStartWorkers =
-      options?.autoStartWorkers ?? parseBoolEnv(env.AGENTSPAN_AUTO_START_WORKERS, true);
+      options?.autoStartWorkers ??
+      parseBoolEnv(env.CONDUCTOR_AGENT_AUTO_START_WORKERS, true);
 
     this.streamingEnabled =
-      options?.streamingEnabled ?? parseBoolEnv(env.AGENTSPAN_STREAMING_ENABLED, true);
+      options?.streamingEnabled ??
+      parseBoolEnv(env.CONDUCTOR_AGENT_STREAMING_ENABLED, true);
 
     this.livenessEnabled =
-      options?.livenessEnabled ?? parseBoolEnv(env.AGENTSPAN_LIVENESS_ENABLED, true);
+      options?.livenessEnabled ?? parseBoolEnv(env.CONDUCTOR_AGENT_LIVENESS_ENABLED, true);
 
     this.livenessStallSeconds =
-      options?.livenessStallSeconds ?? parseFloatEnv(env.AGENTSPAN_LIVENESS_STALL_SECONDS, 30.0);
+      options?.livenessStallSeconds ??
+      parseFloatEnv(env.CONDUCTOR_AGENT_LIVENESS_STALL_SECONDS, 30.0);
 
     this.livenessCheckIntervalSeconds =
       options?.livenessCheckIntervalSeconds ??
-      parseFloatEnv(env.AGENTSPAN_LIVENESS_CHECK_INTERVAL_SECONDS, 10.0);
+      parseFloatEnv(env.CONDUCTOR_AGENT_LIVENESS_CHECK_INTERVAL_SECONDS, 10.0);
   }
 
   /**

@@ -9,8 +9,8 @@
  *   - CredentialNotFoundError handling for graceful degradation
  *
  * Requirements:
- *   - Agentspan server running at AGENTSPAN_SERVER_URL
- *   - AGENTSPAN_LLM_MODEL set (or defaults to openai/gpt-4o-mini)
+ *   - Conductor server running at CONDUCTOR_SERVER_URL
+ *   - CONDUCTOR_AGENT_LLM_MODEL set (or defaults to openai/gpt-4o-mini)
  *   - STRIPE_SECRET_KEY stored: agentspan credentials set STRIPE_SECRET_KEY <your-stripe-secret-key>
  */
 

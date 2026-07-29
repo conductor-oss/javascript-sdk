@@ -1,10 +1,10 @@
 /**
- * Base error for all Agentspan SDK errors.
+ * Base error for all Conductor agent SDK errors.
  */
-export class AgentspanError extends Error {
+export class ConductorAgentError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = "AgentspanError";
+    this.name = "ConductorAgentError";
     Object.setPrototypeOf(this, new.target.prototype);
   }
 }
@@ -18,7 +18,7 @@ export class AgentspanError extends Error {
  * which 500 responses on /agent/start become impossible to triage from
  * CI logs alone.
  */
-export class AgentAPIError extends AgentspanError {
+export class AgentAPIError extends ConductorAgentError {
   readonly statusCode: number;
   readonly responseBody: string;
 
@@ -38,7 +38,7 @@ export class AgentAPIError extends AgentspanError {
 /**
  * Agent not found by name.
  */
-export class AgentNotFoundError extends AgentspanError {
+export class AgentNotFoundError extends ConductorAgentError {
   readonly agentName: string;
 
   constructor(agentName: string) {
@@ -52,7 +52,7 @@ export class AgentNotFoundError extends AgentspanError {
 /**
  * Configuration error — invalid or missing config values.
  */
-export class ConfigurationError extends AgentspanError {
+export class ConfigurationError extends ConductorAgentError {
   constructor(message: string) {
     super(message);
     this.name = "ConfigurationError";
@@ -63,7 +63,7 @@ export class ConfigurationError extends AgentspanError {
 /**
  * Credential not found in the credential store.
  */
-export class CredentialNotFoundError extends AgentspanError {
+export class CredentialNotFoundError extends ConductorAgentError {
   readonly credentialName: string;
 
   constructor(credentialName: string) {
@@ -77,7 +77,7 @@ export class CredentialNotFoundError extends AgentspanError {
 /**
  * Credential authentication error — execution token invalid or expired.
  */
-export class CredentialAuthError extends AgentspanError {
+export class CredentialAuthError extends ConductorAgentError {
   constructor(message = "Credential authentication failed") {
     super(message);
     this.name = "CredentialAuthError";
@@ -88,7 +88,7 @@ export class CredentialAuthError extends AgentspanError {
 /**
  * Credential rate limit exceeded (120 calls/min).
  */
-export class CredentialRateLimitError extends AgentspanError {
+export class CredentialRateLimitError extends ConductorAgentError {
   constructor(message = "Credential rate limit exceeded") {
     super(message);
     this.name = "CredentialRateLimitError";
@@ -99,7 +99,7 @@ export class CredentialRateLimitError extends AgentspanError {
 /**
  * Credential service error — server-side failure.
  */
-export class CredentialServiceError extends AgentspanError {
+export class CredentialServiceError extends ConductorAgentError {
   constructor(message = "Credential service error") {
     super(message);
     this.name = "CredentialServiceError";
@@ -110,7 +110,7 @@ export class CredentialServiceError extends AgentspanError {
 /**
  * SSE connection timeout — no events received within the timeout window.
  */
-export class SSETimeoutError extends AgentspanError {
+export class SSETimeoutError extends ConductorAgentError {
   constructor(message = "SSE connection timed out") {
     super(message);
     this.name = "SSETimeoutError";
@@ -122,7 +122,7 @@ export class SSETimeoutError extends AgentspanError {
  * The server rejected the initial SSE connection (non-2xx) — it does not
  * support streaming for this route. Callers fall back to polling.
  */
-export class SSEUnavailableError extends AgentspanError {
+export class SSEUnavailableError extends ConductorAgentError {
   constructor(message = "SSE stream is unavailable") {
     super(message);
     this.name = "SSEUnavailableError";
@@ -134,7 +134,7 @@ export class SSEUnavailableError extends AgentspanError {
  * Terminal tool error — non-retryable failure (e.g., CLI command exited non-zero).
  * Causes the Conductor task to be marked FAILED_WITH_TERMINAL_ERROR.
  */
-export class TerminalToolError extends AgentspanError {
+export class TerminalToolError extends ConductorAgentError {
   constructor(message: string) {
     super(message);
     this.name = "TerminalToolError";
@@ -147,7 +147,7 @@ export class TerminalToolError extends AgentspanError {
  * for longer than the liveness stall window — the local worker process for
  * this run's domain likely died. Surfaces from a blocking `wait()`.
  */
-export class WorkerStallError extends AgentspanError {
+export class WorkerStallError extends ConductorAgentError {
   readonly executionId: string;
   readonly taskDefName: string;
   readonly taskId: string;
@@ -169,7 +169,7 @@ export class WorkerStallError extends AgentspanError {
 /**
  * Guardrail validation failed.
  */
-export class GuardrailFailedError extends AgentspanError {
+export class GuardrailFailedError extends ConductorAgentError {
   readonly guardrailName: string;
   readonly failureMessage: string;
 

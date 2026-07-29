@@ -117,11 +117,11 @@ await runtime.shutdown();
 ## Running
 
 ```bash
-export AGENTSPAN_SERVER_URL=...
+export CONDUCTOR_SERVER_URL=...
 # For Gemini models:
 export GOOGLE_API_KEY=...
 # Or override with OpenAI:
-export AGENTSPAN_LLM_MODEL=openai/gpt-4o-mini
+export CONDUCTOR_AGENT_LLM_MODEL=openai/gpt-4o-mini
 export OPENAI_API_KEY=...
 
 # from the repository root

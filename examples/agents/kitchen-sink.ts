@@ -32,7 +32,7 @@
  *
  * Requirements:
  *   - Conductor server with LLM support
- *   - AGENTSPAN_SERVER_URL, AGENTSPAN_LLM_MODEL env vars
+ *   - CONDUCTOR_SERVER_URL, CONDUCTOR_AGENT_LLM_MODEL env vars
  *   - mcp-testkit running on http://localhost:3001 (for MCP/HTTP tools)
  *   - For full execution: Docker, credential store configured
  */
@@ -133,7 +133,7 @@ import type {
 
 // ── Settings ─────────────────────────────────────────────
 
-const LLM_MODEL = process.env.AGENTSPAN_LLM_MODEL ?? 'openai/gpt-4o';
+const LLM_MODEL = process.env.CONDUCTOR_AGENT_LLM_MODEL ?? 'openai/gpt-4o';
 
 // ── Mock data (equivalent to Python kitchen_sink_helpers) ─
 

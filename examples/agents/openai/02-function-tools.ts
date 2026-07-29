@@ -7,10 +7,10 @@
  * Demonstrates:
  *   - Defining function tools with zod schemas
  *   - Multiple tools with typed parameters
- *   - Running via Agentspan passthrough
+ *   - Running via Conductor passthrough
  *
  * Requirements:
- *   - AGENTSPAN_SERVER_URL for the Agentspan path
+ *   - CONDUCTOR_SERVER_URL for the Agentspan path
  */
 
 import { Agent, tool, setTracingDisabled } from '@openai/agents';

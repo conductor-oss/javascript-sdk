@@ -3,7 +3,7 @@
  *
  * Demonstrates:
  *   - Using createReactAgent from @langchain/langgraph/prebuilt
- *   - Running a graph via Agentspan runtime.run() passthrough
+ *   - Running a graph via Conductor runtime.run() passthrough
  */
 
 import { createReactAgent } from '@langchain/langgraph/prebuilt';

@@ -458,23 +458,6 @@ describe("createConductorClient integration", () => {
       expect(client.getConfig().baseUrl).toBe("http://localhost:8080");
     });
 
-    it("falls back to AGENTSPAN_SERVER_URL when CONDUCTOR_SERVER_URL and explicit config are absent (spec R3)", async () => {
-      process.env.AGENTSPAN_SERVER_URL = "http://agentspan-fallback:9090";
-      const client = await createConductorClient({}, async () => jsonResponse({}));
-      expect(client.getConfig().baseUrl).toBe("http://agentspan-fallback:9090");
-      delete process.env.AGENTSPAN_SERVER_URL;
-    });
-
-    it("explicit config wins over AGENTSPAN_SERVER_URL", async () => {
-      process.env.AGENTSPAN_SERVER_URL = "http://agentspan-fallback:9090";
-      const client = await createConductorClient(
-        { serverUrl: "http://explicit:1234" },
-        async () => jsonResponse({})
-      );
-      expect(client.getConfig().baseUrl).toBe("http://explicit:1234");
-      delete process.env.AGENTSPAN_SERVER_URL;
-    });
-
     it("should resolve server URL from env var", async () => {
       process.env.CONDUCTOR_SERVER_URL = "http://env-server:8080";
       const customFetch: typeof fetch = async () => jsonResponse({});

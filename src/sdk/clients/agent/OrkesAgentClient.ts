@@ -98,8 +98,8 @@ export class OrkesAgentClient implements AgentClient {
   /**
    * Lazily create (once) and return the shared {@link ConductorClient}.
    * `createConductorClient` is async, so we memoize the promise. Env-resolved
-   * (`AGENTSPAN_SERVER_URL`/`AGENTSPAN_AUTH_KEY`/`AGENTSPAN_AUTH_SECRET`
-   * fallbacks, `localhost:8080` default) via `resolveOrkesConfig` (R3) when
+   * (`CONDUCTOR_SERVER_URL`/`CONDUCTOR_AUTH_KEY`/`CONDUCTOR_AUTH_SECRET`,
+   * `localhost:8080` default) via `resolveOrkesConfig` (R3) when
    * no explicit connection config was given.
    */
   getClient(): Promise<ConductorClient> {

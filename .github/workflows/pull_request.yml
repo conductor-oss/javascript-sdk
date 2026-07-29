@@ -12,6 +12,32 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate documentation links
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: --offline --no-progress --include-fragments README.md docs
+
+      - name: Reject outdated product branding
+        run: |
+          # Scoped to README.md, AGENTS.md, docs/, and cli-bin/ -- the areas
+          # this sweep actually covers. This does NOT scan examples/, e2e/,
+          # or src/.
+          #
+          # Excluded inline: the `_agentspan` internal serializer markers,
+          # the external `agentspan` CLI binary name, and the historical
+          # "conductor server > 0.4.2" version reference.
+          if grep -rIn -iE 'agent[s]pan' README.md AGENTS.md docs/ cli-bin/ \
+               | grep -viE '_agentspan|agentspan CLI helper scripts|conductor server > 0\.4\.2'; then
+            echo "Outdated product branding found — use Conductor terminology."
+            exit 1
+          fi
+
   linter:
     runs-on: ubuntu-latest
     steps:

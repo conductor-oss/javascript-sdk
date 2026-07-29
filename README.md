@@ -556,7 +556,7 @@ const agent = new Agent({
   instructions: "You are a friendly assistant. Keep responses brief.",
 });
 
-const runtime = new AgentRuntime(); // AGENTSPAN_SERVER_URL, default http://localhost:8080/api
+const runtime = new AgentRuntime(); // CONDUCTOR_SERVER_URL, default http://localhost:8080/api
 try {
   const result = await runtime.run(agent, "Hello! What can you do?");
   result.printResult();
@@ -584,6 +584,7 @@ testing toolkit (`/agents/testing`).
 
 | Document | Description |
 |----------|-------------|
+| [Documentation hub](docs/README.md) | Where to start — agent docs, API reference, and Java/Python parity notes |
 | [SDK Development Guide](SDK_DEVELOPMENT.md) | Architecture, patterns, pitfalls, testing |
 | [Durable AI Agents](docs/agents/README.md) | Agent authoring layer: tools, guardrails, multi-agent, HITL, framework wrappers |
 | [Metrics Reference](METRICS.md) | Legacy and canonical Prometheus metrics with migration guide |
@@ -592,15 +593,10 @@ testing toolkit (`/agents/testing`).
 | [Task Management](docs/api-reference/task-client.md) | Task operations, logs, queue management |
 | [Metadata](docs/api-reference/metadata-client.md) | Task & workflow definitions, tags, rate limits |
 | [Scheduling](docs/api-reference/scheduler-client.md) | Workflow scheduling with CRON expressions |
-| [Authorization](docs/api-reference/authorization-client.md) | Users, groups, permissions |
 | [Applications](docs/api-reference/application-client.md) | Application management, access keys, roles |
 | [Events](docs/api-reference/event-client.md) | Event handlers, event-driven workflows |
 | [Human Tasks](docs/api-reference/human-executor.md) | Human-in-the-loop workflows, form templates |
 | [Service Registry](docs/api-reference/service-registry-client.md) | Service discovery, circuit breakers |
-| [Secrets](docs/api-reference/secret-client.md) | Secret storage and management |
-| [Prompts](docs/api-reference/prompt-client.md) | AI/LLM prompt templates |
-| [Integrations](docs/api-reference/integration-client.md) | AI/LLM provider integrations |
-| [Schemas](docs/api-reference/schema-client.md) | JSON/Avro/Protobuf schema management |
 
 ## Support
 

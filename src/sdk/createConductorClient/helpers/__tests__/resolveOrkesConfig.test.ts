@@ -22,9 +22,6 @@ describe("resolveOrkesConfig", () => {
     "CONDUCTOR_PROXY_URL",
     "CONDUCTOR_TLS_INSECURE",
     "CONDUCTOR_DISABLE_HTTP2",
-    "AGENTSPAN_SERVER_URL",
-    "AGENTSPAN_AUTH_KEY",
-    "AGENTSPAN_AUTH_SECRET",
   ];
 
   beforeEach(() => {
@@ -77,55 +74,27 @@ describe("resolveOrkesConfig", () => {
       expect(result.serverUrl).toBe("http://localhost:8080");
     });
 
-    // ─── R3: CONDUCTOR_* -> explicit -> AGENTSPAN_* -> localhost:8080 ─────
+    // ─── CONDUCTOR_* -> explicit -> localhost:8080 ──────────────────────
 
-    it("defaults to http://localhost:8080 when nothing is set (spec R3)", () => {
+    it("defaults to http://localhost:8080 when nothing is set", () => {
       expect(resolveOrkesConfig({}).serverUrl).toBe("http://localhost:8080");
     });
 
-    it("falls back to AGENTSPAN_SERVER_URL when no CONDUCTOR_SERVER_URL/explicit config (spec R3)", () => {
-      process.env.AGENTSPAN_SERVER_URL = "http://agentspan:9090";
-      expect(resolveOrkesConfig({}).serverUrl).toBe("http://agentspan:9090");
-    });
-
-    it("explicit config wins over AGENTSPAN_SERVER_URL", () => {
-      process.env.AGENTSPAN_SERVER_URL = "http://agentspan:9090";
-      expect(resolveOrkesConfig({ serverUrl: "http://explicit:1234" }).serverUrl).toBe(
-        "http://explicit:1234"
-      );
-    });
-
-    it("CONDUCTOR_SERVER_URL wins over both explicit config and AGENTSPAN_SERVER_URL", () => {
+    it("CONDUCTOR_SERVER_URL wins over explicit config", () => {
       process.env.CONDUCTOR_SERVER_URL = "http://conductor-env:8080";
-      process.env.AGENTSPAN_SERVER_URL = "http://agentspan:9090";
       expect(resolveOrkesConfig({ serverUrl: "http://explicit:1234" }).serverUrl).toBe(
         "http://conductor-env:8080"
       );
     });
   });
 
-  // ─── R3: auth key/secret AGENTSPAN_* fallback ───────────────────────
-
-  describe("auth key/secret AGENTSPAN_* fallback", () => {
-    it("falls back to AGENTSPAN_AUTH_KEY/SECRET when no CONDUCTOR_* env/explicit config", () => {
-      process.env.AGENTSPAN_AUTH_KEY = "agentspan-key";
-      process.env.AGENTSPAN_AUTH_SECRET = "agentspan-secret";
-      const result = resolveOrkesConfig({});
-      expect(result.keyId).toBe("agentspan-key");
-      expect(result.keySecret).toBe("agentspan-secret");
-    });
-
-    it("explicit config wins over AGENTSPAN_AUTH_KEY/SECRET", () => {
-      process.env.AGENTSPAN_AUTH_KEY = "agentspan-key";
-      const result = resolveOrkesConfig({ keyId: "explicit-key" });
-      expect(result.keyId).toBe("explicit-key");
-    });
-
-    it("CONDUCTOR_AUTH_KEY wins over both explicit config and AGENTSPAN_AUTH_KEY", () => {
+  describe("auth key/secret", () => {
+    it("CONDUCTOR_AUTH_KEY/SECRET win over explicit config", () => {
       process.env.CONDUCTOR_AUTH_KEY = "conductor-key";
-      process.env.AGENTSPAN_AUTH_KEY = "agentspan-key";
-      const result = resolveOrkesConfig({ keyId: "explicit-key" });
+      process.env.CONDUCTOR_AUTH_SECRET = "conductor-secret";
+      const result = resolveOrkesConfig({ keyId: "explicit-key", keySecret: "explicit-secret" });
       expect(result.keyId).toBe("conductor-key");
+      expect(result.keySecret).toBe("conductor-secret");
     });
   });
 

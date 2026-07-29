@@ -296,7 +296,7 @@ function makeKitchenSinkAgent() {
 
 // ── LLM Judge ───────────────────────────────────────────────────────────
 
-const JUDGE_MODEL = process.env.AGENTSPAN_JUDGE_MODEL ?? 'claude-sonnet-4-20250514';
+const JUDGE_MODEL = process.env.CONDUCTOR_AGENT_JUDGE_MODEL ?? 'claude-sonnet-4-20250514';
 
 const JUDGE_SYSTEM_PROMPT = `You are a strict validation judge for a workflow compilation system.
 

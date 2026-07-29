@@ -16,7 +16,7 @@ import {
 } from '@io-orkes/conductor-javascript/agents';
 import type { GuardrailResult } from '@io-orkes/conductor-javascript/agents';
 
-const MODEL = process.env.AGENTSPAN_LLM_MODEL ?? 'openai/gpt-4o';
+const MODEL = process.env.CONDUCTOR_AGENT_LLM_MODEL ?? 'openai/gpt-4o';
 
 // -- RegexGuardrail: block PII patterns --
 const piiBlocker = new RegexGuardrail({
