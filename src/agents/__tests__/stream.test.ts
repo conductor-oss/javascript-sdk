@@ -324,6 +324,122 @@ describe("AgentStream", () => {
       expect(result.status).toBe("FAILED");
       expect(result.error).toBe("something broke");
     });
+
+    // ── Regression: #155 ───────────────────────────────
+    //
+    // The stream ending does not mean the workflow ended. A single status read
+    // can land while the execution is still RUNNING and report that as the
+    // final answer — e.g. a guardrail that is about to escalate to FAILED.
+
+    it("waits for a non-terminal status to settle before building the result", async () => {
+      const sseChunks = ['event:done\ndata:{"output":{"partial":true}}\n\n'];
+      const statuses = [
+        { status: "RUNNING", output: {} },
+        { status: "RUNNING", output: {} },
+        { status: "FAILED", output: { blocked: true }, reasonForIncompletion: "Do not include secrets." },
+      ];
+
+      let statusCall = 0;
+      global.fetch = jest.fn(async (url: unknown) => {
+        if (String(url).includes("/status")) {
+          const body = statuses[Math.min(statusCall++, statuses.length - 1)];
+          return { ok: true, status: 200, json: async () => body, headers: new Headers() };
+        }
+        return {
+          ok: true,
+          status: 200,
+          body: createSSEStream(sseChunks),
+          text: async () => "",
+          headers: new Headers(),
+        };
+      }) as unknown as typeof fetch;
+
+      const stream = new AgentStream(
+        "http://localhost/sse",
+        async () => ({}),
+        "wf-1",
+        jest.fn(),
+        "http://localhost/api",
+      );
+
+      const result = await stream.getResult();
+
+      // Before the fix this was "RUNNING" — the first read, taken as final.
+      expect(result.status).toBe("FAILED");
+      expect(result.error).toBe("Do not include secrets.");
+      expect(statusCall).toBe(3);
+    });
+
+    it("returns immediately on a terminal status without extra polling", async () => {
+      const sseChunks = ['event:done\ndata:{"output":{}}\n\n'];
+
+      let statusCall = 0;
+      global.fetch = jest.fn(async (url: unknown) => {
+        if (String(url).includes("/status")) {
+          statusCall++;
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({ status: "COMPLETED", output: { answer: 42 } }),
+            headers: new Headers(),
+          };
+        }
+        return {
+          ok: true,
+          status: 200,
+          body: createSSEStream(sseChunks),
+          text: async () => "",
+          headers: new Headers(),
+        };
+      }) as unknown as typeof fetch;
+
+      const stream = new AgentStream(
+        "http://localhost/sse",
+        async () => ({}),
+        "wf-1",
+        jest.fn(),
+        "http://localhost/api",
+      );
+
+      const result = await stream.getResult();
+      expect(result.status).toBe("COMPLETED");
+      expect(result.output).toEqual({ answer: 42 });
+      expect(statusCall).toBe(1);
+    });
+
+    it("falls back to stream inference when the status endpoint errors", async () => {
+      const sseChunks = ['event:done\ndata:{"output":{"answer":42}}\n\n'];
+
+      let statusCall = 0;
+      global.fetch = jest.fn(async (url: unknown) => {
+        if (String(url).includes("/status")) {
+          statusCall++;
+          return { ok: false, status: 500, json: async () => ({}), headers: new Headers() };
+        }
+        return {
+          ok: true,
+          status: 200,
+          body: createSSEStream(sseChunks),
+          text: async () => "",
+          headers: new Headers(),
+        };
+      }) as unknown as typeof fetch;
+
+      const stream = new AgentStream(
+        "http://localhost/sse",
+        async () => ({}),
+        "wf-1",
+        jest.fn(),
+        "http://localhost/api",
+      );
+
+      const result = await stream.getResult();
+
+      // An endpoint that is not answering must not burn the settle budget —
+      // give up after one attempt, exactly as before the fix.
+      expect(result.status).toBe("COMPLETED");
+      expect(statusCall).toBe(1);
+    });
   });
 
   describe("executionId", () => {

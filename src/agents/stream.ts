@@ -1,13 +1,22 @@
 import type { AgentEvent, AgentResult, AgentStatus } from "./types.js";
 import { stripInternalEventKeys } from "./types.js";
 import { SSETimeoutError, SSEUnavailableError, ConductorAgentError } from "./errors.js";
-import { makeAgentResult } from "./result.js";
+import { makeAgentResult, TERMINAL_STATUSES } from "./result.js";
 
 // ── Constants ───────────────────────────────────────────
 
 const SSE_TIMEOUT_MS = 15_000;
 const MAX_RECONNECT_RETRIES = 5;
 const POLL_INTERVAL_MS = 500;
+/**
+ * How long `getResult()` waits for a non-terminal execution to settle.
+ *
+ * The stream ending does not mean the workflow ended, so the status read can
+ * land mid-flight. This bounds that reconciliation only — it is not a run
+ * timeout, and a still-running execution after this simply reports its last
+ * observed status rather than throwing.
+ */
+const RESULT_SETTLE_TIMEOUT_MS = 30_000;
 
 // ── AgentStream ─────────────────────────────────────────
 
@@ -385,19 +394,12 @@ export class AgentStream implements AsyncIterable<AgentEvent> {
     const errorEvent = this.events.findLast((e) => e.type === "error");
 
     // Poll the server for the real terminal status — the done SSE event
-    // signals stream end, NOT workflow success.
-    let serverStatus: Record<string, unknown> | null = null;
-    if (this.serverUrl && this.executionId) {
-      try {
-        const statusUrl = `${this.serverUrl}/agent/${this.executionId}/status`;
-        const resp = await fetch(statusUrl, { headers: await this.headerProvider() });
-        if (resp.ok) {
-          serverStatus = (await resp.json()) as Record<string, unknown>;
-        }
-      } catch {
-        // Fall back to stream-based inference
-      }
-    }
+    // signals stream end, NOT workflow success. The stream can close before
+    // the workflow's terminal transition, so a single read here can catch the
+    // execution mid-flight and report RUNNING for what is about to be FAILED.
+    // Keep reading until the status is terminal, bounded so a genuinely
+    // long-running execution still returns rather than hanging.
+    const serverStatus = await this._fetchTerminalStatus();
 
     const status =
       (serverStatus?.status as string) ??
@@ -412,6 +414,45 @@ export class AgentStream implements AsyncIterable<AgentEvent> {
       error,
       events: [...this.events],
     });
+  }
+
+  /**
+   * Read the execution status, waiting for it to become terminal.
+   *
+   * Returns as soon as the status is one of {@link TERMINAL_STATUSES}. If the
+   * execution is still non-terminal when the budget expires, returns the last
+   * status seen — callers get the best available answer, never a hang.
+   *
+   * Only a *successful but non-terminal* read is retried. An unreachable or
+   * erroring endpoint returns immediately with whatever was seen last (`null`
+   * on the first attempt, so the caller falls back to stream-based inference)
+   * rather than spending the settle budget on an endpoint that is not
+   * answering — which preserves the previous behaviour on that path.
+   */
+  private async _fetchTerminalStatus(): Promise<Record<string, unknown> | null> {
+    if (!this.serverUrl || !this.executionId) return null;
+
+    const statusUrl = `${this.serverUrl}/agent/${this.executionId}/status`;
+    const deadline = Date.now() + RESULT_SETTLE_TIMEOUT_MS;
+    let last: Record<string, unknown> | null = null;
+
+    for (;;) {
+      let current: Record<string, unknown> | null = null;
+      try {
+        const resp = await fetch(statusUrl, { headers: await this.headerProvider() });
+        if (resp.ok) current = (await resp.json()) as Record<string, unknown>;
+      } catch {
+        // Treated the same as a non-ok response: stop and use what we have.
+      }
+
+      if (!current) return last;
+
+      last = current;
+      if (TERMINAL_STATUSES.has(current.status as string)) return current;
+      if (Date.now() >= deadline) return last;
+
+      await sleep(POLL_INTERVAL_MS);
+    }
   }
 }
 
