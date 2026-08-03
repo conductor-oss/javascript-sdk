@@ -103,7 +103,11 @@ jobs:
       - name: Run e2e suites
         run: |
           mkdir -p results
-          npm run test:agent-e2e
+          # Every suite shares one local Conductor instance and its finite
+          # system-worker pool. Two Jest workers avoid starving long-running
+          # workflows, while retaining enough parallelism for this job's
+          # 45-minute time budget. Matrix-suite concurrency is intentional.
+          npm run test:agent-e2e -- --maxWorkers=2
 
       # The TS suites fail hard when the server is down (no session-skip),
       # so this guard is defense-in-depth against a future gate regression
