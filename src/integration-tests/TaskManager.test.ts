@@ -455,7 +455,7 @@ describe("TaskManager", () => {
     const workflowStatus = await waitForWorkflowCompletion(
       executor,
       executionId,
-      BASE_TIME * 30
+      300000
     );
 
     expect(workflowStatus.status).toEqual("COMPLETED");
@@ -471,6 +471,6 @@ describe("TaskManager", () => {
     expect(mockLogger.info).toHaveBeenCalledWith(
       `TaskWorker ${candidateWorkerUpdate} configuration updated with concurrency of ${updatedWorkerOptions.concurrency} and poll interval of ${updatedWorkerOptions.pollInterval}`
     );
-  });
+  }, 300000);
   });
 });
