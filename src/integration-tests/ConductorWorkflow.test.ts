@@ -247,8 +247,20 @@ describe("ConductorWorkflow DSL", () => {
 
       // Execute to verify it works
       const run = await wf.execute();
-      expect(run.status).toEqual("COMPLETED");
-    });
+      expect(run.workflowId).toBeDefined();
+      if (!run.workflowId) {
+        throw new Error("Workflow ID is undefined");
+      }
+      executionsToCleanup.push(run.workflowId);
+
+      const status = await waitForWorkflowStatus(
+        executor,
+        run.workflowId,
+        "COMPLETED",
+        300000
+      );
+      expect(status.status).toEqual("COMPLETED");
+    }, 300000);
   });
 
   // ==================== SubWorkflow Task ====================
