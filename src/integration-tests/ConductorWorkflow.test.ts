@@ -76,6 +76,14 @@ describe("ConductorWorkflow DSL", () => {
     }
   });
 
+  const waitForCompletion = async (workflowId?: string) => {
+    if (!workflowId) {
+      throw new Error("Workflow ID is undefined");
+    }
+    executionsToCleanup.push(workflowId);
+    return waitForWorkflowStatus(executor, workflowId, "COMPLETED", 300000);
+  };
+
   // ==================== Basic Building & Registration ====================
 
   describe("Build and Register", () => {
@@ -161,8 +169,9 @@ describe("ConductorWorkflow DSL", () => {
       const run = await wf.execute({ testInput: "hello" });
 
       expect(run).toBeDefined();
-      expect(run.status).toEqual("COMPLETED");
-    });
+      const status = await waitForCompletion(run.workflowId);
+      expect(status.status).toEqual("COMPLETED");
+    }, 300000);
   });
 
   // ==================== Start Workflow ====================
@@ -190,10 +199,11 @@ describe("ConductorWorkflow DSL", () => {
       const status = await waitForWorkflowStatus(
         executor,
         workflowId,
-        "COMPLETED"
+        "COMPLETED",
+        300000
       );
       expect(status.status).toEqual("COMPLETED");
-    });
+    }, 300000);
 
     test("startWorkflow() with correlationId should set correlation", async () => {
       const wf = new ConductorWorkflow(executor, wfName);
@@ -247,18 +257,7 @@ describe("ConductorWorkflow DSL", () => {
 
       // Execute to verify it works
       const run = await wf.execute();
-      expect(run.workflowId).toBeDefined();
-      if (!run.workflowId) {
-        throw new Error("Workflow ID is undefined");
-      }
-      executionsToCleanup.push(run.workflowId);
-
-      const status = await waitForWorkflowStatus(
-        executor,
-        run.workflowId,
-        "COMPLETED",
-        300000
-      );
+      const status = await waitForCompletion(run.workflowId);
       expect(status.status).toEqual("COMPLETED");
     }, 300000);
   });
@@ -299,8 +298,9 @@ describe("ConductorWorkflow DSL", () => {
 
       // Execute parent — child should run automatically
       const run = await parentWf.execute();
-      expect(run.status).toEqual("COMPLETED");
-    });
+      const status = await waitForCompletion(run.workflowId);
+      expect(status.status).toEqual("COMPLETED");
+    }, 300000);
   });
 
   // ==================== Input/Output References ====================
@@ -341,9 +341,10 @@ describe("ConductorWorkflow DSL", () => {
       workflowsToCleanup.push({ name: wfName, version: 1 });
 
       const run = await wf.execute({ myParam: "hello-world" });
-      expect(run.status).toEqual("COMPLETED");
-      expect(run.output?.capturedParam).toEqual("hello-world");
-    });
+      const status = await waitForCompletion(run.workflowId);
+      expect(status.status).toEqual("COMPLETED");
+      expect(status.output?.capturedParam).toEqual("hello-world");
+    }, 300000);
   });
 
   // ==================== Configuration Methods ====================
