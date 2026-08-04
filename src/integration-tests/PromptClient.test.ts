@@ -41,7 +41,7 @@ describeForOrkesOnlyV5("PromptClient", () => {
     } catch (e) {
       console.debug(`Cleanup prompt '${promptName}' failed:`, e);
     }
-  });
+  }, 360_000);
 
   // ==================== Prompt CRUD ====================
 

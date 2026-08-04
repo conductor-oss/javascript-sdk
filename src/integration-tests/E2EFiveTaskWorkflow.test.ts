@@ -38,7 +38,7 @@ describeForOrkesV5("E2E: 5-task workflow × 50 executions", () => {
       handler = undefined;
     }
     clearWorkerRegistry();
-  });
+  }, 360_000);
 
   test(
     "50 workflows with 5 sequential tasks each all complete with correct output",

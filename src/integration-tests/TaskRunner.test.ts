@@ -24,7 +24,7 @@ describe("TaskRunner", () => {
         metadataClient.unregisterWorkflow(w.name, w.version)
       )
     );
-  });
+  }, 360_000);
 
   test("worker example ", async () => {
     const client = await clientPromise;

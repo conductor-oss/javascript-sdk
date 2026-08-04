@@ -103,7 +103,7 @@ describe("Lease Extension — end-to-end validation", () => {
       workflows: [{ name: wfName, version: 1 }],
       tasks:     [taskDefName],
     });
-  });
+  }, 360_000);
 
   // ─── Helper ──────────────────────────────────────────────────────────────
   async function sleep(ms: number) {

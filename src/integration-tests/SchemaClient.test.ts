@@ -46,7 +46,7 @@ describeForOrkesOnlyV5("SchemaClient", () => {
         console.debug(`Cleanup schema '${schemaName}' failed:`, e);
       }
     }
-  });
+  }, 360_000);
 
   // ==================== Schema CRUD ====================
 

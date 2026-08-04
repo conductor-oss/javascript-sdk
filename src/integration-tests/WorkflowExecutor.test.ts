@@ -55,7 +55,7 @@ describe("WorkflowExecutor", () => {
     await cleanupWorkflowsAndTasks(metadataClient, {
       workflows: [{ name, version }],
     });
-  });
+  }, 360_000);
 
   test("Should be able to register a workflow", async () => {
     const client = await clientPromise;
@@ -387,7 +387,7 @@ describe("WorkflowExecutor", () => {
     afterAll(async () => {
       // Cleanup all workflows
       await cleanupAllWorkflows();
-    }, 120_000);
+    }, 360_000);
 
     async function registerAllWorkflows(): Promise<void> {
       try {

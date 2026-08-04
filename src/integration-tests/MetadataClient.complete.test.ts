@@ -106,7 +106,7 @@ describe("MetadataClient Complete Coverage", () => {
         console.debug(`Cleanup workflow '${wf.name}' failed:`, e);
       }
     }
-  });
+  }, 360_000);
 
   // ==================== Batch Task Registration ====================
 

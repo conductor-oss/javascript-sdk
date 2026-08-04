@@ -74,7 +74,7 @@ describe("ConductorWorkflow DSL", () => {
         // Ignore
       }
     }
-  });
+  }, 360_000);
 
   const waitForCompletion = async (workflowId?: string) => {
     if (!workflowId) {

@@ -51,7 +51,7 @@ describe("EventClient", () => {
     } catch {
       // Ignore cleanup failures (e.g. no server, auth issues)
     }
-  });
+  }, 360_000);
 
   // Helper function to create unique names
   const createUniqueName = (prefix: string) =>
