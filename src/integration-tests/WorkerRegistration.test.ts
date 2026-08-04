@@ -50,7 +50,10 @@ describe("SDK Worker Registration", () => {
     await Promise.allSettled(
       tasksToCleanup.map((t) => metadataClient.unregisterTask(t))
     );
-  }, 180000);
+  // CI allows an individual Conductor request five minutes. The cleanup runs
+  // several unregister requests concurrently, so its hook must leave room
+  // for the slowest request plus teardown overhead.
+  }, 360000);
 
   test("worker() function registers workers in global registry", async () => {
     const taskName = `sdk_test_basic_worker_${Date.now()}`;
