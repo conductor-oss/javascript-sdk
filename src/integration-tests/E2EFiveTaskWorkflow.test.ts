@@ -49,17 +49,21 @@ describeForOrkesV5("E2E: 5-task workflow × 50 executions", () => {
       const TASK_COUNT = 5;
       const WORKFLOW_COUNT = 50;
 
-      // Track execution counts per task type
-      const executionCounts: Record<string, number> = {};
+      // Track distinct Conductor task IDs per task type. A worker can receive
+      // a duplicate delivery while its result update is in flight, so raw
+      // callback invocations are not a count of workflow task executions.
+      const executedTaskIds: Record<string, Set<string>> = {};
 
       // Register 5 workers — one per task type
       for (let i = 1; i <= TASK_COUNT; i++) {
         const taskName = `e2e_task_${i}_${testId}`;
-        executionCounts[taskName] = 0;
+        executedTaskIds[taskName] = new Set();
 
         worker({ taskDefName: taskName, pollInterval: 100, concurrency: 5 })(
           async function taskWorker(task: Task) {
-            executionCounts[taskName] = (executionCounts[taskName] ?? 0) + 1;
+            if (task.taskId) {
+              executedTaskIds[taskName]?.add(task.taskId);
+            }
             return {
               status: "COMPLETED" as const,
               outputData: {
@@ -163,10 +167,10 @@ describeForOrkesV5("E2E: 5-task workflow × 50 executions", () => {
       }
 
       // ── Validate execution counts ──────────────────────────────────
-      // Each of the 5 task types should have been executed exactly 50 times
+      // Each task type must have processed the 50 distinct workflow tasks.
       for (let i = 1; i <= TASK_COUNT; i++) {
         const taskName = `e2e_task_${i}_${testId}`;
-        expect(executionCounts[taskName]).toBe(WORKFLOW_COUNT);
+        expect(executedTaskIds[taskName]?.size).toBe(WORKFLOW_COUNT);
       }
 
       // Clean up workflow and task definitions from the server
