@@ -60,7 +60,7 @@ describeForOrkesV5("Worker Advanced Features", () => {
     workflowsToCleanup.length = 0;
     tasksToCleanup.length = 0;
     clearWorkerRegistry();
-  });
+  }, 360_000);
 
   // ==================== MetricsCollector ====================
 

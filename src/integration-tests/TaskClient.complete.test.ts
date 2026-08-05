@@ -96,7 +96,7 @@ describe("TaskClient Complete Coverage", () => {
     } catch (e) {
       console.debug(`Cleanup workflow failed:`, e);
     }
-  });
+  }, 360_000);
 
   // ==================== Task Queries ====================
 

@@ -72,7 +72,7 @@ describe("IntegrationClient", () => {
     } catch (e) {
       if (!isNotFound(e)) console.debug(`Cleanup prompt failed:`, e);
     }
-  });
+  }, 360_000);
 
   function skipIfNotSupported() {
     if (!integrationsSupported) {

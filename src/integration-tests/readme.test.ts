@@ -28,7 +28,7 @@ describe("TaskManager", () => {
     await Promise.allSettled(
       tasksToCleanup.map((t) => metadataClient.unregisterTask(t))
     );
-  }, 120000);
+  }, 360_000);
 
   test("worker example ", async () => {
     const client = await clientPromise;

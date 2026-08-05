@@ -19,7 +19,7 @@ describe("WorkflowResourceService", () => {
       )
     );
     workflowsToCleanup.length = 0;
-  });
+  }, 360_000);
 
   test("Should test a workflow", async () => {
     const client = await createClientWithRetry();

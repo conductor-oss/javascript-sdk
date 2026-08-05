@@ -37,7 +37,7 @@ describe("SecretClient", () => {
     } catch (e) {
       console.debug(`Cleanup secret '${secretKey}' failed:`, e);
     }
-  });
+  }, 360_000);
 
   // ==================== Secret CRUD ====================
 

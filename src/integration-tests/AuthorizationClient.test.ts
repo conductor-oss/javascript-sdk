@@ -83,7 +83,7 @@ describe("AuthorizationClient", () => {
     } catch (e) {
       console.debug(`Cleanup workflow '${workflowName}' failed:`, e);
     }
-  });
+  }, 360_000);
 
   // ==================== User Management ====================
 

@@ -24,7 +24,7 @@ describe("TaskRunner", () => {
         metadataClient.unregisterWorkflow(w.name, w.version)
       )
     );
-  });
+  }, 360_000);
 
   test("worker example ", async () => {
     const client = await clientPromise;
@@ -88,7 +88,8 @@ describe("TaskRunner", () => {
     const workflowStatus = await waitForWorkflowStatus(
       executor,
       executionId,
-      "COMPLETED"
+      "COMPLETED",
+      300000
     );
 
     const [firstTask] = workflowStatus.tasks || [];
@@ -106,5 +107,5 @@ describe("TaskRunner", () => {
       workflows: [{ name: workflowName, version: 1 }],
       tasks: [taskName],
     });
-  }, 120000);
+  }, 300000);
 });

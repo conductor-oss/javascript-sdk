@@ -40,7 +40,7 @@ describe("SchedulerClient", () => {
         e
       );
     }
-  });
+  }, 360_000);
 
   test("Should be able to register a workflow and retrieve it", async () => {
     const client = await clientPromise;

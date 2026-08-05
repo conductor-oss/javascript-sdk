@@ -43,7 +43,7 @@ describe("TaskManager", () => {
     );
     workflowsToCleanup.length = 0;
     tasksToCleanup.length = 0;
-  });
+  }, 360_000);
 
   // Client-side validation only; no workflow execution or updateTaskV2 — runs on v4 and v5
   test("Should not be able to startPolling if TaskManager has no workers", async () => {
@@ -455,7 +455,7 @@ describe("TaskManager", () => {
     const workflowStatus = await waitForWorkflowCompletion(
       executor,
       executionId,
-      BASE_TIME * 30
+      300000
     );
 
     expect(workflowStatus.status).toEqual("COMPLETED");
@@ -471,6 +471,6 @@ describe("TaskManager", () => {
     expect(mockLogger.info).toHaveBeenCalledWith(
       `TaskWorker ${candidateWorkerUpdate} configuration updated with concurrency of ${updatedWorkerOptions.concurrency} and poll interval of ${updatedWorkerOptions.pollInterval}`
     );
-  });
+  }, 300000);
   });
 });

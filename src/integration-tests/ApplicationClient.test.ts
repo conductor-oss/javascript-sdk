@@ -31,7 +31,7 @@ describe("ApplicationClient", () => {
       }
     }
     testAppsToCleanup.length = 0;
-  });
+  }, 360_000);
 
   // Helper function to create unique names
   const createUniqueName = (prefix: string) =>

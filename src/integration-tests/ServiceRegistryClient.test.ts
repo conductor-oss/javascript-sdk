@@ -35,7 +35,7 @@ describeForOrkesOnlyV5("ServiceRegistryClient", () => {
       }
     }
     testServicesToCleanup.length = 0;
-  });
+  }, 360_000);
 
   jest.setTimeout(60000);
 

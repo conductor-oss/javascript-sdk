@@ -155,7 +155,7 @@ describe("WorkflowExecutor Complete Coverage", () => {
       }
     }
     executionsToCleanup.length = 0;
-  });
+  }, 360_000);
 
   afterAll(async () => {
     for (const wf of workflowsToCleanup) {
@@ -170,7 +170,7 @@ describe("WorkflowExecutor Complete Coverage", () => {
     } catch (e) {
       console.debug(`Cleanup task ${taskDefName} failed:`, e);
     }
-  });
+  }, 360_000);
 
   // ==================== Start Methods ====================
 

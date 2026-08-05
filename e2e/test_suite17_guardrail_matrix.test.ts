@@ -22,7 +22,7 @@ import type { GuardrailResult, AgentHandle, AgentStatus } from '@io-orkes/conduc
 import { checkServerHealth, MODEL, getOutputText, expectMsg } from './helpers';
 
 
-jest.setTimeout(600_000); // ported from vitest describe({ timeout }) options
+jest.setTimeout(900_000); // 27 concurrent workflows can exhaust the 8-minute polling budget in CI
 // ── Types ────────────────────────────────────────────────────────────────
 
 interface Spec {
@@ -44,12 +44,12 @@ interface Result {
 
 // ── Constants ────────────────────────────────────────────────────────────
 
-// 8 min overall polling budget. Sits under the 600s beforeAll/describe
+// 12 min overall polling budget. Sits under the 15-minute beforeAll/describe
 // timeouts while leaving headroom for the per-call LLM retry backoff
 // (retryCount=3, exponential) added to LLM_CHAT_COMPLETE — under 27-way
 // concurrency a transient provider blip can otherwise push a retry workflow
 // past the old 5-min budget and report TIMEOUT.
-const TIMEOUT = 480_000;
+const TIMEOUT = 720_000;
 const BOTH = ["COMPLETED", "FAILED"];
 const RETRY_MAX_TURNS = 4;
 
@@ -1115,7 +1115,7 @@ describe("Suite 17: Guardrail Matrix (3x3x3)", () => {
 
     const completed = Array.from(results.values()).filter((r) => r.status !== "TIMEOUT").length;
     console.log(`\n  ${completed}/27 workflows completed.\n`);
-  }, 600_000);
+  }, 900_000);
 
   afterAll(() => runtime?.shutdown());
 
