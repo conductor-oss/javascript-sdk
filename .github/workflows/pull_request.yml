@@ -99,15 +99,6 @@ jobs:
           name: unit tests (Node ${{ matrix.node-version }})
           path: reports/unit-tests-node-${{ matrix.node-version }}-test-results.xml
           reporter: jest-junit
-      - name: Upload coverage to Codecov
-        if: always()
-        uses: codecov/codecov-action@v4
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage/lcov.info
-          flags: unit
-          name: codecov-unit-node-${{ matrix.node-version }}
-          fail_ci_if_error: false
 
   # Integration tests (v5 sdkdev): mirrors integration-tests but targets the sdkdev environment.
   integration-tests-v5-sdkdev:
@@ -157,15 +148,6 @@ jobs:
           name: integration v5 sdkdev Node ${{ matrix.node-version }} shard ${{ matrix.shard }}/3
           path: reports/integration-v5-sdkdev-node-${{ matrix.node-version }}-shard-${{ matrix.shard }}-test-results.xml
           reporter: jest-junit
-      - name: Upload coverage to Codecov
-        if: always()
-        uses: codecov/codecov-action@v4
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage/lcov.info
-          flags: integration-v5-sdkdev
-          name: codecov-integration-v5-sdkdev-node-${{ matrix.node-version }}-shard-${{ matrix.shard }}
-          fail_ci_if_error: false
 
   # Integration tests (v4 sm): mirrors integration-tests-v4 but targets the sm environment.
   integration-tests-v4-sm:
@@ -214,15 +196,6 @@ jobs:
           name: integration v4 sm Node ${{ matrix.node-version }} shard ${{ matrix.shard }}/3
           path: reports/integration-v4-sm-node-${{ matrix.node-version }}-shard-${{ matrix.shard }}-test-results.xml
           reporter: jest-junit
-      - name: Upload coverage to Codecov
-        if: always()
-        uses: codecov/codecov-action@v4
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage/lcov.info
-          flags: integration-v4-sm
-          name: codecov-integration-v4-sm-node-${{ matrix.node-version }}-shard-${{ matrix.shard }}
-          fail_ci_if_error: false
 
   # Integration tests (OSS): spins up Conductor OSS + Postgres via
   # scripts/docker-compose-oss.yaml and runs the integration suite unauthenticated,
