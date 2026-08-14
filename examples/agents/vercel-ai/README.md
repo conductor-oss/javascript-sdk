@@ -1,4 +1,4 @@
-# Vercel AI SDK + Agentspan
+# Vercel AI SDK + Conductor Agent
 
 Two ways to integrate — pick what fits your stage.
 
@@ -7,7 +7,7 @@ Two ways to integrate — pick what fits your stage.
 Swap one import. Your `generateText()` code stays identical.
 
 <table>
-<tr><th>Before (vanilla Vercel AI)</th><th>After (Agentspan)</th></tr>
+<tr><th>Before (vanilla Vercel AI)</th><th>After (Conductor Agent)</th></tr>
 <tr><td>
 
 ```typescript
@@ -72,7 +72,7 @@ Everything else — tools, model, prompt, result shape — is unchanged. Under t
 When you need features that `generateText()` can't express — termination conditions, guardrails, multi-agent handoff, human-in-the-loop — use the Agent API directly.
 
 <table>
-<tr><th>Before (vanilla Vercel AI)</th><th>After (Agentspan Agent API)</th></tr>
+<tr><th>Before (vanilla Vercel AI)</th><th>After (Conductor Agent API)</th></tr>
 <tr><td>
 
 ```typescript
@@ -152,10 +152,10 @@ await runtime.shutdown();
 
 ## Examples
 
-| File | Description |
-|------|-------------|
-| `01-basic-agent.ts` | Simple agent with one AI SDK tool |
-| `02-tools-compat.ts` | Mix of Agentspan native and AI SDK tools |
+| File | Description                                                                  |
+|------|------------------------------------------------------------------------------|
+| `01-basic-agent.ts` | Simple agent with one AI SDK tool                                            |
+| `02-tools-compat.ts` | Mix of Conductor native and AI SDK tools                                     |
 | `03-streaming.ts` | Default `runtime.run()` flow with a commented `runtime.stream()` alternative |
 | `04-structured-output.ts` | Zod schema for typed output |
 | `05-multi-step.ts` | Multiple tools, multi-turn conversation |

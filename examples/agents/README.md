@@ -1,6 +1,6 @@
 # Examples
 
-Runnable examples demonstrating every feature of the Agentspan TypeScript SDK.
+Runnable examples demonstrating every feature of the Conductor TypeScript SDK for Agents.
 
 **200+ runnable examples in total**: the core examples cataloged below, plus
 the [quickstart/](quickstart/) guides and framework ports for Google ADK,
@@ -335,10 +335,10 @@ cd examples/agents/openai && npx tsx 01-basic-agent.ts
 
 ## Framework Integrations
 
-| Directory | Framework | Examples |
-|-----------|-----------|----------|
-| [adk/](adk/) | Google ADK | Agents, tools, streaming, planners, security |
-| [langgraph/](langgraph/) | LangGraph | State graphs, react agents, memory, RAG |
+| Directory | Framework         | Examples |
+|-----------|-------------------|----------|
+| [adk/](adk/) | Google ADK        | Agents, tools, streaming, planners, security |
+| [langgraph/](langgraph/) | LangGraph         | State graphs, react agents, memory, RAG |
 | [openai/](openai/) | OpenAI Agents SDK | Agents, tools, handoffs, guardrails |
-| [vercel-ai/](vercel-ai/) | Vercel AI SDK | Agents, tools, streaming, HITL |
-| [quickstart/](quickstart/) | Agentspan Quickstart | Minimal getting-started guides |
+| [vercel-ai/](vercel-ai/) | Vercel AI SDK     | Agents, tools, streaming, HITL |
+| [quickstart/](quickstart/) | Agents Quickstart | Minimal getting-started guides |
