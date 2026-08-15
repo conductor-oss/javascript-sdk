@@ -244,12 +244,27 @@ export class AgentConfigSerializer {
     // includeContents
     if (agent.includeContents) config.includeContents = agent.includeContents;
 
-    // thinkingBudgetTokens → thinkingConfig
+    // thinkingBudgetTokens → thinkingConfig.
+    //
+    // Exception: Claude Sonnet 5+ rejects the legacy Anthropic
+    // ``thinking.type: "enabled" + budget_tokens`` shape with HTTP 400
+    // (adaptive thinking replaced it), and the server's Anthropic provider
+    // (≤ 3.32.x) still renders thinkingConfig as that legacy shape for
+    // Sonnet-line models. Sonnet 5 runs adaptive thinking by default when no
+    // thinking param is sent, so for those models the budget is translated
+    // client-side into ``reasoningEffort`` (server → output_config.effort)
+    // instead of thinkingConfig — same tiers as the server uses for Opus.
     if (agent.thinkingBudgetTokens !== undefined) {
-      config.thinkingConfig = {
-        enabled: true,
-        budgetTokens: agent.thinkingBudgetTokens,
-      };
+      if (requiresAdaptiveThinking(agent.model)) {
+        if (config.reasoningEffort === undefined) {
+          config.reasoningEffort = budgetToEffort(agent.thinkingBudgetTokens);
+        }
+      } else {
+        config.thinkingConfig = {
+          enabled: true,
+          budgetTokens: agent.thinkingBudgetTokens,
+        };
+      }
     }
 
     // requiredTools
@@ -527,4 +542,33 @@ export class AgentConfigSerializer {
     // Custom gate (function-based)
     return { taskName: `${agentName}_gate` };
   }
+}
+
+/**
+ * Anthropic model lines that reject the legacy `thinking.type: "enabled"` +
+ * `budget_tokens` shape (HTTP 400) AND are mistranslated by the server's
+ * Anthropic provider (≤ 3.32.x), whose adaptive-model matrix covers the
+ * Opus / Fable / Mythos lines but not Sonnet 5. Matched as a substring so
+ * future Sonnet 5.x minors work without a code change; `sonnet-5` (not the
+ * bare line name) because Sonnet 4.6-and-earlier still accept enabled.
+ */
+const CLIENT_ADAPTIVE_LINES = ["sonnet-5"];
+
+/** True if `model` needs the client-side adaptive-thinking translation. */
+export function requiresAdaptiveThinking(model: string | undefined): boolean {
+  if (!model) return false;
+  const m = model.toLowerCase();
+  return CLIENT_ADAPTIVE_LINES.some((line) => m.includes(line));
+}
+
+/**
+ * Map a legacy thinking-token budget onto an adaptive `effort` tier. Same
+ * thresholds as the server's Anthropic provider uses for Opus
+ * (AnthropicChatModel.budgetToEffort): bigger budgets → more thorough thinking.
+ */
+export function budgetToEffort(budget: number): string {
+  if (budget < 4_000) return "low";
+  if (budget < 16_000) return "medium";
+  if (budget < 32_000) return "high";
+  return "xhigh";
 }

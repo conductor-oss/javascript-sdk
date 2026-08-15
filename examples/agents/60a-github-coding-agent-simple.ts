@@ -21,7 +21,7 @@ const WORK_DIR = `/tmp/codingexamples-${randomBytes(4).toString('hex')}`;
 
 export const githubAgent = new Agent({
   name: 'github_agent',
-  model: 'anthropic/claude-sonnet-4-20250514',
+  model: 'anthropic/claude-sonnet-5',
   instructions:
     'You are a GitHub operations specialist.\n\n' +
     `Repo: ${REPO}\nWork dir: ${WORK_DIR}\n\n` +
@@ -45,7 +45,7 @@ export const githubAgent = new Agent({
 
 export const coder = new Agent({
   name: 'coder',
-  model: 'anthropic/claude-sonnet-4-20250514',
+  model: 'anthropic/claude-sonnet-5',
   instructions:
     'You are an expert developer.\n\n' +
     `The repo is cloned at ${WORK_DIR}.\n\n` +
@@ -65,7 +65,7 @@ export const coder = new Agent({
 
 export const qaTester = new Agent({
   name: 'qa_tester',
-  model: 'anthropic/claude-sonnet-4-20250514',
+  model: 'anthropic/claude-sonnet-5',
   instructions:
     'You are a meticulous QA engineer.\n\n' +
     `The repo is at ${WORK_DIR}. You can read files with:\n  cat ${WORK_DIR}/src/main.py\n\n` +
@@ -83,7 +83,7 @@ export const qaTester = new Agent({
 
 export const codingTeam = new Agent({
   name: 'coding_team',
-  model: 'anthropic/claude-sonnet-4-20250514',
+  model: 'anthropic/claude-sonnet-5',
   instructions:
     'You are a coding team coordinator. Delegate to github_agent. ' +
     'Call transfer_to_github_agent now.',

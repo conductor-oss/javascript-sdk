@@ -1,6 +1,6 @@
 import { describe, it, expect } from "@jest/globals";
 import { z } from "zod";
-import { AgentConfigSerializer } from "../serializer.js";
+import { AgentConfigSerializer, budgetToEffort } from "../serializer.js";
 import { Agent, PromptTemplate, scatterGather } from "../agent.js";
 import type { CallbackHandler, TerminationCondition, HandoffCondition } from "../agent.js";
 import {
@@ -591,6 +591,62 @@ describe("serializeAgent() — thinkingConfig", () => {
       budgetTokens: 2048,
     });
     expect(config).not.toHaveProperty("thinkingBudgetTokens");
+  });
+
+  it("keeps legacy thinkingConfig for Sonnet 4.x models", () => {
+    const a = new Agent({
+      name: "test",
+      model: "anthropic/claude-sonnet-4-6",
+      thinkingBudgetTokens: 2048,
+    });
+    const config = serializer.serializeAgent(a);
+
+    expect(config.thinkingConfig).toEqual({ enabled: true, budgetTokens: 2048 });
+    expect(config).not.toHaveProperty("reasoningEffort");
+  });
+
+  it("translates budget to reasoningEffort for Claude Sonnet 5 (rejects legacy enabled shape)", () => {
+    const a = new Agent({
+      name: "test",
+      model: "anthropic/claude-sonnet-5",
+      thinkingBudgetTokens: 4096,
+    });
+    const config = serializer.serializeAgent(a);
+
+    expect(config).not.toHaveProperty("thinkingConfig");
+    expect(config.reasoningEffort).toBe("medium");
+  });
+
+  it("matches future Sonnet 5.x minors without a code change", () => {
+    const a = new Agent({
+      name: "test",
+      model: "anthropic/claude-sonnet-5-1",
+      thinkingBudgetTokens: 40_000,
+    });
+    const config = serializer.serializeAgent(a);
+
+    expect(config).not.toHaveProperty("thinkingConfig");
+    expect(config.reasoningEffort).toBe("xhigh");
+  });
+
+  it("does not override an explicit reasoningEffort on Sonnet 5", () => {
+    const a = new Agent({
+      name: "test",
+      model: "anthropic/claude-sonnet-5",
+      thinkingBudgetTokens: 4096,
+      reasoningEffort: "high",
+    });
+    const config = serializer.serializeAgent(a);
+
+    expect(config).not.toHaveProperty("thinkingConfig");
+    expect(config.reasoningEffort).toBe("high");
+  });
+
+  it("maps budget tiers to effort like the server does for Opus", () => {
+    expect(budgetToEffort(1024)).toBe("low");
+    expect(budgetToEffort(4096)).toBe("medium");
+    expect(budgetToEffort(16_384)).toBe("high");
+    expect(budgetToEffort(64_000)).toBe("xhigh");
   });
 });
 

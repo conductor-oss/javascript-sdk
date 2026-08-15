@@ -45,7 +45,7 @@ const searchKnowledgeBase = tool(
 
 export const researcher = new Agent({
   name: 'researcher',
-  model: 'anthropic/claude-sonnet-4-20250514',
+  model: 'anthropic/claude-sonnet-5',
   instructions:
     'You are a country analyst. You will be given the name of a country. ' +
     'Use the search_knowledge_base tool ONCE to research that country, then ' +
