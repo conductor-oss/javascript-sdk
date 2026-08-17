@@ -10,7 +10,7 @@
  *   - Conductor server with AgentTool + MCP support
  *   - CONDUCTOR_SERVER_URL=http://localhost:8080/api as environment variable
  *   - CONDUCTOR_AGENT_LLM_MODEL=openai/gpt-4o-mini as environment variable
- *   - GH_TOKEN in environment (optional, for GitHub MCP)
+ *   - GH_TOKEN in environment (required for GitHub MCP; e.g. export GH_TOKEN=$(gh auth token))
  */
 
 import { Agent, AgentRuntime, agentTool, tool, mcpTool } from '@io-orkes/conductor-javascript/agents';
