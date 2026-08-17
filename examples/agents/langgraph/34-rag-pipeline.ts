@@ -44,7 +44,7 @@ const DOCUMENTS: Document[] = [
   },
   {
     pageContent:
-      'Agentspan provides a runtime for deploying LangGraph and LangChain agents at scale. ' +
+      'Conductor provides a runtime for deploying LangGraph and LangChain agents at scale. ' +
       'It uses Conductor as an orchestration engine and exposes agents as Conductor tasks. ' +
       'The AgentRuntime class handles worker registration and lifecycle management.',
     metadata: { source: 'agentspan_docs', topic: 'agentspan' },

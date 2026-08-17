@@ -1,11 +1,11 @@
-# LangGraph + Agentspan
+# LangGraph + Conductor Agent
 
 Keep your existing LangGraph code. Add agentspan metadata and run with `runtime.run()`.
 
 ## createReactAgent
 
 <table>
-<tr><th>Before (vanilla LangGraph)</th><th>After (Agentspan)</th></tr>
+<tr><th>Before (vanilla LangGraph)</th><th>After (Conductor Agent)</th></tr>
 <tr><td>
 
 ```typescript

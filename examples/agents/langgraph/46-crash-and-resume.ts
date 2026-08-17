@@ -176,7 +176,7 @@ async function main() {
 
   const uiLink = `${UI_BASE}/execution/${savedExecutionId}`;
   console.log('-'.repeat(60));
-  console.log('Open the Agentspan UI to see the execution in RUNNING state:');
+  console.log('Open the Conductor UI to see the execution in RUNNING state:');
   console.log(`  ${uiLink}`);
   console.log();
   console.log('The workflow is alive on the server but stalled — no workers are');

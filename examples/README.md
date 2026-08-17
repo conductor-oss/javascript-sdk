@@ -48,8 +48,8 @@ npx ts-node examples/workers-e2e.ts
 
 Agentic examples live in [`agents/`](agents/) and use the durable agents layer
 (`@io-orkes/conductor-javascript/agents`). See [agents/README.md](agents/README.md)
-for the full catalog and environment setup (`AGENTSPAN_SERVER_URL`,
-`AGENTSPAN_LLM_MODEL`, provider API key). Highlights:
+for the full catalog and environment setup (`CONDUCTOR_SERVER_URL`,
+`CONDUCTOR_AGENT_LLM_MODEL`, provider API key). Highlights:
 
 | File | Description | Run |
 |------|-------------|-----|

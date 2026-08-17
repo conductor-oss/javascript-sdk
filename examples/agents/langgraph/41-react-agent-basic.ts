@@ -78,7 +78,7 @@ const graph = createReactAgent({ llm, tools, name: "math_and_text_agent" });
 const PROMPT =
   'What is sqrt(256) + 2**10? ' +
   "Also count the words in 'the quick brown fox jumps over the lazy dog'. " +
-  "And what is 'Agentspan' reversed?";
+  "And what is 'Conductor' reversed?";
 
 // ---------------------------------------------------------------------------
 // Run on agentspan
