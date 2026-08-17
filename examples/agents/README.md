@@ -127,7 +127,7 @@ The `CONDUCTOR_AGENT_LLM_MODEL` variable uses the `provider/model-name` format. 
 | Provider | Model string | API key env var |
 |----------|-------------|-----------------|
 | OpenAI | `anthropic/claude-sonnet-4-6` (default) | `OPENAI_API_KEY` |
-| Anthropic | `anthropic/claude-sonnet-4-20250514` | `ANTHROPIC_API_KEY` |
+| Anthropic | `anthropic/claude-sonnet-4-6` | `ANTHROPIC_API_KEY` |
 | Google Gemini | `google_gemini/gemini-2.0-flash` | `GOOGLE_GEMINI_API_KEY` |
 | AWS Bedrock | `aws_bedrock/...` | AWS credentials |
 | Azure OpenAI | `azure_openai/...` | Azure credentials |

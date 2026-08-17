@@ -18,7 +18,7 @@ import { Agent, AgentRuntime } from '@io-orkes/conductor-javascript/agents';
 
 export const qaTester = new Agent({
   name: 'qa_tester',
-  model: 'anthropic/claude-sonnet-4-20250514',
+  model: 'anthropic/claude-sonnet-4-6',
   instructions:
     'You are a meticulous QA engineer. Review the code written by the ' +
     'coder for correctness, edge cases, and bugs. Write and execute test ' +
@@ -36,7 +36,7 @@ export const qaTester = new Agent({
 
 export const coder = new Agent({
   name: 'coder',
-  model: 'anthropic/claude-sonnet-4-20250514',
+  model: 'anthropic/claude-sonnet-4-6',
   instructions:
     'You are an expert Python developer. Write clean, well-structured ' +
     'Python code to solve the given problem. Always execute your code to ' +

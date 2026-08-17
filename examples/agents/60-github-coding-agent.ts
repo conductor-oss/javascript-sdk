@@ -258,7 +258,7 @@ const qaTools = [readFile, listFiles];
 
 export const githubAgent = new Agent({
   name: 'github_agent',
-  model: 'anthropic/claude-sonnet-4-20250514',
+  model: 'anthropic/claude-sonnet-4-6',
   instructions:
     'You are a GitHub operations specialist. You handle all git and GitHub CLI interactions.\n\n' +
     'IMPORTANT: Read the conversation history carefully. If the conversation already contains ' +
@@ -283,7 +283,7 @@ export const githubAgent = new Agent({
 
 export const coderAgent = new Agent({
   name: 'coder',
-  model: 'anthropic/claude-sonnet-4-20250514',
+  model: 'anthropic/claude-sonnet-4-6',
   instructions:
     'You are an expert developer. Write clean, well-structured code.\n\n' +
     'WHEN YOU RECEIVE A TASK:\n' +
@@ -303,7 +303,7 @@ export const coderAgent = new Agent({
 
 export const qaTester = new Agent({
   name: 'qa_tester',
-  model: 'anthropic/claude-sonnet-4-20250514',
+  model: 'anthropic/claude-sonnet-4-6',
   instructions:
     'You are a meticulous QA engineer. Review the code written by the coder.\n\n' +
     '1. Use read_file to read the code that was written\n' +
@@ -323,7 +323,7 @@ export const qaTester = new Agent({
 
 export const codingTeam = new Agent({
   name: 'coding_team',
-  model: 'anthropic/claude-sonnet-4-20250514',
+  model: 'anthropic/claude-sonnet-4-6',
   instructions:
     'You are a coding team coordinator. Delegate the incoming request ' +
     'to github_agent to get started. Call transfer_to_github_agent now.',
