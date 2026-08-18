@@ -431,4 +431,88 @@ describe("serializeFrameworkAgent", () => {
       expect(workers).toHaveLength(0);
     });
   });
+
+  // ── Google ADK shapes ─────────────────────────────────────
+
+  /** Structurally equivalent to a zod v4 schema (ADK bundles zod v4). */
+  function zodV4Object(
+    shape: Record<string, { type: string; description?: string; optional?: boolean }>,
+  ): Record<string, unknown> {
+    const v4 = (def: Record<string, unknown>, description?: string) => ({
+      _zod: { def },
+      ...(description ? { description } : {}),
+    });
+    const shapeOut: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(shape)) {
+      const inner = v4({ type: v.type }, v.description);
+      shapeOut[k] = v.optional ? v4({ type: "optional", innerType: inner }) : inner;
+    }
+    return v4({ type: "object", shape: shapeOut });
+  }
+
+  describe("Google ADK AgentTool extraction", () => {
+    it("detects an ADK-shaped AgentTool (plain agent property, no markers)", () => {
+      // Regression: undetected ADK AgentTools degraded into generic tool
+      // entries with no callable — the server scheduled a worker task that
+      // no local worker ever polled, hanging the run forever.
+      const childTool = {
+        name: "search_knowledge_base",
+        description: "Search the KB.",
+        parameters: zodV4Object({ query: { type: "string", description: "The search query" } }),
+        execute: async () => "ok",
+      };
+      const childAgent = {
+        name: "researcher",
+        model: "openai/gpt-4o-mini",
+        instruction: "You research.",
+        tools: [childTool],
+      };
+      const agentTool = { name: "researcher", description: "", agent: childAgent };
+      const mockAgent = {
+        name: "manager",
+        model: "openai/gpt-4o-mini",
+        instruction: "You manage.",
+        tools: [agentTool],
+      };
+
+      const [config, workers] = serializeFrameworkAgent(mockAgent);
+
+      const tools = config.tools as Record<string, unknown>[];
+      expect(tools[0]._type).toBe("AgentTool");
+      expect(tools[0].name).toBe("researcher");
+      expect((tools[0].agent as Record<string, unknown>).name).toBe("researcher");
+      // The child agent's tool is extracted as a registrable worker.
+      expect(workers.some((w) => w.name === "search_knowledge_base" && !!w.func)).toBe(true);
+    });
+  });
+
+  describe("zod v4 schema conversion", () => {
+    it("converts a v4 schema to clean JSON Schema instead of mangled internals", () => {
+      // Regression: zod v4 dropped _def.typeName, so _isZodSchema missed v4
+      // schemas and tools serialized with zod internals as their schema —
+      // the LLM saw a parameterless tool and called it with no arguments.
+      const tool = {
+        name: "skb",
+        description: "Search.",
+        parameters: zodV4Object({
+          query: { type: "string", description: "The search query" },
+          limit: { type: "number", optional: true },
+        }),
+        execute: async () => "ok",
+      };
+      const [, workers] = serializeFrameworkAgent({
+        name: "a",
+        model: "m",
+        instruction: "x",
+        tools: [tool],
+      });
+
+      const schema = workers[0].inputSchema as Record<string, unknown>;
+      expect(schema.type).toBe("object");
+      const props = schema.properties as Record<string, Record<string, unknown>>;
+      expect(props.query).toEqual({ type: "string", description: "The search query" });
+      expect(props.limit).toEqual({ type: "number" });
+      expect(schema.required).toEqual(["query"]);
+    });
+  });
 });

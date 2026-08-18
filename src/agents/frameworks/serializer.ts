@@ -276,9 +276,25 @@ function _tryExtractAgentTool(obj: unknown, workers: WorkerInfo[]): Record<strin
   if (typeof obj !== "object" || obj === null) return null;
   const asAny = obj as Record<string, unknown>;
 
-  if (!asAny._is_agent_tool && !asAny._agent_instance) return null;
+  // Two agent-as-tool shapes:
+  //  - OpenAI Agents SDK: marker fields _is_agent_tool / _agent_instance
+  //  - Google ADK AgentTool: a plain `agent` property holding the child
+  //    agent (constructor names are minified, so detect by shape). Without
+  //    this branch an ADK AgentTool degrades into a generic tool entry with
+  //    no callable — the server schedules a worker task that no local
+  //    worker ever polls, and the run hangs forever.
+  const maybeAgent = asAny.agent as Record<string, unknown> | undefined;
+  const adkChild =
+    maybeAgent &&
+    typeof maybeAgent === "object" &&
+    typeof maybeAgent.name === "string" &&
+    ("instruction" in maybeAgent || "model" in maybeAgent)
+      ? maybeAgent
+      : null;
 
-  const childAgent = asAny._agent_instance;
+  if (!asAny._is_agent_tool && !asAny._agent_instance && !adkChild) return null;
+
+  const childAgent = asAny._agent_instance ?? adkChild;
   if (!childAgent) return null;
 
   const [childConfig, childWorkers] = serializeFrameworkAgent(childAgent);
@@ -391,12 +407,93 @@ function _getSerializableKeys(obj: object): string[] {
 function _isZodSchema(obj: unknown): boolean {
   if (typeof obj !== "object" || obj === null) return false;
   const asAny = obj as Record<string, unknown>;
-  // Zod schemas have _def property with typeName
-  return (
+  // Zod v3 schemas have _def.typeName; v4 schemas (used by e.g. @google/adk)
+  // dropped typeName and carry a _zod internals object instead. Without the
+  // v4 branch, framework tool schemas fall through to generic property
+  // enumeration and serialize as mangled zod internals — the server then
+  // renders a parameterless tool and the LLM calls it with no arguments.
+  if (
     typeof asAny._def === "object" &&
     asAny._def !== null &&
     typeof (asAny._def as Record<string, unknown>).typeName === "string"
+  ) {
+    return true;
+  }
+  const zodInternals = asAny._zod as Record<string, unknown> | undefined;
+  return (
+    typeof zodInternals === "object" &&
+    zodInternals !== null &&
+    typeof zodInternals.def === "object" &&
+    zodInternals.def !== null
   );
+}
+
+/**
+ * Convert a Zod v4 schema to JSON Schema by walking `_zod.def` structurally.
+ *
+ * The SDK's own zod dependency is v3 (no native z.toJSONSchema), and a v3
+ * converter can't read a v4 schema instance from another package's zod, so
+ * the common shapes are handled here directly.
+ */
+function _zodV4ToJsonSchema(schema: unknown): Record<string, unknown> | null {
+  const internals = (schema as Record<string, unknown> | null)?._zod as
+    | Record<string, unknown>
+    | undefined;
+  const def = internals?.def as Record<string, unknown> | undefined;
+  if (!def || typeof def.type !== "string") return null;
+
+  const description = (schema as Record<string, unknown>).description;
+  const withDesc = (out: Record<string, unknown>): Record<string, unknown> =>
+    typeof description === "string" && description.length > 0
+      ? { ...out, description }
+      : out;
+
+  switch (def.type) {
+    case "object": {
+      const shape = (def.shape ?? {}) as Record<string, unknown>;
+      const properties: Record<string, unknown> = {};
+      const required: string[] = [];
+      for (const [key, child] of Object.entries(shape)) {
+        const childDef = (child as Record<string, unknown>)?._zod as
+          | Record<string, unknown>
+          | undefined;
+        const childType = (childDef?.def as Record<string, unknown> | undefined)?.type;
+        const childSchema = _zodV4ToJsonSchema(child);
+        if (childSchema) properties[key] = childSchema;
+        if (childType !== "optional" && childType !== "default") required.push(key);
+      }
+      const out: Record<string, unknown> = { type: "object", properties };
+      if (required.length > 0) out.required = required;
+      return withDesc(out);
+    }
+    case "optional":
+    case "default":
+    case "nullable": {
+      const inner = _zodV4ToJsonSchema(def.innerType);
+      return inner ? withDesc(inner) : null;
+    }
+    case "array": {
+      const items = _zodV4ToJsonSchema(def.element) ?? {};
+      return withDesc({ type: "array", items });
+    }
+    case "enum": {
+      const entries = def.entries as Record<string, unknown> | undefined;
+      return withDesc({ type: "string", enum: entries ? Object.values(entries) : [] });
+    }
+    case "literal": {
+      const values = def.values as unknown[] | undefined;
+      return withDesc({ enum: values ?? [] });
+    }
+    case "string":
+    case "number":
+    case "boolean":
+      return withDesc({ type: def.type });
+    case "int":
+      return withDesc({ type: "integer" });
+    default:
+      // Unknown v4 type — emit a permissive schema rather than zod internals.
+      return withDesc({});
+  }
 }
 
 /**
@@ -404,6 +501,12 @@ function _isZodSchema(obj: unknown): boolean {
  * Uses zod-to-json-schema if available, falls back to null.
  */
 function _zodToJsonSchema(zodSchema: unknown): Record<string, unknown> | null {
+  // Zod v4 instance (has _zod internals) — the v3 zod-to-json-schema library
+  // can't read these, so walk the def structure directly.
+  const asAny = zodSchema as Record<string, unknown> | null;
+  if (asAny && typeof asAny._zod === "object" && asAny._zod !== null) {
+    return _zodV4ToJsonSchema(zodSchema);
+  }
   try {
     // Try dynamic import of zod-to-json-schema
 
