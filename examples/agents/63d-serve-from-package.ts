@@ -62,11 +62,7 @@ async function main() {
   }
 }
 
-// Guard: 63e-run-monitoring.ts imports monitoringAgent from this file — only
-// run when executed directly, not on import.
-if (require.main === module) {
-  main().catch((err) => {
-    console.error(err);
-    process.exitCode = 1;
-  });
-}
+main().catch((err) => {
+  console.error(err);
+  process.exitCode = 1;
+});

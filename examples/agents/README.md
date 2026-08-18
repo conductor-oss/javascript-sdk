@@ -46,8 +46,8 @@ In production, the three concerns are separated:
 Every example includes the deploy/serve pattern as commented code at the bottom of its
 `main()` function — look for the `// Production pattern:` comment.
 
-See [63-deploy.ts](63-deploy.ts), [63b-serve.ts](63b-serve.ts), and
-[63c-run-by-name.ts](63c-run-by-name.ts) for a complete working example of this pattern.
+See [63-deploy.ts](63-deploy.ts) and [63b-serve.ts](63b-serve.ts) for a complete
+working example of this pattern.
 
 ---
 
@@ -316,9 +316,7 @@ cd examples/agents/openai && npx tsx 01-basic-agent.ts
 | 17 | [Scheduled Agent](17-scheduled-agent.ts) | Deploy an agent on a cron schedule |
 | 63 | [Deploy](63-deploy.ts) | Register agent with the server |
 | 63b | [Serve](63b-serve.ts) | Start a long-running worker |
-| 63c | [Run by Name](63c-run-by-name.ts) | Execute a pre-deployed agent |
 | 63d | [Serve from Package](63d-serve-from-package.ts) | Serve agents from a package |
-| 63e | [Run Monitoring](63e-run-monitoring.ts) | Monitor running executions |
 
 ## End-to-End Use Cases
 
