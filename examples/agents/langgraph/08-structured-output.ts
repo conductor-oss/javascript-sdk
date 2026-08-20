@@ -45,7 +45,7 @@ const graph = createReactAgent({
 const PROMPT = 'Write a review for the movie Inception (2010).';
 
 // ---------------------------------------------------------------------------
-// Run on agentspan
+// Run on Conductor
 // ---------------------------------------------------------------------------
 async function main() {
   const runtime = new AgentRuntime();
@@ -58,7 +58,7 @@ async function main() {
     // 1. Deploy once during CI/CD:
     // await runtime.deploy(graph);
     // CLI alternative:
-    // agentspan deploy --package sdk/typescript/examples/langgraph --agents structured_output
+    // conductor deploy --package examples/agents/langgraph --agents structured_output
     //
     // 2. In a separate long-lived worker process:
     // await runtime.serve(graph);

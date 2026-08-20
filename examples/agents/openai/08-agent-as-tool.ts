@@ -10,7 +10,7 @@
  *   - Differs from handoffs: manager retains control and synthesizes results
  *
  * Requirements:
- *   - CONDUCTOR_SERVER_URL for the Agentspan path
+ *   - CONDUCTOR_SERVER_URL=http://localhost:8080/api
  */
 
 import { Agent, tool, setTracingDisabled } from '@openai/agents';
@@ -107,7 +107,7 @@ const prompt =
   "and the battery life is wonderful. However, the keyboard feels terrible " +
   "and the trackpad is the worst I've used.'";
 
-// ── Run on agentspan ──────────────────────────────────────────────
+// ── Run on Conductor ──────────────────────────────────────────────
 async function main() {
   const runtime = new AgentRuntime();
   try {
@@ -119,7 +119,7 @@ async function main() {
     // 1. Deploy once during CI/CD:
     // await runtime.deploy(manager);
     // CLI alternative:
-    // agentspan deploy --package sdk/typescript/examples/openai --agents text_analysis_manager
+    // conductor deploy --package examples/agents/openai --agents text_analysis_manager
     //
     // 2. In a separate long-lived worker process:
     // await runtime.serve(manager);

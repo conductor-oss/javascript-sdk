@@ -232,7 +232,7 @@ async function main() {
     // 1. Deploy once during CI/CD:
     // await runtime.deploy(agentRunnable);
     // CLI alternative:
-    // agentspan deploy --package sdk/typescript/examples/langgraph --agents advanced_orchestration
+    // conductor deploy --package examples/agents/langgraph --agents advanced_orchestration
     //
     // 2. In a separate long-lived worker process:
     // await runtime.serve(agentRunnable);

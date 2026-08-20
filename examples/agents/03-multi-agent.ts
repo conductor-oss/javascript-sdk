@@ -104,7 +104,7 @@ async function main() {
     // 1. Deploy once during CI/CD (optional -- serve() below also deploys):
     // await runtime.deploy(writingPipeline);
     // CLI alternative:
-    // agentspan deploy --package sdk/typescript/examples --agents writer
+    // conductor deploy --package examples/agents --agents writer
     //
     // 2. In a separate long-lived worker process (deploys + registers workers + starts polling):
     // await runtime.serve(writingPipeline);

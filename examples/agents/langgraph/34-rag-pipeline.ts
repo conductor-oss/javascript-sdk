@@ -195,7 +195,7 @@ const graph = new StateGraph(RAGState)
 const PROMPT = 'What is LangGraph and how does it differ from LangChain?';
 
 // ---------------------------------------------------------------------------
-// Run on agentspan
+// Run on Conductor
 // ---------------------------------------------------------------------------
 async function main() {
   const runtime = new AgentRuntime();
@@ -208,7 +208,7 @@ async function main() {
     // 1. Deploy once during CI/CD:
     // await runtime.deploy(graph);
     // CLI alternative:
-    // agentspan deploy --package sdk/typescript/examples/langgraph --agents rag_pipeline
+    // conductor deploy --package examples/agents/langgraph --agents rag_pipeline
     //
     // 2. In a separate long-lived worker process:
     // await runtime.serve(graph);

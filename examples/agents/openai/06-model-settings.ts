@@ -10,7 +10,7 @@
  *   - High temperature for creative responses
  *
  * Requirements:
- *   - CONDUCTOR_SERVER_URL for the Agentspan path
+ *   - CONDUCTOR_SERVER_URL=http://localhost:8080/api
  */
 
 import { Agent, setTracingDisabled } from '@openai/agents';
@@ -46,7 +46,7 @@ export const preciseAgent = new Agent({
   },
 });
 
-// ── Run on agentspan ──────────────────────────────────────────────
+// ── Run on Conductor ──────────────────────────────────────────────
 async function main() {
   const runtime = new AgentRuntime();
   try {
@@ -70,7 +70,7 @@ async function main() {
     // 1. Deploy once during CI/CD:
     // await runtime.deploy(creativeAgent);
     // CLI alternative:
-    // agentspan deploy --package sdk/typescript/examples/openai --agents creative_writer
+    // conductor deploy --package examples/agents/openai --agents creative_writer
     //
     // 2. In a separate long-lived worker process:
     // await runtime.serve(creativeAgent);

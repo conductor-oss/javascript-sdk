@@ -13,8 +13,8 @@
  *
  * Requirements:
  *   - Conductor server running
- *   - CONDUCTOR_SERVER_URL=http://localhost:8080/api as environment variable
- *   - CONDUCTOR_AGENT_LLM_MODEL=openai/gpt-4o-mini as environment variable
+ *   - CONDUCTOR_SERVER_URL=http://localhost:8080/api
+ *   - CONDUCTOR_AGENT_LLM_MODEL=openai/gpt-4o-mini
  */
 
 import { Agent, AgentRuntime, tool } from '@io-orkes/conductor-javascript/agents';
@@ -85,7 +85,7 @@ async function main() {
     // await runtime.deploy(docAssistant);
     // await runtime.deploy(opsBot);
     // CLI alternative:
-    // agentspan deploy --package sdk/typescript/examples --agents doc_assistant
+    // conductor deploy --package examples/agents --agents doc_assistant
     //
     // 2. In a separate long-lived worker process (deploys + registers workers + starts polling):
     // await runtime.serve(docAssistant, opsBot);

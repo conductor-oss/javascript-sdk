@@ -18,14 +18,14 @@
  *      unchanged.
  *
  * Setup (one-time, via CLI):
- *   agentspan login                                     # authenticate
- *   agentspan credentials set GITHUB_TOKEN <your-github-token> # enter token when prompted
+ *   conductor config save                                 # authenticate
+ *   conductor secret put GITHUB_TOKEN <your-github-token> # enter token when prompted
  *
  * Requirements:
  *   - Conductor server running at CONDUCTOR_SERVER_URL (> 0.4.2, for
  *     runtimeMetadata delivery) or conductor-oss (with PR #1255)
  *   - CONDUCTOR_AGENT_LLM_MODEL set (or defaults to openai/gpt-4o-mini)
- *   - GITHUB_TOKEN stored via `agentspan credentials set`
+ *   - GITHUB_TOKEN stored via `conductor secret put`
  */
 
 import { Agent, AgentRuntime, tool } from '@io-orkes/conductor-javascript/agents';
@@ -152,7 +152,7 @@ async function main() {
     // 1. Deploy once during CI/CD (optional -- serve() below also deploys):
     // await runtime.deploy(agent);
     // CLI alternative:
-    // agentspan deploy --package sdk/typescript/examples --agents github_agent
+    // conductor deploy --package examples/agents --agents github_agent
     //
     // 2. In a separate long-lived worker process (deploys + registers workers + starts polling):
     // await runtime.serve(agent);

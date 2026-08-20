@@ -92,7 +92,7 @@ async function promptHuman(
   return response;
 }
 
-// ── Run on agentspan ─────────────────────────────────────
+// ── Run on Conductor ─────────────────────────────────────
 
 const rl = readline.createInterface({ input: stdin, output: stdout });
 const runtime = new AgentRuntime();

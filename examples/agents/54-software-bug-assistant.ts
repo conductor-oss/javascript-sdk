@@ -8,8 +8,8 @@
  *
  * Requirements:
  *   - Conductor server with AgentTool + MCP support
- *   - CONDUCTOR_SERVER_URL=http://localhost:8080/api as environment variable
- *   - CONDUCTOR_AGENT_LLM_MODEL=openai/gpt-4o-mini as environment variable
+ *   - CONDUCTOR_SERVER_URL=http://localhost:8080/api
+ *   - CONDUCTOR_AGENT_LLM_MODEL=openai/gpt-4o-mini
  *   - GH_TOKEN in environment (required for GitHub MCP; e.g. export GH_TOKEN=$(gh auth token))
  */
 
@@ -286,7 +286,7 @@ async function main() {
     // 1. Deploy once during CI/CD (optional -- serve() below also deploys):
     // await runtime.deploy(softwareAssistant);
     // CLI alternative:
-    // agentspan deploy --package sdk/typescript/examples --agents software_assistant_54
+    // conductor deploy --package examples/agents --agents software_assistant_54
     //
     // 2. In a separate long-lived worker process (deploys + registers workers + starts polling):
     // await runtime.serve(softwareAssistant);

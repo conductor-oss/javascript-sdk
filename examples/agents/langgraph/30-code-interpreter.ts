@@ -118,7 +118,7 @@ const graph = createReactAgent({ llm, tools, name: "code_interpreter_agent" });
 const PROMPT = 'Calculate (2**10 - 1) * 3 + 7';
 
 // ---------------------------------------------------------------------------
-// Run on agentspan
+// Run on Conductor
 // ---------------------------------------------------------------------------
 async function main() {
   const runtime = new AgentRuntime();
@@ -131,7 +131,7 @@ async function main() {
     // 1. Deploy once during CI/CD:
     // await runtime.deploy(graph);
     // CLI alternative:
-    // agentspan deploy --package sdk/typescript/examples/langgraph --agents code_interpreter
+    // conductor deploy --package examples/agents/langgraph --agents code_interpreter
     //
     // 2. In a separate long-lived worker process:
     // await runtime.serve(graph);

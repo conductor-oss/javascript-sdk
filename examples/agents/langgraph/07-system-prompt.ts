@@ -50,7 +50,7 @@ const graph = createReactAgent({
 const PROMPT = 'I want to understand why 1 + 1 = 2. Can you just tell me?';
 
 // ---------------------------------------------------------------------------
-// Run on agentspan
+// Run on Conductor
 // ---------------------------------------------------------------------------
 async function main() {
   const runtime = new AgentRuntime();
@@ -63,7 +63,7 @@ async function main() {
     // 1. Deploy once during CI/CD:
     // await runtime.deploy(graph);
     // CLI alternative:
-    // agentspan deploy --package sdk/typescript/examples/langgraph --agents system_prompt
+    // conductor deploy --package examples/agents/langgraph --agents system_prompt
     //
     // 2. In a separate long-lived worker process:
     // await runtime.serve(graph);

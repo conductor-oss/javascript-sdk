@@ -18,14 +18,14 @@
  *   mcp-testkit --transport http --auth <secret>
  *
  *   # Store credentials via CLI or Agentspan UI:
- *   agentspan credentials set HTTP_TEST_API_KEY <secret>
- *   agentspan credentials set MCP_TEST_API_KEY <secret>
+ *   conductor secret put HTTP_TEST_API_KEY <secret>
+ *   conductor secret put MCP_TEST_API_KEY <secret>
  *
  * Requirements:
  *   - Conductor server with LLM support
  *   - mcp-testkit running on http://localhost:3001 (see setup above)
- *   - CONDUCTOR_SERVER_URL=http://localhost:8080/api as environment variable
- *   - CONDUCTOR_AGENT_LLM_MODEL=openai/gpt-4o-mini as environment variable
+ *   - CONDUCTOR_SERVER_URL=http://localhost:8080/api
+ *   - CONDUCTOR_AGENT_LLM_MODEL=openai/gpt-4o-mini
  */
 
 import { Agent, AgentRuntime, tool, httpTool, mcpTool } from '@io-orkes/conductor-javascript/agents';
@@ -103,7 +103,7 @@ async function main() {
     // 1. Deploy once during CI/CD (optional -- serve() below also deploys):
     // await runtime.deploy(agent);
     // CLI alternative:
-    // agentspan deploy --package sdk/typescript/examples --agents http_tools_demo
+    // conductor deploy --package examples/agents --agents http_tools_demo
     //
     // 2. In a separate long-lived worker process (deploys + registers workers + starts polling):
     // await runtime.serve(agent);

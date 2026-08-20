@@ -73,7 +73,7 @@ const queries = [
   'What is the weather like today?',
 ];
 
-// ── Run on agentspan ─────────────────────────────────────
+// ── Run on Conductor ─────────────────────────────────────
 async function main() {
   const runtime = new AgentRuntime();
   try {
@@ -89,7 +89,7 @@ async function main() {
     // 1. Deploy once during CI/CD:
     // await runtime.deploy(triageAgent);
     // CLI alternative:
-    // agentspan deploy --package sdk/typescript/examples/vercel-ai --agents triage_agent
+    // conductor deploy --package examples/agents/vercel-ai --agents triage_agent
     //
     // 2. In a separate long-lived worker process:
     // await runtime.serve(triageAgent);

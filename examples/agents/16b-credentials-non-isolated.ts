@@ -11,7 +11,7 @@
  * Requirements:
  *   - Conductor server running at CONDUCTOR_SERVER_URL
  *   - CONDUCTOR_AGENT_LLM_MODEL set (or defaults to openai/gpt-4o-mini)
- *   - STRIPE_SECRET_KEY stored: agentspan credentials set STRIPE_SECRET_KEY <your-stripe-secret-key>
+ *   - STRIPE_SECRET_KEY stored: conductor secret put STRIPE_SECRET_KEY <your-stripe-secret-key>
  */
 
 import {
@@ -33,7 +33,7 @@ const getCustomerBalance = tool(
     } catch (err) {
       if (err instanceof CredentialNotFoundError) {
         return {
-          error: 'STRIPE_SECRET_KEY not configured -- run: agentspan credentials set STRIPE_SECRET_KEY <your-stripe-secret-key>',
+          error: 'STRIPE_SECRET_KEY not configured -- run: conductor secret put STRIPE_SECRET_KEY <your-stripe-secret-key>',
         };
       }
       throw err;
@@ -155,7 +155,7 @@ async function main() {
     // 1. Deploy once during CI/CD (optional -- serve() below also deploys):
     // await runtime.deploy(agent);
     // CLI alternative:
-    // agentspan deploy --package sdk/typescript/examples --agents billing_agent
+    // conductor deploy --package examples/agents --agents billing_agent
     //
     // 2. In a separate long-lived worker process (deploys + registers workers + starts polling):
     // await runtime.serve(agent);

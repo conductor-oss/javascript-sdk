@@ -27,8 +27,8 @@
  *   mcp-testkit --transport http --auth <secret>
  *
  *   # Store credentials via CLI or Agentspan UI:
- *   agentspan credentials set MCP_AUTH_TOKEN <secret>
- *   agentspan credentials set SEARCH_API_KEY <key>
+ *   conductor secret put MCP_AUTH_TOKEN <secret>
+ *   conductor secret put SEARCH_API_KEY <key>
  *
  * Requirements:
  *   - Conductor server with LLM support
@@ -887,7 +887,7 @@ async function main() {
   // 1. Deploy once during CI/CD (optional -- serve() below also deploys):
   // await runtime.deploy(fullPipeline);
   // CLI alternative:
-  // agentspan deploy --package sdk/typescript/examples --agents content_publishing_platform
+  // conductor deploy --package examples/agents --agents content_publishing_platform
   //
   // 2. In a separate long-lived worker process (deploys + registers workers + starts polling):
   // await runtime.serve(fullPipeline);

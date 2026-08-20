@@ -5,7 +5,7 @@
  * Writes each to _configs/{example_name}.json for cross-SDK comparison.
  *
  * Usage:
- *     cd sdk/typescript && npx tsx examples/dump-agent-configs.ts
+ *     npx tsx examples/agents/dump-agent-configs.ts
  */
 
 import { writeFileSync, mkdirSync } from 'fs';

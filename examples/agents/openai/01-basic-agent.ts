@@ -9,7 +9,7 @@
  *   - Running it via Conductor passthrough (AgentRuntime)
  *
  * Requirements:
- *   - CONDUCTOR_SERVER_URL for the Agentspan path
+ *   - CONDUCTOR_SERVER_URL=http://localhost:8080/api
  */
 
 import { Agent, setTracingDisabled } from '@openai/agents';
@@ -26,7 +26,7 @@ export const agent = new Agent({
 
 const prompt = 'Say hello and tell me a fun fact about the TypeScript programming language.';
 
-// ── Run on agentspan ──────────────────────────────────────────────
+// ── Run on Conductor ──────────────────────────────────────────────
 async function main() {
   const runtime = new AgentRuntime();
   try {
@@ -38,7 +38,7 @@ async function main() {
     // 1. Deploy once during CI/CD:
     // await runtime.deploy(agent);
     // CLI alternative:
-    // agentspan deploy --package sdk/typescript/examples/openai --agents greeter
+    // conductor deploy --package examples/agents/openai --agents greeter
     //
     // 2. In a separate long-lived worker process:
     // await runtime.serve(agent);

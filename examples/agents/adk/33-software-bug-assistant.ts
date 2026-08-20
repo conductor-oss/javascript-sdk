@@ -299,7 +299,7 @@ if (process.argv[1]?.endsWith('33-software-bug-assistant.ts') || process.argv[1]
       // 1. Deploy once during CI/CD:
       // await runtime.deploy(softwareAssistant);
       // CLI alternative:
-      // agentspan deploy --package sdk/typescript/examples/adk --agents software_assistant
+      // conductor deploy --package examples/agents/adk --agents software_assistant
       //
       // 2. In a separate long-lived worker process:
       // await runtime.serve(softwareAssistant);

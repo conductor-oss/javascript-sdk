@@ -383,7 +383,7 @@ const graph = orchBuilder.compile({ name: "research_orchestrator" });
 };
 
 // ---------------------------------------------------------------------------
-// Run on agentspan
+// Run on Conductor
 // ---------------------------------------------------------------------------
 async function main() {
   console.log('Starting context condensation stress test (LangGraph / TypeScript).');
@@ -408,7 +408,7 @@ async function main() {
     // 1. Deploy once during CI/CD:
     // await runtime.deploy(graph);
     // CLI alternative:
-    // agentspan deploy --package sdk/typescript/examples/langgraph --agents context_condensation
+    // conductor deploy --package examples/agents/langgraph --agents context_condensation
     //
     // 2. In a separate long-lived worker process:
     // await runtime.serve(graph);

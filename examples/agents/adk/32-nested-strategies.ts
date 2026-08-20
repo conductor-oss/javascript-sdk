@@ -14,7 +14,7 @@
  *
  * Requirements:
  *   - npm install @google/adk zod
- *   - CONDUCTOR_SERVER_URL for agentspan path
+ *   - CONDUCTOR_SERVER_URL=http://localhost:8080/api
  */
 
 import { LlmAgent, ParallelAgent, SequentialAgent } from '@google/adk';
@@ -63,7 +63,7 @@ export const pipeline = new SequentialAgent({
   subAgents: [parallelResearch, summarizer],
 });
 
-// ── Run on agentspan ───────────────────────────────────────────────
+// ── Run on Conductor ───────────────────────────────────────────────
 
 async function main() {
   const runtime = new AgentRuntime();
@@ -79,7 +79,7 @@ async function main() {
     // 1. Deploy once during CI/CD:
     // await runtime.deploy(pipeline);
     // CLI alternative:
-    // agentspan deploy --package sdk/typescript/examples/adk --agents analysis_pipeline
+    // conductor deploy --package examples/agents/adk --agents analysis_pipeline
     //
     // 2. In a separate long-lived worker process:
     // await runtime.serve(pipeline);

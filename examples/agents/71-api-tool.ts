@@ -20,14 +20,14 @@
  *   mcp-testkit --transport http --auth <secret>
  *
  *   # Store credentials via CLI or Agentspan UI:
- *   agentspan credentials set HTTP_TEST_API_KEY <secret>
+ *   conductor secret put HTTP_TEST_API_KEY <secret>
  *
  * Requirements:
  *   - Conductor server with LLM support
- *   - CONDUCTOR_SERVER_URL=http://localhost:8080/api as environment variable
- *   - CONDUCTOR_AGENT_LLM_MODEL=openai/gpt-4o-mini as environment variable
+ *   - CONDUCTOR_SERVER_URL=http://localhost:8080/api
+ *   - CONDUCTOR_AGENT_LLM_MODEL=openai/gpt-4o-mini
  *   - mcp-testkit running on http://localhost:3001 (for examples 1-3, see setup above)
- *   - For GitHub example: agentspan credentials set GITHUB_TOKEN ghp_xxx
+ *   - For GitHub example: conductor secret put GITHUB_TOKEN ghp_xxx
  */
 
 import { Agent, AgentRuntime, apiTool, tool } from '@io-orkes/conductor-javascript/agents';
@@ -170,7 +170,7 @@ async function main() {
     // 1. Deploy once during CI/CD (optional -- serve() below also deploys):
     // await runtime.deploy(mathAgent);
     // CLI alternative:
-    // agentspan deploy --package sdk/typescript/examples --agents math_assistant
+    // conductor deploy --package examples/agents --agents math_assistant
     //
     // 2. In a separate long-lived worker process (deploys + registers workers + starts polling):
     // await runtime.serve(mathAgent);

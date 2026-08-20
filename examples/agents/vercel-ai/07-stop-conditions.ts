@@ -66,7 +66,7 @@ export const agent = new Agent({
 const prompt =
   'Analyze market trends for AI infrastructure companies. Look at revenue growth, adoption rates, and competitive landscape, then summarize.';
 
-// ── Run on agentspan ─────────────────────────────────────
+// ── Run on Conductor ─────────────────────────────────────
 async function main() {
   analysisStepCount = 0;
   const runtime = new AgentRuntime();
@@ -80,7 +80,7 @@ async function main() {
     // 1. Deploy once during CI/CD:
     // await runtime.deploy(agent);
     // CLI alternative:
-    // agentspan deploy --package sdk/typescript/examples/vercel-ai --agents stop_conditions_agent
+    // conductor deploy --package examples/agents/vercel-ai --agents stop_conditions_agent
     //
     // 2. In a separate long-lived worker process:
     // await runtime.serve(agent);

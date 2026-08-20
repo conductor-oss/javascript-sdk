@@ -6,7 +6,7 @@
  *
  * Requirements:
  *   - Conductor server running
- *   - CONDUCTOR_SERVER_URL=http://localhost:8080/api as environment variable
+ *   - CONDUCTOR_SERVER_URL=http://localhost:8080/api
  *   - gh CLI authenticated
  *   - Git configured with push access to the repo
  */
@@ -144,7 +144,7 @@ async function main() {
     // 1. Deploy once during CI/CD (optional -- serve() below also deploys):
     // await runtime.deploy(codingTeam);
     // CLI alternative:
-    // agentspan deploy --package sdk/typescript/examples --agents coding_team
+    // conductor deploy --package examples/agents --agents coding_team
     //
     // 2. In a separate long-lived worker process (deploys + registers workers + starts polling):
     // await runtime.serve(codingTeam);

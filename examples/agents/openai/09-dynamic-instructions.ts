@@ -10,7 +10,7 @@
  *   - Function tools alongside dynamic instructions
  *
  * Requirements:
- *   - CONDUCTOR_SERVER_URL for the Agentspan path
+ *   - CONDUCTOR_SERVER_URL=http://localhost:8080/api
  */
 
 import { Agent, tool, setTracingDisabled } from '@openai/agents';
@@ -91,7 +91,7 @@ export const agent = new Agent({
 
 const prompt = "Show me my todo list and add 'Prepare demo for Friday' as high priority.";
 
-// ── Run on agentspan ──────────────────────────────────────────────
+// ── Run on Conductor ──────────────────────────────────────────────
 async function main() {
   const runtime = new AgentRuntime();
   try {
@@ -103,7 +103,7 @@ async function main() {
     // 1. Deploy once during CI/CD:
     // await runtime.deploy(agent);
     // CLI alternative:
-    // agentspan deploy --package sdk/typescript/examples/openai --agents personal_assistant
+    // conductor deploy --package examples/agents/openai --agents personal_assistant
     //
     // 2. In a separate long-lived worker process:
     // await runtime.serve(agent);

@@ -6,8 +6,8 @@
  *
  * Requirements:
  *   - Conductor server with LLM support
- *   - CONDUCTOR_SERVER_URL=http://localhost:8080/api as environment variable
- *   - CONDUCTOR_AGENT_LLM_MODEL set as environment variable (optional)
+ *   - CONDUCTOR_SERVER_URL=http://localhost:8080/api
+ *   - CONDUCTOR_AGENT_LLM_MODEL set (optional)
  */
 
 import { Agent, AgentRuntime } from '@io-orkes/conductor-javascript/agents';

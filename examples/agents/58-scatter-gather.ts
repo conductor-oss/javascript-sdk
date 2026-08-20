@@ -8,8 +8,8 @@
  *
  * Requirements:
  *   - Conductor server running
- *   - CONDUCTOR_SERVER_URL=http://localhost:8080/api as environment variable
- *   - CONDUCTOR_AGENT_SECONDARY_LLM_MODEL=openai/gpt-4o as environment variable
+ *   - CONDUCTOR_SERVER_URL=http://localhost:8080/api
+ *   - CONDUCTOR_AGENT_SECONDARY_LLM_MODEL=openai/gpt-4o
  */
 
 import { Agent, AgentRuntime, scatterGather, tool } from '@io-orkes/conductor-javascript/agents';
@@ -119,7 +119,7 @@ async function main() {
     // 1. Deploy once during CI/CD (optional -- serve() below also deploys):
     // await runtime.deploy(coordinator);
     // CLI alternative:
-    // agentspan deploy --package sdk/typescript/examples --agents coordinator
+    // conductor deploy --package examples/agents --agents coordinator
     //
     // 2. In a separate long-lived worker process (deploys + registers workers + starts polling):
     // await runtime.serve(coordinator);
