@@ -95,7 +95,7 @@ async function main() {
     // 1. Deploy once during CI/CD:
     // await runtime.deploy(graph);
     // CLI alternative:
-    // agentspan deploy --package sdk/typescript/examples/langgraph --agents streaming_tokens
+    // conductor deploy --package examples/agents/langgraph --agents streaming_tokens
     //
     // 2. In a separate long-lived worker process:
     // await runtime.serve(graph);

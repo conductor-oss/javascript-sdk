@@ -10,7 +10,7 @@
  *   - Running via Conductor passthrough
  *
  * Requirements:
- *   - CONDUCTOR_SERVER_URL for the Agentspan path
+ *   - CONDUCTOR_SERVER_URL=http://localhost:8080/api
  */
 
 import { Agent, tool, setTracingDisabled } from '@openai/agents';
@@ -107,7 +107,7 @@ export const triageAgent = new Agent({
 
 const prompt = "I'd like a refund for order ORD-002, the product arrived damaged.";
 
-// ── Run on agentspan ──────────────────────────────────────────────
+// ── Run on Conductor ──────────────────────────────────────────────
 async function main() {
   const runtime = new AgentRuntime();
   try {
@@ -119,7 +119,7 @@ async function main() {
     // 1. Deploy once during CI/CD:
     // await runtime.deploy(triageAgent);
     // CLI alternative:
-    // agentspan deploy --package sdk/typescript/examples/openai --agents customer_service_triage
+    // conductor deploy --package examples/agents/openai --agents customer_service_triage
     //
     // 2. In a separate long-lived worker process:
     // await runtime.serve(triageAgent);

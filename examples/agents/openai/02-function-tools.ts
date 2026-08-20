@@ -10,7 +10,7 @@
  *   - Running via Conductor passthrough
  *
  * Requirements:
- *   - CONDUCTOR_SERVER_URL for the Agentspan path
+ *   - CONDUCTOR_SERVER_URL=http://localhost:8080/api
  */
 
 import { Agent, tool, setTracingDisabled } from '@openai/agents';
@@ -82,7 +82,7 @@ const prompt =
   "What's the weather in San Francisco? Also, what's the population there " +
   "and what's the square root of that number (just the digits)?";
 
-// ── Run on agentspan ──────────────────────────────────────────────
+// ── Run on Conductor ──────────────────────────────────────────────
 async function main() {
   const runtime = new AgentRuntime();
   try {
@@ -94,7 +94,7 @@ async function main() {
     // 1. Deploy once during CI/CD:
     // await runtime.deploy(agent);
     // CLI alternative:
-    // agentspan deploy --package sdk/typescript/examples/openai --agents multi_tool_agent
+    // conductor deploy --package examples/agents/openai --agents multi_tool_agent
     //
     // 2. In a separate long-lived worker process:
     // await runtime.serve(agent);

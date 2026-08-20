@@ -29,7 +29,7 @@ async function main() {
     // 1. Deploy once during CI/CD:
     // await runtime.deploy(pipeline);
     // CLI alternative:
-    // agentspan deploy --package sdk/typescript/examples/quickstart --agents researcher
+    // conductor deploy --package examples/agents/quickstart --agents researcher
     //
     // 2. In a separate long-lived worker process:
     // await runtime.serve(pipeline);

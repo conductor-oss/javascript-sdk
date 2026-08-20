@@ -7,14 +7,14 @@
  *   - The agent calls `gh` commands directly -- no subprocess boilerplate needed
  *
  * Setup (one-time, via CLI):
- *   agentspan login
- *   agentspan credentials set GH_TOKEN <your-gh-token>
+ *   conductor config save
+ *   conductor secret put GH_TOKEN <your-gh-token>
  *
  * Requirements:
  *   - Conductor server running at CONDUCTOR_SERVER_URL
  *   - CONDUCTOR_AGENT_LLM_MODEL set (or defaults to openai/gpt-4o-mini)
  *   - `gh` CLI installed (https://cli.github.com)
- *   - GH_TOKEN stored via `agentspan credentials set`
+ *   - GH_TOKEN stored via `conductor secret put`
  */
 
 import { Agent, AgentRuntime } from '@io-orkes/conductor-javascript/agents';
@@ -47,7 +47,7 @@ async function main() {
     // 1. Deploy once during CI/CD (optional -- serve() below also deploys):
     // await runtime.deploy(agent);
     // CLI alternative:
-    // agentspan deploy --package sdk/typescript/examples --agents github_cli_agent
+    // conductor deploy --package examples/agents --agents github_cli_agent
     //
     // 2. In a separate long-lived worker process (deploys + registers workers + starts polling):
     // await runtime.serve(agent);

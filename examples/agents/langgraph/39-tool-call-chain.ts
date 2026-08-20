@@ -133,7 +133,7 @@ const graph = builder.compile({ name: "tool_call_chain_agent" });
 };
 
 // ---------------------------------------------------------------------------
-// Run on agentspan
+// Run on Conductor
 // ---------------------------------------------------------------------------
 async function main() {
   const runtime = new AgentRuntime();
@@ -146,7 +146,7 @@ async function main() {
     // 1. Deploy once during CI/CD:
     // await runtime.deploy(graph);
     // CLI alternative:
-    // agentspan deploy --package sdk/typescript/examples/langgraph --agents tool_call_chain
+    // conductor deploy --package examples/agents/langgraph --agents tool_call_chain
     //
     // 2. In a separate long-lived worker process:
     // await runtime.serve(graph);

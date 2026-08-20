@@ -26,7 +26,7 @@ In production, the three concerns are separated:
 │     Registers the agent definition with the Conductor server │
 │                                                              │
 │     await runtime.deploy(agent);                             │
-│     // or CLI: agentspan deploy --package my-agents          │
+│     // or CLI: conductor deploy --package my-agents          │
 ├──────────────────────────────────────────────────────────────┤
 │  2. SERVE (long-running worker process)                      │
 │     Listens for tool-call tasks and executes them            │
@@ -37,7 +37,7 @@ In production, the three concerns are separated:
 │  3. RUN (on-demand, from anywhere)                           │
 │     Triggers an agent execution                              │
 │                                                              │
-│     agentspan run <agent-name> "prompt"                      │
+│     conductor agent run --name <agent-name> "prompt"         │
 │     // or SDK: await runtime.run("agent_name", "prompt");    │
 │     // or REST API                                           │
 └──────────────────────────────────────────────────────────────┘

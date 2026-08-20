@@ -8,7 +8,7 @@
  *
  * Requirements:
  *   - npm install @google/adk zod
- *   - CONDUCTOR_SERVER_URL for agentspan path
+ *   - CONDUCTOR_SERVER_URL=http://localhost:8080/api
  */
 
 import { LlmAgent, FunctionTool } from '@google/adk';
@@ -138,7 +138,7 @@ export const agent = new LlmAgent({
   tools: [searchProducts, checkInventory, calculateShipping, applyCoupon],
 });
 
-// ── Run on agentspan ───────────────────────────────────────────────
+// ── Run on Conductor ───────────────────────────────────────────────
 
 async function main() {
   const runtime = new AgentRuntime();
@@ -155,7 +155,7 @@ async function main() {
     // 1. Deploy once during CI/CD:
     // await runtime.deploy(agent);
     // CLI alternative:
-    // agentspan deploy --package sdk/typescript/examples/adk --agents shopping_assistant
+    // conductor deploy --package examples/agents/adk --agents shopping_assistant
     //
     // 2. In a separate long-lived worker process:
     // await runtime.serve(agent);

@@ -120,7 +120,7 @@ const graph = new StateGraph(HandoffState)
 const PROMPT = 'I was charged twice for my subscription this month.';
 
 // ---------------------------------------------------------------------------
-// Run on agentspan
+// Run on Conductor
 // ---------------------------------------------------------------------------
 async function main() {
   const runtime = new AgentRuntime();
@@ -133,7 +133,7 @@ async function main() {
     // 1. Deploy once during CI/CD:
     // await runtime.deploy(graph);
     // CLI alternative:
-    // agentspan deploy --package sdk/typescript/examples/langgraph --agents agent_handoff
+    // conductor deploy --package examples/agents/langgraph --agents agent_handoff
     //
     // 2. In a separate long-lived worker process:
     // await runtime.serve(graph);

@@ -30,7 +30,7 @@ async function main() {
     // 1. Deploy once during CI/CD:
     // await runtime.deploy(agent);
     // CLI alternative:
-    // agentspan deploy --package sdk/typescript/examples/quickstart --agents safe_bot
+    // conductor deploy --package examples/agents/quickstart --agents safe_bot
     //
     // 2. In a separate long-lived worker process:
     // await runtime.serve(agent);

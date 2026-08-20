@@ -10,7 +10,7 @@
  *   - Model settings (temperature) for deterministic output
  *
  * Requirements:
- *   - CONDUCTOR_SERVER_URL for the Agentspan path
+ *   - CONDUCTOR_SERVER_URL=http://localhost:8080/api
  */
 
 import { Agent, setTracingDisabled } from '@openai/agents';
@@ -51,7 +51,7 @@ export const agent = new Agent({
 
 const prompt = 'Recommend 3 sci-fi movies that explore the concept of artificial intelligence.';
 
-// ── Run on agentspan ──────────────────────────────────────────────
+// ── Run on Conductor ──────────────────────────────────────────────
 async function main() {
   const runtime = new AgentRuntime();
   try {
@@ -63,7 +63,7 @@ async function main() {
     // 1. Deploy once during CI/CD:
     // await runtime.deploy(agent);
     // CLI alternative:
-    // agentspan deploy --package sdk/typescript/examples/openai --agents movie_recommender
+    // conductor deploy --package examples/agents/openai --agents movie_recommender
     //
     // 2. In a separate long-lived worker process:
     // await runtime.serve(agent);

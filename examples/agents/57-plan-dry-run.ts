@@ -8,8 +8,8 @@
  *
  * Requirements:
  *   - Conductor server running
- *   - CONDUCTOR_SERVER_URL=http://localhost:8080/api as environment variable
- *   - CONDUCTOR_AGENT_LLM_MODEL=openai/gpt-4o-mini as environment variable
+ *   - CONDUCTOR_SERVER_URL=http://localhost:8080/api
+ *   - CONDUCTOR_AGENT_LLM_MODEL=openai/gpt-4o-mini
  */
 
 import { Agent, AgentRuntime, tool } from '@io-orkes/conductor-javascript/agents';

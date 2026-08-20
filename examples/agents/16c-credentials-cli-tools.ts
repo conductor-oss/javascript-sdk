@@ -8,10 +8,10 @@
  *   - Multi-credential tools (aws needs multiple env vars)
  *
  * Setup (one-time, via CLI):
- *   agentspan login
- *   agentspan credentials set GITHUB_TOKEN <your-github-token>
- *   agentspan credentials set AWS_ACCESS_KEY_ID <your-aws-access-key-id>
- *   agentspan credentials set AWS_SECRET_ACCESS_KEY <your-aws-secret-access-key>
+ *   conductor config save
+ *   conductor secret put GITHUB_TOKEN <your-github-token>
+ *   conductor secret put AWS_ACCESS_KEY_ID <your-aws-access-key-id>
+ *   conductor secret put AWS_SECRET_ACCESS_KEY <your-aws-secret-access-key>
  *
  * Requirements:
  *   - Conductor server running at CONDUCTOR_SERVER_URL
@@ -178,7 +178,7 @@ async function main() {
     // 1. Deploy once during CI/CD (optional -- serve() below also deploys):
     // await runtime.deploy(githubAwsAgent);
     // CLI alternative:
-    // agentspan deploy --package sdk/typescript/examples --agents devops_agent
+    // conductor deploy --package examples/agents --agents devops_agent
     //
     // 2. In a separate long-lived worker process (deploys + registers workers + starts polling):
     // await runtime.serve(githubAwsAgent);

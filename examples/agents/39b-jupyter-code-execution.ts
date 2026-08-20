@@ -9,8 +9,8 @@
  * Requirements:
  *   - Conductor server with LLM support
  *   - Jupyter runtime installed (jupyter_client, ipykernel)
- *   - CONDUCTOR_SERVER_URL=http://localhost:8080/api as environment variable
- *   - CONDUCTOR_AGENT_LLM_MODEL=openai/gpt-4o-mini as environment variable
+ *   - CONDUCTOR_SERVER_URL=http://localhost:8080/api
+ *   - CONDUCTOR_AGENT_LLM_MODEL=openai/gpt-4o-mini
  */
 
 import { Agent, AgentRuntime, JupyterCodeExecutor } from '@io-orkes/conductor-javascript/agents';
@@ -51,7 +51,7 @@ async function main() {
     // 1. Deploy once during CI/CD (optional -- serve() below also deploys):
     // await runtime.deploy(jupyterCoder);
     // CLI alternative:
-    // agentspan deploy --package sdk/typescript/examples --agents jupyter_coder
+    // conductor deploy --package examples/agents --agents jupyter_coder
     //
     // 2. In a separate long-lived worker process (deploys + registers workers + starts polling):
     // await runtime.serve(jupyterCoder);

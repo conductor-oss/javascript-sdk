@@ -20,13 +20,13 @@
  * file.
  *
  * Setup (one-time):
- *   agentspan credentials set GITHUB_TOKEN <your-github-token>
+ *   conductor secret put GITHUB_TOKEN <your-github-token>
  *
  * Requirements:
  *   - Conductor server running at CONDUCTOR_SERVER_URL (> 0.4.2, for
  *     runtimeMetadata delivery) or conductor-oss (with PR #1255)
  *   - CONDUCTOR_AGENT_LLM_MODEL set (or defaults to openai/gpt-4o-mini)
- *   - GITHUB_TOKEN stored via `agentspan credentials set`
+ *   - GITHUB_TOKEN stored via `conductor secret put`
  */
 
 import { Agent, tool } from '@io-orkes/conductor-javascript/agents';

@@ -56,7 +56,7 @@ export const agent = new Agent({
 
 const prompt = 'What is the current weather and time in San Francisco and Tokyo?';
 
-// ── Run on agentspan ─────────────────────────────────────
+// ── Run on Conductor ─────────────────────────────────────
 async function main() {
   const runtime = new AgentRuntime();
   try {
@@ -69,7 +69,7 @@ async function main() {
     // 1. Deploy once during CI/CD:
     // await runtime.deploy(agent);
     // CLI alternative:
-    // agentspan deploy --package sdk/typescript/examples/vercel-ai --agents multistep_agent
+    // conductor deploy --package examples/agents/vercel-ai --agents multistep_agent
     //
     // 2. In a separate long-lived worker process:
     // await runtime.serve(agent);

@@ -15,7 +15,7 @@
  *
  * Requirements:
  *   - npm install @google/adk zod
- *   - CONDUCTOR_SERVER_URL for agentspan path
+ *   - CONDUCTOR_SERVER_URL=http://localhost:8080/api
  */
 
 import { LlmAgent } from '@google/adk';
@@ -67,7 +67,7 @@ export const coordinator = new LlmAgent({
   subAgents: [specialistA, specialistB, specialistC],
 });
 
-// ── Run on agentspan ───────────────────────────────────────────────
+// ── Run on Conductor ───────────────────────────────────────────────
 
 async function main() {
   const runtime = new AgentRuntime();
@@ -83,7 +83,7 @@ async function main() {
     // 1. Deploy once during CI/CD:
     // await runtime.deploy(coordinator);
     // CLI alternative:
-    // agentspan deploy --package sdk/typescript/examples/adk --agents research_coordinator
+    // conductor deploy --package examples/agents/adk --agents research_coordinator
     //
     // 2. In a separate long-lived worker process:
     // await runtime.serve(coordinator);

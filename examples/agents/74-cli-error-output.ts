@@ -52,7 +52,7 @@ async function main() {
     // 1. Deploy once during CI/CD (optional -- serve() below also deploys):
     // await runtime.deploy(agent);
     // CLI alternative:
-    // agentspan deploy --package sdk/typescript/examples --agents cli_error_tester
+    // conductor deploy --package examples/agents --agents cli_error_tester
     //
     // 2. In a separate long-lived worker process (deploys + registers workers + starts polling):
     // await runtime.serve(agent);

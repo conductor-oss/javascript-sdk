@@ -8,7 +8,7 @@
  *
  * Requirements:
  *   - Conductor server running
- *   - GITHUB_TOKEN stored: agentspan credentials set GITHUB_TOKEN <your-github-token>
+ *   - GITHUB_TOKEN stored: conductor secret put GITHUB_TOKEN <your-github-token>
  *   - gh CLI installed
  */
 
@@ -148,7 +148,7 @@ async function main() {
     // 1. Deploy once during CI/CD (optional -- serve() below also deploys):
     // await runtime.deploy(pipeline);
     // CLI alternative:
-    // agentspan deploy --package sdk/typescript/examples --agents git_fetch_issues
+    // conductor deploy --package examples/agents --agents git_fetch_issues
     //
     // 2. In a separate long-lived worker process (deploys + registers workers + starts polling):
     // await runtime.serve(pipeline);

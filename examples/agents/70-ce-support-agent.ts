@@ -5,7 +5,7 @@
  * HubSpot, Notion (runbooks), and GitHub to produce a solution with a
  * priority rating.
  *
- * Required credentials (set via `agentspan credentials set`):
+ * Required credentials (set via `conductor secret put`):
  *   ZENDESK_SUBDOMAIN, ZENDESK_EMAIL, ZENDESK_API_TOKEN
  *   JIRA_BASE_URL, JIRA_EMAIL, JIRA_API_TOKEN
  *   HUBSPOT_ACCESS_TOKEN
@@ -14,8 +14,8 @@
  *
  * Requirements:
  *   - Conductor server
- *   - CONDUCTOR_SERVER_URL=http://localhost:8080/api as environment variable
- *   - CONDUCTOR_AGENT_LLM_MODEL=openai/gpt-4o-mini as environment variable
+ *   - CONDUCTOR_SERVER_URL=http://localhost:8080/api
+ *   - CONDUCTOR_AGENT_LLM_MODEL=openai/gpt-4o-mini
  */
 
 import { Agent, AgentRuntime, RegexGuardrail, agentTool, tool } from '@io-orkes/conductor-javascript/agents';
@@ -374,7 +374,7 @@ async function main() {
     // 1. Deploy once during CI/CD (optional -- serve() below also deploys):
     // await runtime.deploy(ceSupportAgent);
     // CLI alternative:
-    // agentspan deploy --package sdk/typescript/examples --agents ce_support_agent
+    // conductor deploy --package examples/agents --agents ce_support_agent
     //
     // 2. In a separate long-lived worker process (deploys + registers workers + starts polling):
     // await runtime.serve(ceSupportAgent);
