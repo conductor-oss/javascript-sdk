@@ -17,6 +17,16 @@ import { Agent, AgentRuntime, OnTextMention, TextGate } from '@io-orkes/conducto
 const REPO = 'agentspan-ai/codingexamples';
 const MODEL = 'anthropic/claude-sonnet-4-6';
 
+// LLMs habitually wrap compound commands in `bash -c '...'`, but bash is not
+// on the allowlist and the run_command tool rejects it — which spirals into
+// retry loops. Steer every CLI-using stage away from the wrapper.
+const CLI_RULES =
+  '\n\nTOOL RULES:\n' +
+  '- To run a compound command (&&, |, $(...)), put the FULL command line in the `command` field and set shell=true.\n' +
+  '- NEVER wrap a command in `bash -c` or `sh -c` — bash/sh are not allowed commands and the call will be rejected.\n' +
+  '- The FIRST word of every command must be one of the allowed executables. Never start a command with a VAR=... assignment — run `mktemp -d` as its own command first and reuse its output instead.\n' +
+  '- Only set `cwd` to a REAL directory path you obtained from an earlier command output. Never invent placeholder paths like /path/to/repo — omit `cwd` entirely if you do not have one.';
+
 // -- Stage 1: Fetch issues ---------------------------------------------------
 
 /** Stop when the agent has produced the structured output with issue details. */
@@ -38,8 +48,11 @@ export const gitFetchIssues = new Agent({
     `  gh issue view <N> --repo ${REPO} --json number,title,body,author,labels\n\n` +
     `You MUST run this command — gh issue list only returns titles, not the issue body.\n` +
     `Read the JSON output carefully and extract the author login and the COMPLETE body text.\n\n` +
-    `Step 3 — create a branch and push it (one compound command, shell=true):\n` +
-    `  TMPDIR=$(mktemp -d) && gh repo clone ${REPO} "$TMPDIR" && cd "$TMPDIR" && git checkout -b fix/issue-<N> && git push -u origin fix/issue-<N> && echo "DONE"\n\n` +
+    `Step 3a — create a scratch directory (run exactly this, saving the output):\n` +
+    `  mktemp -d   (set context_key to "working_dir")\n\n` +
+    `Step 3b — clone and push the branch (one compound command, shell=true, substituting\n` +
+    `<TMPDIR> with the directory printed by step 3a):\n` +
+    `  gh repo clone ${REPO} <TMPDIR> && cd <TMPDIR> && git checkout -b fix/issue-<N> && git push -u origin fix/issue-<N>\n\n` +
     `Step 4 — respond with ONLY these lines (NO tool calls):\n` +
     `  REPO: ${REPO}\n` +
     `  BRANCH: fix/issue-<N>\n` +
@@ -50,8 +63,8 @@ export const gitFetchIssues = new Agent({
     `RULES:\n` +
     `- Do NOT create files, commits, or pull requests.\n` +
     `- After step 3, you MUST stop using tools entirely. Just output text.\n` +
-    `- Include the COMPLETE issue body in DETAILS — the next stage needs it to implement the fix.`,
-  cliConfig: { enabled: true, allowedCommands: ['gh', 'git', 'mktemp', 'ls'], allowShell: true, timeout: 60 },
+    `- Include the COMPLETE issue body in DETAILS — the next stage needs it to implement the fix.` + CLI_RULES,
+  cliConfig: { enabled: true, allowedCommands: ['gh', 'git', 'mktemp', 'ls', 'cat'], allowShell: true, timeout: 60 },
   credentials: ['GITHUB_TOKEN', 'GH_TOKEN'],
   maxTurns: 20,
   stopWhen: fetchDone,
@@ -69,12 +82,14 @@ export const coderStage = new Agent({
     'You are a senior developer. Your input contains issue details from the previous stage\n' +
     'including REPO, BRANCH, ISSUE, AUTHOR, DETAILS, and SUMMARY.\n\n' +
     '1. Read the DETAILS field carefully — it contains the full issue body with requirements.\n' +
-    '2. Clone the repo: gh repo clone <REPO> /tmp/work && cd /tmp/work\n' +
-    '3. Check out the branch: git checkout <BRANCH>\n' +
-    '4. Implement the fix according to ALL requirements in DETAILS.\n' +
-    '5. Commit and push your changes.\n' +
-    '6. Say HANDOFF_TO_QA with REPO, BRANCH, and a summary of CHANGES.',
-  cliConfig: { enabled: true, allowedCommands: ['gh', 'git', 'mktemp', 'rm', 'ls', 'cat', 'mkdir', 'cp'], allowShell: true, timeout: 120 },
+    '2. Create a fresh scratch directory: run `mktemp -d` (set context_key to "working_dir").\n' +
+    '3. Clone and check out the branch (substitute <TMPDIR> with the step-2 output):\n' +
+    '   gh repo clone <REPO> <TMPDIR> && cd <TMPDIR> && git checkout <BRANCH>\n' +
+    '4. Implement the fix according to ALL requirements in DETAILS. Satisfy every acceptance\n' +
+    '   criterion literally, even if the repo already partially meets it.\n' +
+    '5. Commit and push your changes (run from <TMPDIR>): git add -A && git commit -m "Fix <ISSUE>" && git push\n' +
+    '6. Say HANDOFF_TO_QA with REPO, BRANCH, and a summary of CHANGES.' + CLI_RULES,
+  cliConfig: { enabled: true, allowedCommands: ['gh', 'git', 'mktemp', 'rm', 'ls', 'cat', 'mkdir', 'cp', 'echo', 'printf'], allowShell: true, timeout: 120 },
 });
 
 export const qaStage = new Agent({
@@ -84,7 +99,7 @@ export const qaStage = new Agent({
   instructions:
     'You are a QA engineer. Clone the repo, review changes, run tests.\n' +
     'If bugs found: say HANDOFF_TO_CODER with what to fix.\n' +
-    'If good: say QA_APPROVED with REPO/BRANCH/SUMMARY.',
+    'If good: say QA_APPROVED with REPO/BRANCH/SUMMARY.' + CLI_RULES,
   cliConfig: { enabled: true, allowedCommands: ['gh', 'git', 'mktemp', 'rm', 'ls', 'cat'], allowShell: true, timeout: 120 },
   maxTokens: 60000,
   maxTurns: 15,
@@ -125,8 +140,8 @@ export const gitPushPR = new Agent({
     'Create a pull request. Extract REPO, BRANCH, and ISSUE from the previous stage output.\n\n' +
     'Run this command (shell=true so quotes are handled correctly):\n' +
     '  gh pr create --repo <REPO> --base main --head <BRANCH> --title "Fix <ISSUE>" --body "Fixes <ISSUE>"\n\n' +
-    'After the command succeeds, STOP calling tools and respond with ONLY the PR URL.',
-  cliConfig: { enabled: true, allowedCommands: ['gh', 'git'], allowShell: true, timeout: 60 },
+    'After the command succeeds, STOP calling tools and respond with ONLY the PR URL.' + CLI_RULES,
+  cliConfig: { enabled: true, allowedCommands: ['gh', 'git', 'cat'], allowShell: true, timeout: 60 },
   stopWhen: prDone,
 });
 
