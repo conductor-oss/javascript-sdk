@@ -1970,8 +1970,22 @@ const ORCHESTRATION_TASK_TYPES = new Set([
   "JOIN",
 ]);
 
-/** Input key the server's tool-dispatch script writes on every dispatched tool. */
+/**
+ * Input key the server's tool-dispatch script writes on a dispatched tool.
+ *
+ * Written for every tool an agent declares up front. Agents that discover their
+ * tools at runtime compile to a second dispatch script that omits it, so its
+ * absence does not mean the task is not a tool call.
+ */
 const TOOL_NAME_KEY = "_agent_tool_name";
+
+/**
+ * Task types only tool dispatch produces, so a task of one is a tool call even
+ * unmarked. The rest of a compiled agent's task types are ambiguous: it emits
+ * `SIMPLE`, `SUB_WORKFLOW` and `HUMAN` tasks of its own for workers, handoffs
+ * and approvals.
+ */
+const TOOL_ONLY_TASK_TYPES = new Set(["HTTP", "CALL_MCP_TOOL"]);
 
 /** Internal keys to strip from tool call input. */
 const INTERNAL_KEYS = ["_agent_state", "method", "__humanTaskDefinition", TOOL_NAME_KEY];
@@ -2049,6 +2063,11 @@ function _extractMessages(execution: Record<string, unknown>): unknown[] {
   return lastLlmMsgs;
 }
 
+/** A task input field is usable as a tool name only if it is a non-empty string. */
+function _asName(value: unknown): string | undefined {
+  return typeof value === "string" && value !== "" ? value : undefined;
+}
+
 /**
  * Extract tool calls from execution tasks.
  *
@@ -2057,9 +2076,11 @@ function _extractMessages(execution: Record<string, unknown>): unknown[] {
  * transport (`HTTP`, `CALL_MCP_TOOL`, `SUB_WORKFLOW`, `HUMAN`, ...) and the task
  * definition name is the transport's own name for MCP, agent and media tools.
  *
- * Servers predating that marker are handled by the older heuristic — a reference
- * name prefixed with the provider's tool-call id — which only ever matched
- * OpenAI's `call_` format.
+ * Two signals back it up for tasks the dispatch script left unmarked — agents
+ * that discover their tools at runtime, and servers predating the marker. A
+ * task-type check covers the types only tool dispatch emits. Everything else
+ * falls back to the original heuristic, a reference name prefixed with the
+ * provider's tool-call id, which only ever matched OpenAI's `call_` format.
  *
  * @internal Not part of the published agent surface; exported for tests.
  */
@@ -2073,12 +2094,19 @@ export function _extractToolCalls(execution: Record<string, unknown>): unknown[]
     if (ORCHESTRATION_TASK_TYPES.has(taskType)) continue;
 
     const rawInput = (task.inputData ?? task.input_data ?? {}) as Record<string, unknown>;
-    const marker = rawInput[TOOL_NAME_KEY];
-    const toolName = typeof marker === "string" && marker !== "" ? marker : undefined;
+    const defName = String(task.taskDefName ?? task.task_def_name ?? taskType);
+    let toolName = _asName(rawInput[TOOL_NAME_KEY]);
+
+    if (toolName === undefined && TOOL_ONLY_TASK_TYPES.has(taskType)) {
+      // `CALL_MCP_TOOL` names the tool in `method` — its task definition name is
+      // the transport's. An HTTP tool's definition name is already the tool's.
+      toolName = (taskType === "CALL_MCP_TOOL" ? _asName(rawInput.method) : undefined) ?? defName;
+    }
 
     if (toolName === undefined) {
       const ref = String(task.referenceTaskName ?? task.reference_task_name ?? "");
       if (!ref.startsWith("call_")) continue;
+      toolName = defName;
     }
 
     const inputData = { ...rawInput };
@@ -2087,7 +2115,7 @@ export function _extractToolCalls(execution: Record<string, unknown>): unknown[]
     }
 
     toolCalls.push({
-      name: toolName ?? String(task.taskDefName ?? task.task_def_name ?? taskType),
+      name: toolName,
       args: inputData,
       result: task.outputData ?? task.output_data ?? {},
     });
