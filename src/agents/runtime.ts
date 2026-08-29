@@ -1953,8 +1953,13 @@ function _isOutputJunk(output: unknown): boolean {
   return false;
 }
 
-/** System task types that are never user-defined tool calls. */
-const SYSTEM_TASK_TYPES = new Set([
+/**
+ * Task types that are orchestration scaffolding, never a tool invocation.
+ *
+ * `SUB_WORKFLOW` is deliberately absent: an agent exposed as a tool compiles to
+ * one, so skipping the type outright drops those calls.
+ */
+const ORCHESTRATION_TASK_TYPES = new Set([
   "LLM_CHAT_COMPLETE",
   "SWITCH",
   "DO_WHILE",
@@ -1963,11 +1968,13 @@ const SYSTEM_TASK_TYPES = new Set([
   "FORK",
   "FORK_JOIN_DYNAMIC",
   "JOIN",
-  "SUB_WORKFLOW",
 ]);
 
+/** Input key the server's tool-dispatch script writes on every dispatched tool. */
+const TOOL_NAME_KEY = "_agent_tool_name";
+
 /** Internal keys to strip from tool call input. */
-const INTERNAL_KEYS = ["_agent_state", "method", "__humanTaskDefinition"];
+const INTERNAL_KEYS = ["_agent_state", "method", "__humanTaskDefinition", TOOL_NAME_KEY];
 
 /**
  * Extract output from a full execution response.
@@ -2044,36 +2051,43 @@ function _extractMessages(execution: Record<string, unknown>): unknown[] {
 
 /**
  * Extract tool calls from execution tasks.
- * Mirrors Python's _extract_tool_calls: filters for call_* refs, skips system tasks.
+ *
+ * A dispatched tool carries its declared name in `inputData._agent_tool_name`,
+ * which is the only field that survives every tool kind: the task type is the
+ * transport (`HTTP`, `CALL_MCP_TOOL`, `SUB_WORKFLOW`, `HUMAN`, ...) and the task
+ * definition name is the transport's own name for MCP, agent and media tools.
+ *
+ * Servers predating that marker are handled by the older heuristic — a reference
+ * name prefixed with the provider's tool-call id — which only ever matched
+ * OpenAI's `call_` format.
+ *
+ * @internal Not part of the published agent surface; exported for tests.
  */
-function _extractToolCalls(execution: Record<string, unknown>): unknown[] {
+export function _extractToolCalls(execution: Record<string, unknown>): unknown[] {
   const tasks = execution.tasks as Record<string, unknown>[] | undefined;
   if (!Array.isArray(tasks)) return [];
 
   const toolCalls: unknown[] = [];
   for (const task of tasks) {
     const taskType = String(task.taskType ?? task.task_type ?? "").toUpperCase();
-    const ref = String(task.referenceTaskName ?? task.reference_task_name ?? "");
+    if (ORCHESTRATION_TASK_TYPES.has(taskType)) continue;
 
-    // The call_ prefix is the compiler's marker for tool invocations.
-    // Any task with a call_ ref is a user-initiated tool call, regardless
-    // of whether the underlying task type is HTTP, CALL_MCP_TOOL, SIMPLE, etc.
-    if (!ref.startsWith("call_")) continue;
-    // Skip only orchestration-level system tasks (these never have call_ refs,
-    // but guard against edge cases)
-    if (SYSTEM_TASK_TYPES.has(taskType)) continue;
+    const rawInput = (task.inputData ?? task.input_data ?? {}) as Record<string, unknown>;
+    const marker = rawInput[TOOL_NAME_KEY];
+    const toolName = typeof marker === "string" && marker !== "" ? marker : undefined;
 
-    const inputData = { ...((task.inputData ?? task.input_data ?? {}) as Record<string, unknown>) };
+    if (toolName === undefined) {
+      const ref = String(task.referenceTaskName ?? task.reference_task_name ?? "");
+      if (!ref.startsWith("call_")) continue;
+    }
+
+    const inputData = { ...rawInput };
     for (const k of INTERNAL_KEYS) {
       Reflect.deleteProperty(inputData, k);
     }
 
-    // Use the tool name from inputData.method (set by compiler) if available
-    const toolName = String(inputData.method ?? taskType).toLowerCase();
-    delete inputData.method;
-
     toolCalls.push({
-      name: toolName,
+      name: toolName ?? String(task.taskDefName ?? task.task_def_name ?? taskType),
       args: inputData,
       result: task.outputData ?? task.output_data ?? {},
     });
