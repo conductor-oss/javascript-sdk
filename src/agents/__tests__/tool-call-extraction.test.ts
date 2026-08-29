@@ -8,6 +8,8 @@
  * declared name on every dispatched tool.
  */
 
+import { describe, it, expect } from "@jest/globals";
+
 import { _extractToolCalls } from "../runtime.js";
 
 interface ToolCall {
@@ -208,7 +210,7 @@ describe("_extractToolCalls — arguments", () => {
   });
 });
 
-describe("_extractToolCalls — servers older than the dispatch marker", () => {
+describe("_extractToolCalls — tools the dispatch script left unmarked", () => {
   it("falls back to the task definition name for an unmarked tool task", () => {
     const calls = extract([
       toolTask({
@@ -222,13 +224,70 @@ describe("_extractToolCalls — servers older than the dispatch marker", () => {
     expect(calls.map((c) => c.name)).toEqual(["getWeather"]);
   });
 
-  it("ignores unmarked tasks that carry no tool-call reference name", () => {
+  it("names an unmarked MCP tool from `method`, whatever the tool-call id format", () => {
     const calls = extract([
       toolTask({
-        referenceTaskName: "prefill_lookup",
+        referenceTaskName: "toolu_01A9EqMxQGxL_0__1",
+        taskType: "CALL_MCP_TOOL",
+        taskDefName: "call_mcp_tool",
+        inputData: { mcpServer: "files", method: "read_file", arguments: { path: "/tmp/a" } },
+      }),
+    ]);
+
+    expect(calls).toEqual([
+      {
+        name: "read_file",
+        args: { mcpServer: "files", arguments: { path: "/tmp/a" } },
+        result: {},
+      },
+    ]);
+  });
+
+  it("detects an unmarked HTTP tool, whatever the tool-call id format", () => {
+    const calls = extract([
+      toolTask({
+        referenceTaskName: "toolu_01A9EqMxQGxL_0__1",
+        taskType: "HTTP",
+        taskDefName: "get_forecast",
+        inputData: { http_request: { uri: "https://example.com/forecast" } },
+      }),
+    ]);
+
+    expect(calls.map((c) => c.name)).toEqual(["get_forecast"]);
+  });
+
+  it("does not read `method` off a worker tool that happens to take one", () => {
+    const calls = extract([
+      toolTask({
+        referenceTaskName: "call_abc_0__1",
         taskType: "SIMPLE",
-        taskDefName: "lookup",
+        taskDefName: "sendRequest",
+        inputData: { method: "POST", url: "https://example.com" },
+      }),
+    ]);
+
+    expect(calls.map((c) => c.name)).toEqual(["sendRequest"]);
+  });
+
+  it("ignores unmarked tasks of a type the agent compiler also emits itself", () => {
+    const calls = extract([
+      toolTask({
+        referenceTaskName: "myagent_guardrail_check",
+        taskType: "SIMPLE",
+        taskDefName: "guardrail_worker",
         inputData: { q: "hello" },
+      }),
+      toolTask({
+        referenceTaskName: "myagent_approval",
+        taskType: "HUMAN",
+        taskDefName: "approval",
+        inputData: {},
+      }),
+      toolTask({
+        referenceTaskName: "myagent_handoff",
+        taskType: "SUB_WORKFLOW",
+        taskDefName: "billing_agent_workflow",
+        inputData: { prompt: "hi" },
       }),
     ]);
 
