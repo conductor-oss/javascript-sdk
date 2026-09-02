@@ -47,7 +47,7 @@ src/agents/                      # Durable agent layer (merged from the standalo
   wrappers/                      # Vercel AI / LangGraph / LangChain drop-in wrappers
   __tests__/                     # Colocated jest unit tests (picked up by test:unit)
 e2e/                             # Agent e2e suites vs a live Conductor server (jest.e2e.config.mjs)
-cli-bin/                         # agentspan CLI helper scripts (Go CLI walk-up probe target)
+cli-bin/                         # Conductor CLI helper scripts (Go CLI walk-up probe target)
 examples/agents/                 # Agent examples (own tsconfig; run via npx tsx)
 docs/agents/                     # Agent layer documentation
 ```
