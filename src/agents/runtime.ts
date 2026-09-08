@@ -2075,6 +2075,8 @@ function _asName(value: unknown): string | undefined {
  * which is the only field that survives every tool kind: the task type is the
  * transport (`HTTP`, `CALL_MCP_TOOL`, `SUB_WORKFLOW`, `HUMAN`, ...) and the task
  * definition name is the transport's own name for MCP, agent and media tools.
+ * An agent tool is the one kind whose marker moves: the sub-workflow task mapper
+ * rebuilds `inputData`, so the marker arrives nested inside `workflowInput`.
  *
  * Two signals back it up for tasks the dispatch script left unmarked — agents
  * that discover their tools at runtime, and servers predating the marker. A
@@ -2090,12 +2092,25 @@ export function _extractToolCalls(execution: Record<string, unknown>): unknown[]
 
   const toolCalls: unknown[] = [];
   for (const task of tasks) {
-    const taskType = String(task.taskType ?? task.task_type ?? "").toUpperCase();
+    // A SIMPLE task's type is the tool's own name, so the raw spelling is worth
+    // keeping: it is the last thing left to name a tool by when the execution
+    // carries neither the marker nor a task definition name.
+    const rawType = String(task.taskType ?? task.task_type ?? "");
+    const taskType = rawType.toUpperCase();
     if (ORCHESTRATION_TASK_TYPES.has(taskType)) continue;
 
     const rawInput = (task.inputData ?? task.input_data ?? {}) as Record<string, unknown>;
-    const defName = String(task.taskDefName ?? task.task_def_name ?? taskType);
+    const defName = String(task.taskDefName ?? task.task_def_name ?? rawType);
     let toolName = _asName(rawInput[TOOL_NAME_KEY]);
+
+    if (toolName === undefined && taskType === "SUB_WORKFLOW") {
+      // An agent tool's marker does not stay at the top level: the sub-workflow
+      // task mapper rebuilds `inputData` around `workflowInput`, and the marker
+      // rides along inside it. A handoff compiles to `SUB_WORKFLOW` too and
+      // carries the marker at neither level, which is what keeps the two apart.
+      const nested = rawInput.workflowInput as Record<string, unknown> | undefined;
+      toolName = _asName(nested?.[TOOL_NAME_KEY]);
+    }
 
     if (toolName === undefined && TOOL_ONLY_TASK_TYPES.has(taskType)) {
       // `CALL_MCP_TOOL` names the tool in `method` — its task definition name is
