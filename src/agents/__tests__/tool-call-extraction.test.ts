@@ -101,20 +101,64 @@ describe("_extractToolCalls — tool naming", () => {
 });
 
 describe("_extractToolCalls — which tasks count", () => {
+  // The sub-workflow task mapper rebuilds `inputData` around `workflowInput`,
+  // so an agent tool's marker arrives nested rather than at the top level.
   it("includes an agent invoked as a tool (SUB_WORKFLOW)", () => {
     const calls = extract([
       toolTask({
         referenceTaskName: "call_abc_0__1",
         taskType: "SUB_WORKFLOW",
-        taskDefName: "billing_agent_workflow",
-        inputData: { prompt: "refund status", _agent_tool_name: "billing_agent" },
+        taskDefName: "billing_agent",
+        inputData: {
+          subWorkflowName: "billing_agent",
+          workflowInput: { prompt: "refund status", _agent_tool_name: "billing_agent" },
+        },
         outputData: { result: "refunded" },
       }),
     ]);
 
-    expect(calls).toEqual([
-      { name: "billing_agent", args: { prompt: "refund status" }, result: { result: "refunded" } },
+    expect(calls.map((c) => c.name)).toEqual(["billing_agent"]);
+    expect(calls[0].result).toEqual({ result: "refunded" });
+  });
+
+  it("includes an agent tool whatever the tool-call id format", () => {
+    const calls = extract([
+      toolTask({
+        referenceTaskName: "toolu_01A9EqMxQGxL_2__1",
+        taskType: "SUB_WORKFLOW",
+        taskDefName: "billing_agent",
+        inputData: {
+          subWorkflowName: "billing_agent",
+          workflowInput: { prompt: "refund status", _agent_tool_name: "billing_agent" },
+        },
+      }),
     ]);
+
+    expect(calls.map((c) => c.name)).toEqual(["billing_agent"]);
+  });
+
+  // A handoff compiles to `SUB_WORKFLOW` as well, and carries the marker at
+  // neither level. That absence is the only thing separating the two.
+  it("excludes a handoff, which is a SUB_WORKFLOW carrying no marker", () => {
+    const calls = extract([
+      toolTask({
+        referenceTaskName: "support_handoff_0_billing_agent__1",
+        taskType: "SUB_WORKFLOW",
+        taskDefName: "billing_agent",
+        inputData: {
+          subWorkflowName: "billing_agent",
+          workflowInput: { prompt: "refund status", session_id: "s1" },
+        },
+      }),
+      toolTask({
+        referenceTaskName: "support_router__1",
+        taskType: "SUB_WORKFLOW",
+        taskDefName: "support_router",
+        inputData: { subWorkflowName: "support_router", workflowInput: { prompt: "hi" } },
+      }),
+    ]);
+
+    expect(calls).toEqual([]);
   });
 
   it("detects tools behind a non-OpenAI tool-call id format", () => {
@@ -292,5 +336,33 @@ describe("_extractToolCalls — tools the dispatch script left unmarked", () => 
     ]);
 
     expect(calls).toEqual([]);
+  });
+});
+
+// The agent-execution endpoint `run()` reads returns a trimmed task: task type,
+// reference name, status and output, with no `inputData` and no task definition
+// name. Nothing in it carries a declared tool name, so this pins how far the
+// extraction can get on that shape rather than asserting the tool's real name.
+describe("_extractToolCalls — the trimmed shape run() receives", () => {
+  const trimmed = (referenceTaskName: string, taskType: string) => ({
+    referenceTaskName,
+    taskType,
+    status: "COMPLETED",
+    outputData: { result: "ok" },
+  });
+
+  it("names a worker tool from its task type, which is the tool's own name", () => {
+    const calls = extract([trimmed("call_9852jJV2Kzyae3MCDGHPeyXa__1", "getWeather")]);
+
+    expect(calls.map((c) => c.name)).toEqual(["getWeather"]);
+  });
+
+  it("cannot recover a tool name for a transport-typed task, and does not fold its case", () => {
+    const calls = extract([
+      trimmed("call_mMLCQyj7CID3cjRLhvZNYV5p__1", "CALL_MCP_TOOL"),
+      trimmed("call_vlC3GlsOMbCG9F8UD1iAyYov_1__1", "HTTP"),
+    ]);
+
+    expect(calls.map((c) => c.name)).toEqual(["CALL_MCP_TOOL", "HTTP"]);
   });
 });
