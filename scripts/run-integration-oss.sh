@@ -80,6 +80,11 @@ HEALTH_URL="${CONDUCTOR_SERVER_URL%/api}/health"
 compose() { docker compose -f "${COMPOSE_FILE}" "$@"; }
 
 cleanup() {
+  local status=$?
+  if [[ "${status}" -ne 0 ]]; then
+    echo "Dumping conductor-server logs (exit ${status})..." >&2
+    compose logs conductor-server || true
+  fi
   if [[ "${KEEP_UP}" == "1" ]]; then
     echo "--keep-up set: leaving the OSS stack running. Tear down with:"
     echo "  docker compose -f ${COMPOSE_FILE} down -v"
@@ -89,6 +94,15 @@ cleanup() {
   compose down -v || true
 }
 trap cleanup EXIT
+
+echo "Using conductoross/conductor:${OSS_CONDUCTOR_VERSION}"
+
+# `docker compose up` only pulls an image when it is missing locally, so a
+# previously-cached `latest` (or any other mutable tag, including a re-pushed
+# rc) would silently be reused instead of getting the current version. Pull
+# unconditionally so the stack always reflects the tag we just printed.
+echo "Pulling conductoross/conductor:${OSS_CONDUCTOR_VERSION} to ensure it's current..."
+compose pull conductor-server
 
 echo "Starting Conductor OSS stack (${COMPOSE_FILE})..."
 compose up -d
@@ -100,7 +114,6 @@ deadline=$(( SECONDS + HEALTH_TIMEOUT ))
 until curl -sf "${HEALTH_URL}" >/dev/null 2>&1; do
   if (( SECONDS >= deadline )); then
     echo "Error: Conductor did not become healthy within ${HEALTH_TIMEOUT}s." >&2
-    compose logs conductor-server || true
     exit 1
   fi
   sleep 5
