@@ -1954,10 +1954,8 @@ function _isOutputJunk(output: unknown): boolean {
 }
 
 /**
- * Task types that are orchestration scaffolding, never a tool invocation.
- *
- * `SUB_WORKFLOW` is deliberately absent: an agent exposed as a tool compiles to
- * one, so skipping the type outright drops those calls.
+ * Task types that are orchestration, never a tool invocation.
+ * SUB_WORKFLOW is absent deliberately: an agent used as a tool compiles to one.
  */
 const ORCHESTRATION_TASK_TYPES = new Set([
   "LLM_CHAT_COMPLETE",
@@ -1971,19 +1969,16 @@ const ORCHESTRATION_TASK_TYPES = new Set([
 ]);
 
 /**
- * Input key the server's tool-dispatch script writes on a dispatched tool.
- *
- * Written for every tool an agent declares up front. Agents that discover their
- * tools at runtime compile to a second dispatch script that omits it, so its
- * absence does not mean the task is not a tool call.
+ * Input key carrying a dispatched tool's declared name.
+ * Agents that discover tools at runtime compile to a script that omits it,
+ * so its absence doesn't rule out a tool call.
  */
 const TOOL_NAME_KEY = "_agent_tool_name";
 
 /**
- * Task types only tool dispatch produces, so a task of one is a tool call even
- * unmarked. The rest of a compiled agent's task types are ambiguous: it emits
- * `SIMPLE`, `SUB_WORKFLOW` and `HUMAN` tasks of its own for workers, handoffs
- * and approvals.
+ * Task types only tool dispatch emits, so these are tool calls even unmarked.
+ * SIMPLE, SUB_WORKFLOW and HUMAN are ambiguous — the compiler emits its own for
+ * guardrail workers, handoffs and approvals.
  */
 const TOOL_ONLY_TASK_TYPES = new Set(["HTTP", "CALL_MCP_TOOL"]);
 
@@ -2063,7 +2058,7 @@ function _extractMessages(execution: Record<string, unknown>): unknown[] {
   return lastLlmMsgs;
 }
 
-/** A task input field is usable as a tool name only if it is a non-empty string. */
+/** A usable tool name: a non-empty string. */
 function _asName(value: unknown): string | undefined {
   return typeof value === "string" && value !== "" ? value : undefined;
 }
@@ -2071,20 +2066,14 @@ function _asName(value: unknown): string | undefined {
 /**
  * Extract tool calls from execution tasks.
  *
- * A dispatched tool carries its declared name in `inputData._agent_tool_name`,
- * which is the only field that survives every tool kind: the task type is the
- * transport (`HTTP`, `CALL_MCP_TOOL`, `SUB_WORKFLOW`, `HUMAN`, ...) and the task
- * definition name is the transport's own name for MCP, agent and media tools.
- * An agent tool is the one kind whose marker moves: the sub-workflow task mapper
- * rebuilds `inputData`, so the marker arrives nested inside `workflowInput`.
+ * Tools are identified by the name the server marks on dispatch. Neither
+ * taskType nor taskDefName works alone: both name the transport for MCP, agent
+ * and media tools.
  *
- * Two signals back it up for tasks the dispatch script left unmarked — agents
- * that discover their tools at runtime, and servers predating the marker. A
- * task-type check covers the types only tool dispatch emits. Everything else
- * falls back to the original heuristic, a reference name prefixed with the
- * provider's tool-call id, which only ever matched OpenAI's `call_` format.
+ * Unmarked tasks fall back to the task type, then to a `call_` reference-name
+ * prefix, which only matches OpenAI's tool-call id format.
  *
- * @internal Not part of the published agent surface; exported for tests.
+ * @internal Exported for tests.
  */
 export function _extractToolCalls(execution: Record<string, unknown>): unknown[] {
   const tasks = execution.tasks as Record<string, unknown>[] | undefined;
@@ -2092,9 +2081,7 @@ export function _extractToolCalls(execution: Record<string, unknown>): unknown[]
 
   const toolCalls: unknown[] = [];
   for (const task of tasks) {
-    // A SIMPLE task's type is the tool's own name, so the raw spelling is worth
-    // keeping: it is the last thing left to name a tool by when the execution
-    // carries neither the marker nor a task definition name.
+    // A SIMPLE task's type is the tool's own name, so keep the raw spelling.
     const rawType = String(task.taskType ?? task.task_type ?? "");
     const taskType = rawType.toUpperCase();
     if (ORCHESTRATION_TASK_TYPES.has(taskType)) continue;
@@ -2104,17 +2091,15 @@ export function _extractToolCalls(execution: Record<string, unknown>): unknown[]
     let toolName = _asName(rawInput[TOOL_NAME_KEY]);
 
     if (toolName === undefined && taskType === "SUB_WORKFLOW") {
-      // An agent tool's marker does not stay at the top level: the sub-workflow
-      // task mapper rebuilds `inputData` around `workflowInput`, and the marker
-      // rides along inside it. A handoff compiles to `SUB_WORKFLOW` too and
-      // carries the marker at neither level, which is what keeps the two apart.
+      // The sub-workflow mapper rebuilds inputData, leaving the marker inside
+      // workflowInput. A handoff is also SUB_WORKFLOW but carries no marker.
       const nested = rawInput.workflowInput as Record<string, unknown> | undefined;
       toolName = _asName(nested?.[TOOL_NAME_KEY]);
     }
 
     if (toolName === undefined && TOOL_ONLY_TASK_TYPES.has(taskType)) {
-      // `CALL_MCP_TOOL` names the tool in `method` — its task definition name is
-      // the transport's. An HTTP tool's definition name is already the tool's.
+      // CALL_MCP_TOOL's taskDefName is the transport's; the tool is in `method`.
+      // An HTTP tool's taskDefName is already the tool's own.
       toolName = (taskType === "CALL_MCP_TOOL" ? _asName(rawInput.method) : undefined) ?? defName;
     }
 
