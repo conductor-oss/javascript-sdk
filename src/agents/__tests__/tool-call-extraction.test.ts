@@ -1,11 +1,6 @@
 /**
  * `result.toolCalls` extraction.
- *
- * The task shapes below mirror what the server's tool-dispatch script emits for
- * each tool kind: a per-call reference name built from the provider's tool-call
- * id, a task type that varies by kind (`HTTP`, `CALL_MCP_TOOL`, `SUB_WORKFLOW`,
- * `HUMAN`, `SIMPLE`), and an `_agent_tool_name` marker carrying the tool's
- * declared name on every dispatched tool.
+ * Task shapes mirror what the server emits per tool kind, taken from real runs.
  */
 
 import { describe, it, expect } from "@jest/globals";
@@ -101,8 +96,7 @@ describe("_extractToolCalls — tool naming", () => {
 });
 
 describe("_extractToolCalls — which tasks count", () => {
-  // The sub-workflow task mapper rebuilds `inputData` around `workflowInput`,
-  // so an agent tool's marker arrives nested rather than at the top level.
+  // The sub-workflow mapper leaves an agent tool's marker inside workflowInput.
   it("includes an agent invoked as a tool (SUB_WORKFLOW)", () => {
     const calls = extract([
       toolTask({
@@ -137,8 +131,7 @@ describe("_extractToolCalls — which tasks count", () => {
     expect(calls.map((c) => c.name)).toEqual(["billing_agent"]);
   });
 
-  // A handoff compiles to `SUB_WORKFLOW` as well, and carries the marker at
-  // neither level. That absence is the only thing separating the two.
+  // A handoff is also SUB_WORKFLOW; the missing marker is all that separates them.
   it("excludes a handoff, which is a SUB_WORKFLOW carrying no marker", () => {
     const calls = extract([
       toolTask({
@@ -339,10 +332,8 @@ describe("_extractToolCalls — tools the dispatch script left unmarked", () => 
   });
 });
 
-// The agent-execution endpoint `run()` reads returns a trimmed task: task type,
-// reference name, status and output, with no `inputData` and no task definition
-// name. Nothing in it carries a declared tool name, so this pins how far the
-// extraction can get on that shape rather than asserting the tool's real name.
+// GET /agent/execution/{id} returns no inputData and no taskDefName, so no
+// declared name reaches the SDK. These pin how far extraction gets on that shape.
 describe("_extractToolCalls — the trimmed shape run() receives", () => {
   const trimmed = (referenceTaskName: string, taskType: string) => ({
     referenceTaskName,
