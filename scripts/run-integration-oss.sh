@@ -12,12 +12,13 @@
 # scripts/oss-test-run.log, override with -l|--log) so it can be shared later.
 #
 # Usage:
-#   scripts/run-integration-oss.sh [-t|--test <path|pattern>] [-l|--log <file>] [--keep-up] [-- jest args]
+#   scripts/run-integration-oss.sh [-t|--test <path|pattern>] [-l|--log <file>] [--keep-up] [--version <tag>] [-- jest args]
 # Examples:
-#   scripts/run-integration-oss.sh                       # full OSS-gated suite
+#   scripts/run-integration-oss.sh                       # full OSS-gated suite, image `latest`
 #   scripts/run-integration-oss.sh --test WorkflowExecutor
 #   scripts/run-integration-oss.sh --log /tmp/oss.log    # custom log path
 #   scripts/run-integration-oss.sh --keep-up             # leave the stack running afterwards
+#   scripts/run-integration-oss.sh --version 3.32.0-rc18 # pin a specific OSS image tag
 #   scripts/run-integration-oss.sh -- --testPathPatterns="EventClient"
 set -euo pipefail
 
@@ -35,11 +36,14 @@ while [[ $# -gt 0 ]]; do
     -t|--test) TEST_PATTERN="${2:?--test needs a path or pattern}"; shift 2 ;;
     -l|--log)  LOG_FILE="${2:?--log needs a file path}"; shift 2 ;;
     --keep-up) KEEP_UP=1; shift ;;
+    --version) OSS_CONDUCTOR_VERSION="${2:?--version needs a tag}"; shift 2 ;;
     -h|--help) usage; exit 0 ;;
     --)        shift; extra=("$@"); break ;;
     *) echo "Unknown argument: $1" >&2; usage; exit 1 ;;
   esac
 done
+
+export OSS_CONDUCTOR_VERSION="${OSS_CONDUCTOR_VERSION:-latest}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"

@@ -34,6 +34,7 @@ import {
   describeForOrkesV5,
   describeForOrkesOnlyV4,
   describeForOrkesOnlyV5,
+  testForRegionDurable,
 } from "./utils/customJestDescribe";
 import { registerWorkflowDefWithRetry, registerWorkflowWithRetry } from "./utils/registerWorkflowWithRetry";
 import { HTTPBIN_BASE_URL } from "./utils/testConstants";
@@ -427,7 +428,18 @@ describe("WorkflowExecutor", () => {
 
     describe("Execute Workflow with Return Strategies and Consistency Levels", () => {
       // Test data for combinations
-      const testCombinations = [
+      interface ConsistencyTestCase {
+        name: string;
+        consistency: Consistency;
+        returnStrategy: ReturnStrategy;
+        shouldHaveWorkflowFields: boolean;
+        shouldHaveTaskFields: boolean;
+        // Needs a server with cross-region replication configured; see
+        // testForRegionDurable.
+        requiresRegionDurable?: boolean;
+      }
+
+      const testCombinations: ConsistencyTestCase[] = [
         // SYNCHRONOUS consistency tests
         {
           name: "SYNC + TARGET_WORKFLOW",
@@ -457,34 +469,75 @@ describe("WorkflowExecutor", () => {
           shouldHaveWorkflowFields: false,
           shouldHaveTaskFields: true,
         },
-        // REGION_DURABLE consistency tests
+        // DURABLE consistency tests. DURABLE is the default consistency level and
+        // takes a different executor path than SYNCHRONOUS (async decider queue via
+        // scheduleWorkflow, rather than an inline decide), so the return strategies
+        // are worth covering against it too. These cases are what the REGION_DURABLE
+        // block below was really exercising before orkes-conductor 5.5.0, when
+        // REGION_DURABLE was accepted and silently treated as a plain local start.
         {
           name: "DURABLE + TARGET_WORKFLOW",
-          consistency: Consistency.REGION_DURABLE,
+          consistency: Consistency.DURABLE,
           returnStrategy: ReturnStrategy.TARGET_WORKFLOW,
           shouldHaveWorkflowFields: true,
           shouldHaveTaskFields: false,
         },
         {
           name: "DURABLE + BLOCKING_WORKFLOW",
-          consistency: Consistency.REGION_DURABLE,
+          consistency: Consistency.DURABLE,
           returnStrategy: ReturnStrategy.BLOCKING_WORKFLOW,
           shouldHaveWorkflowFields: true,
           shouldHaveTaskFields: false,
         },
         {
           name: "DURABLE + BLOCKING_TASK",
-          consistency: Consistency.REGION_DURABLE,
+          consistency: Consistency.DURABLE,
           returnStrategy: ReturnStrategy.BLOCKING_TASK,
           shouldHaveWorkflowFields: false,
           shouldHaveTaskFields: true,
         },
         {
           name: "DURABLE + BLOCKING_TASK_INPUT",
+          consistency: Consistency.DURABLE,
+          returnStrategy: ReturnStrategy.BLOCKING_TASK_INPUT,
+          shouldHaveWorkflowFields: false,
+          shouldHaveTaskFields: true,
+        },
+        // REGION_DURABLE consistency tests. Gated on CONDUCTOR_REGION_DURABLE_ENABLED
+        // — see testForRegionDurable. These were previously named "DURABLE + *" while
+        // requesting REGION_DURABLE, which is why they only started failing when
+        // sdkdev moved to a server build that honours the flag.
+        {
+          name: "REGION_DURABLE + TARGET_WORKFLOW",
+          consistency: Consistency.REGION_DURABLE,
+          returnStrategy: ReturnStrategy.TARGET_WORKFLOW,
+          shouldHaveWorkflowFields: true,
+          shouldHaveTaskFields: false,
+          requiresRegionDurable: true,
+        },
+        {
+          name: "REGION_DURABLE + BLOCKING_WORKFLOW",
+          consistency: Consistency.REGION_DURABLE,
+          returnStrategy: ReturnStrategy.BLOCKING_WORKFLOW,
+          shouldHaveWorkflowFields: true,
+          shouldHaveTaskFields: false,
+          requiresRegionDurable: true,
+        },
+        {
+          name: "REGION_DURABLE + BLOCKING_TASK",
+          consistency: Consistency.REGION_DURABLE,
+          returnStrategy: ReturnStrategy.BLOCKING_TASK,
+          shouldHaveWorkflowFields: false,
+          shouldHaveTaskFields: true,
+          requiresRegionDurable: true,
+        },
+        {
+          name: "REGION_DURABLE + BLOCKING_TASK_INPUT",
           consistency: Consistency.REGION_DURABLE,
           returnStrategy: ReturnStrategy.BLOCKING_TASK_INPUT,
           shouldHaveWorkflowFields: false,
           shouldHaveTaskFields: true,
+          requiresRegionDurable: true,
         },
       ];
 
@@ -660,7 +713,10 @@ describe("WorkflowExecutor", () => {
 
       // Now replicate for all other combinations
       testCombinations.slice(1).forEach((testCase) => {
-        test(`Should execute complex workflow with ${testCase.name}`, async () => {
+        const testFn = testCase.requiresRegionDurable
+          ? testForRegionDurable
+          : test;
+        testFn(`Should execute complex workflow with ${testCase.name}`, async () => {
           console.log(`\n--- Testing ${testCase.name} ---`);
 
           // Execute workflow

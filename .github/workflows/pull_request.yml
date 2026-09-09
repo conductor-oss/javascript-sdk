@@ -6,6 +6,11 @@ on:
       - main
   pull_request:
   workflow_dispatch:
+    inputs:
+      oss_conductor_version:
+        description: 'OSS Conductor image tag (falls back to E2E_TEST_OSS_CONDUCTOR_VERSION org var)'
+        required: false
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -216,7 +221,15 @@ jobs:
       CONDUCTOR_REQUEST_TIMEOUT_MS: "300000"
       CONDUCTOR_RETRY_SERVER_ERRORS: "true"
       HTTPBIN_SERVICE_HOSTNAME: httpbin
+      OSS_CONDUCTOR_VERSION: ${{ inputs.oss_conductor_version || vars.E2E_TEST_OSS_CONDUCTOR_VERSION }}
     steps:
+      - name: Verify OSS Conductor version is set
+        run: |
+          if [ -z "$OSS_CONDUCTOR_VERSION" ]; then
+            echo "::error::No Conductor OSS image tag resolved. Set the E2E_TEST_OSS_CONDUCTOR_VERSION organization variable (and ensure its repository access policy includes this repo), or pass the oss_conductor_version input via workflow_dispatch."
+            exit 1
+          fi
+          echo "Using conductoross/conductor:$OSS_CONDUCTOR_VERSION"
       - name: Checkout
         uses: actions/checkout@v4
       - name: Set up Node
