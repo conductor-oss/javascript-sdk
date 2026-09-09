@@ -2058,8 +2058,8 @@ function _extractMessages(execution: Record<string, unknown>): unknown[] {
   return lastLlmMsgs;
 }
 
-/** A usable tool name: a non-empty string. */
-function _asName(value: unknown): string | undefined {
+/** Returns the value if it is a non-empty string, else undefined. */
+function _nonEmptyString(value: unknown): string | undefined {
   return typeof value === "string" && value !== "" ? value : undefined;
 }
 
@@ -2070,8 +2070,9 @@ function _asName(value: unknown): string | undefined {
  * taskType nor taskDefName works alone: both name the transport for MCP, agent
  * and media tools.
  *
- * Unmarked tasks fall back to the task type, then to a `call_` reference-name
- * prefix, which only matches OpenAI's tool-call id format.
+ * Unmarked tasks fall back to the task definition name. Ones whose type isn't
+ * tool-only need a `call_` reference prefix to count at all, which matches
+ * OpenAI's tool-call id format alone.
  *
  * @internal Exported for tests.
  */
@@ -2088,19 +2089,19 @@ export function _extractToolCalls(execution: Record<string, unknown>): unknown[]
 
     const rawInput = (task.inputData ?? task.input_data ?? {}) as Record<string, unknown>;
     const defName = String(task.taskDefName ?? task.task_def_name ?? rawType);
-    let toolName = _asName(rawInput[TOOL_NAME_KEY]);
+    let toolName = _nonEmptyString(rawInput[TOOL_NAME_KEY]);
 
     if (toolName === undefined && taskType === "SUB_WORKFLOW") {
       // The sub-workflow mapper rebuilds inputData, leaving the marker inside
       // workflowInput. A handoff is also SUB_WORKFLOW but carries no marker.
       const nested = rawInput.workflowInput as Record<string, unknown> | undefined;
-      toolName = _asName(nested?.[TOOL_NAME_KEY]);
+      toolName = _nonEmptyString(nested?.[TOOL_NAME_KEY]);
     }
 
     if (toolName === undefined && TOOL_ONLY_TASK_TYPES.has(taskType)) {
       // CALL_MCP_TOOL's taskDefName is the transport's; the tool is in `method`.
       // An HTTP tool's taskDefName is already the tool's own.
-      toolName = (taskType === "CALL_MCP_TOOL" ? _asName(rawInput.method) : undefined) ?? defName;
+      toolName = (taskType === "CALL_MCP_TOOL" ? _nonEmptyString(rawInput.method) : undefined) ?? defName;
     }
 
     if (toolName === undefined) {
