@@ -5,11 +5,15 @@
 # The Conductor server reaches httpbin over the compose network at
 # http://httpbin:8081, which matches HTTPBIN_SERVICE_HOSTNAME=httpbin.
 #
-# OSS_CONDUCTOR_VERSION defaults to `latest` for local runs; CI pins it via the
-# E2E_TEST_OSS_CONDUCTOR_VERSION org variable (or a workflow_dispatch input).
+# The `image:` default below is the SINGLE place the Conductor OSS image tag is
+# written. Everything that does not override OSS_CONDUCTOR_VERSION lands on it:
+# a plain `scripts/run-integration-oss.sh` run, and the integration-tests-oss
+# job on a fork PR (where GitHub withholds org variables). Overrides are the
+# script's --version flag and, in CI, the E2E_TEST_OSS_CONDUCTOR_VERSION org
+# variable or a workflow_dispatch input. Bump the tag here and both follow.
 services:
   conductor-server:
-    image: conductoross/conductor:${OSS_CONDUCTOR_VERSION:-latest}
+    image: conductoross/conductor:${OSS_CONDUCTOR_VERSION:-3.32.3}
     environment:
       - CONFIG_PROP=config-postgres.properties
     ports:
