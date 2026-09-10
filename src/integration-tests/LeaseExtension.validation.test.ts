@@ -47,6 +47,9 @@ import { cleanupWorkflowsAndTasks } from "./utils/cleanup";
 // ─── Timing constants ────────────────────────────────────────────────────────
 const RESPONSE_TIMEOUT_SECONDS = 10;          // responseTimeoutSeconds on task def
 const TASK_EXECUTION_MS        = 20_000;       // worker "works" for 20s (> 10s timeout)
+// Long-poll window. The task is polled immediately after startWorkflow, so
+// this has to cover the server's queueing latency, not just the network hop.
+const POLL_WAIT_MS             = 5_000;
 // Heartbeat fires at 10 * 0.8 = 8s — before the 10s deadline
 
 describe("Lease Extension — end-to-end validation", () => {
@@ -127,7 +130,7 @@ describe("Lease Extension — end-to-end validation", () => {
     console.log(`\n▶  Workflow 1  id=${workflowId1}  (no heartbeat)`);
 
     // Poll the task directly so we control execution
-    const { data: tasks1 } = await TaskResource.batchPoll({ client, path: { tasktype: taskDefName }, query: { workerid: "val-worker-no-lease", count: 1, timeout: 200 } });
+    const { data: tasks1 } = await TaskResource.batchPoll({ client, path: { tasktype: taskDefName }, query: { workerid: "val-worker-no-lease", count: 1, timeout: POLL_WAIT_MS } });
     const [task] = tasks1 ?? [];
     expect(task).toBeDefined();
     const taskId1 = task.taskId ?? "";
@@ -172,7 +175,7 @@ describe("Lease Extension — end-to-end validation", () => {
     const workflowId2 = await executor.startWorkflowByName(wfName, {}, 1);
     console.log(`\n▶  Workflow 2  id=${workflowId2}  (with heartbeat)`);
 
-    const { data: tasks2 } = await TaskResource.batchPoll({ client, path: { tasktype: taskDefName }, query: { workerid: "val-worker-with-lease", count: 1, timeout: 200 } });
+    const { data: tasks2 } = await TaskResource.batchPoll({ client, path: { tasktype: taskDefName }, query: { workerid: "val-worker-with-lease", count: 1, timeout: POLL_WAIT_MS } });
     const [task] = tasks2 ?? [];
     expect(task).toBeDefined();
     const taskId2 = task.taskId ?? "";
