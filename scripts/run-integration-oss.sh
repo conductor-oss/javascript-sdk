@@ -12,12 +12,13 @@
 # scripts/oss-test-run.log, override with -l|--log) so it can be shared later.
 #
 # Usage:
-#   scripts/run-integration-oss.sh [-t|--test <path|pattern>] [-l|--log <file>] [--keep-up] [-- jest args]
+#   scripts/run-integration-oss.sh [-t|--test <path|pattern>] [-l|--log <file>] [--keep-up] [--version <tag>] [-- jest args]
 # Examples:
-#   scripts/run-integration-oss.sh                       # full OSS-gated suite
+#   scripts/run-integration-oss.sh                       # full OSS-gated suite, default image tag
 #   scripts/run-integration-oss.sh --test WorkflowExecutor
 #   scripts/run-integration-oss.sh --log /tmp/oss.log    # custom log path
 #   scripts/run-integration-oss.sh --keep-up             # leave the stack running afterwards
+#   scripts/run-integration-oss.sh --version 3.33.0-rc1  # override the OSS image tag
 #   scripts/run-integration-oss.sh -- --testPathPatterns="EventClient"
 set -euo pipefail
 
@@ -35,11 +36,21 @@ while [[ $# -gt 0 ]]; do
     -t|--test) TEST_PATTERN="${2:?--test needs a path or pattern}"; shift 2 ;;
     -l|--log)  LOG_FILE="${2:?--log needs a file path}"; shift 2 ;;
     --keep-up) KEEP_UP=1; shift ;;
+    --version) OSS_CONDUCTOR_VERSION="${2:?--version needs a tag}"; shift 2 ;;
     -h|--help) usage; exit 0 ;;
     --)        shift; extra=("$@"); break ;;
     *) echo "Unknown argument: $1" >&2; usage; exit 1 ;;
   esac
 done
+
+# No default is applied here on purpose. The default tag is written once, in the
+# `image:` line of scripts/docker-compose-oss.yaml, so leaving OSS_CONDUCTOR_VERSION
+# unset lets compose supply it -- the same path a fork PR takes in CI. Only export
+# it when the caller actually asked for a specific tag, otherwise a value set but
+# not exported in the caller's shell would never reach compose anyway.
+if [[ -n "${OSS_CONDUCTOR_VERSION:-}" ]]; then
+  export OSS_CONDUCTOR_VERSION
+fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
@@ -76,6 +87,11 @@ HEALTH_URL="${CONDUCTOR_SERVER_URL%/api}/health"
 compose() { docker compose -f "${COMPOSE_FILE}" "$@"; }
 
 cleanup() {
+  local status=$?
+  if [[ "${status}" -ne 0 ]]; then
+    echo "Dumping conductor-server logs (exit ${status})..." >&2
+    compose logs conductor-server || true
+  fi
   if [[ "${KEEP_UP}" == "1" ]]; then
     echo "--keep-up set: leaving the OSS stack running. Tear down with:"
     echo "  docker compose -f ${COMPOSE_FILE} down -v"
@@ -85,6 +101,18 @@ cleanup() {
   compose down -v || true
 }
 trap cleanup EXIT
+
+# Ask compose what it resolved rather than reconstructing the tag here, so this
+# stays correct whether the tag came from --version or from the compose default.
+SERVER_IMAGE="$(compose config --images conductor-server | head -1)"
+echo "Using ${SERVER_IMAGE}"
+
+# `docker compose up` only pulls an image when it is missing locally, so a
+# previously-cached mutable tag (a re-pushed rc, or `latest` if that is what was
+# asked for) would silently be reused instead of getting the current version.
+# Pull unconditionally so the stack always reflects the tag we just printed.
+echo "Pulling ${SERVER_IMAGE} to ensure it's current..."
+compose pull conductor-server
 
 echo "Starting Conductor OSS stack (${COMPOSE_FILE})..."
 compose up -d
@@ -96,7 +124,6 @@ deadline=$(( SECONDS + HEALTH_TIMEOUT ))
 until curl -sf "${HEALTH_URL}" >/dev/null 2>&1; do
   if (( SECONDS >= deadline )); then
     echo "Error: Conductor did not become healthy within ${HEALTH_TIMEOUT}s." >&2
-    compose logs conductor-server || true
     exit 1
   fi
   sleep 5

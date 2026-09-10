@@ -18,8 +18,19 @@ concurrency:
   group: agent-e2e-${{ github.ref }}
   cancel-in-progress: true
 
+# Deliberately NOT the same knob as the integration-tests-oss job in
+# pull_request.yml, despite the similar name. That job pins a *Docker image
+# tag* (conductoross/conductor on Docker Hub), defaulted in
+# scripts/docker-compose-oss.yaml and overridable via the
+# E2E_TEST_OSS_CONDUCTOR_VERSION org variable. This is a *Maven Central
+# artifact version* for the conductor-server boot JAR, which is a different
+# registry with a different set of published versions -- notably it has no
+# `latest`, which is what that org variable currently holds. It also carries a
+# constraint that job does not: the /agent/* control plane and the
+# TaskDef.runtimeMetadata persistence these suites exercise only exist from
+# 3.32.0-rc.8 onward. So it is pinned independently and bumped deliberately.
 env:
-  CONDUCTOR_OSS_VERSION: ${{ vars.CONDUCTOR_SERVER_VERSION || '3.32.1' }}
+  CONDUCTOR_OSS_VERSION: ${{ vars.CONDUCTOR_SERVER_VERSION || '3.32.1' }} # pinned conductor-oss release — see note above
 
 jobs:
   agent-e2e:
