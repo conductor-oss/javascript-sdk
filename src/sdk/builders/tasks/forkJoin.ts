@@ -20,7 +20,16 @@ export const forkTaskJoin = (
   taskReferenceName: string,
   forkTasks: TaskDefTypes[],
   optional?: boolean
-): [ForkJoinTaskDef, JoinTaskDef] => [
-  forkTask(taskReferenceName, forkTasks),
-  generateJoinTask({ name: `${taskReferenceName}_join`, optional }),
-];
+): [ForkJoinTaskDef, JoinTaskDef] => {
+  const fork = forkTask(taskReferenceName, forkTasks);
+  // The server checks joinOn with allMatch(), which short-circuits to true on an
+  // empty list — a JOIN with no joinOn completes without waiting for any branch.
+  // Join on the last task of every branch so the JOIN blocks until each finishes.
+  const joinOn = fork.forkTasks
+    .map((branch) => branch[branch.length - 1]?.taskReferenceName)
+    .filter((ref): ref is string => ref !== undefined);
+  return [
+    fork,
+    generateJoinTask({ name: `${taskReferenceName}_join`, joinOn, optional }),
+  ];
+};
