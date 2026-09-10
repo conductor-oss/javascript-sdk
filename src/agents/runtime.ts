@@ -1953,8 +1953,11 @@ function _isOutputJunk(output: unknown): boolean {
   return false;
 }
 
-/** System task types that are never user-defined tool calls. */
-const SYSTEM_TASK_TYPES = new Set([
+/**
+ * Task types that are orchestration, never a tool invocation.
+ * SUB_WORKFLOW is absent deliberately: an agent used as a tool compiles to one.
+ */
+const ORCHESTRATION_TASK_TYPES = new Set([
   "LLM_CHAT_COMPLETE",
   "SWITCH",
   "DO_WHILE",
@@ -1963,11 +1966,24 @@ const SYSTEM_TASK_TYPES = new Set([
   "FORK",
   "FORK_JOIN_DYNAMIC",
   "JOIN",
-  "SUB_WORKFLOW",
 ]);
 
+/**
+ * Input key carrying a dispatched tool's declared name.
+ * Agents that discover tools at runtime compile to a script that omits it,
+ * so its absence doesn't rule out a tool call.
+ */
+const TOOL_NAME_KEY = "_agent_tool_name";
+
+/**
+ * Task types only tool dispatch emits, so these are tool calls even unmarked.
+ * SIMPLE, SUB_WORKFLOW and HUMAN are ambiguous — the compiler emits its own for
+ * guardrail workers, handoffs and approvals.
+ */
+const TOOL_ONLY_TASK_TYPES = new Set(["HTTP", "CALL_MCP_TOOL"]);
+
 /** Internal keys to strip from tool call input. */
-const INTERNAL_KEYS = ["_agent_state", "method", "__humanTaskDefinition"];
+const INTERNAL_KEYS = ["_agent_state", "method", "__humanTaskDefinition", TOOL_NAME_KEY];
 
 /**
  * Extract output from a full execution response.
@@ -2042,35 +2058,62 @@ function _extractMessages(execution: Record<string, unknown>): unknown[] {
   return lastLlmMsgs;
 }
 
+/** Returns the value if it is a non-empty string, else undefined. */
+function _nonEmptyString(value: unknown): string | undefined {
+  return typeof value === "string" && value !== "" ? value : undefined;
+}
+
 /**
  * Extract tool calls from execution tasks.
- * Mirrors Python's _extract_tool_calls: filters for call_* refs, skips system tasks.
+ *
+ * Tools are identified by the name the server marks on dispatch. Neither
+ * taskType nor taskDefName works alone: both name the transport for MCP, agent
+ * and media tools.
+ *
+ * Unmarked tasks fall back to the task definition name. Ones whose type isn't
+ * tool-only need a `call_` reference prefix to count at all, which matches
+ * OpenAI's tool-call id format alone.
+ *
+ * @internal Exported for tests.
  */
-function _extractToolCalls(execution: Record<string, unknown>): unknown[] {
+export function _extractToolCalls(execution: Record<string, unknown>): unknown[] {
   const tasks = execution.tasks as Record<string, unknown>[] | undefined;
   if (!Array.isArray(tasks)) return [];
 
   const toolCalls: unknown[] = [];
   for (const task of tasks) {
-    const taskType = String(task.taskType ?? task.task_type ?? "").toUpperCase();
-    const ref = String(task.referenceTaskName ?? task.reference_task_name ?? "");
+    // A SIMPLE task's type is the tool's own name, so keep the raw spelling.
+    const rawType = String(task.taskType ?? task.task_type ?? "");
+    const taskType = rawType.toUpperCase();
+    if (ORCHESTRATION_TASK_TYPES.has(taskType)) continue;
 
-    // The call_ prefix is the compiler's marker for tool invocations.
-    // Any task with a call_ ref is a user-initiated tool call, regardless
-    // of whether the underlying task type is HTTP, CALL_MCP_TOOL, SIMPLE, etc.
-    if (!ref.startsWith("call_")) continue;
-    // Skip only orchestration-level system tasks (these never have call_ refs,
-    // but guard against edge cases)
-    if (SYSTEM_TASK_TYPES.has(taskType)) continue;
+    const rawInput = (task.inputData ?? task.input_data ?? {}) as Record<string, unknown>;
+    const defName = String(task.taskDefName ?? task.task_def_name ?? rawType);
+    let toolName = _nonEmptyString(rawInput[TOOL_NAME_KEY]);
 
-    const inputData = { ...((task.inputData ?? task.input_data ?? {}) as Record<string, unknown>) };
+    if (toolName === undefined && taskType === "SUB_WORKFLOW") {
+      // The sub-workflow mapper rebuilds inputData, leaving the marker inside
+      // workflowInput. A handoff is also SUB_WORKFLOW but carries no marker.
+      const nested = rawInput.workflowInput as Record<string, unknown> | undefined;
+      toolName = _nonEmptyString(nested?.[TOOL_NAME_KEY]);
+    }
+
+    if (toolName === undefined && TOOL_ONLY_TASK_TYPES.has(taskType)) {
+      // CALL_MCP_TOOL's taskDefName is the transport's; the tool is in `method`.
+      // An HTTP tool's taskDefName is already the tool's own.
+      toolName = (taskType === "CALL_MCP_TOOL" ? _nonEmptyString(rawInput.method) : undefined) ?? defName;
+    }
+
+    if (toolName === undefined) {
+      const ref = String(task.referenceTaskName ?? task.reference_task_name ?? "");
+      if (!ref.startsWith("call_")) continue;
+      toolName = defName;
+    }
+
+    const inputData = { ...rawInput };
     for (const k of INTERNAL_KEYS) {
       Reflect.deleteProperty(inputData, k);
     }
-
-    // Use the tool name from inputData.method (set by compiler) if available
-    const toolName = String(inputData.method ?? taskType).toLowerCase();
-    delete inputData.method;
 
     toolCalls.push({
       name: toolName,
