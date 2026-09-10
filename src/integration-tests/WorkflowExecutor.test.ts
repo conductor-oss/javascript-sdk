@@ -353,7 +353,9 @@ describe("WorkflowExecutor", () => {
 
       // Register all test workflows
       await registerAllWorkflows();
-    }, 30000);
+      // No explicit hook timeout: inherit the describe's 300s. Registering
+      // several workflow definitions against a slow server outran 30s.
+    });
 
     afterEach(async () => {
       // Clean up executions first
