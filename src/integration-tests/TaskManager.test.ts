@@ -13,13 +13,17 @@ import { waitForWorkflowCompletion } from "./utils/waitForWorkflowCompletion";
 import { describeForOrkesV5 } from "./utils/customJestDescribe";
 
 const BASE_TIME = 1000;
+// Every other integration test takes waitForWorkflowCompletion's 5-minute
+// default. These four wait on a worker to poll for and finish each task, so
+// they need enough room for a slow or contended server; 30s was losing races.
+const WF_WAIT_MS = BASE_TIME * 90;
 describe("TaskManager", () => {
   const clientPromise = createClientWithRetry();
   const workflowsToCleanup: { name: string; version: number }[] = [];
   const tasksToCleanup: string[] = [];
   const activeManagers: TaskManager[] = [];
 
-  jest.setTimeout(60000);
+  jest.setTimeout(120000);
 
   afterEach(async () => {
     for (const m of activeManagers) {
@@ -136,7 +140,7 @@ describe("TaskManager", () => {
     const workflowStatus = await waitForWorkflowCompletion(
       executor,
       executionId,
-      BASE_TIME * 30
+      WF_WAIT_MS
     );
 
     expect(workflowStatus.status).toEqual("COMPLETED");
@@ -211,7 +215,7 @@ describe("TaskManager", () => {
     const workflowStatus = await waitForWorkflowCompletion(
       executor,
       status,
-      BASE_TIME * 30
+      WF_WAIT_MS
     );
 
     expect(workflowStatus.status).toEqual("FAILED");
@@ -283,7 +287,7 @@ describe("TaskManager", () => {
     const workflowStatus = await waitForWorkflowCompletion(
       executor,
       executionId,
-      BASE_TIME * 30
+      WF_WAIT_MS
     );
     expect(workflowStatus.status).toEqual("FAILED");
     await manager.stopPolling();
@@ -358,7 +362,7 @@ describe("TaskManager", () => {
     const workflowStatus = await waitForWorkflowCompletion(
       executor,
       executionId,
-      BASE_TIME * 30
+      WF_WAIT_MS
     );
 
     expect(workflowStatus.status).toEqual("COMPLETED");
