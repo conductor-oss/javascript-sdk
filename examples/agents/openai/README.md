@@ -48,7 +48,7 @@ import { Agent, tool, setTracingDisabled }
 // ^^^ replace run() with setTracingDisabled
 import { z } from 'zod';
 import { AgentRuntime } from '@io-orkes/conductor-javascript/agents';
-// ^^^ add agentspan import
+// ^^^ add Conductor agent import
 
 const getWeather = tool({
   name: 'get_weather',
