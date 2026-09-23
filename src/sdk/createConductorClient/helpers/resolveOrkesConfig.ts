@@ -29,11 +29,11 @@ export const resolveOrkesConfig = (config?: Partial<OrkesApiConfig>) => {
   const keyId = (process.env.CONDUCTOR_AUTH_KEY || config?.keyId || "").trim();
   const keySecret = (process.env.CONDUCTOR_AUTH_SECRET || config?.keySecret || "").trim();
 
-  if (!process.env.CONDUCTOR_AUTH_KEY) {
+  if (!keyId) {
     console.warn("CONDUCTOR_AUTH_KEY is not set");
   }
 
-  if (!process.env.CONDUCTOR_AUTH_SECRET) {
+  if (!keySecret) {
     console.warn("CONDUCTOR_AUTH_SECRET is not set");
   }
 
