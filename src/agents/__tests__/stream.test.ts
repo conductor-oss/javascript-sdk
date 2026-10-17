@@ -297,6 +297,68 @@ describe("AgentStream", () => {
   });
 
   describe("getResult", () => {
+    it("waits for terminal status after the SSE stream has ended", async () => {
+      jest.useFakeTimers();
+      try {
+        const fetchStatus = jest.fn<typeof fetch>()
+          .mockResolvedValueOnce(new Response(JSON.stringify({ status: "RUNNING", isComplete: false })))
+          .mockResolvedValueOnce(new Response(JSON.stringify({ status: "FAILED", isComplete: true, reasonForIncompletion: "guardrail failed" })));
+        global.fetch = fetchStatus;
+        const stream = new AgentStream("http://localhost/sse", async () => ({}), "wf-1", jest.fn(), "http://localhost");
+        stream.events.push({ type: "done", output: "stale output" });
+        stream.close();
+
+        const resultPromise = stream.getResult();
+        await jest.advanceTimersByTimeAsync(500);
+        const result = await resultPromise;
+        expect(result.status).toBe("FAILED");
+        expect(result.error).toBe("guardrail failed");
+        expect(fetchStatus).toHaveBeenCalledTimes(2);
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
+    it("retries a failed status read after observing a running execution", async () => {
+      jest.useFakeTimers();
+      try {
+        const fetchStatus = jest.fn<typeof fetch>()
+          .mockResolvedValueOnce(new Response(JSON.stringify({ status: "RUNNING", isComplete: false })))
+          .mockRejectedValueOnce(new Error("temporary connection failure"))
+          .mockResolvedValueOnce(new Response(JSON.stringify({ status: "COMPLETED", isComplete: true, output: "final output" })));
+        global.fetch = fetchStatus;
+        const stream = new AgentStream("http://localhost/sse", async () => ({}), "wf-1", jest.fn(), "http://localhost");
+        stream.events.push({ type: "done", output: "stale output" });
+        stream.close();
+        const resultPromise = stream.getResult();
+        await jest.advanceTimersByTimeAsync(1000);
+        const result = await resultPromise;
+        expect(result.status).toBe("COMPLETED");
+        expect(result.output).toEqual({ result: "final output" });
+        expect(fetchStatus).toHaveBeenCalledTimes(3);
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
+    it("does not infer success when the server remains non-terminal", async () => {
+      jest.useFakeTimers();
+      try {
+        global.fetch = jest.fn<typeof fetch>().mockImplementation(async () =>
+          new Response(JSON.stringify({ status: "RUNNING", isComplete: false })),
+        );
+        const stream = new AgentStream("http://localhost/sse", async () => ({}), "wf-1", jest.fn(), "http://localhost");
+        stream.events.push({ type: "done" });
+        stream.close();
+        const resultPromise = stream.getResult();
+        const assertion = expect(resultPromise).rejects.toThrow("terminal status");
+        await jest.advanceTimersByTimeAsync(15_000);
+        await assertion;
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
     it("builds AgentResult from done event", async () => {
       const sseChunks = [
         'event:thinking\ndata:{"content":"thinking..."}\n\n',
