@@ -5,6 +5,18 @@
   "description": "The public wire shape emitted by AgentConfigSerializer.serializeAgent() under agentConfig.",
   "$ref": "#/$defs/agentConfig",
   "$defs": {
+    "decisionRouter": {
+      "type": "object",
+      "required": ["name", "kind", "model", "questions"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "kind": { "const": "decision" },
+        "model": { "type": "string", "minLength": 1 },
+        "provider": { "type": "string" },
+        "questions": { "type": "object", "minProperties": 1 }
+      },
+      "additionalProperties": false
+    },
     "taskReference": {
       "type": "object",
       "required": ["taskName"],
@@ -52,7 +64,8 @@
         "tools": { "type": "array", "items": { "$ref": "#/$defs/tool" } },
         "agents": { "type": "array", "items": { "$ref": "#/$defs/agentConfig" } },
         "strategy": { "type": "string" },
-        "router": { "anyOf": [{ "$ref": "#/$defs/taskReference" }, { "$ref": "#/$defs/agentConfig" }] },
+        "router": { "anyOf": [{ "$ref": "#/$defs/taskReference" }, { "$ref": "#/$defs/agentConfig" }, { "$ref": "#/$defs/decisionRouter" }] },
+        "synthesize": { "type": "boolean" },
         "outputType": {
           "type": "object",
           "properties": {

@@ -91,6 +91,7 @@ export interface GuardrailDef {
  */
 export type ToolType =
   | "worker"
+  | "decision"
   | "http"
   | "api"
   | "mcp"
