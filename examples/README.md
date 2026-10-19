@@ -43,6 +43,7 @@ npx ts-node examples/workers-e2e.ts
 | **[kitchensink.ts](kitchensink.ts)** | All major task types in one workflow | `npx ts-node examples/kitchensink.ts` |
 | **[workflow-ops.ts](workflow-ops.ts)** | Lifecycle: start, pause, resume, terminate, restart, retry, search | `npx ts-node examples/workflow-ops.ts` |
 | **[test-workflows.ts](test-workflows.ts)** | Unit testing with mock task outputs (no workers needed) | `npx ts-node examples/test-workflows.ts` |
+| **[ai-decision-routing.ts](ai-decision-routing.ts)** | Server-side decision SWITCH routes to inline billing/technical branches | `npx tsx examples/ai-decision-routing.ts` |
 
 ### AI Agents
 
@@ -59,6 +60,8 @@ for the full catalog and environment setup (`CONDUCTOR_SERVER_URL`,
 | **[agents/04-mcp-weather.ts](agents/04-mcp-weather.ts)** | MCP tool discovery + invocation for real-time data | `npx tsx examples/agents/04-mcp-weather.ts` |
 | **[agents/09-human-in-the-loop.ts](agents/09-human-in-the-loop.ts)** | Agent pauses for human approval mid-run | `npx tsx examples/agents/09-human-in-the-loop.ts` |
 | **[agents/15-agent-discussion.ts](agents/15-agent-discussion.ts)** | Multi-turn debate between agents with opposing viewpoints | `npx tsx examples/agents/15-agent-discussion.ts` |
+| **[agents/decision-router.ts](agents/decision-router.ts)** | Decision ToolDef routes to billing/technical chat agents | `npx tsx examples/agents/decision-router.ts --run` |
+| **[agents/decision-tool.ts](agents/decision-tool.ts)** | Chat agent calls a branchless decision tool | `npx tsx examples/agents/decision-tool.ts` |
 
 ### Monitoring
 
