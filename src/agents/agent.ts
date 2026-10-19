@@ -1,4 +1,4 @@
-import type { Strategy, CodeExecutionConfig, CliConfig, PrefillToolCall } from "./types.js";
+import type { Strategy, CodeExecutionConfig, CliConfig, PrefillToolCall, ToolDef } from "./types.js";
 import { agentTool } from "./tool.js";
 import { ConfigurationError } from "./errors.js";
 import { ClaudeCode } from "./claude-code.js";
@@ -94,7 +94,9 @@ export interface AgentOptions {
   tools?: unknown[]; // Normalized via normalizeToolInput at serialization
   agents?: Agent[];
   strategy?: Strategy;
-  router?: Agent | ((...args: unknown[]) => string);
+  router?: Agent | ToolDef | ((...args: unknown[]) => string);
+  /** Append an LLM synthesis step after specialist agents complete (default true). */
+  synthesize?: boolean;
   outputType?: unknown; // ZodSchema or JSON Schema object
   guardrails?: unknown[];
   memory?: ConversationMemory;
@@ -204,7 +206,8 @@ export class Agent {
   readonly tools: unknown[];
   readonly agents: Agent[];
   readonly strategy?: Strategy;
-  readonly router?: Agent | ((...args: unknown[]) => string);
+  readonly router?: Agent | ToolDef | ((...args: unknown[]) => string);
+  readonly synthesize: boolean;
   readonly outputType?: unknown;
   readonly guardrails: unknown[];
   readonly memory?: ConversationMemory;
@@ -274,6 +277,7 @@ export class Agent {
     this.agents = options.agents ?? [];
     this.strategy = options.strategy;
     this.router = options.router;
+    this.synthesize = options.synthesize ?? true;
     this.outputType = options.outputType;
     this.guardrails = options.guardrails ?? [];
     this.memory = options.memory;
@@ -381,7 +385,7 @@ export class Agent {
     if (this.strategy === "router" && !this.router) {
       throw new ConfigurationError(
         `Agent '${this.name}' uses strategy='router' but no 'router' parameter was provided. ` +
-          `Provide an Agent or function as the router.`,
+          `Provide an Agent, decision ToolDef, or function as the router.`,
       );
     }
 

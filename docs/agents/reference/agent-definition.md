@@ -15,7 +15,8 @@ Key `AgentOptions` fields:
 | `tools` | `unknown[]` | `tool()` wrappers, built-in tool defs, framework tools. |
 | `agents` | `Agent[]` | Sub-agents (multi-agent). |
 | `strategy` | `Strategy` | `'sequential' \| 'parallel' \| 'handoff' \| 'router' \| 'round_robin' \| 'random' \| 'swarm' \| 'manual' \| 'plan_execute'`. |
-| `router` | `Agent \| (() => string)` | Required for `strategy: 'router'`. |
+| `router` | `Agent \| ToolDef \| (() => string)` | Required for `strategy: 'router'`. A ToolDef must use `toolType: 'decision'` with `config.model` and nonempty `config.questions`; optional `config.provider` is forwarded. |
+| `synthesize` | `boolean` | Default `true`. Set `false` to return specialist output without a final LLM synthesis step. |
 | `outputType` | Zod schema or JSON Schema | Structured output. |
 | `guardrails` | `unknown[]` | Guardrail defs / instances. |
 | `handoffs` | `HandoffCondition[]` | `OnTextMention` / `OnToolResult` / `OnCondition`. |

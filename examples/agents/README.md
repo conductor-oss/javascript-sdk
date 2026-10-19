@@ -149,6 +149,14 @@ cd examples/agents/openai && npx tsx 01-basic-agent.ts
 
 ## Basic Examples
 
+JEV examples require a server with synchronous decision SWITCH support and a configured
+decision provider (`CONDUCTOR_DECISION_PROVIDER=openrouter` when using OpenRouter).
+Run [decision-router.ts](decision-router.ts) with `--run` to route to a billing or
+technical chat agent, or [decision-tool.ts](decision-tool.ts) to call a decision tool
+from a chat agent. Both use `CONDUCTOR_AGENT_LLM_MODEL` (default `openai/gpt-4o-mini`)
+and need no JavaScript workers. [../ai-decision-routing.ts](../ai-decision-routing.ts)
+demonstrates a traditional workflow with inline branches and no chat model.
+
 | # | Example | What it demonstrates |
 |---|---------|---------------------|
 | 01 | [Basic Agent](01-basic-agent.ts) | Simplest possible agent — single LLM, no tools |

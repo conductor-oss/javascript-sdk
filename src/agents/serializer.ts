@@ -9,6 +9,7 @@ import type {
 } from "./agent.js";
 import { normalizeToolInput, isZodSchema } from "./tool.js";
 import type { ToolDef } from "./types.js";
+import { ConfigurationError } from "./errors.js";
 
 // ── Wire format types ─────────────────────────────────────
 
@@ -195,6 +196,7 @@ export class AgentConfigSerializer {
     if (agent.reasoningEffort !== undefined) config.reasoningEffort = agent.reasoningEffort;
     config.timeoutSeconds = agent.timeoutSeconds;
     config.external = agent.external;
+    if (!agent.synthesize) config.synthesize = false;
     if (agent.stateful) config.stateful = true;
 
     // stopWhen
@@ -465,7 +467,7 @@ export class AgentConfigSerializer {
   }
 
   private serializeRouter(
-    router: Agent | ((...args: unknown[]) => string),
+    router: Agent | ToolDef | ((...args: unknown[]) => string),
     agentName: string,
   ): unknown {
     if (router instanceof Agent) {
@@ -474,7 +476,23 @@ export class AgentConfigSerializer {
     if (typeof router === "function") {
       return { taskName: `${agentName}_router_fn` };
     }
-    return router;
+    if (router.toolType !== "decision") {
+      throw new ConfigurationError("Only a decision ToolDef can be used as a router");
+    }
+    const config = router.config;
+    if (!config?.model) {
+      throw new ConfigurationError("Decision router tool config requires 'model'");
+    }
+    if (!config.questions || Object.keys(config.questions).length === 0) {
+      throw new ConfigurationError("Decision router tool config requires 'questions'");
+    }
+    return {
+      name: router.name,
+      kind: "decision",
+      model: config.model,
+      questions: config.questions,
+      ...(config.provider != null && { provider: config.provider }),
+    };
   }
 
   private serializeMemory(memory: ConversationMemory): Record<string, unknown> {
