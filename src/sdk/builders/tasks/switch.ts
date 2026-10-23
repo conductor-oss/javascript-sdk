@@ -5,16 +5,16 @@ export const switchTask = (
   expression: string,
   decisionCases: Record<string, TaskDefTypes[]> = {},
   defaultCase: TaskDefTypes[] = [],
-  optional?: boolean
+  optional?: boolean,
+  evaluatorType: SwitchTaskDef["evaluatorType"] = "value-param"
 ): SwitchTaskDef => ({
   name: taskReferenceName,
   taskReferenceName,
   decisionCases,
-  evaluatorType: "value-param",
-  inputParameters: {
-    switchCaseValue: expression,
-  },
-  expression: "switchCaseValue",
+  evaluatorType,
+  inputParameters:
+    evaluatorType === "value-param" ? { switchCaseValue: expression } : {},
+  expression: evaluatorType === "value-param" ? "switchCaseValue" : expression,
   defaultCase,
   type: TaskType.SWITCH,
   optional,
