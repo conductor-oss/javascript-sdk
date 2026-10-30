@@ -65,7 +65,7 @@ console.log(result.text);
 </td></tr>
 </table>
 
-Everything else — tools, model, prompt, result shape — is unchanged. Under the hood, `generateText` builds a Agentspan `Agent`, runs it on the platform, and maps the result back to the AI SDK format.
+Everything else — tools, model, prompt, result shape — is unchanged. Under the hood, `generateText` builds a Conductor `Agent`, runs it on the platform, and maps the result back to the AI SDK format.
 
 ## Production: Agent API
 
@@ -110,7 +110,7 @@ import { tool as aiTool } from 'ai';
 import { z } from 'zod';
 import { Agent, AgentRuntime } from '@io-orkes/conductor-javascript/agents';
 //      ^^^^^  ^^^^^^^^^^^^
-//      agentspan Agent + Runtime
+//      Conductor Agent + Runtime
 
 const weatherTool = aiTool({
   description: 'Get weather for a city',

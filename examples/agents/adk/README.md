@@ -54,7 +54,7 @@ import { LlmAgent, FunctionTool }
   from '@google/adk';
 import { z } from 'zod';
 import { AgentRuntime } from '@io-orkes/conductor-javascript/agents';
-// ^^^ add agentspan import
+// ^^^ add Conductor agent import
 
 const getWeather = new FunctionTool({
   name: 'get_weather',

@@ -1,6 +1,6 @@
 # LangGraph + Conductor Agent
 
-Keep your existing LangGraph code. Add agentspan metadata and run with `runtime.run()`.
+Keep your existing LangGraph code. Attach Conductor metadata and run with `runtime.run()`.
 
 ## createReactAgent
 
@@ -60,7 +60,7 @@ import { DynamicStructuredTool }
   from '@langchain/core/tools';
 import { z } from 'zod';
 import { AgentRuntime } from '@io-orkes/conductor-javascript/agents';
-// ^^^ add agentspan import
+// ^^^ add Conductor agent import
 
 const llm = new ChatOpenAI({
   model: 'gpt-4o-mini',
@@ -82,7 +82,7 @@ const graph = createReactAgent({
   tools: [calculate],
 });
 
-// Add agentspan metadata
+// Attach Conductor metadata
 (graph as any)._agentspan = {
   model: 'anthropic/claude-sonnet-4-6',
   tools: [calculate],
@@ -106,7 +106,7 @@ await runtime.shutdown();
 Same pattern — build the graph normally, attach metadata, run with `runtime.run()`.
 
 <table>
-<tr><th>Before (vanilla LangGraph)</th><th>After (Agentspan)</th></tr>
+<tr><th>Before (vanilla LangGraph)</th><th>After (Conductor Agent)</th></tr>
 <tr><td>
 
 ```typescript
@@ -144,7 +144,7 @@ import { StateGraph, Annotation,
   START, END }
   from '@langchain/langgraph';
 import { AgentRuntime } from '@io-orkes/conductor-javascript/agents';
-// ^^^ add agentspan import
+// ^^^ add Conductor agent import
 
 const State = Annotation.Root({
   input: Annotation<string>(),
@@ -159,7 +159,7 @@ const graph = new StateGraph(State)
   .addEdge('process', END)
   .compile();
 
-// Add agentspan metadata
+// Attach Conductor metadata
 (graph as any)._agentspan = {
   model: 'anthropic/claude-sonnet-4-6',
   tools: [],
