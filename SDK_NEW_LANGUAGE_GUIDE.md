@@ -1465,6 +1465,14 @@ an agents layer, mirror that catalog — e.g.:
 | `agents/03-multi-agent.ts` | Multi-agent orchestration |
 | `agents/09-human-in-the-loop.ts` | Human-in-the-loop AI |
 | `agents/04-mcp-weather.ts` | MCP tool integration |
+| `ai-decision-routing.ts` | Synchronous decision SWITCH with inline branches |
+| `agents/decision-router.ts` | Decision ToolDef selector routes to chat agents |
+| `agents/decision-tool.ts` | Chat agent uses a branchless decision SWITCH tool |
+
+Decision support reuses `switchTask` (`evaluatorType: "decision"`, explicit expression
+and model/state/questions inputs) and `ToolDef` (`toolType: "decision"`). Router tools
+serialize as `{name, kind: "decision", model, questions, provider?}`; `synthesize: false`
+skips the final parent LLM step. No new client methods or builders are required.
 
 #### 7.4 API Journey Examples (9 files)
 
