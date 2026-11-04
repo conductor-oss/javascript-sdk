@@ -2,6 +2,7 @@ export * from "./doWhile";
 export * from "./dynamic";
 export * from "./dynamicFork";
 export * from "./event";
+export * from "./exclusiveJoin";
 export * from "./forkJoin";
 export * from "./getDocument";
 export * from "./http";
