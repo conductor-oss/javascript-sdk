@@ -110,6 +110,13 @@ describe("forkTask", () => {
       ],
     });
   });
+  it("Should create one branch per inner list", () => {
+    const a = eventTask("a", "prefix", "suffix");
+    const b = eventTask("b", "prefix", "suffix");
+    const c = eventTask("c", "prefix", "suffix");
+    const forkTaskObj = forkTask("parallel", [[a, b], [c]]);
+    expect(forkTaskObj.forkTasks).toEqual([[a, b], [c]]);
+  });
   it("Should return a tuple with both fork and join", () => {
     const tname = "forkTaskJoin";
     const [forkTask, joinTask] = forkTaskJoin(tname, [

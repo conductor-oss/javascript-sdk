@@ -69,11 +69,11 @@ _System Task_ - Executes multiple task branches in parallel and waits for all to
 ```typescript
 import { forkTask, forkTaskJoin } from "@io-orkes/conductor-javascript";
 
-// Method 1: Using forkTask (creates only the fork)
+// Method 1: Using forkTask (creates only the fork).
+// Each inner array is one branch; the branches run in parallel.
 const task1 = forkTask("fork_ref", [
-  simpleTask("task1", "process_1", {}),
-  simpleTask("task2", "process_2", {}),
-  simpleTask("task3", "process_3", {}),
+  [simpleTask("task1", "process_1", {})],
+  [simpleTask("task2", "process_2", {}), simpleTask("task3", "process_3", {})],
 ]);
 
 // Method 2: Using forkTaskJoin (creates both fork and join)
