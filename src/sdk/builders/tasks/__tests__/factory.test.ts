@@ -184,6 +184,16 @@ describe("httpTask", () => {
       optional: true,
     });
   });
+
+  it("Should accept numeric connection and read timeouts", () => {
+    const httpTaskObj = httpTask("testHttp", {
+      uri: "https://example.com",
+      method: "GET",
+      connectionTimeOut: 3000,
+      readTimeOut: 5000,
+    });
+    expect(httpTaskObj.inputParameters.http_request.readTimeOut).toBe(5000);
+  });
 });
 
 describe("inlineTask", () => {
