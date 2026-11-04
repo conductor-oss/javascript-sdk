@@ -325,6 +325,21 @@ describe("switchTask", () => {
       type: "SWITCH",
     });
   });
+
+  it("Should use the expression directly with the javascript evaluator", () => {
+    const expr = "$.amount > 100 ? 'high' : 'low'";
+    const switchTaskObj = switchTask("sw", expr, {}, [], undefined, "javascript");
+    expect(switchTaskObj).toEqual({
+      name: "sw",
+      taskReferenceName: "sw",
+      decisionCases: {},
+      evaluatorType: "javascript",
+      inputParameters: {},
+      expression: expr,
+      defaultCase: [],
+      type: "SWITCH",
+    });
+  });
 });
 
 describe("terminateTask", () => {
