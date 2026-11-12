@@ -33,9 +33,18 @@ env:
 
 jobs:
   agent-e2e:
+    # TEMP (server bisect, revert before merge): run the two tests that fail on
+    # 3.34.0-rc2 against the org-var server and 3.33.0, the last server the
+    # full suite passed on (2026-10-26).
+    name: agent-e2e (server ${{ matrix.server }})
+    strategy:
+      fail-fast: false
+      matrix:
+        server: ['${{ vars.E2E_TEST_OSS_CONDUCTOR_VERSION }}', '3.33.0']
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
+      CONDUCTOR_OSS_VERSION: ${{ matrix.server }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       CONDUCTOR_SERVER_URL: http://localhost:8080/api
@@ -150,7 +159,9 @@ jobs:
           # system-worker pool. Two Jest workers avoid starving long-running
           # workflows, while retaining enough parallelism for this job's
           # 45-minute time budget. Matrix-suite concurrency is intentional.
-          npm run test:agent-e2e -- --maxWorkers=2
+          npm run test:agent-e2e -- --maxWorkers=2 \
+            e2e/test_suite16_streaming.test.ts e2e/test_suite17_guardrail_matrix.test.ts \
+            -t 'test_hitl_approve_path|#09 aout_custom_fix'
 
       # The uploaded server.log is lost when the run is re-run, and a run
       # killed at timeout-minutes never reports its test failures — keep the
@@ -194,7 +205,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: agent-e2e-results
+          name: agent-e2e-results-${{ matrix.server }}
           path: |
             results/
             server.log

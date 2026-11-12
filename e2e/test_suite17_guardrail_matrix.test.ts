@@ -1046,7 +1046,8 @@ describe("Suite 17: Guardrail Matrix (3x3x3)", () => {
 
     // Phase 1: fire all 27 workflows concurrently
     const handles: { spec: Spec; handle: AgentHandle }[] = [];
-    for (const spec of SPECS) {
+    // TEMP (server bisect, revert before merge): start only #09 aout_custom_fix.
+    for (const spec of SPECS.filter((s) => s.num === 9)) {
       const handle = await runtime.start(spec.agent, spec.prompt);
       handles.push({ spec, handle });
       console.log(
