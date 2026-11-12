@@ -251,9 +251,15 @@ describe('Suite 16: Streaming — HITL', () => {
     const agent = new Agent({
       name: uniqueName('s16_hitl_approve'),
       model: MODEL,
+      // The server re-sends these instructions and the user request after the
+      // tool result, so state when the work is done. Without that,
+      // gpt-6-luna writes and publishes a second article, which waits for a
+      // second approval this test never gives.
       instructions:
-        'You are a blog writer. Write a very short article (one paragraph) ' +
-        'about Python and publish it using the publish_article tool.',
+        'You are a blog writer. Write each requested post as one short paragraph ' +
+        'and publish it with the publish_article tool. Publish each request exactly ' +
+        "once: when publish_article returns status 'published', the request is done. " +
+        'Reply with a one-sentence confirmation and do not call any tool again.',
       tools: [publishArticle],
     });
     const stream = await runtime.stream(agent, 'Write a short blog post about Python programming');
