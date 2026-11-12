@@ -17,7 +17,7 @@ import {
   RegexGuardrail,
 } from '@io-orkes/conductor-javascript/agents';
 import type { AgentEvent, GuardrailResult } from '@io-orkes/conductor-javascript/agents';
-import { checkServerHealth, MODEL, TIMEOUT, expectMsg } from './helpers';
+import { checkServerHealth, MODEL, TIMEOUT, expectMsg, getWorkflow } from './helpers';
 
 jest.setTimeout(TIMEOUT); // ported from vitest describe({ timeout }) options
 
@@ -272,6 +272,19 @@ describe('Suite 16: Streaming — HITL', () => {
         await new Promise((r) => setTimeout(r, 1000));
         status = await runtime.getStatus(stream.executionId);
       }
+      // TEMP (HITL stall diagnostic, revert before merge): dump every task,
+      // with full LLM inputs/outputs, so we can see what the model did after
+      // the approved publish_article call.
+      const wf = await getWorkflow(stream.executionId);
+      const lines = [`[HITL-DIAG] workflow ${stream.executionId} status=${wf.status} agentStatus=${status.status}`];
+      for (const t of (wf.tasks ?? []) as Record<string, unknown>[]) {
+        lines.push(`[HITL-DIAG] #${t.seq} ${t.taskType} ref=${t.referenceTaskName} status=${t.status}`);
+        if (t.taskType === 'LLM_CHAT_COMPLETE' || t.taskType === 'HUMAN') {
+          lines.push(`[HITL-DIAG]   input=${JSON.stringify(t.inputData).slice(0, 6000)}`);
+          lines.push(`[HITL-DIAG]   output=${JSON.stringify(t.outputData).slice(0, 3000)}`);
+        }
+      }
+      console.log(lines.join('\n'));
       expectMsg(['COMPLETED', 'FAILED', 'TERMINATED']).toContain(status.status);
     } else {
       // No waiting event — the stream may close before the server records its

@@ -33,8 +33,9 @@ env:
 
 jobs:
   agent-e2e:
-    # TEMP (server bisect, revert before merge): run the two tests that fail on
-    # 3.34.0-rc2 against the org-var server and 3.33.0, the last server the
+    # TEMP (HITL stall diagnostic, revert before merge): run only
+    # test_hitl_approve_path, which dumps its workflow's tasks and LLM
+    # prompts, against the org-var server and 3.33.0, the last server the
     # full suite passed on (2026-10-26).
     name: agent-e2e (server ${{ matrix.server }})
     strategy:
@@ -160,8 +161,7 @@ jobs:
           # workflows, while retaining enough parallelism for this job's
           # 45-minute time budget. Matrix-suite concurrency is intentional.
           npm run test:agent-e2e -- --maxWorkers=2 \
-            e2e/test_suite16_streaming.test.ts e2e/test_suite17_guardrail_matrix.test.ts \
-            -t 'test_hitl_approve_path|#09 aout_custom_fix'
+            e2e/test_suite16_streaming.test.ts -t 'test_hitl_approve_path'
 
       # The uploaded server.log is lost when the run is re-run, and a run
       # killed at timeout-minutes never reports its test failures — keep the
