@@ -33,27 +33,9 @@ env:
 
 jobs:
   agent-e2e:
-    # TEMP (HITL prompt variants, revert before merge): run only
-    # test_hitl_approve_path, which dumps its workflow's tasks and LLM
-    # prompts, once per prompt variant on the org-var server. Each variant
-    # sets only the fields it changes; an empty field keeps the test's text.
-    name: agent-e2e (${{ matrix.variant }})
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - variant: user-stop
-            user: "Write a short blog post about Python programming and publish it. If the tool results already show it was published, do not publish again; just reply with a one-sentence confirmation."
-          - variant: tool-once
-            tool_desc: "Publish an article to the blog. Requires editorial approval. This tool can be called at most once per chat session."
-          - variant: system-count
-            system: "You are a blog writer. Write the requested post as one short paragraph and publish it with the publish_article tool. The publish_article tool can only ever be called once in this chat session. Keep track of how many times it has been called, counting any earlier publish_article calls and [TOOL RESULTS]. If that count is more than zero, do not call it again: end the session by replying with a one-sentence confirmation."
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      HITL_SYSTEM: ${{ matrix.system }}
-      HITL_TOOL_DESC: ${{ matrix.tool_desc }}
-      HITL_USER: ${{ matrix.user }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       CONDUCTOR_SERVER_URL: http://localhost:8080/api
@@ -168,8 +150,7 @@ jobs:
           # system-worker pool. Two Jest workers avoid starving long-running
           # workflows, while retaining enough parallelism for this job's
           # 45-minute time budget. Matrix-suite concurrency is intentional.
-          npm run test:agent-e2e -- --maxWorkers=2 \
-            e2e/test_suite16_streaming.test.ts -t 'test_hitl_approve_path'
+          npm run test:agent-e2e -- --maxWorkers=2
 
       # The uploaded server.log is lost when the run is re-run, and a run
       # killed at timeout-minutes never reports its test failures — keep the
@@ -213,7 +194,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: agent-e2e-results-${{ matrix.variant }}
+          name: agent-e2e-results
           path: |
             results/
             server.log

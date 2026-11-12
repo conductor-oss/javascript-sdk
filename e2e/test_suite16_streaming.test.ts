@@ -17,7 +17,7 @@ import {
   RegexGuardrail,
 } from '@io-orkes/conductor-javascript/agents';
 import type { AgentEvent, GuardrailResult } from '@io-orkes/conductor-javascript/agents';
-import { checkServerHealth, MODEL, TIMEOUT, expectMsg, getWorkflow } from './helpers';
+import { checkServerHealth, MODEL, TIMEOUT, expectMsg } from './helpers';
 
 jest.setTimeout(TIMEOUT); // ported from vitest describe({ timeout }) options
 
@@ -115,9 +115,7 @@ const publishArticle = tool(
   }),
   {
     name: 'publish_article',
-    // TEMP (HITL prompt variants, revert before merge): HITL_TOOL_DESC overrides.
-    description:
-      process.env.HITL_TOOL_DESC || 'Publish an article to the blog. Requires editorial approval.',
+    description: 'Publish an article to the blog. Requires editorial approval.',
     approvalRequired: true,
     inputSchema: {
       type: 'object',
@@ -253,24 +251,21 @@ describe('Suite 16: Streaming — HITL', () => {
     const agent = new Agent({
       name: uniqueName('s16_hitl_approve'),
       model: MODEL,
-      // The server re-sends these instructions and the user request after the
-      // tool result, so state when the work is done. Without that,
-      // gpt-6-luna writes and publishes a second article, which waits for a
-      // second approval this test never gives.
-      // TEMP (HITL prompt variants, revert before merge): HITL_SYSTEM and
-      // HITL_USER override the instructions and the user message.
+      // After a tool result the server re-sends the original user request, so
+      // gpt-6-luna often reads it as a new request and publishes a second
+      // article, which waits for an approval this test never gives. Asking it
+      // to count earlier calls stopped that in 4 of 4 CI runs; softer wording
+      // ("publish once", "if already published, stop") still failed.
       instructions:
-        process.env.HITL_SYSTEM ||
-        'You are a blog writer. Write each requested post as one short paragraph ' +
-        'and publish it with the publish_article tool. Publish each request exactly ' +
-        "once: when publish_article returns status 'published', the request is done. " +
-        'Reply with a one-sentence confirmation and do not call any tool again.',
+        'You are a blog writer. Write the requested post as one short paragraph ' +
+        'and publish it with the publish_article tool. The publish_article tool ' +
+        'can only ever be called once in this chat session. Keep track of how ' +
+        'many times it has been called, counting any earlier publish_article ' +
+        'calls and [TOOL RESULTS]. If that count is more than zero, do not call ' +
+        'it again: end the session by replying with a one-sentence confirmation.',
       tools: [publishArticle],
     });
-    const stream = await runtime.stream(
-      agent,
-      process.env.HITL_USER || 'Write a short blog post about Python programming',
-    );
+    const stream = await runtime.stream(agent, 'Write a short blog post about Python programming');
 
     // Collect until waiting
     const preEvents = await collectEventsUntil(stream, 'waiting', 120_000);
@@ -286,19 +281,6 @@ describe('Suite 16: Streaming — HITL', () => {
         await new Promise((r) => setTimeout(r, 1000));
         status = await runtime.getStatus(stream.executionId);
       }
-      // TEMP (HITL stall diagnostic, revert before merge): dump every task,
-      // with full LLM inputs/outputs, so we can see what the model did after
-      // the approved publish_article call.
-      const wf = await getWorkflow(stream.executionId);
-      const lines = [`[HITL-DIAG] workflow ${stream.executionId} status=${wf.status} agentStatus=${status.status}`];
-      for (const t of (wf.tasks ?? []) as Record<string, unknown>[]) {
-        lines.push(`[HITL-DIAG] #${t.seq} ${t.taskType} ref=${t.referenceTaskName} status=${t.status}`);
-        if (t.taskType === 'LLM_CHAT_COMPLETE' || t.taskType === 'HUMAN') {
-          lines.push(`[HITL-DIAG]   input=${JSON.stringify(t.inputData).slice(0, 6000)}`);
-          lines.push(`[HITL-DIAG]   output=${JSON.stringify(t.outputData).slice(0, 3000)}`);
-        }
-      }
-      console.log(lines.join('\n'));
       expectMsg(['COMPLETED', 'FAILED', 'TERMINATED']).toContain(status.status);
     } else {
       // No waiting event — the stream may close before the server records its
