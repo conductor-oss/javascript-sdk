@@ -21,7 +21,7 @@
 
 import { describe, expect, beforeAll, afterAll, jest } from '@jest/globals';
 import { AgentRuntime } from '@io-orkes/conductor-javascript/agents';
-import { checkServerHealth, itSkipIf, expectMsg } from './helpers';
+import { checkServerHealth, itSkipIf, expectMsg, MODEL } from './helpers';
 
 
 jest.setTimeout(300_000); // ported from vitest describe({ timeout }) options
@@ -42,6 +42,9 @@ let detectFramework: any;
 
 const SERVER_URL = process.env.CONDUCTOR_SERVER_URL ?? 'http://localhost:8080/api';
 const BASE_URL = SERVER_URL.replace(/\/api$/, '');
+// LangChain takes the bare OpenAI model name. No temperature: reasoning
+// models (gpt-6-luna) reject it unless reasoning effort is "none".
+const OPENAI_MODEL = MODEL.replace(/^openai\//, '');
 
 try {
   // Synchronous require instead of upstream top-level await import — this file
@@ -97,7 +100,7 @@ describe('Suite 11: LangGraph Integration', () => {
   // ── 1. Framework detection ──────────────────────────────────────────
 
   itSkipIf(!langGraphAvailable)('framework detection identifies langgraph', () => {
-    const llm = new ChatOpenAI({ model: 'gpt-4o-mini', temperature: 0 });
+    const llm = new ChatOpenAI({ model: OPENAI_MODEL });
     const graph = createReactAgent({ llm, tools: [], name: 'detect_test' });
 
     const framework = detectFramework(graph);
@@ -128,7 +131,7 @@ describe('Suite 11: LangGraph Integration', () => {
       func: async ({ text }: { text: string }) => text.split('').reverse().join(''),
     });
 
-    const llm = new ChatOpenAI({ model: 'gpt-4o-mini', temperature: 0 });
+    const llm = new ChatOpenAI({ model: OPENAI_MODEL });
     const graph = createReactAgent({
       llm,
       tools: [calculateTool, countWordsTool, reverseTool],
@@ -148,7 +151,7 @@ describe('Suite 11: LangGraph Integration', () => {
     expectMsg(
       String(rawConfig.model),
       '[FullExtract] wrong model',
-    ).toContain('gpt-4o-mini');
+    ).toContain(OPENAI_MODEL);
 
     // Tools must be present with correct names
     const toolsList = rawConfig.tools as Record<string, unknown>[];
@@ -182,7 +185,7 @@ describe('Suite 11: LangGraph Integration', () => {
       func: async ({ a, b }: { a: number; b: number }) => String(a * b),
     });
 
-    const llm = new ChatOpenAI({ model: 'gpt-4o-mini', temperature: 0 });
+    const llm = new ChatOpenAI({ model: OPENAI_MODEL });
     const graph = createReactAgent({ llm, tools: [multiplyTool], name: 'e2e_lg_schema' });
 
     (graph as any)._agentspan = {
@@ -454,7 +457,7 @@ describe('Suite 11: LangGraph Integration', () => {
       return;
     }
 
-    const llm = new ChatOpenAI({ model: 'gpt-4o-mini', temperature: 0 });
+    const llm = new ChatOpenAI({ model: OPENAI_MODEL });
     const graph = createReactAgent({ llm, tools: [], name: 'compile_hello_world' });
 
     (graph as any)._agentspan = {
@@ -499,7 +502,7 @@ describe('Suite 11: LangGraph Integration', () => {
       func: async ({ text }: { text: string }) => `${text.split(/\s+/).length} words`,
     });
 
-    const llm = new ChatOpenAI({ model: 'gpt-4o-mini', temperature: 0 });
+    const llm = new ChatOpenAI({ model: OPENAI_MODEL });
     const graph = createReactAgent({
       llm,
       tools: [calculateTool, countWordsTool],
@@ -593,7 +596,7 @@ describe('Suite 11: LangGraph Integration', () => {
       func: async ({ a, b }: { a: number; b: number }) => String(a * b),
     });
 
-    const llm = new ChatOpenAI({ model: 'gpt-4o-mini', temperature: 0 });
+    const llm = new ChatOpenAI({ model: OPENAI_MODEL });
     const graph = createReactAgent({
       llm,
       tools: [multiplyTool],
