@@ -85,7 +85,10 @@ function assertToolCompiled(
 // ── Tests ───────────────────────────────────────────────────────────────
 
 describe('Suite 7: Media Tools', () => {
-  (!process.env.OPENAI_API_KEY ? it.skip : it.failing)('image — OpenAI DALL-E 3', async () => {
+  // Skipped: dall-e-3 has been removed from OpenAI's API ('model does not exist'),
+  // and its gpt-image-* replacements are not enabled in the Orkes-Developers
+  // OpenAI project.
+  it.skip('image — OpenAI DALL-E 3', async () => {
     const img = imageTool({
       name: 'gen_image',
       description: 'Generate an image from text.',
@@ -143,7 +146,9 @@ describe('Suite 7: Media Tools', () => {
     await assertMediaGenerated(result, 'Image/Gemini', 'GENERATE_IMAGE');
   });
 
-  itSkipIf(!process.env.OPENAI_API_KEY)('audio — OpenAI TTS-1', async () => {
+  // Skipped: the Orkes-Developers OpenAI project does not have access to tts-1
+  // (HTTP 403).
+  it.skip('audio — OpenAI TTS-1', async () => {
     const aud = audioTool({
       name: 'gen_audio',
       description: 'Convert text to speech.',

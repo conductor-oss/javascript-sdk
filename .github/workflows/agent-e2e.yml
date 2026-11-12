@@ -39,7 +39,40 @@ jobs:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       CONDUCTOR_SERVER_URL: http://localhost:8080/api
+      # Default model for every suite. The Orkes-Developers OpenAI project only
+      # allows the gpt-5.6 / gpt-6 families; gpt-6-luna is OpenAI's replacement
+      # for gpt-4o-mini, which shuts down on 2027-01-14.
+      CONDUCTOR_AGENT_LLM_MODEL: openai/gpt-6-luna
     steps:
+      # A dead key, exhausted quota, retired model or provider outage makes
+      # every agent test wait out its timeout — the job then hits timeout-minutes
+      # before the runner reports a single failure. Call the model the suites use
+      # directly, before any setup: the HTTP status and body name the cause in
+      # seconds. No suite calls Anthropic through the server, so only OpenAI is
+      # checked.
+      - name: LLM provider check
+        timeout-minutes: 1
+        run: |
+          fail=0
+          probe() {  # label, url, curl args...
+            local label=$1 url=$2; shift 2
+            local code
+            code=$(curl -sS -m 15 -o "$RUNNER_TEMP/probe.json" -w '%{http_code}' "$url" "$@" \
+              -H 'content-type: application/json') || true
+            echo "$label: HTTP $code"
+            if [ "$code" != 200 ]; then
+              echo "::error::$label check failed (HTTP $code; 000 = no response in 15s)"
+              cat "$RUNNER_TEMP/probe.json" 2>/dev/null || true; echo
+              fail=1
+            fi
+          }
+          # Responses API, as the server uses; 16 is its minimum max_output_tokens.
+          openai_model=${CONDUCTOR_AGENT_LLM_MODEL#openai/}
+          probe "OpenAI $openai_model" https://api.openai.com/v1/responses \
+            -H "authorization: Bearer $OPENAI_API_KEY" \
+            -d "{\"model\":\"$openai_model\",\"input\":\"ping\",\"max_output_tokens\":16,\"reasoning\":{\"effort\":\"none\"}}"
+          exit $fail
+
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -118,6 +151,16 @@ jobs:
           # workflows, while retaining enough parallelism for this job's
           # 45-minute time budget. Matrix-suite concurrency is intentional.
           npm run test:agent-e2e -- --maxWorkers=2
+
+      # The uploaded server.log is lost when the run is re-run, and a run
+      # killed at timeout-minutes never reports its test failures — keep the
+      # server's own errors in the job log, which survives both.
+      - name: Show server errors
+        if: failure() || cancelled()
+        run: |
+          [ -f server.log ] || exit 0
+          grep -nE ' (ERROR|WARN) |Exception|[Qq]uota|rate.?limit|\b(401|403|404|429)\b' server.log \
+            | grep -vE 'cannot init (Cohere|Mistral)' | tail -150
 
       # The TS suites fail hard when the server is down (no session-skip),
       # so this guard is defense-in-depth against a future gate regression
