@@ -42,7 +42,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - variant: control
           - variant: user-stop
             user: "Write a short blog post about Python programming and publish it. If the tool results already show it was published, do not publish again; just reply with a one-sentence confirmation."
           - variant: tool-once
