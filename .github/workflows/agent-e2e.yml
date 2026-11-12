@@ -33,19 +33,28 @@ env:
 
 jobs:
   agent-e2e:
-    # TEMP (HITL stall diagnostic, revert before merge): run only
+    # TEMP (HITL prompt variants, revert before merge): run only
     # test_hitl_approve_path, which dumps its workflow's tasks and LLM
-    # prompts, against the org-var server and 3.33.0, the last server the
-    # full suite passed on (2026-10-26).
-    name: agent-e2e (server ${{ matrix.server }})
+    # prompts, once per prompt variant on the org-var server. Each variant
+    # sets only the fields it changes; an empty field keeps the test's text.
+    name: agent-e2e (${{ matrix.variant }})
     strategy:
       fail-fast: false
       matrix:
-        server: ['${{ vars.E2E_TEST_OSS_CONDUCTOR_VERSION }}', '3.33.0']
+        include:
+          - variant: control
+          - variant: user-stop
+            user: "Write a short blog post about Python programming and publish it. If the tool results already show it was published, do not publish again; just reply with a one-sentence confirmation."
+          - variant: tool-once
+            tool_desc: "Publish an article to the blog. Requires editorial approval. This tool can be called at most once per chat session."
+          - variant: system-count
+            system: "You are a blog writer. Write the requested post as one short paragraph and publish it with the publish_article tool. The publish_article tool can only ever be called once in this chat session. Keep track of how many times it has been called, counting any earlier publish_article calls and [TOOL RESULTS]. If that count is more than zero, do not call it again: end the session by replying with a one-sentence confirmation."
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      CONDUCTOR_OSS_VERSION: ${{ matrix.server }}
+      HITL_SYSTEM: ${{ matrix.system }}
+      HITL_TOOL_DESC: ${{ matrix.tool_desc }}
+      HITL_USER: ${{ matrix.user }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       CONDUCTOR_SERVER_URL: http://localhost:8080/api
@@ -205,7 +214,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: agent-e2e-results-${{ matrix.server }}
+          name: agent-e2e-results-${{ matrix.variant }}
           path: |
             results/
             server.log

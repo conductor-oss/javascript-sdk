@@ -115,7 +115,9 @@ const publishArticle = tool(
   }),
   {
     name: 'publish_article',
-    description: 'Publish an article to the blog. Requires editorial approval.',
+    // TEMP (HITL prompt variants, revert before merge): HITL_TOOL_DESC overrides.
+    description:
+      process.env.HITL_TOOL_DESC || 'Publish an article to the blog. Requires editorial approval.',
     approvalRequired: true,
     inputSchema: {
       type: 'object',
@@ -255,14 +257,20 @@ describe('Suite 16: Streaming — HITL', () => {
       // tool result, so state when the work is done. Without that,
       // gpt-6-luna writes and publishes a second article, which waits for a
       // second approval this test never gives.
+      // TEMP (HITL prompt variants, revert before merge): HITL_SYSTEM and
+      // HITL_USER override the instructions and the user message.
       instructions:
+        process.env.HITL_SYSTEM ||
         'You are a blog writer. Write each requested post as one short paragraph ' +
         'and publish it with the publish_article tool. Publish each request exactly ' +
         "once: when publish_article returns status 'published', the request is done. " +
         'Reply with a one-sentence confirmation and do not call any tool again.',
       tools: [publishArticle],
     });
-    const stream = await runtime.stream(agent, 'Write a short blog post about Python programming');
+    const stream = await runtime.stream(
+      agent,
+      process.env.HITL_USER || 'Write a short blog post about Python programming',
+    );
 
     // Collect until waiting
     const preEvents = await collectEventsUntil(stream, 'waiting', 120_000);
