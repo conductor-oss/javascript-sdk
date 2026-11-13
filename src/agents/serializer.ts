@@ -9,6 +9,7 @@ import type {
 } from "./agent.js";
 import { normalizeToolInput, isZodSchema } from "./tool.js";
 import type { ToolDef } from "./types.js";
+import { ConfigurationError } from "./errors.js";
 
 // ── Wire format types ─────────────────────────────────────
 
@@ -166,7 +167,11 @@ export class AgentConfigSerializer {
 
     // Router
     if (agent.router !== undefined && agent.router !== null) {
-      config.router = this.serializeRouter(agent.router, agent.name);
+      config.router = this.serializeRouter(
+        agent.router,
+        agent.name,
+        agent.agents.map((child) => child.name),
+      );
     }
 
     // Output type
@@ -195,6 +200,7 @@ export class AgentConfigSerializer {
     if (agent.reasoningEffort !== undefined) config.reasoningEffort = agent.reasoningEffort;
     config.timeoutSeconds = agent.timeoutSeconds;
     config.external = agent.external;
+    if (!agent.synthesize) config.synthesize = false;
     if (agent.stateful) config.stateful = true;
 
     // stopWhen
@@ -465,8 +471,9 @@ export class AgentConfigSerializer {
   }
 
   private serializeRouter(
-    router: Agent | ((...args: unknown[]) => string),
+    router: Agent | ToolDef | ((...args: unknown[]) => string),
     agentName: string,
+    childNames: string[],
   ): unknown {
     if (router instanceof Agent) {
       return this.serializeAgent(router);
@@ -474,7 +481,44 @@ export class AgentConfigSerializer {
     if (typeof router === "function") {
       return { taskName: `${agentName}_router_fn` };
     }
-    return router;
+    if (router.toolType !== "decision") {
+      const received = router.toolType === undefined ? "an object without toolType" : `toolType '${router.toolType}'`;
+      throw new ConfigurationError(
+        `Only a decision ToolDef can be used as a router (agent '${agentName}' got ${received}). ` +
+          `Use an Agent, a function, or a ToolDef with toolType 'decision'.`,
+      );
+    }
+    const config = router.config;
+    if (!config?.model) {
+      throw new ConfigurationError("Decision router tool config requires 'model'");
+    }
+    if (!config.questions || Object.keys(config.questions).length === 0) {
+      throw new ConfigurationError("Decision router tool config requires 'questions'");
+    }
+    // Same rule the server enforces at compile time: exactly one choice question
+    // whose choice keys are the sub-agent names.
+    const expected = [...new Set(childNames)].sort();
+    const matching = Object.values(config.questions as Record<string, unknown>).filter((q) => {
+      const question = q as { type?: unknown; choices?: unknown } | null;
+      if (question?.type !== "choice" || typeof question.choices !== "object" || question.choices === null) {
+        return false;
+      }
+      const keys = Object.keys(question.choices).sort();
+      return keys.length === expected.length && keys.every((k, i) => k === expected[i]);
+    });
+    if (matching.length !== 1) {
+      throw new ConfigurationError(
+        `Decision router '${router.name}' requires exactly one choice question whose choices ` +
+          `are the sub-agent names [${expected.join(", ")}]; found ${matching.length}`,
+      );
+    }
+    return {
+      name: router.name,
+      kind: "decision",
+      model: config.model,
+      questions: config.questions,
+      ...(config.provider != null && { provider: config.provider }),
+    };
   }
 
   private serializeMemory(memory: ConversationMemory): Record<string, unknown> {

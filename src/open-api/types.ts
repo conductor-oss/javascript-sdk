@@ -236,7 +236,7 @@ export interface SwitchTaskDef extends CommonTaskDef {
   type: TaskType.SWITCH;
   decisionCases: Record<string, TaskDefTypes[]>;
   defaultCase: TaskDefTypes[];
-  evaluatorType: "value-param" | "javascript";
+  evaluatorType: "value-param" | "javascript" | "decision";
   expression: string;
   optional?: boolean;
 }

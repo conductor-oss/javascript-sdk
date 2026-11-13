@@ -2,6 +2,7 @@ import { describe, it, expect } from "@jest/globals";
 import { z } from "zod";
 import { AgentConfigSerializer } from "../serializer.js";
 import { Agent, PromptTemplate, scatterGather } from "../agent.js";
+import type { ToolDef } from "../types.js";
 import type { CallbackHandler, TerminationCondition, HandoffCondition } from "../agent.js";
 import {
   tool,
@@ -16,6 +17,66 @@ import {
 } from "../tool.js";
 
 const serializer = new AgentConfigSerializer();
+
+describe("decision tools", () => {
+  const selector: ToolDef = {
+    name: "support_selector",
+    description: "Choose a team",
+    toolType: "decision",
+    inputSchema: { type: "object" },
+    config: { model: "jev-1.13", questions: { agent: { type: "choice", choices: { billing: "Invoices" } } } },
+  };
+  const routed = (router: ToolDef) => new Agent({
+    name: "support",
+    strategy: "router",
+    router,
+    agents: [new Agent({ name: "billing", model: "openai/gpt-4o-mini" })],
+    synthesize: false,
+  });
+
+  it("serializes a model-less decision router without a worker or implicit provider", () => {
+    const config = serializer.serializeAgent(routed(selector));
+    expect(config.router).toEqual({ name: selector.name, kind: "decision", ...selector.config });
+    expect(config.external).toBe(false);
+    expect(config.synthesize).toBe(false);
+    expect(config).not.toHaveProperty("model");
+    expect(config.router).not.toHaveProperty("provider");
+    expect(config.router).not.toHaveProperty("taskName");
+    expect(serializer.serializeAgent(new Agent({ name: "chat" }))).not.toHaveProperty("synthesize");
+  });
+
+  it("preserves an explicit provider and ordinary decision tool configuration", () => {
+    const withProvider = { ...selector, config: { ...selector.config, provider: "openrouter" } };
+    expect(serializer.serializeAgent(routed(withProvider)).router).toMatchObject({ provider: "openrouter" });
+    const config = serializer.serializeAgent(new Agent({ name: "chat", tools: [withProvider] }));
+    expect(config.tools).toEqual([{
+      name: selector.name, description: selector.description, inputSchema: selector.inputSchema,
+      toolType: "decision", config: withProvider.config,
+    }]);
+  });
+
+  const choice = (choices: Record<string, string>, type = "choice") => ({ type, instructions: "Pick", choices });
+
+  it.each([
+    [{ ...selector, toolType: "http" }, "got toolType 'http'"],
+    [{ ...selector, toolType: undefined }, "got an object without toolType"],
+    [{ ...selector, config: { questions: { agent: {} } } }, "requires 'model'"],
+    [{ ...selector, config: { model: "jev-1.13", questions: {} } }, "requires 'questions'"],
+    // choice keys must be exactly the sub-agent names
+    [{ ...selector, config: { model: "jev-1.13", questions: { agent: choice({ invoices: "Invoices" }) } } }, "found 0"],
+    [{ ...selector, config: { model: "jev-1.13", questions: { agent: choice({ billing: "A", extra: "B" }) } } }, "found 0"],
+    [{ ...selector, config: { model: "jev-1.13", questions: { agent: choice({ billing: "A" }, "score") } } }, "found 0"],
+    [{ ...selector, config: { model: "jev-1.13", questions: { a: choice({ billing: "A" }), b: choice({ billing: "B" }) } } }, "found 2"],
+  ])("rejects an invalid router configuration (%#)", (router, message) => {
+    expect(() => serializer.serializeAgent(routed(router as ToolDef))).toThrow(message as string);
+  });
+
+  it("accepts extra non-routing questions next to the routing choice question", () => {
+    const questions = { agent: choice({ billing: "A" }), urgent: { type: "boolean", instructions: "Urgent?" } };
+    const router = { ...selector, config: { model: "jev-1.13", questions } };
+    expect(serializer.serializeAgent(routed(router)).router).toMatchObject({ questions });
+  });
+});
 
 // ── serialize() — full payload ─────────────────────────────
 
