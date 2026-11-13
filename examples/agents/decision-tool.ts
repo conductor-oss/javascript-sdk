@@ -2,13 +2,13 @@
  * Use a branchless decision SWITCH as a tool inside a normal chat agent.
  * The server executes both inference calls; no JavaScript worker is needed.
  *
- * CONDUCTOR_SERVER_URL=http://localhost:8081/api CONDUCTOR_DECISION_PROVIDER=openrouter \
+ * CONDUCTOR_SERVER_URL=http://localhost:8080/api CONDUCTOR_DECISION_PROVIDER=openrouter \
  *   npx tsx examples/agents/decision-tool.ts
  */
 import { Agent, AgentRuntime } from "@io-orkes/conductor-javascript/agents";
 import type { ToolDef } from "@io-orkes/conductor-javascript/agents";
 
-export const classifyRequest: ToolDef = {
+const classifyRequest: ToolDef = {
   name: "classify_request",
   description: "Classify the customer request before answering.",
   toolType: "decision",
@@ -30,7 +30,7 @@ export const classifyRequest: ToolDef = {
   },
 };
 
-export const supportAgent = new Agent({
+const supportAgent = new Agent({
   name: "decision_tool_support_javascript",
   model: process.env.CONDUCTOR_AGENT_LLM_MODEL ?? "openai/gpt-4o-mini",
   instructions: "Call classify_request before answering the customer.",

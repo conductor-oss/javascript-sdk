@@ -325,6 +325,26 @@ describe("switchTask", () => {
       type: "SWITCH",
     });
   });
+
+  it("passes the expression through for a decision evaluator", () => {
+    const task = switchTask("route", "team", { billing: [], technical: [] }, [], undefined, "decision");
+    expect(task).toMatchObject({
+      evaluatorType: "decision",
+      expression: "team",
+      inputParameters: {},
+      decisionCases: { billing: [], technical: [] },
+      type: "SWITCH",
+    });
+  });
+
+  it("passes the script through for a javascript evaluator", () => {
+    const task = switchTask("route", "$.tier === 'gold' ? 'vip' : 'std'", {}, [], undefined, "javascript");
+    expect(task).toMatchObject({
+      evaluatorType: "javascript",
+      expression: "$.tier === 'gold' ? 'vip' : 'std'",
+      inputParameters: {},
+    });
+  });
 });
 
 describe("terminateTask", () => {

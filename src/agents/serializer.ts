@@ -167,7 +167,11 @@ export class AgentConfigSerializer {
 
     // Router
     if (agent.router !== undefined && agent.router !== null) {
-      config.router = this.serializeRouter(agent.router, agent.name);
+      config.router = this.serializeRouter(
+        agent.router,
+        agent.name,
+        agent.agents.map((child) => child.name),
+      );
     }
 
     // Output type
@@ -469,6 +473,7 @@ export class AgentConfigSerializer {
   private serializeRouter(
     router: Agent | ToolDef | ((...args: unknown[]) => string),
     agentName: string,
+    childNames: string[],
   ): unknown {
     if (router instanceof Agent) {
       return this.serializeAgent(router);
@@ -477,7 +482,11 @@ export class AgentConfigSerializer {
       return { taskName: `${agentName}_router_fn` };
     }
     if (router.toolType !== "decision") {
-      throw new ConfigurationError("Only a decision ToolDef can be used as a router");
+      const received = router.toolType === undefined ? "an object without toolType" : `toolType '${router.toolType}'`;
+      throw new ConfigurationError(
+        `Only a decision ToolDef can be used as a router (agent '${agentName}' got ${received}). ` +
+          `Use an Agent, a function, or a ToolDef with toolType 'decision'.`,
+      );
     }
     const config = router.config;
     if (!config?.model) {
@@ -485,6 +494,23 @@ export class AgentConfigSerializer {
     }
     if (!config.questions || Object.keys(config.questions).length === 0) {
       throw new ConfigurationError("Decision router tool config requires 'questions'");
+    }
+    // Same rule the server enforces at compile time: exactly one choice question
+    // whose choice keys are the sub-agent names.
+    const expected = [...new Set(childNames)].sort();
+    const matching = Object.values(config.questions as Record<string, unknown>).filter((q) => {
+      const question = q as { type?: unknown; choices?: unknown } | null;
+      if (question?.type !== "choice" || typeof question.choices !== "object" || question.choices === null) {
+        return false;
+      }
+      const keys = Object.keys(question.choices).sort();
+      return keys.length === expected.length && keys.every((k, i) => k === expected[i]);
+    });
+    if (matching.length !== 1) {
+      throw new ConfigurationError(
+        `Decision router '${router.name}' requires exactly one choice question whose choices ` +
+          `are the sub-agent names [${expected.join(", ")}]; found ${matching.length}`,
+      );
     }
     return {
       name: router.name,

@@ -1337,7 +1337,7 @@ All builders follow the convention: **first argument is always `taskReferenceNam
 | `httpPollTask` | `(refName, inputParameters, optional?)` |
 | `inlineTask` | `(refName, script, evaluatorType?, optional?)` |
 | `subWorkflowTask` | `(refName, workflowName, version?, optional?)` |
-| `switchTask` | `(refName, expression, decisionCases?, defaultCase?, optional?)` |
+| `switchTask` | `(refName, expression, decisionCases?, defaultCase?, optional?, evaluatorType?)` |
 | `forkTask` | `(refName, forkTasks)` |
 | `forkTaskJoin` | `(refName, forkTasks, optional?)` → returns `[ForkJoinTask, JoinTask]` |
 | `joinTask` | `(refName, joinOn, optional?)` |
@@ -1469,10 +1469,12 @@ an agents layer, mirror that catalog — e.g.:
 | `agents/decision-router.ts` | Decision ToolDef selector routes to chat agents |
 | `agents/decision-tool.ts` | Chat agent uses a branchless decision SWITCH tool |
 
-Decision support reuses `switchTask` (`evaluatorType: "decision"`, explicit expression
-and model/state/questions inputs) and `ToolDef` (`toolType: "decision"`). Router tools
-serialize as `{name, kind: "decision", model, questions, provider?}`; `synthesize: false`
-skips the final parent LLM step. No new client methods or builders are required.
+Decision support reuses `switchTask` (sixth argument `evaluatorType: "decision"`; the
+expression names the choice question, and `inputParameters` carry model/state/questions)
+and `ToolDef` (`toolType: "decision"`). Router tools serialize as
+`{name, kind: "decision", model, questions, provider?}` and must have exactly one choice
+question whose choices are the sub-agent names; `synthesize: false` skips the final parent
+LLM step. No new client methods or builders are required.
 
 #### 7.4 API Journey Examples (9 files)
 

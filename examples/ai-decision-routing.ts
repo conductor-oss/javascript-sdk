@@ -2,7 +2,7 @@
  * Route a request with one synchronous, decision-backed SWITCH and inline branches.
  * The server evaluates the decision; no JavaScript worker is needed.
  *
- * CONDUCTOR_SERVER_URL=http://localhost:8081/api CONDUCTOR_DECISION_PROVIDER=openrouter \
+ * CONDUCTOR_SERVER_URL=http://localhost:8080/api CONDUCTOR_DECISION_PROVIDER=openrouter \
  *   npx tsx examples/ai-decision-routing.ts [--request "Product crashes on startup"]
  */
 import { parseArgs } from "node:util";
@@ -10,15 +10,14 @@ import { setTimeout } from "node:timers/promises";
 import { ConductorWorkflow, OrkesClients, inlineTask, switchTask } from "../src/sdk";
 import type { WorkflowExecutor } from "../src/sdk";
 
-export function createWorkflow(executor: WorkflowExecutor, model = "jev-1.13", provider?: string) {
+function createWorkflow(executor: WorkflowExecutor, model = "jev-1.13", provider?: string) {
   const billing = inlineTask("handle_billing", '({team: "billing", nextAction: "review_invoice", message: "Check invoice line items and payment records.", request: $.request})');
   billing.inputParameters.request = "${workflow.input.request}";
   const technical = inlineTask("handle_technical", '({team: "technical", nextAction: "collect_diagnostics", message: "Collect error logs and steps to reproduce.", request: $.request})');
   technical.inputParameters.request = "${workflow.input.request}";
 
-  const decision = switchTask("route_request", "route", { billing: [billing], technical: [technical] });
-  decision.evaluatorType = "decision";
-  decision.expression = "route";
+  // "decision" evaluator: the expression names the choice question to route on.
+  const decision = switchTask("route_request", "route", { billing: [billing], technical: [technical] }, [], undefined, "decision");
   decision.inputParameters = {
     model,
     ...(provider !== undefined && { provider }),

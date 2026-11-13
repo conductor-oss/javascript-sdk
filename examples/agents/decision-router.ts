@@ -2,14 +2,14 @@
  * Route to billing or technical chat agents using a decision ToolDef selector.
  * No JavaScript worker or parent chat model is needed.
  *
- * CONDUCTOR_SERVER_URL=http://localhost:8081/api CONDUCTOR_DECISION_PROVIDER=openrouter \
+ * CONDUCTOR_SERVER_URL=http://localhost:8080/api CONDUCTOR_DECISION_PROVIDER=openrouter \
  *   npx tsx examples/agents/decision-router.ts [--run]
  * Without --run, prints the server-compiled plan without inference.
  */
 import { Agent, AgentRuntime } from "@io-orkes/conductor-javascript/agents";
 import type { ToolDef } from "@io-orkes/conductor-javascript/agents";
 
-export function supportRouter() {
+function supportRouter() {
   const model = process.env.CONDUCTOR_AGENT_LLM_MODEL ?? "openai/gpt-4o-mini";
   const selector: ToolDef = {
     name: "support_selector",

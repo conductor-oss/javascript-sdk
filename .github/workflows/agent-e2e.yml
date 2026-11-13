@@ -94,9 +94,27 @@ jobs:
           mcp-testkit --transport http --port 3001 &
           sleep 2
 
+      # Deterministic decision provider for suite 24 (Jev decision routing).
+      # Only decision inference is faked; chat LLM calls use the real keys.
+      - name: Start fake decision provider
+        run: |
+          node e2e/fixtures/fake-providers.mjs > fake-providers.log 2>&1 &
+          # Any HTTP status (the fake answers a bodyless GET with 400) means it is listening.
+          for i in $(seq 1 20); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:9911/ || true)
+            if [ "$code" != "000" ]; then echo "fake providers ready"; exit 0; fi
+            sleep 0.5
+          done
+          echo "::error::fake providers did not start"
+          cat fake-providers.log
+          exit 1
+
       - name: Start server
         run: |
-          java -jar conductor-server-boot.jar --server.port=8080 > server.log 2>&1 &
+          java -jar conductor-server-boot.jar --server.port=8080 \
+            --conductor.ai.decision.endpoint=http://localhost:9911/v1/systemone \
+            --conductor.ai.decision.api-key=fake-key \
+            > server.log 2>&1 &
 
       - name: Wait for server health
         run: |
@@ -155,4 +173,5 @@ jobs:
           path: |
             results/
             server.log
+            fake-providers.log
           retention-days: 14

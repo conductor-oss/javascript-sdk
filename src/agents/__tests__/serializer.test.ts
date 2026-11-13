@@ -55,12 +55,26 @@ describe("decision tools", () => {
     }]);
   });
 
+  const choice = (choices: Record<string, string>, type = "choice") => ({ type, instructions: "Pick", choices });
+
   it.each([
-    [{ ...selector, toolType: "http" }, "Only a decision ToolDef"],
+    [{ ...selector, toolType: "http" }, "got toolType 'http'"],
+    [{ ...selector, toolType: undefined }, "got an object without toolType"],
     [{ ...selector, config: { questions: { agent: {} } } }, "requires 'model'"],
     [{ ...selector, config: { model: "jev-1.13", questions: {} } }, "requires 'questions'"],
-  ])("rejects an invalid router configuration", (router, message) => {
+    // choice keys must be exactly the sub-agent names
+    [{ ...selector, config: { model: "jev-1.13", questions: { agent: choice({ invoices: "Invoices" }) } } }, "found 0"],
+    [{ ...selector, config: { model: "jev-1.13", questions: { agent: choice({ billing: "A", extra: "B" }) } } }, "found 0"],
+    [{ ...selector, config: { model: "jev-1.13", questions: { agent: choice({ billing: "A" }, "score") } } }, "found 0"],
+    [{ ...selector, config: { model: "jev-1.13", questions: { a: choice({ billing: "A" }), b: choice({ billing: "B" }) } } }, "found 2"],
+  ])("rejects an invalid router configuration (%#)", (router, message) => {
     expect(() => serializer.serializeAgent(routed(router as ToolDef))).toThrow(message as string);
+  });
+
+  it("accepts extra non-routing questions next to the routing choice question", () => {
+    const questions = { agent: choice({ billing: "A" }), urgent: { type: "boolean", instructions: "Urgent?" } };
+    const router = { ...selector, config: { model: "jev-1.13", questions } };
+    expect(serializer.serializeAgent(routed(router)).router).toMatchObject({ questions });
   });
 });
 
