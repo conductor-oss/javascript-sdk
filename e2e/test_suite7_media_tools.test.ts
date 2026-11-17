@@ -82,10 +82,15 @@ function assertToolCompiled(
   expectMsg(model, `[${stepName}] wrong model`).toBe(expectedModel);
 }
 
+const envFlag = (name: string) => process.env[name]?.toLowerCase() === 'true';
+
 // ── Tests ───────────────────────────────────────────────────────────────
 
 describe('Suite 7: Media Tools', () => {
-  (!process.env.OPENAI_API_KEY ? it.skip : it.failing)('image — OpenAI DALL-E 3', async () => {
+  // SKIP_IMAGE_GEN=true skips this: dall-e-3 has been removed from OpenAI's API
+  // ('model does not exist'), and its gpt-image-* replacements are not enabled
+  // in the Orkes-Developers OpenAI project.
+  (!process.env.OPENAI_API_KEY || envFlag('SKIP_IMAGE_GEN') ? it.skip : it.failing)('image — OpenAI DALL-E 3', async () => {
     const img = imageTool({
       name: 'gen_image',
       description: 'Generate an image from text.',
@@ -143,7 +148,9 @@ describe('Suite 7: Media Tools', () => {
     await assertMediaGenerated(result, 'Image/Gemini', 'GENERATE_IMAGE');
   });
 
-  itSkipIf(!process.env.OPENAI_API_KEY)('audio — OpenAI TTS-1', async () => {
+  // SKIP_TTS=true skips this: the Orkes-Developers OpenAI project does not have
+  // access to tts-1 (HTTP 403).
+  itSkipIf(!process.env.OPENAI_API_KEY || envFlag('SKIP_TTS'))('audio — OpenAI TTS-1', async () => {
     const aud = audioTool({
       name: 'gen_audio',
       description: 'Convert text to speech.',

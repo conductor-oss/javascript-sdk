@@ -251,9 +251,18 @@ describe('Suite 16: Streaming — HITL', () => {
     const agent = new Agent({
       name: uniqueName('s16_hitl_approve'),
       model: MODEL,
+      // After a tool result the server re-sends the original user request, so
+      // gpt-6-luna often reads it as a new request and publishes a second
+      // article, which waits for an approval this test never gives. Asking it
+      // to count earlier calls stopped that in 4 of 4 CI runs; softer wording
+      // ("publish once", "if already published, stop") still failed.
       instructions:
-        'You are a blog writer. Write a very short article (one paragraph) ' +
-        'about Python and publish it using the publish_article tool.',
+        'You are a blog writer. Write the requested post as one short paragraph ' +
+        'and publish it with the publish_article tool. The publish_article tool ' +
+        'can only ever be called once in this chat session. Keep track of how ' +
+        'many times it has been called, counting any earlier publish_article ' +
+        'calls and [TOOL RESULTS]. If that count is more than zero, do not call ' +
+        'it again: end the session by replying with a one-sentence confirmation.',
       tools: [publishArticle],
     });
     const stream = await runtime.stream(agent, 'Write a short blog post about Python programming');
