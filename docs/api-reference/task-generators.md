@@ -62,6 +62,21 @@ const task = switchTask(
 );
 ```
 
+The sixth argument selects the evaluator (default `"value-param"`). With
+`"javascript"` the expression is a script. With `"decision"` the server runs
+decision inference: the expression names the choice question, and the task's
+`inputParameters` carry `model`, `state`, `questions`, and an optional
+`provider`. See [examples/ai-decision-routing.ts](../../examples/ai-decision-routing.ts).
+
+```typescript
+const route = switchTask("route_ref", "route", { billing: [...], technical: [...] }, [], undefined, "decision");
+route.inputParameters = {
+  model: "jev-1.13",
+  state: "${workflow.input.request}",
+  questions: { route: { type: "choice", instructions: "...", choices: { billing: "...", technical: "..." } } },
+};
+```
+
 ## Fork-Join Task
 
 _System Task_ - Executes multiple task branches in parallel and waits for all to complete.

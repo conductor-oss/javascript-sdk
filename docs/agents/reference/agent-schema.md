@@ -14,6 +14,11 @@ recursively via the same function. The published
 allowing intentionally open JSON payloads (tool `inputSchema`/`outputSchema`,
 `metadata`, guardrail/termination/handoff objects, and per-toolType `config`).
 
+A decision ToolDef in `router` emits `{ name, kind: "decision", model, questions,
+provider? }` instead of a nested agent. `model` and nonempty `questions` are required;
+an absent provider is omitted. A normal tool emits `toolType: "decision"` with its
+config unchanged. `synthesize: false` disables the final specialist synthesis step.
+
 ## Framework-passthrough shapes
 
 Two agent kinds bypass the general shape above and emit a minimal
