@@ -134,10 +134,22 @@ describe("forkTask", () => {
       name: "forkTaskJoin_join",
       taskReferenceName: "forkTaskJoin_join_ref",
       inputParameters: {},
-      joinOn: [],
+      joinOn: ["forkTaskJoin"],
       optional: true,
       type: "JOIN",
     });
+  });
+  it("Should join on the last task of each fork branch", () => {
+    const [, joinTask] = forkTaskJoin("multiStep", [
+      eventTask("first", "prefix", "suffix"),
+      eventTask("second", "prefix", "suffix"),
+      eventTask("last", "prefix", "suffix"),
+    ]);
+    expect(joinTask.joinOn).toEqual(["last"]);
+  });
+  it("Should produce an empty joinOn when there are no fork tasks", () => {
+    const [, joinTask] = forkTaskJoin("emptyFork", []);
+    expect(joinTask.joinOn).toEqual([]);
   });
 });
 
