@@ -155,7 +155,7 @@ export interface HttpInputParameters {
   headers?: Record<string, string>;
   body?: unknown;
   connectionTimeOut?: number;
-  readTimeOut?: string;
+  readTimeOut?: number;
 }
 
 export interface HttpTaskDef extends CommonTaskDef {
