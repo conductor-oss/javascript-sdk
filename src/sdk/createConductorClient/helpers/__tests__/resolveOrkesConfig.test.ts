@@ -96,6 +96,20 @@ describe("resolveOrkesConfig", () => {
       expect(result.keyId).toBe("conductor-key");
       expect(result.keySecret).toBe("conductor-secret");
     });
+
+    it("does not report the keys as unset when they come from config", () => {
+      const logger = { info: jest.fn(), error: jest.fn(), debug: jest.fn() };
+      resolveOrkesConfig({ keyId: "explicit-key", keySecret: "explicit-secret", logger });
+      expect(logger.debug).not.toHaveBeenCalledWith("CONDUCTOR_AUTH_KEY is not set");
+      expect(logger.debug).not.toHaveBeenCalledWith("CONDUCTOR_AUTH_SECRET is not set");
+    });
+
+    it("reports the keys as unset when neither env nor config supplies them", () => {
+      const logger = { info: jest.fn(), error: jest.fn(), debug: jest.fn() };
+      resolveOrkesConfig({ logger });
+      expect(logger.debug).toHaveBeenCalledWith("CONDUCTOR_AUTH_KEY is not set");
+      expect(logger.debug).toHaveBeenCalledWith("CONDUCTOR_AUTH_SECRET is not set");
+    });
   });
 
   // ─── Numeric env vars: Number("0") edge case ──────────────────────
