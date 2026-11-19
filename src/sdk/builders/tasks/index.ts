@@ -11,6 +11,7 @@ export * from "./inline";
 export * from "./join";
 export * from "./jsonJq";
 export * from "./kafkaPublish";
+export * from "./noop";
 export * from "./setVariable";
 export * from "./simple";
 export * from "./startWorkflow";

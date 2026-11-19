@@ -8,6 +8,7 @@ import { inlineTask } from "../inline";
 import { joinTask } from "../join";
 import { jsonJqTask } from "../jsonJq";
 import { kafkaPublishTask } from "../kafkaPublish";
+import { noopTask } from "../noop";
 import { setVariableTask } from "../setVariable";
 import { subWorkflowTask } from "../subWorkflow";
 import { switchTask } from "../switch";
@@ -266,6 +267,26 @@ describe("kafkaPublishTask", () => {
         },
       },
     });
+  });
+});
+
+describe("noopTask", () => {
+  it("Should generate a NOOP task", () => {
+    expect(noopTask("noopRef")).toEqual({
+      name: "noopRef",
+      taskReferenceName: "noopRef",
+      type: "NOOP",
+      inputParameters: {},
+    });
+  });
+
+  it("Should set optional when given", () => {
+    expect(noopTask("noopRef", true).optional).toBe(true);
+  });
+
+  it("Should be usable as a workflow task", () => {
+    const wf = workflow("wf", [noopTask("noopRef")]);
+    expect(wf.tasks[0].type).toBe("NOOP");
   });
 });
 

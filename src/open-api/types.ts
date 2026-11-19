@@ -78,6 +78,7 @@ export enum TaskType {
   CALL_MCP_TOOL = "CALL_MCP_TOOL",
   LIST_MCP_TOOLS = "LIST_MCP_TOOLS",
   PULL_WORKFLOW_MESSAGES = "PULL_WORKFLOW_MESSAGES",
+  NOOP = "NOOP",
 }
 
 export enum ServiceType {
@@ -102,7 +103,8 @@ export type TaskDefTypes =
   | TerminateTaskDef
   | JoinTaskDef
   | WaitTaskDef
-  | PullWorkflowMessagesTaskDef;
+  | PullWorkflowMessagesTaskDef
+  | NoopTaskDef;
 
 export interface DoWhileTaskDef extends CommonTaskDef {
   inputParameters: Record<string, unknown>;
@@ -210,6 +212,12 @@ export interface KafkaPublishTaskDef extends CommonTaskDef {
 
 export interface SetVariableTaskDef extends CommonTaskDef {
   type: TaskType.SET_VARIABLE;
+  inputParameters: Record<string, unknown>;
+  optional?: boolean;
+}
+
+export interface NoopTaskDef extends CommonTaskDef {
+  type: TaskType.NOOP;
   inputParameters: Record<string, unknown>;
   optional?: boolean;
 }
