@@ -8,6 +8,7 @@ import { makeAgentResult } from "./result.js";
 const SSE_TIMEOUT_MS = 15_000;
 const MAX_RECONNECT_RETRIES = 5;
 const POLL_INTERVAL_MS = 500;
+const RESULT_STATUS_TIMEOUT_MS = 15_000;
 
 // ── AgentStream ─────────────────────────────────────────
 
@@ -370,7 +371,8 @@ export class AgentStream implements AsyncIterable<AgentEvent> {
   // ── getResult ────────────────────────────────────────
 
   /**
-   * Drain all remaining events and build an AgentResult.
+   * Drain all remaining events and build an AgentResult. After stream closure,
+   * allow up to 15 seconds for a non-terminal server status to settle.
    */
   async getResult(): Promise<AgentResult> {
     // Drain any remaining events if not already done
@@ -388,14 +390,35 @@ export class AgentStream implements AsyncIterable<AgentEvent> {
     // signals stream end, NOT workflow success.
     let serverStatus: Record<string, unknown> | null = null;
     if (this.serverUrl && this.executionId) {
-      try {
-        const statusUrl = `${this.serverUrl}/agent/${this.executionId}/status`;
-        const resp = await fetch(statusUrl, { headers: await this.headerProvider() });
-        if (resp.ok) {
-          serverStatus = (await resp.json()) as Record<string, unknown>;
+      const deadline = Date.now() + RESULT_STATUS_TIMEOUT_MS;
+      const statusUrl = `${this.serverUrl}/agent/${this.executionId}/status`;
+      let hasTerminalStatus = false;
+      while (Date.now() < deadline) {
+        try {
+          const resp = await fetch(statusUrl, {
+            headers: await this.headerProvider(),
+            signal: AbortSignal.timeout(Math.max(1, deadline - Date.now())),
+          });
+          if (resp.ok) {
+            serverStatus = (await resp.json()) as Record<string, unknown>;
+          }
+        } catch {
+          // Preserve the last observed status across transient read failures.
         }
-      } catch {
-        // Fall back to stream-based inference
+        // Keep the existing fallback when no server status can be read, but
+        // never turn an observed RUNNING execution into inferred success.
+        hasTerminalStatus = serverStatus !== null && (
+          serverStatus.isComplete === true ||
+          ["COMPLETED", "FAILED", "TIMED_OUT", "TERMINATED", "CANCELED", "CANCELLED"]
+            .includes(String(serverStatus.status))
+        );
+        if (!serverStatus || hasTerminalStatus) {
+          break;
+        }
+        await sleep(Math.min(POLL_INTERVAL_MS, Math.max(0, deadline - Date.now())));
+      }
+      if (serverStatus && !hasTerminalStatus) {
+        throw new ConductorAgentError(`Timed out waiting for terminal status of ${this.executionId}`);
       }
     }
 
