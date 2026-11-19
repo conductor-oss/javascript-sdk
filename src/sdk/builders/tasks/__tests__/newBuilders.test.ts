@@ -5,6 +5,7 @@ import { humanTask } from "../humanTask";
 import { httpPollTask } from "../httpPoll";
 import { waitForWebhookTask } from "../waitForWebhook";
 import { getDocumentTask } from "../getDocument";
+import { exclusiveJoinTask } from "../exclusiveJoin";
 
 describe("startWorkflowTask", () => {
   it("Should generate a startWorkflow task with minimal args", () => {
@@ -446,5 +447,26 @@ describe("getDocumentTask", () => {
       },
       optional: true,
     });
+  });
+});
+
+describe("exclusiveJoinTask", () => {
+  it("Should generate an exclusiveJoin task", () => {
+    const result = exclusiveJoinTask("exJoin", ["caseA", "caseB"]);
+    expect(result).toEqual({
+      name: "exJoin",
+      taskReferenceName: "exJoin",
+      type: "EXCLUSIVE_JOIN",
+      joinOn: ["caseA", "caseB"],
+      defaultExclusiveJoinTask: undefined,
+      inputParameters: {},
+      optional: undefined,
+    });
+  });
+
+  it("Should set defaultExclusiveJoinTask and optional", () => {
+    const result = exclusiveJoinTask("exJoin", ["caseA"], ["defaultTask"], true);
+    expect(result.defaultExclusiveJoinTask).toEqual(["defaultTask"]);
+    expect(result.optional).toBe(true);
   });
 });
